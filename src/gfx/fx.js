@@ -212,7 +212,7 @@ export class Effects {
       ctx.arc(0, 0, w.ring ? r * (0.8 + 0.2 * Math.sin(k * 6)) : r, 0, Math.PI * 2);
       ctx.stroke();
       if (!w.ring) {
-        ctx.globalAlpha = (1 - k) * 0.25;
+        ctx.globalAlpha = (1 - k) * 0.12;
         ctx.fillStyle = w.color;
         ctx.fill();
       }

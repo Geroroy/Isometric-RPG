@@ -126,7 +126,7 @@ export class World {
       campSpots.push({ x, y });
     }
     // The first camp close to the base acts as an easy tutorial camp.
-    campSpots.unshift({ x: BASE_POS.x - 22, y: BASE_POS.y - 8 });
+    campSpots.unshift({ x: BASE_POS.x - 32, y: BASE_POS.y - 6 });
 
     // 3) Roads from the base to camps, ruins and the factory.
     const roadSegs = [];

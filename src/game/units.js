@@ -573,7 +573,7 @@ export class Player extends Unit {
   }
 
   commandMove(x, y) {
-    if (!this.canAct()) return;
+    if (!this.canAct() || this.saberOut) return;
     if (this.action && this.action.type !== 'move' && this.action.type !== 'melee') return;
     if (this.action && this.action.type === 'melee' && this.action.phase === 'swing') {
       this.queued = { type: 'move', x, y };
@@ -589,7 +589,7 @@ export class Player extends Unit {
   }
 
   basicAttack(target, inPlace = false) {
-    if (!this.canAct()) return;
+    if (!this.canAct() || this.saberOut) return;
     if (this.action && this.action.type !== 'move') {
       if (this.action.type === 'melee' && this.action.phase === 'swing') this.queued = { type: 'attack', target };
       return;
@@ -626,7 +626,7 @@ export class Player extends Unit {
     if (!id || !this.canAct()) return false;
     const s = SKILLS[id];
     const l = this.skillLevel(id);
-    if (!l || !isActive(id)) return false;
+    if (!l || !isActive(id) || this.saberOut) return false;
     if (this.action && !['move', 'melee'].includes(this.action.type)) return false;
     if (this.action && this.action.type === 'melee' && this.action.phase === 'swing') return false;
     if ((this.cooldowns[id] || 0) > 0) return false;
@@ -673,7 +673,11 @@ export class Player extends Unit {
 
     const act = this.action;
     if (!act) {
-      this.setAnim('idle');
+      if (this.saberOut) {
+        // hold the outstretched "catch" pose until the saber returns
+        this.setAnim('throw');
+        this.animT = 99;
+      } else this.setAnim('idle');
       return;
     }
     switch (act.type) {
@@ -746,7 +750,7 @@ export class Player extends Unit {
         if (info.done) {
           this.action = null;
           if (act.onEnd) act.onEnd();
-          this.setAnim('idle');
+          if (!this.saberOut) this.setAnim('idle');
           this.runQueued();
         }
         break;

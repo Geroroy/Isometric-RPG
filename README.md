@@ -8,6 +8,12 @@
 - 배경: 크리스토프시스 외곽 오픈월드 (192×192 타일) — 공화국 전진 기지, 수정 평원, 고대 도시 폐허, 드로이드 공장
 - 그래픽: 스타크래프트 1 / 디아블로 2 / C&C처럼 **3D 모델을 사전 렌더링한 픽셀 스프라이트** — 단, 외부 이미지 없이 로딩 시 브라우저에서 직접 렌더링
 
+![전투](docs/screenshots/combat.jpg)
+
+| 공화국 전진 기지 | 스킬 트리 |
+| --- | --- |
+| ![기지](docs/screenshots/base.jpg) | ![스킬 트리](docs/screenshots/skilltree.jpg) |
+
 자세한 기획(스킬 트리 전체, 시스템, 로드맵)은 [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md)를 참고하세요.
 
 ## 실행
