@@ -120,7 +120,7 @@ export function buildAnakin({ dual = false } = {}) {
   const rig = new Rig({ shW: 0.2, uarm: 0.29, farm: 0.27, chest: 0.31 });
   const j = rig.j;
   const d = rig.dims;
-  const skin = mat(K.skin);
+  const skin = mat(K.skin, { tex: 'none' });
 
   // Legs: maroon trousers, tall strapped boots with a flared cuff.
   for (const side of ['L', 'R']) {
@@ -186,8 +186,8 @@ export function buildAnakin({ dual = false } = {}) {
   j.head.add(scl(sph(0.096, skin, 0.01, 0.1, 0, 10, 8), 0.98, 1.16, 0.88));
   j.head.add(scl(sph(0.05, skin, 0.05, 0.035, 0, 7, 5), 1.0, 0.8, 1.2)); // jaw
   j.head.add(box(0.02, 0.028, 0.02, skin, 0.1, 0.09, 0)); // nose
-  const hm = mat(K.hair);
-  const hd = mat(K.hairDark);
+  const hm = mat(K.hair, { tex: 'cloth' });
+  const hd = mat(K.hairDark, { tex: 'cloth' });
   j.head.add(scl(sph(0.108, hm, -0.018, 0.15, 0, 10, 7), 1.04, 0.82, 1.02)); // crown
   j.head.add(scl(sph(0.075, hd, -0.07, 0.07, 0, 8, 6), 0.9, 1.2, 1.25)); // back, to the nape
   for (const zs of [1, -1]) {
@@ -215,68 +215,98 @@ export function buildAnakin({ dual = false } = {}) {
 // markings and dual DC-17 pistols.
 
 function buildBlaster(len, color = C.black) {
+  // DC-15A / E-5 style: receiver, barrel shroud, scope, grip, stock
   const g = new THREE.Group();
-  g.add(box(len, 0.05, 0.04, mat(color), len / 2 - 0.08, 0.02, 0));
-  g.add(box(0.06, 0.09, 0.03, mat(color), -0.02, -0.03, 0));
-  g.add(cylX(0.015, 0.015, 0.08, mat(C.plateDark), len - 0.08, 0.03, 0, 5));
+  const m = mat(color);
+  g.add(box(len * 0.55, 0.06, 0.045, m, len * 0.2, 0.02, 0));
+  g.add(cylX(0.02, 0.018, len * 0.45, mat(C.plateDark), len * 0.45, 0.03, 0, 6));
+  g.add(box(0.12, 0.03, 0.03, mat(0x55585c), len * 0.25, 0.07, 0)); // scope
+  g.add(box(0.05, 0.1, 0.035, m, -0.02, -0.04, 0)); // grip
+  g.add(box(0.14, 0.05, 0.035, m, -0.12, 0.0, 0)); // stock
   g.add(marker('muzzle', len, 0.03, 0));
   return g;
 }
 
 export function buildClone({ rex = false, marks = null } = {}) {
+  // Phase II clone trooper armour (501st): T-visor helmet with flared cheeks,
+  // bell pauldrons, shaped chest and ab plates, thigh and shin plates, black
+  // body glove at the joints, pouch belt, blue legion markings.
   const rig = new Rig();
   const j = rig.j;
   const d = rig.dims;
   const W = mat(C.armorWhite);
   const S = mat(C.armorShade);
-  const B = mat(C.bodyglove);
+  const B = mat(C.bodyglove, { tex: 'cloth' });
   const L = mat(marks ?? C.legion);
+  const K = mat(C.black);
 
   for (const side of ['L', 'R']) {
-    j['hip' + side].add(cyl(0.07, 0.06, d.thigh, B, 0, -d.thigh / 2, 0, 6));
-    j['hip' + side].add(box(0.12, 0.26, 0.12, W, 0.01, -0.2, 0));
-    j['kn' + side].add(box(0.12, 0.33, 0.12, W, 0.01, -0.2, 0));
-    j['kn' + side].add(box(0.04, 0.33, 0.06, L, 0.065, -0.2, 0));
-    j['an' + side].add(box(0.24, 0.09, 0.11, W, 0.05, -0.04, 0));
-    j['sh' + side].add(cyl(0.055, 0.05, d.uarm, B, 0, -d.uarm / 2, 0, 6));
-    j['sh' + side].add(box(0.13, 0.14, 0.13, W, 0, -0.06, 0));
-    j['el' + side].add(box(0.1, 0.22, 0.1, W, 0, -0.13, 0));
-    j['ha' + side].add(box(0.075, 0.09, 0.065, B, 0.01, -0.045, 0));
+    const zs = side === 'L' ? -1 : 1;
+    // legs: glove, thigh plate front + side, knee gap, shin plate, boot
+    j['hip' + side].add(cyl(0.068, 0.058, d.thigh, B, 0, -d.thigh / 2, 0, 8));
+    j['hip' + side].add(box(0.14, 0.27, 0.14, W, 0.01, -0.2, 0)); // thigh plates wrap the leg
+    j['hip' + side].add(box(0.03, 0.18, 0.1, S, 0.075, -0.2, 0));
+    j['kn' + side].add(sph(0.058, B, 0, 0, 0, 6, 4));
+    j['kn' + side].add(box(0.06, 0.06, 0.1, W, 0.06, -0.02, 0)); // knee cap
+    j['kn' + side].add(box(0.13, 0.3, 0.13, W, 0.01, -0.21, 0));
+    j['kn' + side].add(box(0.035, 0.26, 0.05, L, 0.075, -0.21, 0));
+    j['an' + side].add(box(0.25, 0.09, 0.12, W, 0.055, -0.035, 0));
+    j['an' + side].add(box(0.26, 0.025, 0.125, K, 0.055, -0.08, 0));
+    // arms: glove, bell pauldron, bicep plate, bracer with blue band, glove
+    j['sh' + side].add(cyl(0.052, 0.046, d.uarm, B, 0, -d.uarm / 2, 0, 8));
+    const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 0.12, 8, 1), W);
+    bell.position.set(0, -0.03, zs * 0.015);
+    j['sh' + side].add(bell);
+    j['sh' + side].add(box(0.09, 0.12, 0.09, W, 0.0, -0.17, zs * 0.005));
+    j['el' + side].add(box(0.095, 0.2, 0.095, W, 0, -0.13, 0));
+    j['el' + side].add(box(0.1, 0.04, 0.1, L, 0, -0.06, 0));
+    j['ha' + side].add(scl(sph(0.045, B, 0.0, -0.045, 0, 6, 4), 0.9, 1.15, 0.8));
   }
-  j.knL.add(box(0.06, 0.03, 0.125, L, 0.01, -0.06, 0));
-  j.pelvis.add(box(0.2, 0.15, 0.3, B, 0, -0.02, 0));
-  j.pelvis.add(box(0.22, 0.06, 0.32, mat(C.black), 0, 0.05, 0));
-  j.pelvis.add(box(0.07, 0.1, 0.18, W, 0.12, -0.06, 0));
-  j.spine.add(box(0.19, 0.26, 0.29, W, 0, 0.12, 0));
-  j.chest.add(box(0.24, 0.32, 0.36, W, 0, 0.15, 0));
-  j.chest.add(box(0.03, 0.2, 0.05, L, 0.125, 0.17, 0.12));
-  j.chest.add(box(0.03, 0.2, 0.05, L, 0.125, 0.17, -0.12));
-  j.chest.add(box(0.2, 0.12, 0.3, S, -0.13, 0.17, 0)); // backpack
-  j.shL.add(scl(sph(0.095, W, 0, 0.02, 0, 7, 5), 1.1, 0.8, 1.1));
-  j.shR.add(scl(sph(0.095, W, 0, 0.02, 0, 7, 5), 1.1, 0.8, 1.1));
-  j.shL.add(box(0.08, 0.04, 0.012, L, 0, 0.02, -0.105));
+  j.shL.add(box(0.05, 0.035, 0.012, L, 0.0, -0.03, -0.1)); // pauldron stripe
 
-  // Helmet with T visor and 501st blue stripe.
-  j.neck.add(cyl(0.05, 0.055, 0.08, B, 0, 0.03, 0, 6));
-  j.head.add(scl(sph(0.13, W, 0, 0.12, 0, 9, 7), 1.05, 1.0, 0.95));
-  j.head.add(box(0.12, 0.08, 0.2, W, 0.06, 0.02, 0));
-  j.head.add(box(0.02, 0.035, 0.17, mat(C.black), 0.135, 0.13, 0)); // visor
-  j.head.add(box(0.02, 0.1, 0.04, mat(C.black), 0.135, 0.06, 0));
-  j.head.add(box(0.24, 0.03, 0.04, L, -0.01, 0.23, 0)); // stripe
-  j.head.add(box(0.02, 0.03, 0.08, L, 0.13, 0.17, 0));
+  // hips, belt with pouches, codpiece; ab plates; chest and back plates
+  j.pelvis.add(box(0.2, 0.15, 0.3, B, 0, -0.02, 0));
+  j.pelvis.add(box(0.23, 0.06, 0.33, mat(0x9fa3a6), 0, 0.05, 0));
+  for (const z of [-0.12, -0.04, 0.04, 0.12]) j.pelvis.add(box(0.05, 0.06, 0.06, W, 0.12, 0.05, z));
+  j.pelvis.add(box(0.06, 0.1, 0.16, W, 0.12, -0.06, 0));
+  j.pelvis.add(box(0.06, 0.08, 0.2, S, -0.12, 0.02, 0)); // rear plate
+  j.spine.add(box(0.17, 0.24, 0.27, W, 0, 0.12, 0));
+  j.spine.add(box(0.172, 0.02, 0.272, B, 0, 0.12, 0)); // ab plate gap
+  j.spine.add(box(0.05, 0.1, 0.2, W, 0.08, 0.06, 0));
+  j.spine.add(box(0.05, 0.1, 0.22, W, 0.08, 0.17, 0));
+  j.chest.add(box(0.21, 0.3, 0.33, W, 0, 0.14, 0));
+  const chestPlate = sector(0.19, 0.17, 0.24, Math.PI / 2 - 1.05, Math.PI / 2 + 1.05, mat(C.armorWhite, { side: THREE.DoubleSide }), 0, 0.17, 0, 6);
+  chestPlate.scale.set(0.8, 1, 1);
+  j.chest.add(chestPlate);
+  j.chest.add(box(0.08, 0.26, 0.3, W, -0.1, 0.16, 0)); // back plate
+  j.chest.add(box(0.12, 0.14, 0.22, S, -0.18, 0.13, 0)); // backpack
+  j.chest.add(box(0.06, 0.05, 0.24, mat(0x55585c), -0.24, 0.13, 0));
+  j.chest.add(box(0.02, 0.18, 0.04, L, 0.15, 0.16, 0.09));
+  j.chest.add(box(0.02, 0.18, 0.04, L, 0.15, 0.16, -0.09));
+  j.chest.add(cyl(0.06, 0.07, 0.05, B, 0, 0.31, 0, 8)); // neck seal
+
+  // Phase II helmet
+  j.neck.add(cyl(0.045, 0.05, 0.08, B, 0, 0.03, 0, 6));
+  j.head.add(scl(sph(0.125, W, -0.005, 0.13, 0, 10, 8), 1.05, 0.95, 0.94)); // dome
+  j.head.add(box(0.13, 0.1, 0.19, W, 0.05, 0.03, 0)); // face plate
+  for (const zs of [-1, 1]) j.head.add(rot(box(0.1, 0.06, 0.05, W, 0.06, -0.01, zs * 0.105), zs * -0.35, 0, 0)); // flared cheeks
+  j.head.add(box(0.02, 0.035, 0.17, K, 0.12, 0.12, 0)); // T visor
+  j.head.add(box(0.02, 0.09, 0.045, K, 0.12, 0.06, 0));
+  j.head.add(box(0.015, 0.03, 0.06, mat(0x3a3d40), 0.12, -0.01, 0)); // vocoder
+  j.head.add(box(0.06, 0.02, 0.2, W, 0.09, 0.155, 0)); // brow
+  j.head.add(box(0.24, 0.025, 0.04, L, -0.01, 0.245, 0)); // crest stripe
+  j.head.add(box(0.02, 0.05, 0.05, L, 0.12, 0.2, 0));
 
   if (rex) {
-    // Kama + extra jaig-eye style blue patches + pistols.
+    // Rex: kama, Jaig-eye blue on the helmet, twin DC-17 pistols
     const kama = new THREE.Group();
-    kama.add(box(0.27, 0.38, 0.36, mat(0x2a2a2e), -0.02, -0.2, 0));
+    kama.add(box(0.27, 0.38, 0.36, mat(0x2a2a2e, { tex: 'cloth' }), -0.02, -0.2, 0));
     at(kama, 0, 0.03, 0);
     j.pelvis.add(kama);
     j.head.add(box(0.12, 0.05, 0.2, L, 0.03, 0.19, 0));
     j.chest.add(box(0.03, 0.06, 0.3, L, 0.125, 0.04, 0));
-    const p1 = buildBlaster(0.24, 0x2a2a2a);
-    j.wpn.add(p1);
-    const p2 = buildBlaster(0.24, 0x2a2a2a);
-    j.wpnL.add(p2);
+    j.wpn.add(buildBlaster(0.24, 0x2a2a2a));
+    j.wpnL.add(buildBlaster(0.24, 0x2a2a2a));
   } else {
     j.wpn.add(buildBlaster(0.62));
   }
@@ -284,7 +314,7 @@ export function buildClone({ rex = false, marks = null } = {}) {
 }
 
 // ----------------------------------------------------------------------------
-// B1 battle droid: spindly tan frame, elongated head, E-5 blaster.
+// B1 battle droid: spindly tan frame, long snouted head, power pack, E-5.
 
 export function buildB1() {
   const rig = new Rig({ hip: 0.94, thigh: 0.44, shin: 0.43, shW: 0.17, uarm: 0.29, farm: 0.28, spine: 0.22, chest: 0.3 });
@@ -292,26 +322,40 @@ export function buildB1() {
   const d = rig.dims;
   const T = mat(C.b1Tan);
   const D = mat(C.b1Dark);
+  const K = mat(0x3a3328);
   for (const side of ['L', 'R']) {
-    j['hip' + side].add(cyl(0.028, 0.028, d.thigh, T, 0, -d.thigh / 2, 0, 5));
-    j['kn' + side].add(sph(0.04, D, 0, 0, 0, 5, 4));
-    j['kn' + side].add(cyl(0.03, 0.026, d.shin, T, 0, -d.shin / 2, 0, 5));
-    j['an' + side].add(box(0.2, 0.04, 0.08, T, 0.04, -0.02, 0));
-    j['sh' + side].add(sph(0.04, D, 0, 0, 0, 5, 4));
-    j['sh' + side].add(cyl(0.025, 0.025, d.uarm, T, 0, -d.uarm / 2, 0, 5));
-    j['el' + side].add(cyl(0.025, 0.022, d.farm, T, 0, -d.farm / 2, 0, 5));
-    j['ha' + side].add(box(0.06, 0.08, 0.04, T, 0, -0.04, 0));
+    j['hip' + side].add(sph(0.035, D, 0, 0, 0, 6, 4));
+    j['hip' + side].add(cyl(0.028, 0.024, d.thigh, T, 0, -d.thigh / 2, 0, 6));
+    j['kn' + side].add(sph(0.038, D, 0, 0, 0, 6, 4));
+    j['kn' + side].add(cyl(0.026, 0.03, d.shin, T, 0, -d.shin / 2, 0, 6));
+    j['kn' + side].add(box(0.03, 0.12, 0.05, D, 0.02, -0.12, 0)); // shin servo
+    j['an' + side].add(box(0.18, 0.035, 0.07, T, 0.05, -0.02, 0));
+    j['an' + side].add(box(0.06, 0.04, 0.09, D, -0.02, -0.02, 0));
+    j['sh' + side].add(sph(0.04, D, 0, 0, 0, 6, 4));
+    j['sh' + side].add(cyl(0.024, 0.022, d.uarm, T, 0, -d.uarm / 2, 0, 6));
+    j['el' + side].add(sph(0.03, D, 0, 0, 0, 6, 4));
+    j['el' + side].add(cyl(0.022, 0.02, d.farm, T, 0, -d.farm / 2, 0, 6));
+    j['ha' + side].add(box(0.05, 0.07, 0.035, T, 0, -0.035, 0));
   }
-  j.pelvis.add(box(0.12, 0.08, 0.24, T, 0, 0, 0));
-  j.spine.add(cyl(0.03, 0.03, d.spine, D, 0, d.spine / 2, 0, 5));
-  j.chest.add(box(0.14, 0.26, 0.26, T, 0.01, 0.14, 0));
-  j.chest.add(box(0.12, 0.2, 0.2, D, -0.11, 0.18, 0)); // backpack
-  j.chest.add(box(0.02, 0.12, 0.12, D, 0.08, 0.15, 0));
-  j.neck.add(cyl(0.022, 0.022, 0.16, D, 0, 0.06, 0, 5));
+  j.pelvis.add(box(0.1, 0.07, 0.22, T, 0, 0, 0));
+  j.pelvis.add(cyl(0.04, 0.04, 0.08, D, 0, 0.05, 0, 6));
+  j.spine.add(cyl(0.028, 0.028, d.spine, D, 0, d.spine / 2, 0, 6));
+  j.spine.add(box(0.06, 0.04, 0.12, T, 0.0, d.spine * 0.6, 0)); // rib frame
+  // torso: flat chest plate with a vent grille, big power pack on the back
+  j.chest.add(box(0.13, 0.25, 0.25, T, 0.01, 0.14, 0));
+  for (let i = 0; i < 4; i++) j.chest.add(box(0.012, 0.018, 0.13, K, 0.08, 0.08 + i * 0.035, 0));
+  j.chest.add(box(0.13, 0.22, 0.2, D, -0.12, 0.17, 0));
+  j.chest.add(box(0.03, 0.18, 0.16, T, -0.19, 0.17, 0));
+  j.chest.add(sph(0.045, D, 0, 0.27, 0.15, 6, 4));
+  j.chest.add(sph(0.045, D, 0, 0.27, -0.15, 6, 4));
+  j.neck.add(cyl(0.02, 0.02, 0.16, D, 0, 0.06, 0, 5));
+  // head: elongated snout angled down, eye sockets, flattened top
   const head = group(
-    rot(cylX(0.055, 0.032, 0.3, T, -0.05, 0, 0, 6), 0, 0, -0.35),
-    box(0.06, 0.04, 0.03, D, 0.0, 0.04, 0.05),
-    box(0.06, 0.04, 0.03, D, 0.0, 0.04, -0.05),
+    rot(cylX(0.055, 0.026, 0.32, T, -0.06, 0, 0, 7), 0, 0, -0.38),
+    box(0.1, 0.035, 0.09, T, -0.02, 0.05, 0),
+    sph(0.022, K, 0.02, 0.035, 0.045, 5, 4),
+    sph(0.022, K, 0.02, 0.035, -0.045, 5, 4),
+    box(0.03, 0.03, 0.05, D, -0.07, -0.02, 0),
   );
   at(head, 0, 0.14, 0);
   j.head.add(head);
@@ -320,31 +364,51 @@ export function buildB1() {
 }
 
 // ----------------------------------------------------------------------------
-// B2 super battle droid: bulky armored torso, wrist blasters.
+// B2 super battle droid: hunched armoured torso with a recessed head, heavy
+// shoulder plates, massive forearms with wrist blasters, armoured shins.
 
 export function buildB2() {
   const rig = new Rig({ hip: 1.02, thigh: 0.46, shin: 0.48, shW: 0.33, shY: 0.3, uarm: 0.33, farm: 0.34, spine: 0.2, chest: 0.42, hipW: 0.14 });
   const j = rig.j;
   const d = rig.dims;
-  const M = mat(C.b2Metal);
-  const D = mat(C.b2Dark);
+  const M = mat(0x8c98a5);
+  const M2 = mat(0x75818d);
+  const D = mat(0x4f5862);
+  const K = mat(0x1b1f23);
   for (const side of ['L', 'R']) {
-    j['hip' + side].add(cyl(0.07, 0.06, d.thigh, D, 0, -d.thigh / 2, 0, 6));
-    j['kn' + side].add(box(0.18, 0.46, 0.15, M, -0.01, -0.24, 0));
-    j['an' + side].add(box(0.28, 0.08, 0.16, M, 0.05, -0.03, 0));
-    j['sh' + side].add(box(0.16, 0.16, 0.16, M, 0, -0.02, 0));
-    j['sh' + side].add(cyl(0.06, 0.06, d.uarm, D, 0, -d.uarm / 2, 0, 6));
-    j['el' + side].add(box(0.15, d.farm, 0.16, M, 0.0, -d.farm / 2, 0));
-    j['el' + side].add(box(0.06, 0.06, 0.06, mat(0x15181b), 0.08, -d.farm + 0.02, 0));
+    j['hip' + side].add(cyl(0.075, 0.065, d.thigh, D, 0, -d.thigh / 2, 0, 8));
+    j['hip' + side].add(box(0.14, 0.2, 0.15, M2, 0.02, -0.12, 0)); // thigh plate
+    j['kn' + side].add(sph(0.08, D, 0, 0, 0, 7, 5));
+    j['kn' + side].add(box(0.2, 0.44, 0.17, M, -0.01, -0.25, 0));
+    j['kn' + side].add(box(0.06, 0.16, 0.14, M2, 0.1, -0.08, 0)); // knee guard
+    j['an' + side].add(box(0.3, 0.09, 0.17, M, 0.05, -0.03, 0));
+    j['an' + side].add(box(0.31, 0.03, 0.18, K, 0.05, -0.08, 0));
+    // shoulder plate, upper arm, massive forearm with wrist blaster
+    j['sh' + side].add(box(0.2, 0.12, 0.2, M, 0, 0.03, 0));
+    j['sh' + side].add(box(0.17, 0.08, 0.17, M2, 0, -0.05, 0));
+    j['sh' + side].add(cyl(0.06, 0.06, d.uarm, D, 0, -d.uarm / 2, 0, 8));
+    j['el' + side].add(sph(0.07, D, 0, 0, 0, 7, 5));
+    j['el' + side].add(box(0.17, d.farm, 0.18, M, 0.0, -d.farm / 2 - 0.02, 0));
+    j['el' + side].add(box(0.18, 0.06, 0.19, M2, 0.0, -0.06, 0));
+    j['el' + side].add(box(0.07, 0.07, 0.08, K, 0.1, -d.farm + 0.02, 0));
+    j['el' + side].add(cylX(0.02, 0.02, 0.06, K, 0.12, -d.farm + 0.02, 0, 5));
     j['el' + side].add(marker('muzzle' + side, 0.12, -d.farm + 0.02, 0));
+    j['ha' + side].add(box(0.12, 0.08, 0.13, D, 0, -0.05, 0));
   }
   j.pelvis.add(box(0.2, 0.14, 0.34, D, 0, 0, 0));
-  j.spine.add(box(0.2, 0.24, 0.3, D, 0, 0.1, 0));
-  j.chest.add(box(0.34, 0.42, 0.56, M, 0, 0.22, 0));
-  j.chest.add(box(0.06, 0.24, 0.4, D, 0.17, 0.2, 0));
-  j.head.add(box(0.14, 0.1, 0.16, M, 0.08, 0.0, 0));
-  j.head.add(box(0.02, 0.03, 0.12, mat(0x1b2025), 0.16, 0.0, 0));
-  j.neck.position.set(0.06, d.chest - 0.04, 0);
+  j.pelvis.add(box(0.06, 0.12, 0.24, M2, 0.11, -0.02, 0));
+  j.spine.add(box(0.2, 0.24, 0.28, D, 0, 0.1, 0));
+  for (let i = 0; i < 3; i++) j.spine.add(box(0.03, 0.03, 0.22, M2, 0.1, 0.03 + i * 0.07, 0)); // ab cables
+  // hunched torso: big forward chest block, back armour, power pack
+  j.chest.add(box(0.36, 0.42, 0.58, M, 0.02, 0.22, 0));
+  j.chest.add(rot(box(0.3, 0.12, 0.56, M2, 0.08, 0.44, 0), 0, 0, -0.35)); // sloped top
+  j.chest.add(box(0.05, 0.26, 0.38, M2, 0.2, 0.18, 0)); // chest plate
+  j.chest.add(box(0.12, 0.3, 0.4, D, -0.2, 0.22, 0)); // back pack
+  for (const z of [-0.12, 0.12]) j.chest.add(cyl(0.025, 0.025, 0.3, K, -0.27, 0.22, z, 5));
+  // recessed head with sensor slit
+  j.head.add(box(0.15, 0.1, 0.17, M2, 0.08, 0.0, 0));
+  j.head.add(box(0.02, 0.025, 0.12, K, 0.16, 0.01, 0));
+  j.neck.position.set(0.12, d.chest - 0.04, 0);
   return rig;
 }
 
@@ -376,6 +440,18 @@ export function buildR2() {
     body.add(box(0.2, 0.08, 0.1, S, 0.0, 0.04, z));
   }
   body.add(box(0.12, 0.1, 0.1, S, 0.0, 0.06, 0));
+  // detail: dome panel ring, radar eye, body vents and shoulder hubs
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + 0.3;
+    dome.add(box(0.04, 0.035, 0.05, Bl, Math.cos(a) * 0.15, 0.02, Math.sin(a) * 0.15));
+  }
+  dome.add(cyl(0.04, 0.04, 0.02, mat(0x1a1a1a), 0.0, 0.17, 0.0, 8));
+  for (let i = 0; i < 3; i++) body.add(box(0.02, 0.025, 0.12, mat(0x8890a0), 0.168, 0.38 + i * 0.04, -0.04));
+  for (const z of [-0.23, 0.23]) {
+    const hub = cyl(0.06, 0.06, 0.04, Bl, 0, 0.62, z, 8);
+    hub.rotation.x = Math.PI / 2;
+    body.add(hub);
+  }
   return {
     root,
     toggles: {},
@@ -419,8 +495,8 @@ export function buildDooku() {
   const cape = 0x553b2a;
   const capeDark = 0x46301f;
   const boot = 0x17130f;
-  const skin = mat(0xdcb7a0);
-  const hair = mat(0xd5d0c8);
+  const skin = mat(0xdcb7a0, { tex: 'none' });
+  const hair = mat(0xd5d0c8, { tex: 'cloth' });
   for (const side of ['L', 'R']) {
     j['hip' + side].add(cyl(0.08, 0.062, d.thigh, mat(tunicDark), 0, -d.thigh / 2, 0, 8));
     j['kn' + side].add(cyl(0.062, 0.054, d.shin, mat(boot), 0, -d.shin / 2, 0, 8));
@@ -479,8 +555,8 @@ export function buildObiWan() {
   const white = mat(0xe2ddd2);
   const pants = 0x5b4632;
   const boot = 0x231c16;
-  const skin = mat(0xe0b394);
-  const hair = mat(0x9c5f35);
+  const skin = mat(0xe0b394, { tex: 'none' });
+  const hair = mat(0x9c5f35, { tex: 'cloth' });
   for (const side of ['L', 'R']) {
     j['hip' + side].add(cyl(0.08, 0.064, d.thigh, mat(pants), 0, -d.thigh / 2, 0, 8));
     j['kn' + side].add(cyl(0.066, 0.056, d.shin, mat(boot), 0, -d.shin / 2, 0, 8));
@@ -516,9 +592,9 @@ export function buildAhsoka() {
   const rig = new Rig({ hip: 0.88, thigh: 0.41, shin: 0.41, hipW: 0.085, spine: 0.21, chest: 0.27, shW: 0.17, shY: 0.24, uarm: 0.26, farm: 0.24 });
   const j = rig.j;
   const d = rig.dims;
-  const skin = mat(0xd8693b);
-  const white = mat(0xf2efe8);
-  const blue = mat(0x2f4f9a);
+  const skin = mat(0xd8693b, { tex: 'none' });
+  const white = mat(0xf2efe8, { tex: 'none' });
+  const blue = mat(0x2f4f9a, { tex: 'none' });
   const top = 0x7a2e2a;
   const legs = 0x5b4a3f;
   const boot = 0x3a2a20;

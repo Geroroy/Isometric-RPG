@@ -19,8 +19,8 @@ function lumpy(geo, rng, amt) {
 }
 
 function rockMesh(rng, r, color) {
-  const geo = lumpy(new THREE.DodecahedronGeometry(r, 1), rng, 0.28);
-  const m = new THREE.Mesh(geo, mat(color));
+  const geo = lumpy(new THREE.DodecahedronGeometry(r, 2), rng, 0.22); // finer facets read as rugged rock
+  const m = new THREE.Mesh(geo, mat(color, { tex: 'rock' }));
   m.scale.set(rng.range(0.9, 1.3), rng.range(0.55, 0.9), rng.range(0.9, 1.3));
   m.position.y = r * m.scale.y * 0.6;
   m.rotation.y = rng.range(0, 6.28);
@@ -194,7 +194,7 @@ function geoPillar(rng) {
   // Geonosian rock column (for the Geonosis hangar)
   const g = new THREE.Group();
   const geo = lumpy(new THREE.CylinderGeometry(0.32, 0.5, 2.8, 8, 4), rng, 0.12);
-  const m = new THREE.Mesh(geo, mat(0xa25a34));
+  const m = new THREE.Mesh(geo, mat(0xa25a34, { tex: 'rock' }));
   m.position.y = 1.4;
   g.add(m);
   g.add(cyl(0.45, 0.32, 0.4, mat(0x7c4226), 0, 2.9, 0, 8));
@@ -354,6 +354,15 @@ function atte() {
   for (let i = 0; i < 4; i++) body.add(box(0.1, 1.0, 1.6, i % 2 ? G : D, -0.25 + i * 0.12, 0.5, 0));
   // belly plates
   body.add(box(4.9, 0.18, 1.7, G, 0.1, -0.15, 0));
+  // side detail: vent grilles, access hatches, hand rails, roof hatch
+  for (const sz of [-1, 1]) {
+    for (let i = 0; i < 4; i++) body.add(box(0.08, 0.35, 0.03, K, 0.9 + i * 0.16, 0.45, sz * 1.01));
+    body.add(box(0.7, 0.55, 0.03, G, -1.5, 0.45, sz * 0.96));
+    body.add(box(1.6, 0.04, 0.04, D, 1.4, 0.95, sz * 1.03));
+    body.add(box(1.5, 0.04, 0.04, D, -1.45, 0.85, sz * 0.98));
+  }
+  body.add(box(0.5, 0.06, 0.5, G, -1.4, 1.12, 0));
+  body.add(cyl(0.03, 0.03, 0.5, D, 2.2, 1.45, 0.6, 5)); // antenna
   // anti-personnel lasers: four around the bow, two at the stern
   for (const [x, y, z, dir] of [[2.9, 1.05, 0.85, 1], [2.9, 1.05, -0.85, 1], [2.95, 0.05, 0.8, 1], [2.95, 0.05, -0.8, 1], [-2.5, 0.95, 0.7, -1], [-2.5, 0.95, -0.7, -1]]) {
     body.add(sph(0.13, D, x, y, z, 6, 4));
@@ -442,6 +451,22 @@ function laat() {
     body.add(sph(0.18, glass, -0.75, 0.12, sz * 1.22, 6, 4));
     body.add(cylX(0.03, 0.03, 0.4, D, -0.65, 0.05, sz * 1.15, 5));
   }
+  // hull detail: door rails, vents, antenna, landing skids
+  for (const z of [-0.69, 0.69]) {
+    body.add(box(1.7, 0.04, 0.03, D, -0.3, 0.35, z * 1.01));
+    body.add(box(1.7, 0.04, 0.03, D, -0.3, -0.45, z * 1.01));
+    for (let i = 0; i < 3; i++) body.add(box(0.05, 0.2, 0.02, D, -1.65 + i * 0.1, 0.15, z * 1.02));
+  }
+  body.add(cyl(0.02, 0.02, 0.5, D, 0.9, 0.95, 0.3, 4));
+  for (const z of [-0.5, 0.5]) body.add(box(1.6, 0.06, 0.08, D, -0.4, -0.62, z));
+  // hull detail: door rails, vents, antenna, landing skids
+  for (const z of [-0.69, 0.69]) {
+    body.add(box(1.7, 0.04, 0.03, D, -0.3, 0.35, z * 1.01));
+    body.add(box(1.7, 0.04, 0.03, D, -0.3, -0.45, z * 1.01));
+    for (let i = 0; i < 3; i++) body.add(box(0.05, 0.2, 0.02, D, -1.65 + i * 0.1, 0.15, z * 1.02));
+  }
+  body.add(cyl(0.02, 0.02, 0.5, D, 0.9, 0.95, 0.3, 4));
+  for (const z of [-0.5, 0.5]) body.add(box(1.6, 0.06, 0.08, D, -0.4, -0.62, z));
   // twin mass-driver missile launchers on the spine
   for (const z of [-0.25, 0.25]) body.add(box(1.0, 0.25, 0.25, D, -0.6, 0.72, z));
   // rear: raised tail section, fin and engines
@@ -565,7 +590,7 @@ function droidFactory() {
   const rock = [0xa65b35, 0x9a5230, 0xb3683e];
   const dark = mat(0x22150f);
   const fire = glow(0xff8a3a);
-  const mound = new THREE.Mesh(lumpy(new THREE.CylinderGeometry(4.2, 5.3, 2.2, 12, 2), rng, 0.06), mat(0x8e4c2c));
+  const mound = new THREE.Mesh(lumpy(new THREE.CylinderGeometry(4.2, 5.3, 2.2, 12, 2), rng, 0.06), mat(0x8e4c2c, { tex: 'rock' }));
   mound.position.y = 1.1;
   g.add(mound);
   const spire = (x, z, r, h) => {
@@ -575,7 +600,7 @@ function droidFactory() {
     let rr = r;
     for (let i = 0; i < 4; i++) {
       const sh = h / 4;
-      const m = new THREE.Mesh(lumpy(new THREE.CylinderGeometry(rr * 0.78, rr, sh, 9, 2), rng, 0.08), mat(rng.pick(rock)));
+      const m = new THREE.Mesh(lumpy(new THREE.CylinderGeometry(rr * 0.78, rr, sh, 9, 2), rng, 0.08), mat(rng.pick(rock), { tex: 'rock' }));
       m.position.y = y + sh / 2;
       s.add(m);
       y += sh;

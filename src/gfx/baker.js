@@ -4,6 +4,7 @@
 // workflow of StarCraft / Diablo II, but happens at load time in the browser.
 import * as THREE from 'three';
 import { PX_PER_UNIT, CAM_ELEVATION } from '../core/iso.js';
+import { detail } from './models/parts.js';
 
 const PAGE = 2048;
 
@@ -50,8 +51,8 @@ export class Baker {
     this.renderer.setClearColor(0x000000, 0);
 
     this.scene = new THREE.Scene();
-    this.scene.add(new THREE.HemisphereLight(0xe6ecff, 0x40342a, 1.25));
-    const key = new THREE.DirectionalLight(0xfff1dc, 2.6);
+    this.scene.add(new THREE.HemisphereLight(0xdfe4ef, 0x3a2e24, 0.95));
+    const key = new THREE.DirectionalLight(0xffe6c8, 3.1);
     key.position.set(-1.5, 5, 4.5);
     this.scene.add(key);
     const rim = new THREE.DirectionalLight(0x8fb4ff, 0.9);
@@ -194,8 +195,9 @@ export class Baker {
         if (d[si + 3] === 0) continue;
         const di = ((y - y0 + pad) * w + (x - x0 + pad)) * 4;
         const t = (bayer[(y & 3) * 4 + (x & 3)] / 16 - 0.5) * (255 / levels);
+        const rgb = isGlowPx(d, si) ? [d[si], d[si + 1], d[si + 2]] : grade(d[si], d[si + 1], d[si + 2]);
         for (let c = 0; c < 3; c++) {
-          const v = d[si + c] + t;
+          const v = rgb[c] + t;
           o[di + c] = Math.max(0, Math.min(255, Math.round(v / (255 / levels)) * (255 / levels)));
         }
         o[di + 3] = d[si + 3] > 127 ? 255 : d[si + 3];
@@ -274,6 +276,7 @@ export class Baker {
   *bakeAnimated(spec) {
     const { model, dirs } = spec;
     const [fw, fh, ax, ay] = spec.frame;
+    detail(model.root);
     this.holder.add(model.root);
     // all directions of one animation frame render into one canvas and are
     // read back together (one GPU sync per pose instead of one per sprite)
@@ -325,6 +328,7 @@ export class Baker {
 
   /** Bake a static object from N viewing angles (variants). */
   bakeStatic(object, { angles = [0], margin = 4, outline = true, posterize } = {}) {
+    detail(object);
     this.holder.add(object);
     const frames = [];
     for (const ang of angles) {
@@ -399,4 +403,15 @@ function isGlowPx(a, i) {
   const mx = Math.max(r, g, b);
   const mn = Math.min(r, g, b);
   return mn >= 185 && mx >= 250 && mx - mn <= 80;
+}
+
+/**
+ * Fallout 1/2-style grade: slightly desaturated, warm, contrasty. Glowing
+ * parts (sabers, lights) keep their colour.
+ */
+function grade(r, g, b) {
+  const l = r * 0.3 + g * 0.59 + b * 0.11;
+  const k = 0.8;
+  const c = (v) => Math.max(0, Math.min(255, 128 + (v - 128) * 1.14));
+  return [c((l + (r - l) * k) * 1.03), c(l + (g - l) * k), c((l + (b - l) * k) * 0.95)];
 }

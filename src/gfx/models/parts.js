@@ -1,15 +1,143 @@
-// Low-poly primitive helpers. Everything is flat shaded so the baked sprites
-// get the faceted, pre-rendered look of late-90s RTS / ARPG art.
+// Primitive helpers. Flat shaded, bevelled boxes and procedural surface
+// detail (panel seams, rivets, grime, weave) give the baked sprites the dense,
+// worn, pre-rendered look of Fallout 1/2 and late-90s RTS / ARPG art.
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const cache = new Map();
 
+/**
+ * Lambert material. `tex` picks the surface detail applied at bake time:
+ * 'metal' (default: seams, rivets, scratches, grime), 'cloth', 'rock' or
+ * 'none' (skin, hair, glass). Emissive materials never get one.
+ */
 export function mat(color, opts = {}) {
   const key = `l:${color}:${JSON.stringify(opts)}`;
   if (!cache.has(key)) {
-    cache.set(key, new THREE.MeshLambertMaterial({ color, flatShading: true, ...opts }));
+    const { tex = 'metal', ...rest } = opts;
+    const m = new THREE.MeshLambertMaterial({ color, flatShading: true, ...rest });
+    m.userData.tex = rest.emissive ? 'none' : tex;
+    cache.set(key, m);
   }
   return cache.get(key);
+}
+
+// ----------------------------------------------------------------------------
+// Surface detail: small greyscale tiles that multiply the material colour.
+
+const TILE = 64;
+const PANEL = 0.55; // world units per texture tile
+const textures = {};
+
+function surfaceTexture(kind) {
+  if (textures[kind]) return textures[kind];
+  const c = document.createElement('canvas');
+  c.width = c.height = TILE;
+  const g = c.getContext('2d');
+  const img = g.createImageData(TILE, TILE);
+  const d = img.data;
+  let seed = kind.length * 977;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const blot = new Float32Array(TILE * TILE);
+  for (let k = 0; k < 6; k++) {
+    // low-frequency stains / wear patches
+    const cx = rnd() * TILE, cy = rnd() * TILE, r = 6 + rnd() * 14, a = (rnd() - 0.6) * 30;
+    for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) {
+      const dx = Math.min(Math.abs(x - cx), TILE - Math.abs(x - cx));
+      const dy = Math.min(Math.abs(y - cy), TILE - Math.abs(y - cy));
+      const f = Math.max(0, 1 - Math.hypot(dx, dy) / r);
+      blot[y * TILE + x] += a * f * f;
+    }
+  }
+  for (let y = 0; y < TILE; y++) {
+    for (let x = 0; x < TILE; x++) {
+      let v = 238 + (rnd() - 0.5) * 12 + blot[y * TILE + x];
+      if (kind === 'metal') {
+        // panel seams with a lit lip, offset half panel, rivets along seams
+        const seam = x === 0 || y === 0 || (y === TILE / 2 && x < TILE / 2) || (x === TILE / 2 && y > TILE / 2);
+        const lip = x === 1 || y === 1 || (y === TILE / 2 + 1 && x < TILE / 2);
+        if (seam) v = 168;
+        else if (lip) v = 244;
+        if ((y === 4 || x === 4) && (x + y) % 8 === 0) v = 150;
+        if ((y === 4 || x === 4) && (x + y) % 8 === 1) v = 252;
+      } else if (kind === 'cloth') {
+        v = 222 + ((x + y) & 1 ? 5 : -5) + Math.sin(x * 0.55 + Math.sin(y * 0.2) * 2) * 9 + blot[y * TILE + x] * 0.5;
+      } else if (kind === 'rock') {
+        v = 210 + (rnd() - 0.5) * 30 + blot[y * TILE + x] * 1.4;
+      } else {
+        v = 240 + (rnd() - 0.5) * 12 + blot[y * TILE + x] * 0.4;
+      }
+      const i = (y * TILE + x) * 4;
+      d[i] = d[i + 1] = d[i + 2] = Math.max(0, Math.min(255, v));
+      d[i + 3] = 255;
+    }
+  }
+  if (kind === 'metal') {
+    // scratches
+    for (let k = 0; k < 7; k++) {
+      let x = rnd() * TILE, y = rnd() * TILE;
+      const dx = rnd() - 0.5, dy = rnd() - 0.5;
+      for (let s = 0; s < 6; s++, x += dx * 2, y += dy * 2) {
+        const i = ((Math.floor(y + TILE) % TILE) * TILE + (Math.floor(x + TILE) % TILE)) * 4;
+        d[i] = d[i + 1] = d[i + 2] = 246;
+      }
+    }
+  }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  t.colorSpace = THREE.NoColorSpace;
+  return (textures[kind] = t);
+}
+
+/** Box-projected UVs in world-sized units so detail density is uniform. */
+function projectUVs(geo, sx, sy, sz) {
+  const pos = geo.attributes.position;
+  const nor = geo.attributes.normal;
+  const uv = new Float32Array(pos.count * 2);
+  for (let i = 0; i < pos.count; i++) {
+    const nx = Math.abs(nor.getX(i)), ny = Math.abs(nor.getY(i)), nz = Math.abs(nor.getZ(i));
+    const x = pos.getX(i) * sx, y = pos.getY(i) * sy, z = pos.getZ(i) * sz;
+    let u, v;
+    if (nx >= ny && nx >= nz) [u, v] = [z, y];
+    else if (ny >= nz) [u, v] = [x, z];
+    else [u, v] = [x, y];
+    uv[i * 2] = u / PANEL + 0.5;
+    uv[i * 2 + 1] = v / PANEL + 0.5;
+  }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+}
+
+/**
+ * Give every mesh under `root` its surface detail (called once by the baker).
+ * Small parts get only fine grain so seams don't smear them.
+ */
+export function detail(root) {
+  root.traverse((m) => {
+    if (!m.isMesh || m.userData.detailed) return;
+    m.userData.detailed = true;
+    const base = m.material;
+    let kind = base.userData && base.userData.tex;
+    if (!kind || kind === 'none' || !base.isMeshLambertMaterial) return;
+    const geo = m.geometry;
+    if (!geo.boundingBox) geo.computeBoundingBox();
+    const b = geo.boundingBox;
+    const size = Math.max((b.max.x - b.min.x) * m.scale.x, (b.max.y - b.min.y) * m.scale.y, (b.max.z - b.min.z) * m.scale.z);
+    if (size < 0.4 && kind !== 'cloth') kind = 'fine';
+    if (!geo.attributes.normal) geo.computeVertexNormals();
+    projectUVs(geo, m.scale.x, m.scale.y, m.scale.z);
+    const variants = (base.userData.variants ||= {});
+    if (!variants[kind]) {
+      const v = base.clone();
+      v.map = surfaceTexture(kind);
+      v.userData = { tex: 'none' };
+      variants[kind] = v;
+    }
+    m.material = variants[kind];
+  });
 }
 
 /** Unlit material for glowing parts (saber blades, lights, eyes). */
@@ -24,8 +152,11 @@ function place(mesh, x = 0, y = 0, z = 0) {
   return mesh;
 }
 
+/** Box; larger ones get chamfered edges that catch the light. */
 export function box(w, h, d, material, x, y, z) {
-  return place(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material), x, y, z);
+  const m = Math.min(w, h, d);
+  const geo = m >= 0.12 ? new RoundedBoxGeometry(w, h, d, 1, m * 0.16) : new THREE.BoxGeometry(w, h, d);
+  return place(new THREE.Mesh(geo, material), x, y, z);
 }
 
 /** Vertical cylinder (along Y). */
@@ -86,5 +217,5 @@ export function sector(rTop, rBot, h, t0, t1, material, x = 0, y = 0, z = 0, seg
 
 /** Two-sided variant of `mat` for thin cloth. */
 export function cloth(color) {
-  return mat(color, { side: THREE.DoubleSide });
+  return mat(color, { side: THREE.DoubleSide, tex: 'cloth' });
 }
