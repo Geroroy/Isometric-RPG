@@ -652,7 +652,9 @@ export class HUD {
   }
 
   banner(name) {
-    this.bannerEl.innerHTML = `<div class="bn-kicker">${this.game.duel ? 'GEONOSIS' : 'CHRISTOPHSIS'}</div><div class="bn-name">${name}</div>`;
+    const g = this.game;
+    const kicker = g.duel ? (/무스타파/.test(name) ? 'MUSTAFAR' : 'GEONOSIS') : g.place === 'hub' ? 'CORUSCANT' : 'CHRISTOPHSIS';
+    this.bannerEl.innerHTML = `<div class="bn-kicker">${kicker}</div><div class="bn-name">${name}</div>`;
     this.bannerEl.classList.remove('show');
     void this.bannerEl.offsetWidth;
     this.bannerEl.classList.add('show');
