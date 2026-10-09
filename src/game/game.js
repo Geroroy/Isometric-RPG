@@ -495,7 +495,32 @@ export class Game {
       }
     }
 
-    this.audio.setHum(p.dead || p.saberOut ? 0 : p.moving ? 1 : 0.6);
+    this.updateSaberAuto(dt);
+    this.audio.setHum(p.dead || p.saberOut || !p.saberLit ? 0 : p.moving ? 1 : 0.6);
+  }
+
+  /**
+   * The blade ignites when a fight starts (a droid targets Anakin, or he is
+   * hit or attacks) and goes out when it ends (6 s without combat). Only the
+   * moments a fight starts or ends act, so the X key's choice otherwise stands.
+   */
+  updateSaberAuto(dt) {
+    const p = this.player;
+    this.combatCheckT = (this.combatCheckT || 0) - dt;
+    if (this.combatCheckT > 0 || p.dead || this.duel) return;
+    this.combatCheckT = 0.25;
+    const engaged = this.activeUnits.some((u) => !u.dead && u.team === 'cis' && u.target === p && dist(u.x, u.y, p.x, p.y) < 12);
+    if (engaged) this.lastCombatT = this.time;
+    const was = this.inCombat;
+    this.inCombat = engaged || this.time - (this.lastCombatT ?? -99) < 6;
+    if (this.inCombat && !was) {
+      this.retractPending = false;
+      p.setSaber(true);
+    } else if (!this.inCombat && was) this.retractPending = true;
+    if (this.retractPending && !p.busy) {
+      this.retractPending = false;
+      p.setSaber(false);
+    }
   }
 
   updateBolts(dt) {

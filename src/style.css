@@ -2174,7 +2174,8 @@ body.duel .dark-meter,
 body.duel .ab-menu [data-open='tree'],
 body.duel .ab-menu [data-open='char'],
 body.duel .ab-menu [data-open='map'],
-body.duel .t-menu .t-mbtn:not(:last-child) {
+body.duel .t-menu .t-mbtn:nth-child(-n + 3),
+body.duel .t-menu .t-mbtn:nth-child(5) {
   display: none;
 }
 .boss-bar {

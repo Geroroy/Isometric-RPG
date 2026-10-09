@@ -274,7 +274,26 @@ function bake(base, set) {
   };
 }
 
+// Blade off: relaxed walk and stance, hilt on the belt.
+const OFF = {
+  fk: 1,
+  off: 1,
+  hide: ['saber'],
+  shR: [-0.12, 0, 0.12],
+  elR: [0, 0, 0.3],
+  shL: [0.12, 0, 0.1],
+  elL: [0, 0, 0.35],
+  head: [0, -0.1, 0],
+};
+const idleOff = (t) => pose(OFF, { pelvisY: sin(t * TAU) * 0.006, chest: [0, 0.05, sin(t * TAU) * 0.015], hipL: [0.06, 0, 0.08], hipR: [-0.06, 0, -0.05], knL: [0, 0, -0.08] });
+const runOff = (t) => {
+  const s = sin(t * TAU);
+  return pose(OFF, legCycle(t, 0.75, 1.15), { spine: [0, 0, -0.16], chest: [0, -s * 0.12, -0.04], head: [0, s * 0.08, 0.1], shR: [-0.15, 0, -s * 0.75], shL: [0.15, 0, s * 0.75], elR: [0, 0, 0.8], elL: [0, 0, 0.8] });
+};
+
 export const ANAKIN_ANIMS = bake(GUARD, {
+  idleOff: { frames: 8, fps: 6, loop: true, pose: idleOff },
+  runOff: { frames: 12, fps: 18, loop: true, pose: runOff },
   run: { frames: 12, fps: 18, loop: true, pose: (t) => runPose(t, [0.02, 0.98, 0.3, 2.5, -0.5]) },
   attack1: { frames: 9, fps: 20, loop: false, hit: 5, pose: swing(GUARD, SLASH_A, SLASH_B, SLASH_C) },
   attack2: { frames: 9, fps: 20, loop: false, hit: 5, pose: swing(GUARD, BACK_A, BACK_B, BACK_C) },

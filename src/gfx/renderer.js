@@ -338,7 +338,7 @@ export class Renderer {
       spot(L.x, L.y, L.z, L.r, L.g, L.b, L.rad * fl, 0.55);
     }
     for (const u of g.activeUnits) {
-      if (!u.saberColor || u.dead || u.saberOut) continue;
+      if (!u.saberColor || u.dead || u.saberOut || u.saberLit === false) continue;
       const [r, gg, b] = u.saberColor;
       spot(u.x, u.y, 1.2 + u.z, Math.min(255, r * 1.4), Math.min(255, gg * 1.25), b, 70, 0.55 + (u.deflectFlash > 0 ? 0.4 : 0));
     }
@@ -365,7 +365,7 @@ export class Renderer {
         for (const t of tr) t.t += dt;
         while (tr.length && tr[0].t > 0.09) tr.shift();
       }
-      if (!u.saberColor || u.dead || u.saberOut) continue;
+      if (!u.saberColor || u.dead || u.saberOut || u.saberLit === false) continue;
       const f = u.frame();
       const s = worldToScreen(u.x, u.y, u.z);
       const swinging = u.anim.startsWith('attack') || u.anim === 'leap' || u.anim === 'parry';

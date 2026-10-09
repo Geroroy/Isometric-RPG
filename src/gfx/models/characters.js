@@ -196,6 +196,12 @@ export function buildAnakin({ dual = false } = {}) {
     j.head.add(scl(sph(0.04, hd, -0.05, 0.02, 0.06 * zs, 6, 4), 1, 1.3, 1)); // tips
   }
 
+  // the hilt clipped to the belt while the blade is off
+  const belt = group(cylX(0.022, 0.022, 0.26, mat(0xc9ccd2), -0.13, 0, 0, 6), cylX(0.024, 0.024, 0.1, mat(0x1b1b1f), -0.05, 0, 0, 6));
+  belt.rotation.z = -1.35;
+  belt.position.set(0.02, 0.0, 0.19);
+  j.pelvis.add(belt);
+  rig.beltHilt = belt;
   const saber = buildSaber(1.0);
   if (dual) {
     const saber2 = buildSaber(1.0, true);

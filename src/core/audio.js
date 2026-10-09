@@ -349,6 +349,20 @@ export class Audio {
         this.humGain.gain.setTargetAtTime((this.humLevel ?? 0.6) * 0.07, t + 0.4, 0.2);
         break;
       }
+      case 'retract': {
+        // the hum winds down into a short hiss
+        this.noiseBurst(0.3, 0.08, 'bandpass', 2200, 700, 0, 2);
+        const t = this.ctx.currentTime;
+        this.humOsc.forEach((o) => {
+          o.frequency.cancelScheduledValues(t);
+          o.frequency.setValueAtTime(this.humBase * o.mul, t);
+          o.frequency.exponentialRampToValueAtTime(this.humBase * o.mul * 0.4, t + 0.35);
+        });
+        this.humGain.gain.cancelScheduledValues(t);
+        this.humGain.gain.setValueAtTime(0.16, t);
+        this.humGain.gain.linearRampToValueAtTime(0, t + 0.35);
+        break;
+      }
       case 'choke':
         this.osc('sine', 80, 55, 1.2, 0.2);
         this.noiseBurst(1.0, 0.12, 'bandpass', 300, 200, 0, 8);

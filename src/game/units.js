@@ -469,6 +469,7 @@ export class Player extends Unit {
     this.action = null;
     this.saberOut = false;
     this.saberColor = [60, 130, 255];
+    this.saberLit = true;
     this.credits = 0;
     this.upgrades = { lens: 0, plate: 0 };
     this.kills = 0;
@@ -477,6 +478,21 @@ export class Player extends Unit {
 
   skillLevel(id) {
     return this.skills[id] || 0;
+  }
+
+  /** Ignite or switch off the blade (X key, or automatically around fights). */
+  setSaber(on) {
+    if (on === this.saberLit || this.dead || this.saberOut) return;
+    if (!on && this.game.duel) return; // the duel is all blade
+    this.saberLit = on;
+    this.game.audio.play(on ? 'ignite' : 'retract');
+    this.setAnim(this.anim.replace(/Off$/, ''), this.animSpeed);
+  }
+
+  /** Blade-off variants of the walk/stand cycles, when the sprite has them. */
+  setAnim(name, speed = 1, restart = false) {
+    if (!this.saberLit && (name === 'idle' || name === 'run') && this.sprites.anims[name + 'Off']) name += 'Off';
+    super.setAnim(name, speed, restart);
   }
 
   learn(id) {
@@ -622,6 +638,7 @@ export class Player extends Unit {
 
   basicAttack(target, inPlace = false) {
     if (!this.canAct() || this.saberOut) return;
+    this.setSaber(true);
     if (this.action && !this.moving) {
       if (this.action.type === 'melee' && this.action.phase === 'swing') this.queued = { type: 'attack', target };
       return;
@@ -669,6 +686,7 @@ export class Player extends Unit {
       return false;
     }
     if (s.target === 'enemy' && !target) return false;
+    this.setSaber(true);
     this.action = null;
     const ok = s.cast(this.game, this, l, tx, ty, target);
     if (ok) {
@@ -875,7 +893,7 @@ export class Player extends Unit {
   }
 
   canDeflect() {
-    if (this.dead || this.saberOut || this.stun > 0 || this.choke) return false;
+    if (this.dead || this.saberOut || !this.saberLit || this.stun > 0 || this.choke) return false;
     return true;
   }
 }

@@ -90,7 +90,8 @@ export class Rig {
    * model's right, pitch > 0 raises the blade) and the arms reach for it with
    * two-bone IK, so the hands always sit on the grip. `two` > 0.5 puts the
    * left hand on the pommel; `sab2` drives a second saber in the left hand.
-   * `fk` > 0.5 falls back to plain joint angles (saber hidden).
+   * `fk` > 0.5 falls back to plain joint angles (saber hidden); `off` > 0.5
+   * shows the hilt on the belt instead (blade switched off).
    */
   enableSaberIK(saber, saber2 = null) {
     this.ik = { saber, saber2 };
@@ -176,6 +177,7 @@ function solveSaberIK(rig, p) {
   const { saber, saber2 } = rig.ik;
   const j = rig.j;
   const root = rig.root;
+  if (rig.beltHilt) rig.beltHilt.visible = (p.off || 0) > 0.5;
   const fk = (p.fk || 0) > 0.5 || !p.sab;
   saber.visible = !fk && !(p.hide && p.hide.includes('saber'));
   if (saber2) saber2.visible = !fk && !!p.sab2 && !(p.hide && p.hide.includes('saber2'));
