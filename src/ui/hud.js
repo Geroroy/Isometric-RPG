@@ -69,8 +69,7 @@ export class HUD {
       </div>
       <div class="c-orb plate"><div class="orb force"><div class="orb-fill"></div><div class="orb-glass"></div></div><div class="orb-label" id="fpText"></div></div>
       <div class="c-portrait plate">
-        <div class="portrait-frame"><canvas id="portrait" width="168" height="160"></canvas></div>
-        <div class="portrait-name">ANAKIN</div>
+        <div class="portrait-frame"><canvas id="portrait" width="192" height="160"></canvas><div class="portrait-name">ANAKIN</div></div>
       </div>
       <div class="c-cmd plate"><div class="cmdcard" id="cmdcard"></div></div>`;
     this.minimap = $('#minimap');
@@ -423,7 +422,8 @@ export class HUD {
     $('.orb.hp .orb-fill').style.height = hpK * 100 + '%';
     $('.orb.force .orb-fill').style.height = fpK * 100 + '%';
 
-    // portrait
+    // portrait: green hangar backdrop around the droid factory / battlefields
+    this.portrait.setScene(/드로이드 공장|격전지/.test(g.region) ? 'hangar' : 'corridor');
     this.portrait.update(dt, p.darkness, p.dead);
     this.portrait.draw(this.pctx, this.pcanvas.width, this.pcanvas.height);
 

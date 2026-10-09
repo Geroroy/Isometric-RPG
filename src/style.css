@@ -324,7 +324,7 @@ body.targeting #world {
 }
 
 .c-portrait {
-  width: 190px;
+  width: 214px;
   flex: none;
   padding: 7px 9px;
   display: flex;
@@ -333,8 +333,9 @@ body.targeting #world {
   gap: 3px;
 }
 .portrait-frame {
-  width: 172px;
-  height: 142px;
+  position: relative;
+  width: 198px;
+  height: 166px;
   padding: 0;
   background: #000;
   border: 3px solid #090a0b;
@@ -342,13 +343,17 @@ body.targeting #world {
   overflow: hidden;
 }
 #portrait {
-  width: 166px;
-  height: 136px;
+  width: 192px;
+  height: 160px;
   display: block;
   cursor: pointer;
   object-fit: cover;
 }
 .portrait-name {
+  position: absolute;
+  left: 6px;
+  bottom: 3px;
+  pointer-events: none;
   font-size: 10px;
   letter-spacing: 3px;
   color: #7dff9a;

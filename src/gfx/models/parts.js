@@ -77,16 +77,3 @@ export function marker(name, x = 0, y = 0, z = 0) {
   o.position.set(x, y, z);
   return o;
 }
-
-/** A small canvas texture (for emblems on the portrait model etc). */
-export function canvasTexture(w, h, draw) {
-  const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
-  draw(c.getContext('2d'), w, h);
-  const t = new THREE.CanvasTexture(c);
-  t.magFilter = THREE.NearestFilter;
-  t.minFilter = THREE.NearestFilter;
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}

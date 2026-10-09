@@ -261,14 +261,4 @@ export class Baker {
     this.holder.remove(object);
     return frames;
   }
-
-  /** Render a scene/camera pair directly (used by the live portrait). */
-  renderTo(scene, camera, w, h) {
-    if (this.size[0] !== w || this.size[1] !== h) {
-      this.renderer.setSize(w, h, false);
-      this.size = [w, h];
-    }
-    this.renderer.render(scene, camera);
-    return this.renderer.domElement;
-  }
 }

@@ -26,7 +26,7 @@ async function boot() {
   const canvas = document.getElementById('world');
   const overlay = document.getElementById('overlay');
   const renderer = new Renderer(game, assets, canvas, overlay);
-  const portrait = new Portrait(assets.baker);
+  const portrait = new Portrait();
   const hud = new HUD(game, renderer, portrait, audio);
   const input = new Input(game, renderer, hud, audio, canvas);
 
