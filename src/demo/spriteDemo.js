@@ -1,7 +1,7 @@
 // Review page for the Blender sprite pipeline (not part of the game yet):
 // Anakin from his sprite sheet + JSON, and three-layer building sprites
 // (body, neon, floor reflection) on a wet street.
-//   ?anakin=<dir>/anakin_256.json&building=<dir>/underBlock_1_512.json
+//   ?anakin=<dir>/anakin_128.json&building=<dir>/underBlock_1_512.json
 // WASD / arrows or click to walk. Shows: neon drawn with 'lighter' and
 // flickering per the JSON, characters and buildings sorted by their ground
 // y, a building turning see-through when Anakin walks behind it, and the
@@ -78,7 +78,7 @@ cv.addEventListener('pointerdown', (e) => {
 
 async function main() {
   const [anakin, bmeta] = await Promise.all([
-    loadCharacter(Q.get('anakin') || '/tools/sprites/out/review/anakin_256.json'),
+    loadCharacter(Q.get('anakin') || '/sprites/anakin_128.json'),
     loadBuilding(Q.get('building') || '/tools/sprites/out/buildings/underBlock_1_512.json'),
   ]);
   // a short street: buildings along both sides

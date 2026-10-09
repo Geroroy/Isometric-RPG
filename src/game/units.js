@@ -59,8 +59,7 @@ export class Unit {
   }
 
   get sprites() {
-    const a = this.game.assets;
-    return (a.hdChars && a.spritesHD[this.sprite]) || a.sprites[this.sprite]; // remaster set, if baked
+    return this.game.assets.sprites[this.sprite];
   }
 
   setAnim(name, speed = 1, restart = false) {

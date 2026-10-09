@@ -5,8 +5,8 @@ import * as M from './models/characters.js';
 import * as A from './models/anims.js';
 import { PROPS, buildPropVariants, buildLaat, buildFighter } from './models/props.js';
 import { RNG } from '../core/math.js';
-import { setDetail } from './models/parts.js';
 import { loadBundle, saveBundle } from './assetCache.js';
+import { SHEETS } from './sheet.js';
 
 const SABER = ['saberBase', 'saberTip'];
 const SABERS = ['saberBase', 'saberTip', 'saber2Base', 'saber2Tip'];
@@ -104,7 +104,8 @@ export async function bakeAssets(onProgress) {
     return cached;
   }
   const baker = new Baker();
-  const specs = Object.fromEntries(Object.entries(CHARACTERS).map(([k, f]) => [k, f()]));
+  // characters with a Blender sprite sheet (SHEETS) are loaded, not baked
+  const specs = Object.fromEntries(Object.entries(CHARACTERS).filter(([k]) => !SHEETS[k]).map(([k, f]) => [k, f()]));
   const propNames = Object.keys(PROPS);
   let total = frameCost(specs) + 8;
   for (const n of propNames) total += PROPS[n].variants * (PROPS[n].angles || [0]).length;
@@ -132,78 +133,6 @@ export async function bakeAssets(onProgress) {
   saveBundle('core', assets); // in the background
   baker.dispose();
   return assets;
-}
-
-/**
- * Remaster graphics: world props baked at 2× density with soft edges. Star
- * Wars vehicles, wrecks and bodies keep the frames they have in both modes.
- */
-const HD_SKIP = new Set(['atte', 'laat', 'skiff', 'aatWreck', 'droidDebris', 'sepBody']);
-
-export async function bakeHDProps(onProgress) {
-  const cached = await loadBundle('props-hd');
-  if (cached) return cached.props;
-  const baker = new Baker();
-  const names = Object.keys(PROPS).filter((n) => !HD_SKIP.has(n));
-  let total = 0;
-  for (const n of names) total += PROPS[n].variants * (PROPS[n].angles || [0]).length;
-  const tick = progress(onProgress, total);
-  const props = {};
-  for (const name of names) {
-    const def = PROPS[name];
-    const frames = [];
-    for (const m of buildPropVariants(name)) {
-      for (const f of baker.bakeStatic(m, { angles: def.angles || [0], hd: true })) {
-        frames.push(f);
-        await tick(`리마스터 오브젝트: ${name}`);
-      }
-    }
-    props[name] = frames;
-  }
-  onProgress(1, '완료');
-  saveBundle('props-hd', { props });
-  baker.dispose();
-  return props;
-}
-
-/**
- * Remaster graphics: the characters re-rendered from their models at 2×
- * pixel density with remaster detail (smoother curves and shading, soft
- * edges, full colour) — the same frames, timing and markers as the original
- * set, so either can be drawn. Like StarCraft: Remastered, nothing about a
- * unit changes but how finely it is drawn. `extra` = the Movie Duel's
- * cast and/or an equipped appearance, each cached on its own.
- */
-export async function bakeHDSprites(onProgress, { duel = null, skin = null } = {}) {
-  const groups = [['chars-hd', CHARACTERS]];
-  if (duel) groups.push([(duel === 'geonosis' ? 'duel' : 'duel-' + duel) + '-hd', DUELS[duel]]);
-  if (skin && SKINS[skin]) groups.push([skin + '-hd', { [skin]: SKINS[skin] }]);
-  const out = {};
-  const todo = [];
-  for (const [key, set] of groups) {
-    const cached = await loadBundle(key);
-    if (cached) Object.assign(out, cached.sprites);
-    else todo.push([key, set]);
-  }
-  if (!todo.length) return out;
-  const baker = new Baker();
-  // models are built with remaster detail (only while building them)
-  setDetail(true);
-  let built;
-  try {
-    built = todo.map(([key, set]) => [key, Object.fromEntries(Object.entries(set).map(([k, f]) => [k, { ...f(), hd: true }]))]);
-  } finally {
-    setDetail(false);
-  }
-  const tick = progress(onProgress, built.reduce((a, [, specs]) => a + frameCost(specs), 0));
-  for (const [key, specs] of built) {
-    const sprites = await bakeCharacters(baker, specs, (label, w) => tick('리마스터 ' + label, w));
-    saveBundle(key, { sprites });
-    Object.assign(out, sprites);
-  }
-  onProgress(1, '완료');
-  baker.dispose();
-  return out;
 }
 
 /** Sprites for one Movie Duel, baked on demand. */

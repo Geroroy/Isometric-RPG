@@ -1,8 +1,8 @@
 // Entry point: bake sprites, build the world, then run the game loop.
 import './style.css';
 import { applySkin } from './ui/skin.js';
-import { bakeAssets, bakeDuelAssets, bakeSkin, bakeHDProps, bakeHDSprites } from './gfx/assets.js';
-import { isHD, setGfxMode, onGfxMode, GFX_LABEL } from './core/gfx.js';
+import { bakeAssets, bakeDuelAssets, bakeSkin } from './gfx/assets.js';
+import { loadSheets } from './gfx/sheet.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
@@ -59,16 +59,13 @@ async function boot() {
     label.textContent = text;
   };
   const assets = await bakeAssets(onProgress);
-  assets.propsSD = assets.props;
-  // remaster frames over the original set (franchise vehicles keep theirs)
-  if (isHD()) assets.propsHD = { ...assets.propsSD, ...(await bakeHDProps(onProgress)) };
+  // characters rendered in Blender: sprite sheet + frame JSON (after the bake
+  // has been cached — the cache stores baked canvases only)
+  Object.assign(assets.sprites, await loadSheets(onProgress));
   if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, DUEL)).sprites);
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
   if (look && !assets.sprites[look.sprite]) assets.sprites[look.sprite] = await bakeSkin(look.sprite, (k) => onProgress(k, '외형 준비 중…'));
-  // remaster characters (the Movie Duel's cast and the equipped look too)
-  const hdOpts = { duel: DUEL, skin: look && look.sprite };
-  if (isHD()) assets.spritesHD = await bakeHDSprites(onProgress, hdOpts);
   label.textContent = MODE === 'duel' ? DUEL_TITLES[DUEL][3] : '코러산트 · 크리스토프시스 생성 중…';
   await new Promise((r) => setTimeout(r, 20));
 
@@ -106,33 +103,6 @@ async function boot() {
   const fullscreen = new Fullscreen();
   input.onFullscreen = () => fullscreen.toggle();
   const zoom = new ZoomControl(renderer, touch);
-  // Original / Remaster graphics (F5 or Settings), switched in place
-  let gfxBusy = false;
-  onGfxMode(async (m) => {
-    if (m === 'remaster' && (!assets.propsHD || !assets.spritesHD)) {
-      if (gfxBusy) return;
-      gfxBusy = true;
-      hud.log('리마스터 그래픽 준비 중… (처음 한 번만)', 'sys');
-      let shown = 0;
-      const report = (base, part) => (k) => {
-        const all = base + k * part;
-        if (all - shown >= 0.25 && all < 1) hud.log(`리마스터 그래픽 준비 중… ${Math.round(all * 100)}%`, 'sys');
-        if (all - shown >= 0.25) shown = all;
-      };
-      if (!assets.propsHD) assets.propsHD = { ...assets.propsSD, ...(await bakeHDProps(report(0, 0.3))) };
-      if (!assets.spritesHD) assets.spritesHD = await bakeHDSprites(report(0.3, 0.7), hdOpts);
-      gfxBusy = false;
-      if (!isHD()) return; // switched back meanwhile
-    }
-    renderer.applyMode();
-    measure();
-    hud.log(`그래픽: ${GFX_LABEL[m]}`, 'sys');
-  });
-  window.addEventListener('keydown', (e) => {
-    if (e.key !== 'F5') return;
-    e.preventDefault(); // F5 switches graphics like StarCraft: Remastered, never reloads
-    setGfxMode(isHD() ? 'original' : 'remaster');
-  });
   input.onZoom = (dir) => (dir === 0 ? zoom.reset() : zoom.step(dir));
   touch.onEnable = () => zoom.restore();
 

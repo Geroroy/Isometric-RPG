@@ -8,9 +8,9 @@ Render a .glb character into isometric sprite sheets for the game.
   --dirs 8             facing directions (game convention: direction i faces
                        i·360/dirs degrees, turning like the game's units)
   --render 512         render resolution (square, transparent PNG)
-  --sizes 128,256      output frame sizes; each is a downscale of the render
-                       (one sheet + JSON per size: 128 for Original graphics,
-                       256 for Remaster)
+  --sizes 128          output frame sizes; each is a downscale of the render
+                       (one sheet + JSON per size; the game draws 128, where
+                       one sheet pixel is one game pixel)
   --window 128         game pixels the frame covers (1 game px = 1 px at 128)
   --anchor 64,96       where the model's feet are inside the frame (game px)
   --anims a,b          only these animations (default: every one in the .glb)
@@ -87,7 +87,7 @@ GLB, OUT = pos[0], pos[1]
 NAME = opt.get('name', os.path.splitext(os.path.basename(GLB))[0])
 DIRS = int(opt.get('dirs', 8))
 RES = int(opt.get('render', 512))
-SIZES = [int(x) for x in opt.get('sizes', '128,256').split(',')]
+SIZES = [int(x) for x in opt.get('sizes', '128').split(',')]
 WINDOW = float(opt.get('window', 128))
 AX, AY = [float(x) for x in opt.get('anchor', '64,96').split(',')]
 ONLY = opt.get('anims', '').split(',') if opt.get('anims') else None
