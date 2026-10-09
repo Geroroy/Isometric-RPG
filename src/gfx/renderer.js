@@ -516,7 +516,7 @@ export class Renderer {
       const x = (s.x - cam.x) * S;
       const y = (s.y - cam.y - (u.sprite === 'r2' ? 30 : 56)) * S;
       o.textAlign = 'center';
-      o.font = '600 12px Pretendard Variable, Pretendard, sans-serif';
+      o.font = '12px Galmuri11, sans-serif';
       o.fillStyle = 'rgba(0,0,0,0.6)';
       o.fillText(u.name, x + 1, y + 1);
       o.fillStyle = '#e8eef4';
@@ -525,12 +525,12 @@ export class Renderer {
       const giver = u.npcId;
       const mark = q.readyFrom(giver) ? '?' : q.offerFrom(giver) ? '!' : '';
       if (mark) {
-        o.font = '700 20px Rajdhani, sans-serif';
+        o.font = '700 20px "Stardos Stencil", sans-serif';
         o.fillStyle = '#e9c47a';
         o.fillText(mark, x, y - 16);
       }
       if (d < 2.6 && !g.talkingTo) {
-        o.font = '600 11px Pretendard Variable, Pretendard, sans-serif';
+        o.font = '11px Galmuri11, sans-serif';
         o.fillStyle = 'rgba(233,196,122,0.95)';
         o.fillText(this.touchMode ? '대화 버튼으로 말 걸기' : '[E] 대화', x, y + 16);
       }

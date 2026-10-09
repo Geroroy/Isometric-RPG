@@ -1,9 +1,6 @@
 // Entry point: bake sprites, build the world, then run the game loop.
-import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
-import '@fontsource/rajdhani/latin-500.css';
-import '@fontsource/rajdhani/latin-600.css';
-import '@fontsource/rajdhani/latin-700.css';
 import './style.css';
+import { applySkin } from './ui/skin.js';
 import { bakeAssets, bakeDuelAssets } from './gfx/assets.js';
 import { DuelHUD } from './ui/duelHud.js';
 import { Game } from './game/game.js';
@@ -19,6 +16,7 @@ import { PortraitPhoto } from './ui/portraitPhoto.js';
 import { DialogueUI } from './ui/dialogue.js';
 import { startDialogue } from './game/dialogue.js';
 
+applySkin();
 const loading = document.getElementById('loading');
 const bar = document.querySelector('#loading .bar div');
 const label = document.querySelector('#loading .label');
@@ -31,25 +29,15 @@ const DUEL_HELP = `
   <div class="help-kicker">MOVIE DUEL · EPISODE II</div>
   <h1 class="help-title">지오노시스의 결투</h1>
   <div class="help-sub">두쿠 백작의 비밀 격납고 · 아나킨 vs 두쿠</div>
-  <p class="help-intro">오비완이 쓰러졌다. 탈출하려는 <b>두쿠 백작</b>을 막아설 수 있는 건 이제 아나킨뿐이다. 마카시의 달인을 상대로, 영화와는 다른 결말을 써 보십시오.</p>
-  <div class="help-grid desktop-only">
-    <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>이동 · <kbd>좌클릭</kbd>공격</div>
-    <div><kbd>우클릭</kbd>누르고 있는 동안 막기</div>
-    <div><kbd>1</kbd>~<kbd>6</kbd>스킬 (포스 푸시 · 투척 등)</div>
-    <div><kbd>칼날 겨루기</kbd>좌클릭 / Space 연타</div>
-  </div>
-  <div class="help-grid touch-only">
-    <div><kbd>막기</kbd>누르고 있는 동안 막기</div>
-    <div><kbd>공격</kbd>두쿠 공격 · 칼날 겨루기 때 연타</div>
-    <div><kbd>스킬</kbd>탭하면 두쿠에게 사용</div>
-  </div>
-  <p class="help-tip">공격이 닿기 직전에 막으면 <b>완벽한 흘리기</b>: 두쿠가 비틀거립니다. 막을 때마다 평정이 줄고, 평정이 바닥나면 자세가 무너집니다. 두쿠도 마찬가지입니다.</p>
-  <div class="help-actions">
-    <button id="startBtn" type="button">결투 시작</button>
-    <a id="modeLink" class="mode-link" href="#campaign"><span>CAMPAIGN</span>← 크리스토프시스 캠페인으로</a>
-  </div>`;
+  <nav class="title-menu">
+    <button id="startBtn" class="tm-btn" type="button"><i></i><span>결투 시작</span></button>
+    <a id="modeLink" class="tm-btn" href="#campaign"><i></i><span>캠페인으로</span></a>
+    <button id="controlsBtn" class="tm-btn" type="button"><i></i><span>조작법</span></button>
+  </nav>
+  <p class="help-intro">오비완이 쓰러졌다. 탈출하려는 <b>두쿠 백작</b>을 막아설 수 있는 건 이제 아나킨뿐이다. 우클릭(폰: 막기)으로 막고, 공격이 닿기 직전에 막으면 완벽한 흘리기. 영화와는 다른 결말을 써 보십시오.</p>`;
 
 async function boot() {
+  document.querySelector('.title-art').style.backgroundImage = 'url(portrait/anakin.jpg)';
   if (MODE === 'duel') {
     document.querySelector('#help .help-box').innerHTML = DUEL_HELP;
     document.body.classList.add('duel');
@@ -72,7 +60,7 @@ async function boot() {
   const photo = new PortraitPhoto(portrait);
   await photo.init();
   const hud = new HUD(game, renderer, portrait, audio, photo);
-  const dialogue = new DialogueUI(game, audio, startDialogue);
+  const dialogue = new DialogueUI(game, audio, startDialogue, renderer);
   const input = new Input(game, renderer, hud, audio, canvas);
   input.dialogue = dialogue;
   const duelHud = game.duel ? new DuelHUD(game) : null;
@@ -85,7 +73,9 @@ async function boot() {
 
   const measure = () => {
     renderer.resize();
-    renderer.consoleH = 0; // the HUD floats over the world
+    // keep Anakin centred in the part of the screen above the console
+    renderer.consoleH = document.querySelector('.console').offsetHeight;
+    document.documentElement.style.setProperty('--console-h', renderer.consoleH + 'px');
   };
   window.addEventListener('resize', measure);
   // Controls follow the device actually used: a tablet with a Bluetooth mouse
@@ -109,9 +99,17 @@ async function boot() {
 
   const help = document.getElementById('help');
   const startBtn = document.getElementById('startBtn');
+  const controls = document.getElementById('controls');
+  document.getElementById('controlsBtn').onclick = () => controls.classList.remove('hidden');
+  controls.querySelector('.ct-close').onclick = () => controls.classList.add('hidden');
+  let started = false;
   startBtn.onclick = (e) => {
     e.stopPropagation();
     help.classList.add('hidden');
+    controls.classList.add('hidden');
+    if (started) return; // reopened with F1 / HELP: just resume
+    started = true;
+    startBtn.querySelector('span').textContent = '계속';
     audio.unlock();
     // phones and tablets go fullscreen right away; on PC use the button or F
     if (isTouchDevice()) fullscreen.enter();

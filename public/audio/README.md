@@ -1,8 +1,24 @@
-# 사운드 뱅크 (선택 사항)
+# 사운드 뱅크
 
-이 폴더에 `index.json`을 만들면 게임이 시작될 때 읽어서,
+게임은 시작될 때 이 폴더의 `index.json`을 읽어서,
 **효과음은 합성음 대신**, **대사는 자막과 함께 음성으로** 재생합니다.
-`index.json`이 없으면 모든 소리는 절차적으로 합성됩니다(기본값).
+`index.json`이 없으면 모든 소리는 WebAudio로 절차적으로 합성됩니다.
+
+## 기본 광선검 효과음 (`sfx/saber_*.wav`)
+
+`tools/saber_sfx.py`가 numpy · scipy로 **직접 합성한 오리지널 소리**입니다(영화 음원·샘플 사용 없음).
+
+| 파일 | 역할 (`index.json` 키) |
+| --- | --- |
+| `saber_hum.wav` | 험 루프 (`hum`) — 톱니파 3개를 살짝 디튠, 이음새 없이 반복 |
+| `saber_buzz.wav` | 험 위에 겹치는 얇은 고주파 전기 노이즈 루프 (`buzz`) |
+| `saber_swing_1~3.wav` | 스윙 3종 (`swing`) — 음높이·볼륨이 함께 오르내리는 도플러 |
+| `saber_clash.wav` | 충돌 (`clash`) — 노이즈 버스트 + 금속성 공명 + 빠른 감쇠 |
+| `saber_on.wav` / `saber_off.wav` | 켜기 / 끄기 (`ignite` / `retract`) — 음높이 램프 |
+
+다시 만들기: `pip install numpy scipy` 후 `python3 tools/saber_sfx.py`.
+기본 주파수(`BASE_FREQ`) · 디튠(`DETUNE_CENTS`) · 버즈 양(`BUZZ_AMOUNT`) 등은 스크립트 맨 위 변수에 있습니다.
+스크립트는 `index.json`의 광선검 키만 갱신하고 다른 항목(대사 등)은 그대로 둡니다.
 
 > 저작권이 있는 영화 음원·배우 음성은 저장소에 포함하지 마세요.
 > 직접 녹음했거나 사용 권한(라이선스)이 있는 파일만 넣으세요.
@@ -28,13 +44,13 @@
 ```
 
 - `sfx` 항목 하나에 파일 하나 또는 여러 개(무작위 선택).
-  - `hum`은 반복 재생되는 광선검 험 루프입니다. 지정하면 합성 험 대신 쓰이고, 휘두를 때 재생 속도(도플러)가 변합니다.
+  - `hum`은 반복 재생되는 광선검 험 루프입니다. 지정하면 합성 험 대신 쓰입니다. `buzz`는 그 위에 함께 반복되는 층입니다.
 - `voice` 항목은 파일 경로 또는 `{ "file", "text" }`. `text`가 있으면 그 문장이 자막으로 표시되고,
   없으면 게임의 기본 대사 중 하나가 표시됩니다. 음성이 나오는 동안 효과음은 자동으로 작아집니다.
 
 ## 효과음 이름
 
-`hum` `swing` `hit` `clash`(볼트 반사) `ignite` `slam` `push` `repulse` `leap` `speed` `choke`
+`hum` `buzz` `swing` `hit` `clash`(볼트 반사) `ignite` `retract` `slam` `push` `repulse` `leap` `speed` `choke`
 `zap` `blasterCis` `blasterRep` `explode` `droidDie` `r2` `summon` `gunship` `pickup` `levelup` `deny` `click`
 
 ## 대사 키 (언제 나오는지)

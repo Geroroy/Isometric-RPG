@@ -1,0 +1,14 @@
+{
+  "sfx": {
+    "hum": "sfx/saber_hum.wav",
+    "buzz": "sfx/saber_buzz.wav",
+    "swing": [
+      "sfx/saber_swing_1.wav",
+      "sfx/saber_swing_2.wav",
+      "sfx/saber_swing_3.wav"
+    ],
+    "clash": "sfx/saber_clash.wav",
+    "ignite": "sfx/saber_on.wav",
+    "retract": "sfx/saber_off.wav"
+  }
+}

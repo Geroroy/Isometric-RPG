@@ -20,40 +20,71 @@
     <div id="hud"></div>
 
     <div id="help" data-pause="1">
+      <div class="title-art" aria-hidden="true"></div>
       <div class="help-box">
         <div class="help-kicker">STAR WARS · THE CLONE WARS</div>
         <h1 class="help-title">선택받은 자</h1>
         <div class="help-sub">크리스토프시스 외곽 · 아나킨 스카이워커</div>
+        <nav class="title-menu">
+          <button id="startBtn" class="tm-btn" type="button"><i></i><span>캠페인 시작</span></button>
+          <a id="modeLink" class="tm-btn" href="#duel"><i></i><span>무비 듀얼</span></a>
+          <button id="controlsBtn" class="tm-btn" type="button"><i></i><span>조작법</span></button>
+        </nav>
         <p class="help-intro">
-          분리주의 연합의 드로이드 군대가 크리스토프시스 외곽을 점령했습니다. 제다이 기사이자 501군단의 장군
-          <b>아나킨 스카이워커</b>가 되어 공화국 전진 기지에서 출발해 드로이드 거점을 소탕하고, 북쪽의 드로이드 공장을 파괴하십시오.
+          분리주의 연합의 드로이드 군대가 크리스토프시스 외곽을 점령했습니다. 501군단의 장군 <b>아나킨 스카이워커</b>가 되어
+          공화국 전진 기지에서 출발해 드로이드 거점을 소탕하고, 북서쪽의 드로이드 공장을 파괴하십시오.
         </p>
-        <div class="help-grid desktop-only">
-          <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>이동 · <kbd>좌클릭</kbd>이동 · 공격</div>
-          <div><kbd>Shift</kbd>+<kbd>좌클릭</kbd>제자리 공격</div>
-          <div><kbd>우클릭</kbd>RMB 표시 스킬 사용</div>
-          <div><kbd>1</kbd>~<kbd>6</kbd>커서 위치에 스킬 사용</div>
-          <div><kbd>Q</kbd>박타 주사기 · <kbd>X</kbd>광선검 켜기/끄기</div>
-          <div><kbd>K</kbd>스킬 · <kbd>C</kbd>정보 · <kbd>Tab</kbd>지도</div>
-          <div><kbd>O</kbd>설정 (초상화 사진) · <kbd>M</kbd>소리</div>
-          <div><kbd>F</kbd>전체 화면 · 휠 / <kbd>-</kbd><kbd>=</kbd>확대·축소</div>
-        </div>
-        <div class="help-grid touch-only">
-          <div><kbd>왼쪽 드래그</kbd>가상 스틱으로 이동</div>
-          <div><kbd>공격</kbd>누르고 있으면 가까운 적 공격</div>
-          <div><kbd>스킬 탭</kbd>가까운 적에게 자동 조준</div>
-          <div><kbd>스킬 드래그</kbd>조준한 뒤 손을 떼면 사용</div>
-          <div><kbd>두 손가락</kbd>화면 확대 · 축소</div>
-          <div><kbd>⚙ 설정</kbd>초상화 사진 · 소리 · <kbd>광선검</kbd>켜기/끄기</div>
-        </div>
-        <p class="help-tip">
-          블래스터 볼트는 광선검으로 튕겨낼 수 있습니다. 어둠의 기술은 강력하지만, 쓸수록 어둠에 가까워집니다.
-        </p>
-        <div class="help-actions">
-          <button id="startBtn" type="button">광선검 점화</button>
-          <a id="modeLink" class="mode-link" href="#duel"><span>MOVIE DUEL</span>무비 듀얼 · 지오노시스의 결투 →</a>
-        </div>
       </div>
+      <section id="controls" class="controls hidden" aria-label="조작법">
+        <div class="ct-head"><span>조작법</span><button type="button" class="ct-close"><i></i>닫기</button></div>
+        <div class="ct-body">
+          <div class="ct-col desktop-only">
+            <h3>키보드 · 마우스</h3>
+            <dl>
+              <dt>W A S D</dt><dd>이동 (화면 기준 위·왼쪽·아래·오른쪽)</dd>
+              <dt>좌클릭</dt><dd>그 위치로 이동 · 적을 클릭하면 공격 (누르고 있으면 계속)</dd>
+              <dt>Shift + 좌클릭</dt><dd>제자리에서 공격</dd>
+              <dt>우클릭</dt><dd>RMB 표시가 붙은 스킬 사용 (결투에서는 막기)</dd>
+              <dt>1 ~ 6</dt><dd>커서 위치에 스킬 사용</dd>
+              <dt>X</dt><dd>광선검 켜기 / 끄기 (전투가 시작되면 자동 점화)</dd>
+              <dt>Q</dt><dd>박타 주사기 (생명력 회복)</dd>
+              <dt>E · NPC 클릭</dt><dd>대화 (숫자 키로 선택지, Esc 종료)</dd>
+              <dt>K / T</dt><dd>스킬 트리 · 스킬 위에서 1~6 = 단축키, 우클릭 = RMB 지정</dd>
+              <dt>C</dt><dd>캐릭터 정보 · 능력치</dd>
+              <dt>P</dt><dd>스타 카드 (퍽)</dd>
+              <dt>Tab</dt><dd>지도</dd>
+              <dt>O</dt><dd>설정 (초상화 사진 · 소리)</dd>
+              <dt>휠 · - = 0</dt><dd>화면 확대 · 축소 · 기본</dd>
+              <dt>F</dt><dd>전체 화면</dd>
+              <dt>M</dt><dd>소리 끄기 / 켜기</dd>
+              <dt>F1</dt><dd>이 화면</dd>
+              <dt>Esc · Space</dt><dd>열린 창 닫기</dd>
+            </dl>
+          </div>
+          <div class="ct-col touch-only">
+            <h3>터치</h3>
+            <dl>
+              <dt>왼쪽 드래그</dt><dd>가상 스틱으로 이동 · 짧게 탭하면 그 위치로 이동</dd>
+              <dt>공격 버튼</dt><dd>누르고 있으면 가까운 적을 계속 공격 · NPC 옆에서는 대화</dd>
+              <dt>스킬 버튼 탭</dt><dd>가까운 적에게 자동 조준</dd>
+              <dt>스킬 버튼 드래그</dt><dd>바닥에 조준선 → 손을 떼면 그 방향으로 사용</dd>
+              <dt>박타 버튼</dt><dd>생명력 회복 (결투에서는 막기)</dd>
+              <dt>두 손가락</dt><dd>화면 확대 · 축소</dd>
+              <dt>오른쪽 위 버튼</dt><dd>스킬 · 정보 · 카드 · 지도 · 설정 · 광선검</dd>
+            </dl>
+          </div>
+          <div class="ct-col">
+            <h3>전투 요령</h3>
+            <dl>
+              <dt>볼트 반사</dt><dd>광선검이 켜져 있으면 블래스터 볼트를 튕겨냅니다</dd>
+              <dt>어둠 게이지</dt><dd>어둠의 기술은 강하지만 쓸수록 어둠에 가까워집니다</dd>
+              <dt>결투: 막기</dt><dd>공격이 닿기 직전에 막으면 완벽한 흘리기</dd>
+              <dt>결투: 평정</dt><dd>막을 때마다 줄고 바닥나면 자세가 무너집니다</dd>
+              <dt>칼날 겨루기</dt><dd>좌클릭 / Space / 공격 버튼 연타</dd>
+            </dl>
+          </div>
+        </div>
+      </section>
     </div>
 
     <div id="rotate">

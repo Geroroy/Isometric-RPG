@@ -256,7 +256,8 @@ export class Input {
         break;
       case 'f1':
         e.preventDefault();
-        document.getElementById('help').classList.toggle('hidden');
+        if (document.getElementById('help').classList.contains('hidden')) hud.showHelp();
+        else document.getElementById('help').classList.add('hidden');
         break;
       case 'f9':
         e.preventDefault();

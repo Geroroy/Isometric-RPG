@@ -8,7 +8,9 @@
 // Sound bank: if `audio/index.json` exists next to the page, its files are
 // loaded and used instead of the synth for matching sound names, and voice
 // clips are played (with subtitles) for matching dialogue keys. See
-// public/audio/README.md for the format. Nothing is shipped by default.
+// public/audio/README.md for the format. The shipped bank holds only the
+// lightsaber sounds synthesized by tools/saber_sfx.py: a hum loop plus a buzz
+// layer (both looped under the hum gain), three Doppler swings, clash, on, off.
 
 const BANK_URL = 'audio/index.json';
 
@@ -86,18 +88,23 @@ export class Audio {
     this.humNoise = n;
   }
 
-  /** Swap the synthesized hum for a looping sample from the bank. */
-  useHumSample(buf) {
+  /**
+   * Loop a bank sample under the hum gain. `hum` replaces the synthesized hum
+   * (and is the layer the swings bend); `buzz` is an extra layer on top.
+   */
+  useHumSample(buf, name = 'hum') {
     const c = this.ctx;
-    for (const o of this.humOsc) o.stop();
-    this.humNoise.stop();
-    this.humOsc = [];
+    if (name === 'hum' && this.humOsc.length) {
+      for (const o of this.humOsc) o.stop();
+      this.humNoise.stop();
+      this.humOsc = [];
+    }
     const s = c.createBufferSource();
     s.buffer = buf;
     s.loop = true;
     s.connect(this.humGain);
     s.start();
-    this.humSample = s;
+    if (name === 'hum') this.humSample = s;
   }
 
   setHum(level) {
@@ -162,7 +169,7 @@ export class Audio {
     for (const [name, files] of Object.entries(manifest.sfx || {})) {
       const bufs = (await Promise.all([].concat(files).map(load))).filter(Boolean);
       if (!bufs.length) continue;
-      if (name === 'hum') this.useHumSample(bufs[0]);
+      if (name === 'hum' || name === 'buzz') this.useHumSample(bufs[0], name);
       else this.bank.sfx[name] = bufs;
     }
     for (const [key, clips] of Object.entries(manifest.voice || {})) {

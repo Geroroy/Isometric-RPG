@@ -1,17 +1,13 @@
-// HUD in the style of Star Wars Battlefront II / Jedi: Survivor: minimal,
-// translucent and floating.
-//   bottom-left   portrait + health (with damage chip), segmented Force bar,
-//                 bacta stims, light/dark meter, XP line
-//   bottom-right  ability cards (1-6, cooldown sweeps, RMB marker), buffs, menu
-//   top-left      circular radar centred on Anakin
-//   top-right     objective tracker
-//   top-centre    target info · bottom-centre cinematic subtitles
-// Full-screen overlays: skill tree (node graph with a detail pane), info
-// (attributes), map, settings (portrait photo, sound).
+// HUD in the style of the Fallout 1/2 interface: a rusted metal console
+// along the bottom with CRT monitors (portrait, green message log, radar),
+// red push buttons with stencilled labels, Force lamps over the skill
+// sockets, digital HP / Force counters. Full-screen panels (skills, info,
+// map, settings, Star Cards) use the same metal frame and green screens.
 import { SKILLS, TREES, TIER_LEVELS, canLearn, isActive } from '../game/skills.js';
 import { iconURL } from './icons.js';
 import { dist } from '../core/math.js';
 import { StarCardsUI } from './starCards.js';
+import { QUESTS } from '../game/quests.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (tag, cls, html) => {
@@ -28,7 +24,7 @@ const ATTR_INFO = {
   for: ['포스 친화', 'FOR', '포스 +2, 포스 피해 +1.2% / 포인트'],
 };
 const KIND = { active: '액티브', passive: '패시브', buff: '버프', summon: '소환' };
-const FORCE_SEGMENTS = 8;
+const FORCE_SEGMENTS = 10;
 
 export class HUD {
   constructor(game, renderer, portrait, audio, photo) {
@@ -62,7 +58,11 @@ export class HUD {
     game.on('say', (text, key, dur, speaker) => this.say(text, dur, speaker));
     game.on('region', (name) => this.banner(name));
     game.on('hurt', () => portrait.hurt());
-    game.on('levelup', () => this.refreshPanels());
+    game.on('levelup', (lv) => {
+      this.refreshPanels();
+      this.log(`레벨 업! 레벨 ${lv}`, 'gold');
+    });
+    game.on('quest', (id, state) => this.log(`임무 ${state === 'accept' ? '수락' : state === 'ready' ? '목표 달성' : '완료'}: ${QUESTS[id].title}`, 'gold'));
     game.on('death', () => !game.duel && setTimeout(() => this.showDeath(), 1600));
   }
 
@@ -70,25 +70,40 @@ export class HUD {
 
   buildHud() {
     const r = this.root;
-    // bottom-left status
-    const st = el('div', 'hud-status');
-    st.innerHTML = `
-      <div class="ps-portrait"><canvas id="portrait" width="240" height="240"></canvas><div class="ps-eq"><i></i><i></i><i></i><i></i><i></i></div></div>
-      <div class="ps-info">
-        <div class="ps-name"><span class="ps-en">ANAKIN SKYWALKER</span><span class="ps-lvl" id="lvlText">LV 1</span></div>
+    // Fallout-style console along the bottom edge
+    const cn = el('div', 'console');
+    cn.innerHTML = `
+      <div class="cn-portrait monitor"><canvas id="portrait" width="240" height="240"></canvas><div class="ps-eq"><i></i><i></i><i></i><i></i><i></i></div></div>
+      <div class="cn-log monitor"><div class="log" id="msgLog"></div></div>
+      <div class="cn-btns">
+        <button class="fo-btn stims" id="stims" type="button" title="박타 주사기 (Q)"></button>
+        <button class="fo-btn" id="saberBtn" type="button" title="광선검 켜기/끄기 (X)"><i></i><span>SABER</span></button>
+      </div>
+      <div class="cn-center">
+        <div class="fp-lights" id="forceSeg">${'<i></i>'.repeat(FORCE_SEGMENTS)}</div>
+        <div class="abilities"><div class="ab-row"></div></div>
+        <div class="xp-line" title="경험치"><i id="xpFill"></i></div>
+      </div>
+      <div class="cn-stats">
+        <div class="counter hp"><label>HP</label><b id="hpText">0</b></div>
         <div class="hp-bar"><div class="hp-chip"></div><div class="hp-fill"></div></div>
-        <div class="fp-bar" id="forceSeg">${'<i><b></b></i>'.repeat(FORCE_SEGMENTS)}</div>
-        <div class="ps-row">
-          <button class="stims" id="stims" type="button" title="박타 주사기 (Q)"></button>
-          <div class="ps-nums"><span id="hpText"></span><span id="fpText"></span></div>
-        </div>
-        <div class="dark-meter" title="빛과 어둠"><span>빛</span><div class="dm"><i id="dmMark"></i></div><span>어둠</span></div>
-        <div class="xp-line"><i id="xpFill"></i></div>
-      </div>`;
-    r.appendChild(st);
+        <div class="counter fp"><label>FP</label><b id="fpText">0</b></div>
+        <div class="cn-sub"><span id="lvlText">LV 1</span><div class="dark-meter" title="빛과 어둠"><span>빛</span><div class="dm"><i id="dmMark"></i></div><span>어둠</span></div></div>
+      </div>
+      <div class="cn-menu ab-menu">
+        <button type="button" data-open="map"><i></i>MAP<small>Tab</small></button>
+        <button type="button" data-open="char"><i></i>CHA<small>C</small><b class="dot"></b></button>
+        <button type="button" data-open="tree"><i></i>SKL<small>K</small><b class="dot"></b></button>
+        <button type="button" data-open="cards"><i></i>CRD<small>P</small></button>
+        <button type="button" data-open="settings"><i></i>OPT<small>O</small></button>
+        <button type="button" data-open="help"><i></i>HELP<small>F1</small></button>
+      </div>
+      <div class="cn-radar monitor"><canvas id="radar" width="360" height="360"></canvas><div class="radar-region" id="regionText"></div></div>`;
+    r.appendChild(cn);
     this.pcanvas = $('#portrait');
     this.pctx = this.pcanvas.getContext('2d');
-    this.eq = st.querySelector('.ps-eq');
+    this.eq = cn.querySelector('.ps-eq');
+    this.logEl = $('#msgLog');
     this.pcanvas.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       this.pokes = (this.pokes || 0) + 1;
@@ -96,25 +111,18 @@ export class HUD {
       this.pokeReset = setTimeout(() => (this.pokes = 0), 4000);
       this.game.say(this.pokes > 4 ? 'pokeAnnoyed' : 'poke');
     });
-    const stims = $('#stims');
-    stims.addEventListener('mousedown', (e) => e.stopPropagation());
-    stims.addEventListener('click', (e) => {
+    cn.addEventListener('mousedown', (e) => e.stopPropagation());
+    $('#stims').addEventListener('click', (e) => {
       e.stopPropagation();
       this.game.useBacta();
     });
+    $('#saberBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const p = this.game.player;
+      p.setSaber(!p.saberLit);
+    });
 
-    // bottom-right abilities
-    const ab = el('div', 'abilities');
-    ab.innerHTML = `<div class="buffs" id="buffs"></div><div class="ab-row"></div>
-      <div class="ab-menu">
-        <button type="button" data-open="tree"><kbd>K</kbd>스킬<i class="dot"></i></button>
-        <button type="button" data-open="char"><kbd>C</kbd>정보<i class="dot"></i></button>
-        <button type="button" data-open="cards"><kbd>P</kbd>카드</button>
-        <button type="button" data-open="map"><kbd>Tab</kbd>지도</button>
-        <button type="button" data-open="settings"><kbd>O</kbd>설정</button>
-      </div>`;
-    r.appendChild(ab);
-    const row = ab.querySelector('.ab-row');
+    const row = cn.querySelector('.ab-row');
     this.slots = [];
     for (let i = 0; i < 6; i++) {
       const b = el('div', 'ab');
@@ -134,20 +142,16 @@ export class HUD {
       row.appendChild(b);
       this.slots.push(b);
     }
-    ab.querySelectorAll('.ab-menu button').forEach((b) => {
-      b.addEventListener('mousedown', (e) => e.stopPropagation());
+    cn.querySelectorAll('.ab-menu button').forEach((b) => {
       b.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (b.dataset.open === 'help') return this.showHelp();
         this.toggle(b.dataset.open);
       });
     });
-    this.menuTree = ab.querySelector('[data-open="tree"]');
-    this.menuChar = ab.querySelector('[data-open="char"]');
+    this.menuTree = cn.querySelector('[data-open="tree"]');
+    this.menuChar = cn.querySelector('[data-open="char"]');
 
-    // top-left radar
-    const rd = el('div', 'radar');
-    rd.innerHTML = `<canvas id="radar" width="360" height="360"></canvas><div class="radar-region" id="regionText"></div>`;
-    r.appendChild(rd);
     this.radar = $('#radar');
     this.rctx = this.radar.getContext('2d');
     this.radar.addEventListener('mousedown', (e) => {
@@ -159,14 +163,28 @@ export class HUD {
       this.renderer.addClickMark(w.x, w.y);
     });
 
-    // top-right objectives, top-centre target, bottom-centre subtitles
+    // buffs above the console, objectives top-right, target plate top-centre
+    const bf = el('div', 'buffs');
+    bf.id = 'buffs';
+    r.appendChild(bf);
     this.objectives = el('div', 'objectives');
     r.appendChild(this.objectives);
     this.target = el('div', 'target-info hidden', '<div class="ti-name"></div><div class="ti-bar"><i></i></div><div class="ti-sub"></div>');
     r.appendChild(this.target);
-    this.subEl = el('div', 'subtitle');
-    this.subEl.id = 'subtitle';
-    r.appendChild(this.subEl);
+  }
+
+  /** Add a line to the console's message monitor (Fallout's message window). */
+  log(text, cls = '') {
+    const line = el('div', 'log-line ' + cls);
+    line.textContent = text;
+    this.logEl.appendChild(line);
+    while (this.logEl.children.length > 40) this.logEl.firstChild.remove();
+    this.logEl.scrollTop = this.logEl.scrollHeight;
+  }
+
+  showHelp() {
+    document.getElementById('help').classList.remove('hidden');
+    document.getElementById('controls')?.classList.remove('hidden');
   }
 
   activateSlot(i) {
@@ -583,10 +601,11 @@ export class HUD {
 
   // ================================================================== messages
 
-  /** Show a subtitle; `dur` is the voice clip length when one is playing. */
+  /** A spoken line goes to the message monitor; `dur` = voice clip length. */
   say(text, dur = null, speaker = '아나킨') {
     const talk = dur ?? Math.min(3, 0.6 + text.length * 0.045);
-    this.sub = { text, t: 0, talk, speaker, hold: Math.max(2.4 + text.length * 0.05, talk + 1) };
+    this.sub = { t: 0, talk, speaker };
+    this.log(`${speaker}: ${text}`, speaker === '아나킨' ? 'say' : 'say other');
     if (speaker === '아나킨') this.portrait.talk(talk);
   }
 
@@ -595,6 +614,7 @@ export class HUD {
     this.bannerEl.classList.remove('show');
     void this.bannerEl.offsetWidth;
     this.bannerEl.classList.add('show');
+    this.log(`· ${name}`, 'sys');
   }
 
   showDeath() {
@@ -613,9 +633,10 @@ export class HUD {
     $('.hp-fill').style.width = hpK * 100 + '%';
     $('.hp-chip').style.width = this.hpChip * 100 + '%';
     $('.hp-bar').classList.toggle('low', hpK < 0.25);
+    // Force as a row of lamps (Fallout's action point lights)
     const fpK = Math.max(0, p.force / p.maxForce) * FORCE_SEGMENTS;
     const segs = $('#forceSeg').children;
-    for (let i = 0; i < FORCE_SEGMENTS; i++) segs[i].firstChild.style.width = Math.max(0, Math.min(1, fpK - i)) * 100 + '%';
+    for (let i = 0; i < FORCE_SEGMENTS; i++) segs[i].className = fpK >= i + 1 ? 'on' : fpK > i ? 'half' : '';
 
     // portrait + voice equaliser
     this.portrait.setScene(/드로이드 공장|격전지/.test(g.region) ? 'hangar' : 'corridor');
@@ -626,18 +647,7 @@ export class HUD {
     this.eq.classList.toggle('on', !!talking);
     if (talking) for (const b of this.eq.children) b.style.height = 20 + Math.random() * 80 + '%';
 
-    // subtitles (typewriter)
-    if (this.sub) {
-      const s = this.sub;
-      s.t += dt;
-      const shown = Math.min(s.text.length, Math.floor(s.t * 40));
-      this.subEl.innerHTML = `<span class="sub-speaker">${s.speaker}</span><span class="sub-text">${s.text.slice(0, shown)}</span>`;
-      this.subEl.classList.add('show');
-      if (s.t > s.hold) {
-        this.sub = null;
-        this.subEl.classList.remove('show');
-      }
-    }
+    if (this.sub && (this.sub.t += dt) > this.sub.talk) this.sub = null;
 
     // ability cards
     for (let i = 0; i < 6; i++) {
@@ -683,7 +693,8 @@ export class HUD {
       $('#lvlText').textContent = `LV ${p.level}`;
       $('#xpFill').style.width = (p.xp / p.xpNext) * 100 + '%';
       $('#dmMark').style.left = p.darkness + '%';
-      $('#stims').innerHTML = `<kbd>Q</kbd>${[0, 1, 2, 3, 4].map((i) => `<i class="${i < p.bacta ? 'on' : ''}"></i>`).join('')}`;
+      $('#stims').innerHTML = `<i></i><span>BACTA</span><em>${[0, 1, 2, 3, 4].map((k) => `<b class="${k < p.bacta ? 'on' : ''}"></b>`).join('')}</em>`;
+      $('#saberBtn').classList.toggle('on', p.saberLit && !p.saberOut);
       $('#regionText').textContent = g.region;
       const buffs = [];
       for (const [k, b] of Object.entries(p.buffs)) buffs.push(`<span class="buff"><img src="${iconURL(k)}" alt="">${Math.ceil(b.t)}s</span>`);
@@ -908,7 +919,7 @@ export class HUD {
     const ox = W / 2 - 0 * k;
     const oy = (H - w.h * k) / 2;
     this.drawMap(ctx, k, ox, oy, { markerScale: 1.2 });
-    ctx.font = '600 12px "Pretendard Variable", Pretendard, sans-serif';
+    ctx.font = '12px Galmuri11, sans-serif';
     ctx.textAlign = 'center';
     for (const poi of w.pois) {
       if (!w.explored[Math.floor(poi.y) * w.w + Math.floor(poi.x)]) continue;
