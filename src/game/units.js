@@ -698,7 +698,8 @@ export class Player extends Unit {
     if (this.action && this.action.type === 'melee' && this.action.phase === 'swing') return false;
     if ((this.cooldowns[id] || 0) > 0) return false;
     const cost = s.cost ? s.cost(l) : 0;
-    if (this.force < cost) {
+    const free = this.game.cheats.force; // debug: infinite Force
+    if (this.force < cost && !free) {
       this.game.say('noForce');
       return false;
     }
@@ -707,9 +708,9 @@ export class Player extends Unit {
     this.action = null;
     const ok = s.cast(this.game, this, l, tx, ty, target);
     if (ok) {
-      this.force -= cost;
+      if (!free) this.force -= cost;
       const cd = (s.cd ? s.cd(l) : 0) * (1 - this.cards.value('focus') / 100);
-      if (cd) this.cooldowns[id] = cd;
+      if (cd && !this.game.cheats.cd) this.cooldowns[id] = cd;
     }
     return ok;
   }

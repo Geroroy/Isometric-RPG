@@ -13,6 +13,14 @@
 // layer (both looped under the hum gain), three Doppler swings, clash, on, off.
 
 const BANK_URL = 'audio/index.json';
+const VOL_KEY = 'cw.volume';
+export const VOLUMES = [
+  ['master', '전체'],
+  ['music', '음악'],
+  ['sfx', '효과음'],
+  ['hum', '광선검 험'],
+  ['voice', '음성'],
+];
 
 export class Audio {
   constructor() {
@@ -23,6 +31,35 @@ export class Audio {
     this.bank = { sfx: {}, voice: {} };
     this.lastPick = {};
     this.voiceSrc = null;
+    // player volume settings (0..1 each), applied on top of the mix levels
+    this.vol = { master: 1, music: 1, sfx: 1, hum: 1, voice: 1 };
+    try {
+      Object.assign(this.vol, JSON.parse(localStorage.getItem(VOL_KEY) || '{}'));
+    } catch {
+      /* storage blocked: defaults */
+    }
+    this.base = { master: 0.6, sfx: 1, voice: 1.1, music: 0.5 }; // mix levels before the player's settings
+  }
+
+  setVolume(key, v) {
+    this.vol[key] = Math.max(0, Math.min(1, v));
+    try {
+      localStorage.setItem(VOL_KEY, JSON.stringify(this.vol));
+    } catch {
+      /* storage blocked */
+    }
+    this.applyVolume();
+  }
+
+  applyVolume() {
+    if (!this.ctx) return;
+    const v = this.vol;
+    const b = this.base;
+    this.master.gain.value = this.muted ? 0 : b.master * v.master;
+    this.sfxBus.gain.value = b.sfx * v.sfx;
+    this.voiceBus.gain.value = b.voice * v.voice;
+    if (this.humVol) this.humVol.gain.value = v.hum;
+    if (this.musicBus) this.musicBus.gain.value = b.music * v.music;
   }
 
   unlock() {
@@ -47,6 +84,7 @@ export class Audio {
     const d = this.noise.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     this.startHum();
+    this.applyVolume();
     this.bankReady = this.loadBank();
   }
 
@@ -61,7 +99,8 @@ export class Audio {
     this.humFilter.type = 'lowpass';
     this.humFilter.frequency.value = 480;
     this.humFilter.Q.value = 5;
-    this.humFilter.connect(this.humGain).connect(this.sfxBus);
+    this.humVol = c.createGain(); // the player's hum volume, after all modulation
+    this.humFilter.connect(this.humGain).connect(this.humVol).connect(this.sfxBus);
     this.humOsc = [];
     for (const [type, mul, vol] of [['sawtooth', 1, 0.6], ['sawtooth', 1.017, 0.5], ['sine', 2, 0.35]]) {
       const o = c.createOscillator();
@@ -230,8 +269,10 @@ export class Audio {
       }
     };
     if (manifest.volume) {
-      if (manifest.volume.sfx != null) this.sfxBus.gain.value = manifest.volume.sfx;
-      if (manifest.volume.voice != null) this.voiceBus.gain.value = manifest.volume.voice;
+      if (manifest.volume.sfx != null) this.base.sfx = manifest.volume.sfx;
+      if (manifest.volume.voice != null) this.base.voice = manifest.volume.voice;
+      if (manifest.volume.music != null) this.base.music = manifest.volume.music;
+      this.applyVolume();
     }
     for (const [name, files] of Object.entries(manifest.sfx || {})) {
       const bufs = (await Promise.all([].concat(files).map(load))).filter(Boolean);
@@ -291,7 +332,7 @@ export class Audio {
 
   toggleMute() {
     this.muted = !this.muted;
-    if (this.master) this.master.gain.value = this.muted ? 0 : 0.6;
+    this.applyVolume();
     return this.muted;
   }
 

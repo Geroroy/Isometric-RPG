@@ -207,6 +207,10 @@ export class Input {
       this.cast(p.hotbar[i]);
       return;
     }
+    if (e.code === 'Backquote') {
+      hud.toggle('debug'); // debug panel (by key position: works on Korean layouts too)
+      return;
+    }
     switch (k) {
       case 'q':
         g.useBacta();

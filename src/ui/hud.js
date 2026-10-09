@@ -10,6 +10,7 @@ import { dist } from '../core/math.js';
 import { StarCardsUI } from './starCards.js';
 import { AppearanceUI } from './appearance.js';
 import { QUESTS } from '../game/quests.js';
+import { VOLUMES } from '../core/audio.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (tag, cls, html) => {
@@ -42,7 +43,7 @@ export class HUD {
     this.sub = null;
     this.hpChip = 1;
     this.tab = 0;
-    this.open = { tree: false, char: false, map: false, settings: false, cards: false, look: false, juke: false };
+    this.open = { tree: false, char: false, map: false, settings: false, cards: false, look: false, juke: false, debug: false };
     this.mapImg = renderer.terrain.minimapImage();
     this.fogCanvas = document.createElement('canvas');
     this.fogCanvas.width = game.world.w;
@@ -216,7 +217,7 @@ export class HUD {
     o.id = id;
     o.innerHTML = `<div class="ov-head"><div class="ov-title">${title}</div>${extraHead}<button class="ov-close" type="button" aria-label="닫기"><kbd>Esc</kbd>닫기</button></div><div class="ov-body"></div>`;
     o.addEventListener('mousedown', (e) => e.stopPropagation());
-    const key = { skilltree: 'tree', charsheet: 'char', mapview: 'map', settings: 'settings', starcards: 'cards', appearance: 'look', jukebox: 'juke' }[id];
+    const key = { skilltree: 'tree', charsheet: 'char', mapview: 'map', settings: 'settings', starcards: 'cards', appearance: 'look', jukebox: 'juke', debugpanel: 'debug' }[id];
     o.querySelector('.ov-close').addEventListener('click', () => this.toggle(key, false));
     this.root.appendChild(o);
     return o;
@@ -403,8 +404,14 @@ export class HUD {
       </section>
       <section class="set-card">
         <h4>소리</h4>
-        <label class="set-toggle"><input type="checkbox" id="soundOn"> 효과음과 음성 켜기 <kbd>M</kbd></label>
-        <p class="set-note">대사 음성·효과음 파일을 직접 넣는 방법은 저장소의 <code>public/audio/README.md</code>를 참고하세요.</p>
+        <label class="set-toggle"><input type="checkbox" id="soundOn"> 소리 켜기 <kbd>M</kbd></label>
+        <div class="set-vol">${VOLUMES.map(([k, l]) => `<label><span>${l}</span><input type="range" min="0" max="100" step="1" data-vol="${k}"><b></b></label>`).join('')}</div>
+        <p class="set-note">이 기기에 저장됩니다. 대사 음성·효과음 파일을 직접 넣는 방법은 <code>public/audio/README.md</code>를 참고하세요.</p>
+      </section>
+      <section class="set-card">
+        <h4>개발자</h4>
+        <p class="set-note">스킬 · 음악 해금, 무적, 순간 이동 같은 테스트용 기능입니다. 언제든 <kbd>\`</kbd> 키로도 열 수 있습니다.</p>
+        <button type="button" class="btn-ghost" id="openDebug">디버그 모드</button>
       </section>
       <section class="set-card">
         <h4>화면</h4>
@@ -438,6 +445,16 @@ export class HUD {
     $('#soundOn').addEventListener('change', (e) => {
       if (e.target.checked === this.audio.muted) this.audio.toggleMute();
     });
+    o.querySelectorAll('[data-vol]').forEach((r) => {
+      const show = () => (r.nextElementSibling.textContent = r.value);
+      r.value = Math.round(this.audio.vol[r.dataset.vol] * 100);
+      show();
+      r.addEventListener('input', () => {
+        this.audio.setVolume(r.dataset.vol, r.value / 100);
+        show();
+      });
+    });
+    $('#openDebug').addEventListener('click', () => this.toggle('debug', true));
     $('#openHelp').addEventListener('click', () => {
       this.toggle('settings', false);
       document.getElementById('help').classList.remove('hidden');
@@ -477,7 +494,7 @@ export class HUD {
     const v = force ?? !this.open[which];
     if (v) for (const k of Object.keys(this.open)) if (k !== which && this.open[k]) this.toggle(k, false);
     this.open[which] = v;
-    const ids = { tree: '#skilltree', char: '#charsheet', map: '#mapview', settings: '#settings', cards: '#starcards', look: '#appearance', juke: '#jukebox' };
+    const ids = { tree: '#skilltree', char: '#charsheet', map: '#mapview', settings: '#settings', cards: '#starcards', look: '#appearance', juke: '#jukebox', debug: '#debugpanel' };
     $(ids[which]).classList.toggle('hidden', !v);
     document.body.classList.toggle('overlay-open', Object.values(this.open).some(Boolean));
     if (v) {
@@ -488,6 +505,7 @@ export class HUD {
       if (which === 'cards') this.cardsUI.render();
       if (which === 'look') this.lookUI.open();
       if (which === 'juke') this.jukeUI.open();
+      if (which === 'debug') this.debugUI.render();
     } else {
       this.hideTip();
       if (which === 'look') this.lookUI.close();

@@ -31,6 +31,7 @@ export class Game {
     this.mouseWorld = null;
     this.hover = null;
     this.listeners = {};
+    this.cheats = { god: false, force: false, cd: false }; // debug panel toggles
     this.region = '';
     this.exploreT = 0;
     this.campT = 0;
@@ -226,6 +227,7 @@ export class Game {
       if (amount <= 0) return 0;
     }
     const p = this.player;
+    if (tgt === p && this.cheats.god) return 0; // debug: invincible
     let crit = false;
     if (tgt === p && (opts.type === 'blaster' || opts.type === 'melee') && chance(p.dodgeChance())) {
       this.fx.text(tgt.x, tgt.y, '회피', '#c8e4ff', 0.9);

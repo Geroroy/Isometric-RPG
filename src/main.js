@@ -13,6 +13,7 @@ import { Input } from './core/input.js';
 import { Audio } from './core/audio.js';
 import { Music } from './core/music.js';
 import { JukeboxUI } from './ui/jukebox.js';
+import { DebugUI } from './ui/debug.js';
 import { TouchControls, isTouchDevice, hasMouse } from './ui/touch.js';
 import { Fullscreen } from './ui/fullscreen.js';
 import { ZoomControl } from './ui/zoom.js';
@@ -105,6 +106,7 @@ async function boot() {
   // music starts with the first touch / key (browsers block autoplay)
   const music = new Music(audio);
   const jukebox = (hud.jukeUI = new JukeboxUI(hud, music, audio));
+  hud.debugUI = new DebugUI(hud, game, music, audio);
   game.on('jukebox', () => setTimeout(() => hud.toggle('juke', true), 0)); // after the dialogue closes
   music.onUnlock = (url) => {
     const c = music.catalog.find((x) => x.url === url);
@@ -189,7 +191,7 @@ async function boot() {
     dr.x += (tx - dr.x) * Math.min(1, dt * (onTitle ? 1 : 3));
     dr.y += (ty - dr.y) * Math.min(1, dt * (onTitle ? 1 : 3));
     // menus pause the action (the map does not)
-    const paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || dialogue.isOpen;
+    const paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
     if (!paused) game.update(dt);
     renderer.render(dt);
     hud.update(dt);

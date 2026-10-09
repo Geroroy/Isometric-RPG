@@ -3900,3 +3900,94 @@ body.touch #jukebox .ov-body {
   gap: 8px;
   padding: 8px;
 }
+
+/* volume sliders (settings) --------------------------------------------- */
+.set-vol {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.set-vol label {
+  display: grid;
+  grid-template-columns: 76px 1fr 34px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.set-vol input {
+  width: 100%;
+  accent-color: var(--gold);
+}
+.set-vol b {
+  font-family: var(--font-tech);
+  font-size: 12px;
+  text-align: right;
+  color: var(--digit);
+}
+
+/* debug panel ----------------------------------------------------------- */
+#debugpanel .ov-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  align-content: start;
+  gap: 14px;
+}
+.dbg-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: var(--tex-pad), #0e1822;
+  border: 1px solid rgba(var(--ink-rgb), 0.35);
+  border-radius: 4px;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.7), 0 0 0 2px #24292e;
+  text-shadow: none;
+}
+.dbg-card h4 {
+  margin: 0 0 4px;
+  font-family: var(--font-tech);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+}
+.dbg-card button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  text-align: left;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.dbg-card button:hover {
+  border-color: var(--gold);
+}
+.dbg-card button small {
+  margin-left: auto;
+  color: var(--ink-dim);
+}
+.dbg-sw i {
+  width: 14px;
+  height: 8px;
+  border-radius: 1px;
+  background: #3a1010;
+  box-shadow: 0 0 0 1px #0a0c0e;
+}
+.dbg-sw b {
+  margin-left: auto;
+  font-family: var(--font-tech);
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.dbg-sw.on i {
+  background: linear-gradient(#9fffb0, #2fbf4a);
+  box-shadow: 0 0 6px #2fbf4a;
+}
+.dbg-sw.on b {
+  color: #7dff9a;
+}

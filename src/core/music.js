@@ -75,8 +75,9 @@ export class Music {
     const a = this.audio;
     if (!a.ctx || this.bus) return;
     this.bus = a.ctx.createGain();
-    this.bus.gain.value = 0.5;
     this.bus.connect(a.master);
+    a.musicBus = this.bus; // its level follows the music volume setting
+    a.applyVolume();
     try {
       const r = await fetch('audio/index.json', { cache: 'no-cache' });
       if (r.ok) {
@@ -90,7 +91,6 @@ export class Music {
           });
         }
         this.ready = true;
-        if (data.volume && data.volume.music != null) this.bus.gain.value = data.volume.music;
       }
     } catch {
       /* no music */
