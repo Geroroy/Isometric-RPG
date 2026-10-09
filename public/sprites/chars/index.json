@@ -1,6 +1,8 @@
 {
  "ahsoka": "ahsoka_120.json",
+ "anakinDual": "anakinDual_136.json",
  "anakinHood": "anakinHood_136.json",
+ "anakin_tunic": "anakin_tunic_136.json",
  "b1": "b1_120.json",
  "b2": "b2_136.json",
  "bith": "bith_120.json",
@@ -16,7 +18,7 @@
  "citWorker2": "citWorker2_120.json",
  "clone": "clone_120.json",
  "dooku": "dooku_136.json",
- "fighter": "fighter_136.json",
+ "fighter": "fighter_240.json",
  "master": "master_120.json",
  "obiwan": "obiwan_120.json",
  "obiwan3": "obiwan3_136.json",
