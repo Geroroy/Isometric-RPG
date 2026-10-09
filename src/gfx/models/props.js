@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RNG } from '../../core/math.js';
-import { mat, glow, box, cyl, cylX, sph, cone, rot, scl } from './parts.js';
+import { mat, glow, box, cyl, cylX, sph, cone, rot, scl, cloth } from './parts.js';
 
 function lumpy(geo, rng, amt) {
   geo.deleteAttribute('normal');
