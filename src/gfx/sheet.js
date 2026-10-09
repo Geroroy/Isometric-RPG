@@ -5,10 +5,26 @@
 //   { dirs, anims: { name: { frames, fps, loop, hit, data: [dir][frame] } } }
 // Each frame: { page, sx, sy, w, h, ox, oy, markers, blades?, shadow, k? }.
 
-/** Characters drawn from a sheet instead of being baked at load time. */
+/**
+ * Characters drawn from a sheet instead of being baked at load time: Anakin
+ * (his own Blender model), and every character tools/sprites/render_characters.py
+ * has rendered so far (listed in sprites/chars/index.json). The rest are
+ * still baked in the browser.
+ */
 export const SHEETS = {
   anakin: 'sprites/anakin_128.json',
 };
+const CHARS_DIR = 'sprites/chars/';
+
+let index = null;
+/** Sprite name -> sheet JSON url, for every sheet the build has. */
+export function sheetIndex() {
+  index ||= fetch(import.meta.env.BASE_URL + CHARS_DIR + 'index.json')
+    .then((r) => (r.ok ? r.json() : {}))
+    .catch(() => ({}))
+    .then((chars) => ({ ...Object.fromEntries(Object.entries(chars).map(([k, f]) => [k, CHARS_DIR + f])), ...SHEETS }));
+  return index;
+}
 
 const loadImg = (src) =>
   new Promise((resolve, reject) => {
@@ -55,13 +71,17 @@ export async function loadSheet(url) {
   return { dirs: meta.dirs, anims, sheet: true };
 }
 
-/** Every sheet in SHEETS, by sprite name. */
-export async function loadSheets(onProgress) {
+/** The sheets of these sprite names (those that have one), by name. */
+export async function loadSheets(names, onProgress = () => {}) {
+  const idx = await sheetIndex();
+  const have = names.filter((n) => idx[n]);
   const out = {};
-  const names = Object.keys(SHEETS);
-  for (let i = 0; i < names.length; i++) {
-    onProgress(i / names.length, `스프라이트 시트: ${names[i]}`);
-    out[names[i]] = await loadSheet(import.meta.env.BASE_URL + SHEETS[names[i]]);
-  }
+  let done = 0;
+  await Promise.all(
+    have.map(async (n) => {
+      out[n] = await loadSheet(import.meta.env.BASE_URL + idx[n]);
+      onProgress(++done / have.length, `스프라이트 시트: ${n}`);
+    }),
+  );
   return out;
 }

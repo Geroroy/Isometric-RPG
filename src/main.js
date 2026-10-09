@@ -1,7 +1,7 @@
 // Entry point: bake sprites, build the world, then run the game loop.
 import './style.css';
 import { applySkin } from './ui/skin.js';
-import { bakeAssets, bakeDuelAssets, bakeSkin } from './gfx/assets.js';
+import { bakeAssets, bakeDuelAssets, bakeSkin, CHARACTERS } from './gfx/assets.js';
 import { loadSheets } from './gfx/sheet.js';
 import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
@@ -65,7 +65,7 @@ async function boot() {
   const assets = await bakeAssets(onProgress);
   // characters rendered in Blender: sprite sheet + frame JSON (after the bake
   // has been cached — the cache stores baked canvases only)
-  Object.assign(assets.sprites, await loadSheets(onProgress));
+  Object.assign(assets.sprites, await loadSheets(Object.keys(CHARACTERS), onProgress));
   // the Coruscant undercity's Blender-rendered buildings and street
   if (MODE === 'campaign') {
     assets.city = await loadCitySprites(onProgress);
