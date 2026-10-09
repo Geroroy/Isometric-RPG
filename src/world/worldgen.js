@@ -680,13 +680,14 @@ export class CityHub extends World {
     this.addProp('turbolift', liftLow.x, liftLow.y);
     // the cantina ("녹슨 등불"): its door opens south onto a small square
     this.addSheetProp('cantina', bar.x, bar.y);
-    // the market street, after real street food: a noodle yatai, hot dog carts,
-    // container kiosks, a two-stack container shop, a grill trike, a round drinks
-    // kiosk, a food truck — never the same twice in a row, at uneven spacing,
-    // the north side serving the street, the south side mixed (`_r`: turned to
-    // serve along it), tables and stools between them
-    const north = [[67.6, 'yatai'], [71.4, 'cartHotdog'], [75.6, 'containerKiosk'], [87.6, 'stackShop'], [92.2, 'grillTrike'], [101.0, 'roundKiosk'], [105.2, 'containerKiosk2'], [110.4, 'foodTruck'], [115.0, 'yatai'], [118.6, 'cartHotdog'], [123.4, 'stackShop']];
-    const south = [[68.6, 'tableSet'], [72.6, 'grillTrike_r'], [76.0, 'cartHotdog_r'], [88.0, 'tableSet'], [92.6, 'roundKiosk'], [100.4, 'yatai_r'], [103.4, 'tableSet'], [109.6, 'containerKiosk_r'], [116.4, 'foodTruck_r'], [123.0, 'tableSet']];
+    // the market street in the Star Wars manner: stalls built from salvage — a
+    // podracer engine roasting ronto, an escape pod selling spotchka, a
+    // freighter's cockpit as a diner, cargo containers, repulsor carts and
+    // skiffs, a tent with a vaporator — each its own food, never the same
+    // kind twice in a row, at uneven spacing; the south side mixes facings
+    // (`_r`: turned to serve along the street), seats between
+    const north = [[67.6, 'tentStew'], [71.8, 'hoverBlueMilk'], [76.4, 'cargoMeat'], [87.0, 'dinerNerf'], [91.6, 'podSpotchka'], [101.0, 'roasterRonto'], [105.6, 'hoverFruit'], [110.2, 'cargoMilk'], [114.8, 'skiffAle'], [119.2, 'tentGorg'], [124.4, 'dinerBantha']];
+    const south = [[68.4, 'seatsA'], [72.8, 'roasterNuna_r'], [76.4, 'hoverBlueMilk_r'], [88.8, 'podJawaJuice'], [91.8, 'seatsB'], [101.4, 'skiffFruit'], [105.4, 'dinerBantha_r'], [110.0, 'cargoBread_r'], [115.0, 'seatsA'], [119.0, 'hoverFruit_r'], [123.4, 'skiffAle_r']];
     for (const [x, name] of north) this.addSheetProp(name, x, 104.4 + rng.range(-0.25, 0.15));
     for (const [x, name] of south) this.addSheetProp(name, x, 110.6 + rng.range(-0.15, 0.25));
     // holo billboards at the street corners

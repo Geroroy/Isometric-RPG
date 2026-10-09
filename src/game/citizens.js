@@ -202,7 +202,7 @@ export class Citizen extends Unit {
       // vendors call out to Anakin walking by, facing him
       if (near < 5) this.faceTo(p.x, p.y);
       this.setAnim(near < 5 ? 'talk' : 'idle');
-      if (near < 5.5 && this.sayT <= 0 && p.moving) this.say(pick(lines.vendor), 3);
+      if (near < 5.5 && this.sayT <= 0 && p.moving) this.say(pick(this.calls || lines.vendor), 3);
       return;
     }
     if (d === 'chat' || d === 'work') {

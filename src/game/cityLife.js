@@ -10,7 +10,7 @@
 import { Citizen } from './citizens.js';
 import { dist, rand, chance } from '../core/math.js';
 import LIFE from '../data/cityLife.json';
-import { SHEET_PROPS } from '../world/cityProps.js';
+import { SHEET_PROPS, FOODS } from '../world/cityProps.js';
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const levelOf = (y) => (y > 90 ? 'low' : 'up');
@@ -35,8 +35,10 @@ export class CityLife {
         const u = new Citizen(g, def, 0, 0);
         if (def.kind === 'vendor') {
           const st = stalls[si++ % Math.max(1, stalls.length)];
-          const v = st && SHEET_PROPS[st.sheet].vendor;
-          if (st) u.stall = u.pickPoint({ at: [st.x + v[0], st.y + v[1]], r: 0 });
+          const d = st && SHEET_PROPS[st.sheet];
+          if (st) u.stall = u.pickPoint({ at: [st.x + d.vendor[0], st.y + d.vendor[1]], r: 0 });
+          // the vendor is named for the stall and calls out its own food
+          if (d && FOODS[d.food]) [u.name, u.calls] = FOODS[d.food];
         }
         const step = def.routine[u.step];
         const at = u.resolve(step.go);
