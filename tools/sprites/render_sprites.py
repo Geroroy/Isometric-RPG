@@ -226,8 +226,16 @@ def actions():
     return sorted(acts, key=lambda a: a.name)
 
 
+BASE = {o.name: (o.location.copy(), o.rotation_quaternion.copy(), o.rotation_euler.copy(), o.scale.copy()) for o in model_objs}
+
+
 def play(act):
-    """Assign the action to every node that has a slot in it."""
+    """Assign the action to every node that has a slot in it. Every node first
+    returns to its base pose, so a channel an animation does not key never
+    carries over from the animation before."""
+    for o in model_objs:
+        loc, q, e, sc = BASE[o.name]
+        o.location, o.rotation_quaternion, o.rotation_euler, o.scale = loc, q, e, sc
     for o in model_objs:
         ad = o.animation_data or o.animation_data_create()
         for tr in ad.nla_tracks:

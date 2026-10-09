@@ -468,8 +468,8 @@ for i, (x, y) in enumerate(((0.06, -0.16), (-0.06, -0.17), (0.06, 0.16), (-0.12,
 SK = {}
 pleats = lambda t, a: 1 + (0.03 * math.sin(a * 11) + 0.015 * math.sin(a * 23 + 1)) * (0.3 + t)  # heavy fabric: long soft folds
 for key, s, a0, a1, mat_, ln, rr in (
-    ('innerL', 'L', 0.04, 0.6, M['crimson'], 0.58, 0.162),
-    ('innerR', 'R', -0.6, -0.04, M['crimson'], 0.58, 0.162),
+    ('innerL', 'L', 0.04, 0.6, M['crimson'], 0.5, 0.162),
+    ('innerR', 'R', -0.6, -0.04, M['crimson'], 0.5, 0.162),
     ('outerL', 'L', 0.09, 2.35, M['navy'], 0.64, 0.178),
     ('outerR', 'R', -2.35, -0.09, M['navy'], 0.64, 0.178),
     ('outerB', None, 2.25, TAU - 2.25, M['navy'], 0.62, 0.178),
@@ -479,8 +479,9 @@ for key, s, a0, a1, mat_, ln, rr in (
     lathe('skirt' + key, mat_, pivot, lambda t, rr=rr: rr + 0.035 * t ** 1.2, 0.02, -ln, segs=20, a0=a0, a1=a1, sx=0.9,
           wob=pleats, solidify=0.008, uvscale=5)
     # a darker hem band
-    lathe('hem' + key, M['navyDark'] if 'outer' in key else M['crimsonDark'], pivot, lambda t, rr=rr: rr + 0.035 + 0.002, -ln + 0.03, -ln, segs=20,
-          a0=a0, a1=a1, sx=0.9, wob=lambda t, a: pleats(1, a), solidify=0.01, uvscale=5)
+    if 'outer' in key:  # a darker hem band on the tabard
+        lathe('hem' + key, M['navyDark'], pivot, lambda t, rr=rr: rr + 0.035 + 0.003, -ln + 0.03, -ln, segs=20,
+              a0=a0, a1=a1, sx=0.9, wob=lambda t, a: pleats(1, a), solidify=0.01, uvscale=5)
 
 # --- torso: crimson tunic, the navy tabard over it ------------------------------
 sp, ch = J['spine'], J['chest']
@@ -488,7 +489,7 @@ lathe('tunicWaist', M['crimson'], sp, lambda t: 0.152 + 0.008 * t, 0.0, D['spine
 lathe('tunicChest', M['crimson'], ch, lambda t: 0.16 + 0.03 * math.sin(t * math.pi * 0.8) - 0.04 * t ** 3, -0.02, 0.32, segs=24, sx=0.74, cap_top=True, uvscale=6)
 vest_w = lambda t, a: 1 + 0.02 * math.sin(a * 9 + t * 4)
 lathe('tabardWaist', M['navy'], sp, lambda t: 0.162 + 0.01 * t, -0.02, D['spine'] + 0.02, segs=22, a0=0.14, a1=TAU - 0.14, sx=0.8, wob=vest_w, solidify=0.006, uvscale=5)
-lathe('tabardChest', M['navy'], ch, lambda t: 0.172 + 0.025 * math.sin(t * math.pi * 0.8) - 0.03 * t ** 2, -0.02, 0.26, segs=22, a0=0.16, a1=TAU - 0.16, sx=0.78, wob=vest_w, solidify=0.006, uvscale=5)
+lathe('tabardChest', M['navy'], ch, lambda t: 0.172 + 0.025 * math.sin(t * math.pi * 0.8) - 0.03 * t ** 2, -0.07, 0.26, segs=22, a0=0.16, a1=TAU - 0.16, sx=0.78, wob=vest_w, solidify=0.006, uvscale=5)
 # the tabard's front edges: a slightly raised seam
 for sgn in (1, -1):
     tube(f'tabardEdge{sgn}', M['navyDark'], sp, [(0.13 * math.cos(0.14), sgn * 0.162 * math.sin(0.14), z) for z in np.linspace(-0.02, D['spine'] + 0.02, 6)], [0.006] * 6, segs=6)
@@ -516,13 +517,15 @@ for side, sgn in (('L', 1), ('R', -1)):
         mid = math.radians(70 - 22 * k)  # angle of the lame's middle, from horizontal (outwards)
         arc = math.radians(78)  # broad shingles, each overlapping the next
         # u wraps round the cylinder from its +Y side; rotate so the lame sits at `mid`
-        spin = Matrix.Rotation(sgn * mid, 4, 'X')  # turns the plate's facing (+Y) up to `mid` above horizontal
-        place = Matrix.Translation(Vector((0.125 - 0.005 * k, sgn * (0.125 + 0.012 * k), 0.24 - 0.012 * k))) @ spin @ to_x
+        length = 0.25 - 0.012 * k
+        spin = Matrix.Rotation(mid, 4, 'X')  # turns the plate's facing (+Y) up to `mid` above horizontal
+        # the plate runs along +X from its start: start it half its length behind the shoulder
+        place = Matrix.Translation(Vector((-length / 2 + 0.01, 0.125 + 0.012 * k, 0.24 - 0.012 * k))) @ spin @ to_x
         if sgn < 0:
-            place = place @ Matrix.Diagonal((1, -1, 1, 1))
+            place = Matrix.Diagonal((1, -1, 1, 1)) @ place  # the right side: the left's mirror image
         bent_plate(f'lame{side}{k}', M['plate'] if k != 1 else M['plateDark'], ch,
                    [(-0.5, 0.0), (0.5, 0.0), (0.5, 0.92), (0.42, 1.0), (-0.42, 1.0), (-0.5, 0.92)],
-                   r * arc, 0.25 - 0.012 * k, r, 0.011, place, cuts=5, bulge=0.004, uvscale=4)
+                   r * arc, length, r, 0.011, place, cuts=5, bulge=0.004, uvscale=4)
 # the knit collar (dark grey turtleneck) and the plate's neck opening
 lathe('collar', material('knit', 0x3b3d40, 'fabric', 0.95), ch, lambda t: 0.072 - 0.006 * t, 0.3, 0.4, segs=24, sx=0.95,
       wob=lambda t, a: 1 + 0.02 * math.sin(a * 36), uvscale=8)
@@ -746,6 +749,10 @@ bpy.ops.export_scene.gltf(
     export_format='GLB',
     export_animation_mode='NLA_TRACKS',
     export_force_sampling=True,
+    # keep every channel of every animation, constant ones too: a pose that
+    # holds a joint still must still set it (or it keeps the previous pose)
+    export_optimize_animation_size=False,
+    export_optimize_animation_keep_anim_object=True,
     export_apply=True,  # modifiers (subdivision, bevels, thickness) baked into the mesh
     export_yup=True,
 )

@@ -1,6 +1,7 @@
-"""Front / side / back / 3/4 orthographic views of a .glb in its rest pose
-(the joints' bind pose: arms down), for checking a model against references.
-  python model_views.py model.glb out.png [zoom_center_z] [ortho_size]"""
+"""Front / side / back / 3/4 orthographic views of a .glb in one frame of one
+of its animations (default: idleOff frame 0 — standing, blade off), for
+checking a model against references.
+  python model_views.py model.glb out.png [zoom_center_z] [ortho_size] [anim] [frame]"""
 import math
 import sys
 
@@ -10,18 +11,24 @@ from mathutils import Vector
 glb, out = sys.argv[1], sys.argv[2]
 cz = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
 size = float(sys.argv[4]) if len(sys.argv) > 4 else 2.2
+ANIM = sys.argv[5] if len(sys.argv) > 5 else 'idleOff'
+FRAME = int(sys.argv[6]) if len(sys.argv) > 6 else 0
 bpy.ops.wm.read_factory_settings(use_empty=True)
 sc = bpy.context.scene
 bpy.ops.import_scene.gltf(filepath=glb)
+act = bpy.data.actions.get(ANIM)
 for o in sc.objects:
-    if o.animation_data:
-        for t in o.animation_data.nla_tracks:
+    ad = o.animation_data
+    if ad:
+        for t in ad.nla_tracks:
             t.mute = True
-        o.animation_data.action = None
-    if o.rotation_mode == 'QUATERNION' and o.type == 'EMPTY' and not o.name.startswith(('saber', 'beltHilt', 'skirt_')):
-        o.rotation_quaternion = (1, 0, 0, 0)
+        slot = act and next((x for x in act.slots if x.identifier == 'OB' + o.name), None)
+        ad.action = act if slot else None
+        if slot:
+            ad.action_slot = slot
     if o.name.startswith('blade'):
         o.hide_render = True
+sc.frame_set(FRAME)
 sc.render.engine = 'CYCLES'
 sc.cycles.samples = 12
 sc.cycles.use_denoising = True
