@@ -32,6 +32,22 @@ JSON에는 프레임마다 시트 좌표, 발 기준점, 광선검 마커(손잡
 
 모델 검토용: `model_views.py`(정면·측면·후면·3/4, 애니메이션 한 프레임), `preview.py`(한 프레임의 모든 방향).
 
+## 코러산트 언더시티 (게임에 들어감)
+
+```bash
+.bvenv/bin/python tools/sprites/render_city.py            # 모델링 + 렌더 → public/sprites/city (전부 30분 남짓, 이름을 주면 그것만)
+.bvenv/bin/python tools/sprites/city_floor.py public/sprites/city/floor_low.png   # 바닥 텍스처
+```
+
+`build_city_assets.py`: 에셋 프롬프트의 공통 스타일(높은 디테일의 프리렌더 3D, 낡고 지저분한 SF 지하 도시, 녹 · 노출 배관과 케이블 · 젖은 표면,
+밤, 앰버 대 마젠타 · 청록 네온, 읽히는 글자가 없는 외계 문자 간판)대로 절차적으로 모델링한 16개 에셋 — 칸티나, 공동주택 3종, 노점 3종, 홀로그램 광고 탑,
+스피더 바이크 2종, 상자 · 연료통 · 증기 격자 · 드로이드 잔해 · 쓰레기통 · 배전함. 이름이 `lit`으로 시작하는 재질(창문 · 등 · 출입구 빛)은 켜진 채로 몸체에,
+나머지 발광 재질은 깜빡이는 네온 레이어로 갑니다. `render_city.py`가 에셋마다 창 크기와 기준점, 깜빡임 설정을 정해 `render_building.py`로 렌더(게임 픽셀 1:1).
+홀로그램 광고 내용과 증기, 웅덩이 파문은 게임이 그립니다(`src/world/cityProps.js`에 빛 · 증기 · 소리 위치).
+
+`city_floor.py`: 위에서 본, 이음매 없이 반복되는 8×8타일 바닥(어긋나게 깐 듀라크리트 판, 균열 · 깨진 모서리, 배수 격자, 기름 얼룩, 네온이 비치는 젖은 자국,
+왼쪽 위 빛의 음영). 지형이 하층 바닥을 그릴 때 월드 좌표로 샘플링합니다.
+
 ## 건물
 
 ```bash
@@ -49,5 +65,7 @@ node tools/sprites/export_prop_glb.mjs underBlock 1 tools/sprites/out/underBlock
 
 JSON: `anchor`(모델 원점 = 바닥 중심의 이미지 좌표), `sort`(가장 앞쪽 바닥점 — 이 y로 캐릭터와 정렬),
 `footprint`(충돌용 바닥 다각형, 원점 기준 타일 좌표), `neon`(`base`, `hum` 웅웅거림 세기, `speed`, `flicker`: 초당 꺼짐 확률·꺼짐 시간·꺼졌을 때 밝기).
+
+`--light`로 조명 밝기(게임은 조명 맵을 곱하므로 도시 에셋은 2.4), `--neon`으로 깜빡임 설정을 바꿉니다.
 
 검토 페이지: `npm run dev` 후 `/sprite-demo.html` (WASD/클릭 이동, F: 충돌 다각형).

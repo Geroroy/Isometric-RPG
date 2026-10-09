@@ -4,6 +4,21 @@
 import { worldToScreen } from '../core/iso.js';
 import { rand } from '../core/math.js';
 
+// a soft round puff (steam), drawn scaled
+const PUFF = (() => {
+  if (typeof document === 'undefined') return null;
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(16, 16, 0, 16, 16, 16);
+  g.addColorStop(0, 'rgba(225,230,236,1)');
+  g.addColorStop(0.5, 'rgba(210,216,224,0.55)');
+  g.addColorStop(1, 'rgba(200,206,214,0)');
+  x.fillStyle = g;
+  x.fillRect(0, 0, 32, 32);
+  return c;
+})();
+
 export class Effects {
   constructor() {
     this.parts = [];
@@ -75,6 +90,13 @@ export class Effects {
   smoke(x, y, z = 0.8, n = 4, color = '80,76,72') {
     for (let i = 0; i < n; i++) {
       this.parts.push({ kind: 'smoke', x: x + rand(-0.2, 0.2), y: y + rand(-0.2, 0.2), z, vx: rand(-0.3, 0.3), vy: rand(-0.3, 0.3), vz: rand(0.6, 1.4), grav: 0, t: 0, life: rand(1, 2), color, size: rand(3, 6) });
+    }
+  }
+
+  /** Steam from a vent: slow puffs that rise, drift and spread. */
+  steam(x, y, z, n = 1) {
+    for (let i = 0; i < n; i++) {
+      this.parts.push({ kind: 'steam', x: x + rand(-0.15, 0.15), y: y + rand(-0.15, 0.15), z, vx: rand(-0.15, 0.25), vy: rand(-0.25, 0.15), vz: rand(0.5, 0.9), grav: -0.15, drag: 0.6, t: 0, life: rand(2.2, 3.6), size: rand(4, 7) });
     }
   }
 
@@ -159,6 +181,12 @@ export class Effects {
         ctx.fillStyle = `rgba(${p.color},${(1 - k) * 0.45})`;
         const r = p.size * (0.6 + k);
         ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+      } else if (p.kind === 'steam') {
+        // a soft puff that swells and thins as it rises
+        const r = p.size * (0.7 + k * 1.6);
+        ctx.globalAlpha = Math.sin(Math.min(1, k * 4) * Math.PI * 0.5) * (1 - k) * 0.5;
+        ctx.drawImage(PUFF, sx - r, sy - r, r * 2, r * 2);
+        ctx.globalAlpha = 1;
       } else if (p.kind === 'chunk') {
         ctx.globalAlpha = Math.min(1, (p.life - p.t) * 2);
         ctx.fillStyle = p.color;
@@ -167,8 +195,8 @@ export class Effects {
       } else if (p.kind === 'ghost') {
         const f = p.frame;
         ctx.globalAlpha = p.alpha * (1 - k);
-        const k = f.k || 1; // a remaster frame's pixels are half a game pixel
-        ctx.drawImage(f.page, f.sx, f.sy, f.w, f.h, sx - f.ox * k, sy - f.oy * k, f.w * k, f.h * k);
+        const fk = f.k || 1; // a sheet drawn at another size than game pixels
+        ctx.drawImage(f.page, f.sx, f.sy, f.w, f.h, sx - f.ox * fk, sy - f.oy * fk, f.w * fk, f.h * fk);
         ctx.globalAlpha = 1;
       }
     }

@@ -4,6 +4,7 @@
 // ruins of an old crystal city; a droid factory stronghold far to the north.
 import { RNG, fbm, dist, distToSegment, clamp } from '../core/math.js';
 import { PROPS } from '../gfx/models/props.js';
+import { SHEET_PROPS, cityFootprint, inPoly } from './cityProps.js';
 
 export const MAP_W = 192;
 export const MAP_H = 192;
@@ -299,6 +300,36 @@ export class World {
     return p;
   }
 
+  /**
+   * A Blender-rendered city sprite (world/cityProps.js): blocks the tiles
+   * inside its footprint, adds its lights; steam vents and sound sources are
+   * collected for the renderer and the ambience.
+   */
+  addSheetProp(name, x, y, opts = {}) {
+    const def = SHEET_PROPS[name];
+    const p = { type: 'sheet', sheet: name, x, y, flat: !!def.flat, phase: this.rng.next() * 10, neon: { until: 0, phase: this.rng.next() * 7 } };
+    const fp = cityFootprint(name);
+    if (fp && !opts.noBlock && !def.flat) {
+      const xs = fp.map((q) => q[0]);
+      const ys = fp.map((q) => q[1]);
+      let any = false;
+      for (let ty = Math.floor(y + Math.min(...ys)); ty <= Math.floor(y + Math.max(...ys)); ty++)
+        for (let tx = Math.floor(x + Math.min(...xs)); tx <= Math.floor(x + Math.max(...xs)); tx++)
+          if (this.inBounds(tx, ty) && inPoly(tx + 0.5 - x, ty + 0.5 - y, fp)) {
+            this.blocked[ty * MAP_W + tx] = 1;
+            any = true;
+          }
+      if (!any && this.inBounds(Math.floor(x), Math.floor(y))) this.blocked[Math.floor(y) * MAP_W + Math.floor(x)] = 1;
+      p.rect = [Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
+    }
+    for (const [dx, dy, z, r, g, b, rad, flicker] of def.lights || []) this.lights.push({ x: x + dx, y: y + dy, z, r, g, b, rad, flicker });
+    for (const [dx, dy, z] of def.steam || []) (this.steam ||= []).push({ x: x + dx, y: y + dy, z, t: this.rng.next() * 3 });
+    if (def.sound) (this.sounds ||= []).push({ ...def.sound, x: x + def.sound.at[0], y: y + def.sound.at[1] });
+    p.depth = x + y;
+    this.props.push(p);
+    return p;
+  }
+
   clearArea(x, y, r) {
     for (let ty = Math.floor(y - r); ty <= Math.ceil(y + r); ty++)
       for (let tx = Math.floor(x - r); tx <= Math.ceil(x + r); tx++)
@@ -587,7 +618,8 @@ export const CITY = {
   low: { x: 96, y: 113, hw: 32, hh: 18 }, // lower level
   liftUp: { x: 82, y: 77.5 },
   liftLow: { x: 82, y: 97.5 },
-  bar: { x: 108, y: 123 }, // the bar ("녹슨 등불")
+  bar: { x: 108, y: 121 }, // the cantina ("녹슨 등불"): its ground centre
+  barDoor: { x: 108.4, y: 125.2 }, // in front of its door, on the square
   shaft: { x: 96, y: 112 }, // the one place light reaches the street
 };
 
@@ -633,36 +665,55 @@ export class CityHub extends World {
     for (let x = up.x - up.hw + 1; x <= up.x + up.hw - 1; x += 2) if (Math.abs(x - liftUp.x) > 1.5) this.addProp('railing', x, up.y + up.hh + 0.2, { angleIdx: 0 });
     this.addProp('turbolift', liftUp.x, liftUp.y);
 
-    // --- lower level ------------------------------------------------------
-    // blocks of dwellings with streets between them; the market street runs
-    // east–west through the middle
-    const blocks = [];
-    for (const bx of [70, 84, 100, 116]) for (const by of [100, 117, 126]) blocks.push([bx, by]);
-    for (const [bx, by] of blocks) {
-      if (Math.abs(bx - shaft.x) < 6 && Math.abs(by - shaft.y) < 7) continue; // the square under the light
-      if (bx === 84 && by === 100) continue; // the lift's landing
-      this.addProp('slumBlock', bx, by);
-    }
+    // --- lower level: the undercity -----------------------------------------
+    // Blender-rendered assets (gfx/citySprites.js): tenement towers along the
+    // north and south edges, the market street under neon between them, the
+    // cantina on its own little square to the south-east, a factory gate at
+    // the west end, holo billboards at the corners, speeder bikes parked by
+    // the cantina, crates, barrels, steam grates and junk in the alleys.
+    const T = (k) => 'tenement' + (k % 3);
+    let k = 0;
+    for (const x of [68, 90, 99, 108, 117, 125]) this.addSheetProp(T(k++), x, 98.6); // north row (the lift's landing stays free)
+    for (const x of [68, 78, 88, 120, 126]) this.addSheetProp(T(k++), x, 118.5); // south rows
+    for (const x of [68, 78, 88]) this.addSheetProp(T(k++), x, 127);
     this.addProp('turbolift', liftLow.x, liftLow.y);
-    // market street: stalls both sides, neon over them
-    for (let x = low.x - low.hw + 3; x <= low.x + low.hw - 3; x += 4.5) {
-      this.addProp('stall', x, 104.2);
-      if (rng.chance(0.7)) this.addProp('stall', x + 2, 110.6);
-      if (rng.chance(0.6)) this.addProp('neonSign', x + 1.2, 103.6);
+    // the cantina ("녹슨 등불"): its door opens south onto a small square
+    this.addSheetProp('cantina', bar.x, bar.y);
+    // market street: stalls along both sides
+    let si = 0;
+    for (let x = low.x - low.hw + 3; x <= low.x + low.hw - 3; x += 3.6) {
+      if (Math.abs(x - liftLow.x) < 2.5 || Math.abs(x - shaft.x) < 3) continue;
+      this.addSheetProp('stall' + (si++ % 3), x, 104.6);
+      if (rng.chance(0.55)) this.addSheetProp('stall' + (si++ % 3), x + 1.6, 110.8);
     }
-    for (const [x, y] of [[64.5, 112], [127, 108], [92, 121], [124, 121], [76, 129], [112, 96.5]]) this.addProp('ventStack', x, y);
-    for (let k = 0; k < 14; k++) this.addProp('trashPile', rng.range(low.x - low.hw + 1, low.x + low.hw - 1), rng.pick([108.5, 112.5, 121.5, 130, 96.5]), { noBlock: true });
-    // the bar: a block with two signs and a warm doorway
-    this.addProp('neonSign', bar.x - 2.6, bar.y - 2.6, { variant: 0 });
-    this.addProp('neonSign', bar.x + 2.6, bar.y - 2.6, { variant: 2 });
-    // light: warm windows and neon pockets; one cold shaft from above
+    // holo billboards at the street corners
+    for (const [x, y] of [[86.5, 107.6], [113.5, 107.4], [73, 114], [96, 121.5]]) this.addSheetProp('billboard', x, y);
+    // the factory gate at the west end (workers come and go), a cluster of junk by it
+    this.addSheetProp('junctionBox', 64.8, 112.5);
+    this.addSheetProp('crates', 65.6, 115.5);
+    this.addSheetProp('barrels', 66.0, 108.5);
+    // speeders parked by the cantina and at the market's east end
+    this.addSheetProp('speeder0', bar.x + 6.0, bar.y + 4.6);
+    this.addSheetProp('speeder1', bar.x - 5.6, bar.y + 5.2);
+    this.addSheetProp('speeder0', 126.5, 113.5);
+    // alley clutter
+    for (const [x, y] of [[bar.x + 5.0, bar.y - 2.2], [93.5, 116.0], [74.5, 123.0], [114.5, 115.5]]) this.addSheetProp('crates', x, y);
+    for (const [x, y] of [[bar.x - 4.6, bar.y + 1.2], [103.5, 115.6], [83.5, 123.5]]) this.addSheetProp('barrels', x, y);
+    for (const [x, y] of [[92.5, 123.0], [111.0, 116.0], [72.5, 108.5]]) this.addSheetProp('trashBin', x, y);
+    for (const [x, y] of [[84.0, 116.2], [100.5, 116.5], [118.0, 123.5]]) this.addSheetProp('droidParts', x, y);
+    for (const [x, y] of [[103.8, 113.6], [124.5, 116.0], [94.0, 101.8]]) this.addSheetProp('junctionBox', x, y);
+    // steam grates in the streets
+    for (const [x, y] of [[78.5, 112.0], [91.0, 113.5], [106.5, 112.5], [121.0, 112.0], [99.5, 126.5], [84.5, 128.5]]) this.addSheetProp('ventGrate', x, y);
+    for (let i = 0; i < 12; i++) this.addProp('trashPile', rng.range(low.x - low.hw + 1, low.x + low.hw - 1), rng.pick([108.0, 112.5, 122.5, 130]), { noBlock: true });
+    // puddles under the drips: the renderer draws their ripples
+    this.puddles = [[95.0, 111.0, 1.4], [97.5, 113.6, 0.9], [80.0, 109.5, 1.0], [110.5, 109.0, 1.1], [101.0, 128.6, 1.2], [70.5, 121.8, 0.8], [124.0, 108.6, 0.9]].map(([x, y, r]) => ({ x, y, r, drops: [] }));
+    // light: neon pockets over the street; one cold shaft from above
     const neon = [[255, 80, 170], [80, 230, 255], [255, 180, 70], [160, 120, 255]];
-    for (let k = 0; k < 26; k++) {
+    for (let i = 0; i < 18; i++) {
       const [r, g, b] = rng.pick(neon);
-      this.lights.push({ x: rng.range(low.x - low.hw + 2, low.x + low.hw - 2), y: rng.pick([104, 108.5, 112, 121.5, 96.5, 130]), z: 2.2, r, g, b, rad: rng.range(70, 120), flicker: rng.chance(0.3) ? 0.2 : 0.04 });
+      this.lights.push({ x: rng.range(low.x - low.hw + 2, low.x + low.hw - 2), y: rng.pick([104, 107.5, 111, 114, 121.5, 129]), z: 2.2, r, g, b, rad: rng.range(60, 100), flicker: rng.chance(0.3) ? 0.2 : 0.04 });
     }
     this.lights.push({ x: shaft.x, y: shaft.y, z: 6, r: 200, g: 225, b: 255, rad: 150, flicker: 0.01 });
-    this.lights.push({ x: bar.x, y: bar.y - 3, z: 1.5, r: 255, g: 170, b: 90, rad: 120, flicker: 0.05 });
     // the upper plaza is lit like day
     for (let x = up.x - up.hw + 4; x <= up.x + up.hw - 4; x += 9) for (const y of [up.y - 7, up.y + 6]) this.lights.push({ x, y, z: 6, r: 255, g: 246, b: 228, rad: 300, flicker: 0 });
 
@@ -692,6 +743,9 @@ export class CityHub extends World {
       const x = rng.pick([60, 66, 132, 138]);
       this.traffic.push({ x0: x, y0: 30, x1: x + rng.range(-4, 4), y1: 150, z: rng.range(3, 8), speed: rng.range(6, 10), gap: rng.range(8, 16) });
     }
+    // speeders high over the undercity's streets: lights crossing overhead
+    for (const y of [103, 116.5, 124.5]) this.traffic.push({ x0: 56, y0: y, x1: 136, y1: y + rng.range(-2, 2), z: rng.range(8, 11), speed: rng.range(7, 12), gap: rng.range(10, 18), over: true });
+    for (const x of [76, 104, 121]) this.traffic.push({ x0: x, y0: 136, x1: x + rng.range(-3, 3), y1: 90, z: rng.range(9, 12), speed: rng.range(6, 10), gap: rng.range(12, 20), over: true });
     this.spawn = { x: pad.x - 5, y: pad.y + 1.5 };
     this.roadSegs = [];
     this.props.sort((a, b) => a.x + a.y - (b.x + b.y));

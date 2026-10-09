@@ -6,7 +6,12 @@ Render a building .glb into the game's three-layer building sprite.
 
   --name NAME        output prefix (default: the .glb's name)
   --render 1024      render resolution (square)
-  --sizes 256,512    output sizes (Original / Remaster); one set of files each
+  --sizes N          output sizes (default: the window, one image pixel per
+                     game pixel); one set of files each
+  --light 1.0        brightness of the key / rim / fill lights and the sky
+  --neon JSON        the neon's flicker settings in the JSON (default: a slow
+                     hum with rare dropouts), e.g. '{"rate": 2, "level": 0}'
+                     for blinking lights
   --window 260       game pixels the image covers
   --anchor 130,210   where the model's origin (its ground centre) sits, game px
   --samples 48       Cycles samples
@@ -36,7 +41,9 @@ NAME_SIZE.json:
     neon: { base, hum, speed, flicker: { rate, dur: [a, b], level } } }
 
 Neon parts are found by material: emissive, or unlit (KHR_materials_unlit,
-which is how the game's glowing MeshBasicMaterials export).
+which is how the game's glowing MeshBasicMaterials export). Materials whose
+name starts with `lit` (lit windows, lamps, a doorway's light) glow too but
+never flicker: they stay in the body layer.
 """
 import json
 import math
@@ -72,8 +79,10 @@ pos, opt = parse(argv)
 GLB, OUT = pos[0], pos[1]
 NAME = opt.get('name', os.path.splitext(os.path.basename(GLB))[0])
 RES = int(opt.get('render', 1024))
-SIZES = [int(x) for x in opt.get('sizes', '256,512').split(',')]
 WINDOW = float(opt.get('window', 260))
+SIZES = [int(x) for x in opt.get('sizes', str(int(WINDOW))).split(',')]
+NEON_OPT = json.loads(opt.get('neon', '{}'))
+LIGHT = float(opt.get('light', 1.0))
 AX, AY = [float(x) for x in opt.get('anchor', '130,210').split(',')]
 SAMPLES = int(opt.get('samples', 48))
 GLOW = float(opt.get('neon-glow', 6))
@@ -89,7 +98,7 @@ model = [o for o in scene.objects if o.type == 'MESH']
 
 
 def is_neon(m):
-    if not m or not m.node_tree:
+    if not m or not m.node_tree or m.name.startswith('lit'):
         return False
     nt = m.node_tree
     if any(n.type in ('EMISSION', 'BACKGROUND') for n in nt.nodes):  # the importer's unlit setup
@@ -162,7 +171,7 @@ up = Vector((0, 0, 1))
 
 def sun(name, d, strength, color, angle, shadow=True):
     li = bpy.data.lights.new(name, 'SUN')
-    li.energy = strength
+    li.energy = strength * LIGHT
     li.color = color
     li.angle = math.radians(angle)
     li.use_shadow = shadow
@@ -179,7 +188,7 @@ world = bpy.data.worlds.new('sky')
 scene.world = world
 world.use_nodes = True
 world.node_tree.nodes['Background'].inputs['Color'].default_value = (0.2, 0.22, 0.3, 1)
-world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.6
+world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.6 * LIGHT
 scene.render.engine = 'CYCLES'
 scene.cycles.device = 'CPU'
 scene.cycles.samples = SAMPLES
@@ -332,7 +341,7 @@ for size in SIZES:
         'sort': [round(sort_px[0] / k, 2), round(sort_px[1] / k, 2)],
         'footprint': footprint,
         'layers': layers,
-        'neon': {'base': 1.0, 'hum': 0.05, 'speed': 9, 'flicker': {'rate': 0.12, 'dur': [0.04, 0.22], 'level': 0.12}},
+        'neon': {'base': 1.0, 'hum': 0.05, 'speed': 9, 'flicker': {'rate': 0.12, 'dur': [0.04, 0.22], 'level': 0.12, **NEON_OPT}},
     }
     with open(os.path.join(OUT, prefix + '.json'), 'w') as fh:
         json.dump(meta, fh, indent=1)

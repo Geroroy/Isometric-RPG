@@ -3,6 +3,9 @@ import './style.css';
 import { applySkin } from './ui/skin.js';
 import { bakeAssets, bakeDuelAssets, bakeSkin } from './gfx/assets.js';
 import { loadSheets } from './gfx/sheet.js';
+import { loadCitySprites } from './gfx/citySprites.js';
+import { setCityFootprints } from './world/cityProps.js';
+import { setFloorTexture } from './gfx/terrain.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
@@ -14,6 +17,7 @@ import { Input } from './core/input.js';
 import { Audio } from './core/audio.js';
 import { Music } from './core/music.js';
 import { Speech } from './core/speech.js';
+import { Ambience } from './core/ambience.js';
 import { JukeboxUI } from './ui/jukebox.js';
 import { DebugUI } from './ui/debug.js';
 import { TouchControls, isTouchDevice, hasMouse } from './ui/touch.js';
@@ -62,6 +66,12 @@ async function boot() {
   // characters rendered in Blender: sprite sheet + frame JSON (after the bake
   // has been cached — the cache stores baked canvases only)
   Object.assign(assets.sprites, await loadSheets(onProgress));
+  // the Coruscant undercity's Blender-rendered buildings and street
+  if (MODE === 'campaign') {
+    assets.city = await loadCitySprites(onProgress);
+    setCityFootprints(assets.city);
+    setFloorTexture(assets.city.floor);
+  }
   if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, DUEL)).sprites);
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
@@ -135,6 +145,7 @@ async function boot() {
   const help = document.getElementById('help');
   // music starts with the first touch / key (browsers block autoplay)
   const music = (game.music = new Music(audio));
+  const ambience = new Ambience(audio);
   new CinemaUI(game);
   game.on('cinema', (on) => on || zoom.restore()); // back to the player's zoom after a cutscene
   const jukebox = (hud.jukeUI = new JukeboxUI(hud, music, audio));
@@ -227,7 +238,7 @@ async function boot() {
     const paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
     // one failing system must not freeze the whole game: report it once, keep running
     requestAnimationFrame(loop);
-    for (const step of [() => paused || game.update(dt), () => renderer.render(dt), () => hud.update(dt), () => dialogue.update(dt), () => music.update(), () => jukebox.update(), () => duelHud && duelHud.update(dt)]) {
+    for (const step of [() => paused || game.update(dt), () => renderer.render(dt), () => hud.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update(), () => duelHud && duelHud.update(dt)]) {
       try {
         step();
       } catch (err) {

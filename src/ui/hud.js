@@ -61,6 +61,7 @@ export class HUD {
 
     game.on('say', (text, key, dur, speaker) => this.say(text, dur, speaker));
     game.on('region', (name) => this.banner(name));
+    game.on('log', (text, cls) => this.log(text, cls));
     game.on('hurt', () => portrait.hurt());
     game.on('levelup', (lv) => {
       this.refreshPanels();

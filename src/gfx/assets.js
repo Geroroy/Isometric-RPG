@@ -22,6 +22,8 @@ export const CHARACTERS = {
   obiwan: () => ({ model: M.buildObiWan(), dirs: 8, frame: [120, 110, 60, 90], anims: A.OBIWAN_ANIMS, markers: [], ss: 2 }),
   ahsoka: () => ({ model: M.buildAhsoka(), dirs: 8, frame: [120, 110, 60, 90], anims: A.AHSOKA_ANIMS, markers: [], ss: 2 }),
   quartermaster: () => ({ model: M.buildClone({ marks: 0xd99a2b }), dirs: 8, frame: [120, 110, 60, 90], anims: A.NPC_CLONE_ANIMS, markers: [] }),
+  // the Coruscant Guard: red-marked clones patrolling the city
+  cguard: () => ({ model: M.buildClone({ marks: 0xb3262b }), dirs: 8, frame: [120, 110, 60, 90], anims: A.NPC_CLONE_ANIMS, markers: [] }),
   bith: () => ({ model: M.buildBith(), dirs: 8, frame: [120, 110, 60, 90], anims: A.BITH_ANIMS, markers: [], ss: 2 }),
   // city hub crowd (original designs)
   citNoble: () => citizen('noble', 0, A.NOBLE_ANIMS),

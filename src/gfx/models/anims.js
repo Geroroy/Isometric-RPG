@@ -628,10 +628,16 @@ function npcSet({ rest = NPC_REST, down = null } = {}) {
     const s = sin(t * TAU);
     return pose(rest, { chest: [0, 0.1 + s * 0.05, 0], head: [0, -0.1 + s * 0.08, 0.04 * s], shR: [-0.2, 0, 0.75 + s * 0.15], elR: [0, 0, 1.0 - s * 0.2], haR: [0, 0, 0.4] });
   };
+  // a jab with the right, the left up in guard (city brawls)
+  const punch = (t) => {
+    const s = Math.max(0, sin(t * PI));
+    return pose(rest, { spine: [0, 0, 0.08], chest: [0, -0.35 * s, 0], shR: [-0.1, 0, 0.5 + 1.0 * s], elR: [0, 0, 1.7 * (1 - s) + 0.1], shL: [0.15, 0, 0.9], elL: [0, 0, 1.9] });
+  };
   const set = {
     idle: { frames: 6, fps: 5, loop: true, pose: idle },
     walk: { frames: 8, fps: 11, loop: true, pose: walk },
     talk: { frames: 6, fps: 6, loop: true, pose: talk },
+    punch: { frames: 4, fps: 10, loop: false, pose: punch },
   };
   if (down) set.down = { frames: 4, fps: 3, loop: true, pose: (t) => pose(down, { chest: [down.chest[0], down.chest[1], down.chest[2] + sin(t * TAU) * 0.03] }) };
   return set;

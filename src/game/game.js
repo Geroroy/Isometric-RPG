@@ -9,7 +9,7 @@ import { LINES } from './lines.js';
 import { NPC, NPC_DEFS, TALK_RANGE } from './npc.js';
 import { QuestLog } from './quests.js';
 import { BASE_POS, Arena, ARENA, MustafarArena, CityHub, CITY } from '../world/worldgen.js';
-import { Citizen, CROWD } from './citizens.js';
+import { CityLife } from './cityLife.js';
 import { Duel } from './duel.js';
 import { Cinema } from './cinema.js';
 import { MustafarDuel } from './duelMustafar.js';
@@ -37,6 +37,7 @@ export class Game {
     this.hover = null;
     this.listeners = {};
     this.cheats = { god: false, force: false, cd: false }; // debug panel toggles
+    this.bubbles = []; // speech bubbles over people { u, text, t, life }
     this.region = '';
     this.exploreT = 0;
     this.campT = 0;
@@ -71,6 +72,7 @@ export class Game {
     this.savePlace('christophsis');
     this.loadPlace(hub);
     this.populateHub();
+    this.player.saberLit = false; // a Jedi walks the city with his blade off
     this.updateActive();
   }
 
@@ -120,28 +122,9 @@ export class Game {
     for (const [id, d] of Object.entries(NPC_DEFS)) if (d.hub) this.units.push(new NPC(this, id, d.hub[0], d.hub[1]));
     this.units.push(this.makeFighter(CITY.pad.x, CITY.pad.y, Math.PI));
     w.landing = { x: CITY.pad.x - 3.5, y: CITY.pad.y + 1.5 };
-    for (const c of CROWD) {
-      for (let k = 0; k < c.n; k++) {
-        const pts = w.walk[c.level];
-        const at = pts[Math.floor(Math.random() * pts.length)];
-        const u = new Citizen(this, c, at.x + (Math.random() - 0.5), at.y + (Math.random() - 0.5));
-        this.units.push(u);
-      }
-    }
-    // vendors at the market stalls, drifters against the walls
-    for (const u of this.units) {
-      if (!(u instanceof Citizen) || !u.anchored) continue;
-      const kind = u.def2.stay ? 'stall' : 'slumBlock';
-      const props = w.props.filter((pr) => pr.type === kind);
-      const pr = props[Math.floor(Math.random() * props.length)];
-      if (!pr) continue;
-      const spot = kind === 'stall' ? { x: pr.x - 0.2, y: pr.y - 0.9 } : { x: pr.x + (Math.random() - 0.5) * 3, y: pr.y + 2.4 };
-      const f = this.pathfinder.nearestFree(Math.floor(spot.x), Math.floor(spot.y), 3);
-      if (!f) continue;
-      u.x = f[0] + 0.5;
-      u.y = f[1] + 0.5;
-      u.facing = kind === 'stall' ? -Math.PI / 2 : Math.PI / 2 + (Math.random() - 0.5);
-    }
+    // the city's people, each on a routine (data/cityLife.json), and its random events
+    this.life = new CityLife(this);
+    this.life.populate();
   }
 
   /** Turbolifts between the hub's levels: step in, fade, step out. */
@@ -248,6 +231,10 @@ export class Game {
     p.action = null;
     this.region = '';
     this.hover = null;
+    if (id === 'hub' && p.saberLit) {
+      p.saberLit = false; // back in the city: the blade goes off
+      p.setAnim('idle');
+    }
     this.updateActive();
     this.emit('world', id);
     if (id === 'christophsis' && !this.arrivedFront) {
@@ -281,7 +268,13 @@ export class Game {
     this.talkingTo = null;
   }
 
-  on(evt, fn) {
+  /** A speech bubble over someone (replaces the one they had). */
+  bubble(u, text, dur = 3) {
+    this.bubbles = this.bubbles.filter((b) => b.u !== u);
+    this.bubbles.push({ u, text, t: 0, life: dur });
+  }
+
+    on(evt, fn) {
     (this.listeners[evt] ||= []).push(fn);
   }
   emit(evt, ...args) {
@@ -632,6 +625,10 @@ export class Game {
         }
       }
     }
+
+    if (this.place === 'hub' && this.life) this.life.update(dt);
+    for (const b of this.bubbles) b.t += dt;
+    this.bubbles = this.bubbles.filter((b) => b.t < b.life && !b.u.dead && !b.u.remove);
 
     this.updateBolts(dt);
     this.updateThrows(dt);

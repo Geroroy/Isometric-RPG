@@ -30,6 +30,13 @@ const PAL = {
 const ROAD = [128, 108, 84];
 const EDGE = [62, 57, 54];
 
+// the undercity street's floor texture (gfx/citySprites.js), sampled in world
+// coordinates so it lies flat and tiles: { data: ImageData, tiles }
+let FLOOR = null;
+export function setFloorTexture(f) {
+  FLOOR = f;
+}
+
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => v / 16 - 0.5);
 
 export class Terrain {
@@ -46,6 +53,7 @@ export class Terrain {
     this.L = new Float32Array(n); // lava weight
     this.V = new Float32Array(n); // the city's drop (dark, far lights)
     this.U = new Float32Array(n); // city upper level (inlaid stone)
+    this.Lw = new Float32Array(n); // city lower level (the floor texture)
     for (let y = 0; y < world.h; y++) {
       for (let x = 0; x < world.w; x++) {
         const i = y * world.w + x;
@@ -55,7 +63,8 @@ export class Terrain {
         this.R[i] = c[0] + v;
         this.G[i] = c[1] + v;
         this.B[i] = c[2] + v * 0.9;
-        this.P[i] = b === BIOME.RUIN || b === BIOME.BASE || b === BIOME.HANGAR || b === BIOME.MUSTAFAR || b === BIOME.CITY_UP || b === BIOME.CITY_LOW ? 1 : 0;
+        this.P[i] = b === BIOME.RUIN || b === BIOME.BASE || b === BIOME.HANGAR || b === BIOME.MUSTAFAR || b === BIOME.CITY_UP || (b === BIOME.CITY_LOW && !FLOOR) ? 1 : 0;
+        this.Lw[i] = b === BIOME.CITY_LOW && FLOOR ? 1 : 0;
         this.V[i] = b === BIOME.VOID ? 1 : 0;
         this.U[i] = b === BIOME.CITY_UP ? 1 : 0;
         if (b === BIOME.VOID) {
@@ -241,6 +250,19 @@ export class Terrain {
               b += 30;
             }
           }
+        }
+        // the undercity street: the floor texture, shaded by the same blotches
+        const lowW = FLOOR ? this.sample(this.Lw, u, v) : 0;
+        if (lowW > 0.01) {
+          const T = FLOOR.data;
+          const tx = Math.floor((((fx / FLOOR.tiles) % 1) + 1) % 1 * T.width);
+          const ty = Math.floor((((fy / FLOOR.tiles) % 1) + 1) % 1 * T.height);
+          const j = (ty * T.width + tx) * 4;
+          const k = Math.min(1, lowW * 1.5) * (1 - drop);
+          const sh = 1 + blot * 0.15;
+          r += (T.data[j] * sh - r) * k;
+          g += (T.data[j + 1] * sh - g) * k;
+          b += (T.data[j + 2] * sh - b) * k;
         }
         // crystal sparkle
         if (cry > 0.5 && grain > 0.994 && blot > 0) {
