@@ -1,7 +1,8 @@
 // Entry point: bake sprites, build the world, then run the game loop.
 import './style.css';
 import { applySkin } from './ui/skin.js';
-import { bakeAssets, bakeDuelAssets, bakeSkin } from './gfx/assets.js';
+import { bakeAssets, bakeDuelAssets, bakeSkin, bakeHDProps } from './gfx/assets.js';
+import { isHD, setGfxMode, onGfxMode, GFX_LABEL } from './core/gfx.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
@@ -12,6 +13,7 @@ import { HUD } from './ui/hud.js';
 import { Input } from './core/input.js';
 import { Audio } from './core/audio.js';
 import { Music } from './core/music.js';
+import { Speech } from './core/speech.js';
 import { JukeboxUI } from './ui/jukebox.js';
 import { DebugUI } from './ui/debug.js';
 import { TouchControls, isTouchDevice, hasMouse } from './ui/touch.js';
@@ -57,6 +59,9 @@ async function boot() {
     label.textContent = text;
   };
   const assets = await bakeAssets(onProgress);
+  assets.propsSD = assets.props;
+  // remaster frames over the original set (franchise vehicles keep theirs)
+  if (isHD()) assets.propsHD = { ...assets.propsSD, ...(await bakeHDProps(onProgress)) };
   if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, DUEL)).sprites);
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
@@ -65,7 +70,18 @@ async function boot() {
   await new Promise((r) => setTimeout(r, 20));
 
   const audio = new Audio();
+  const speech = (audio.speech = new Speech(audio));
   const game = new Game(assets, audio, MODE, DUEL || undefined);
+  // Anakin's voice: barks, duel lines, cutscene subtitles and dialogue replies
+  const ANAKIN = '아나킨';
+  game.on('say', (text, key, dur, speaker) => {
+    if (dur == null && (!speaker || speaker === ANAKIN)) speech.anakin(text); // dur: a recorded clip already played
+  });
+  game.on('subtitle', (who, text) => {
+    if (!who) speech.stop();
+    else if (who === ANAKIN && !(game.cinema && game.cinema.track)) speech.anakin(text); // a film track carries its own voices
+  });
+  game.on('reply', (text) => speech.anakin(text));
   if (look) game.player.sprite = look.sprite;
   const canvas = document.getElementById('world');
   const overlay = document.getElementById('overlay');
@@ -82,6 +98,31 @@ async function boot() {
   const fullscreen = new Fullscreen();
   input.onFullscreen = () => fullscreen.toggle();
   const zoom = new ZoomControl(renderer, touch);
+  // Original / Remaster graphics (F5 or Settings), switched in place
+  let gfxBusy = false;
+  onGfxMode(async (m) => {
+    if (m === 'remaster' && !assets.propsHD) {
+      if (gfxBusy) return;
+      gfxBusy = true;
+      hud.log('리마스터 그래픽 준비 중… (처음 한 번만)', 'sys');
+      let shown = 0;
+      const hd = await bakeHDProps((k) => {
+        if (k - shown >= 0.25 && k < 1) hud.log(`리마스터 그래픽 준비 중… ${Math.round(k * 100)}%`, 'sys');
+        if (k - shown >= 0.25) shown = k;
+      });
+      assets.propsHD = { ...assets.propsSD, ...hd };
+      gfxBusy = false;
+      if (!isHD()) return; // switched back meanwhile
+    }
+    renderer.applyMode();
+    measure();
+    hud.log(`그래픽: ${GFX_LABEL[m]}`, 'sys');
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'F5') return;
+    e.preventDefault(); // F5 switches graphics like StarCraft: Remastered, never reloads
+    setGfxMode(isHD() ? 'original' : 'remaster');
+  });
   input.onZoom = (dir) => (dir === 0 ? zoom.reset() : zoom.step(dir));
   touch.onEnable = () => zoom.restore();
 

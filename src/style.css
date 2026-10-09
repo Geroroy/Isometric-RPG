@@ -4106,3 +4106,19 @@ body.touch .cn-skip kbd {
   15%, 75% { opacity: 1; transform: none; }
   100% { opacity: 0; }
 }
+
+/* Settings → 화면: Original / Remaster graphics */
+.set-gfx {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.set-gfx > span {
+  min-width: 52px;
+}
+.set-gfx .btn-ghost.on {
+  border-color: var(--gold, #e9c47a);
+  color: var(--gold, #e9c47a);
+  box-shadow: inset 0 0 0 1px rgba(233, 196, 122, 0.35);
+}

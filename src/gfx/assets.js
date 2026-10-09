@@ -117,6 +117,38 @@ export async function bakeAssets(onProgress) {
   return assets;
 }
 
+/**
+ * Remaster graphics: world props baked at 2× density with soft edges. Star
+ * Wars vehicles, wrecks and bodies keep the frames they have in both modes.
+ */
+const HD_SKIP = new Set(['atte', 'laat', 'skiff', 'aatWreck', 'droidDebris', 'sepBody']);
+
+export async function bakeHDProps(onProgress) {
+  const cached = await loadBundle('props-hd');
+  if (cached) return cached.props;
+  const baker = new Baker();
+  const names = Object.keys(PROPS).filter((n) => !HD_SKIP.has(n));
+  let total = 0;
+  for (const n of names) total += PROPS[n].variants * (PROPS[n].angles || [0]).length;
+  const tick = progress(onProgress, total);
+  const props = {};
+  for (const name of names) {
+    const def = PROPS[name];
+    const frames = [];
+    for (const m of buildPropVariants(name)) {
+      for (const f of baker.bakeStatic(m, { angles: def.angles || [0], hd: true })) {
+        frames.push(f);
+        await tick(`리마스터 오브젝트: ${name}`);
+      }
+    }
+    props[name] = frames;
+  }
+  onProgress(1, '완료');
+  saveBundle('props-hd', { props });
+  baker.dispose();
+  return props;
+}
+
 /** Sprites for one Movie Duel, baked on demand. */
 export async function bakeDuelAssets(onProgress, duel = 'geonosis') {
   const key = duel === 'geonosis' ? 'duel' : 'duel-' + duel;

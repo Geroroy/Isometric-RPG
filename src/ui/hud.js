@@ -11,6 +11,7 @@ import { StarCardsUI } from './starCards.js';
 import { AppearanceUI } from './appearance.js';
 import { QUESTS } from '../game/quests.js';
 import { VOLUMES } from '../core/audio.js';
+import { GFX_LABEL, gfxMode, setGfxMode, onGfxMode } from '../core/gfx.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (tag, cls, html) => {
@@ -405,6 +406,7 @@ export class HUD {
       <section class="set-card">
         <h4>소리</h4>
         <label class="set-toggle"><input type="checkbox" id="soundOn"> 소리 켜기 <kbd>M</kbd></label>
+        <label class="set-toggle"><input type="checkbox" id="speechOn"> 아나킨 대사 음성 <small id="speechVoice"></small></label>
         <div class="set-vol">${VOLUMES.map(([k, l]) => `<label><span>${l}</span><input type="range" min="0" max="100" step="1" data-vol="${k}"><b></b></label>`).join('')}</div>
         <p class="set-note">이 기기에 저장됩니다. 대사 음성·효과음 파일을 직접 넣는 방법은 <code>public/audio/README.md</code>를 참고하세요.</p>
       </section>
@@ -415,6 +417,8 @@ export class HUD {
       </section>
       <section class="set-card">
         <h4>화면</h4>
+        <div class="set-gfx"><span>그래픽</span>${['original', 'remaster'].map((m) => `<button type="button" class="btn-ghost" data-gfx="${m}">${GFX_LABEL[m]}</button>`).join('')}<kbd>F5</kbd></div>
+        <p class="set-note">오리지널: 저해상도 픽셀 · 줄인 색 · 딱딱한 가장자리. 리마스터: 화면 해상도 · 2배 밀도 지형과 오브젝트 · 부드러운 가장자리와 그림자 · 매끄러운 조명.</p>
         <p class="set-note">확대·축소: 휴대폰은 두 손가락, PC는 마우스 휠 또는 <kbd>-</kbd> <kbd>=</kbd> (<kbd>0</kbd> 기본). 전체 화면: <kbd>F</kbd></p>
         <button type="button" class="btn-ghost" id="openHelp">조작법 보기</button>
       </section>`;
@@ -454,6 +458,16 @@ export class HUD {
         show();
       });
     });
+    const sp = this.audio.speech;
+    const spOn = $('#speechOn');
+    spOn.checked = !!(sp && sp.on);
+    spOn.disabled = !(sp && sp.available);
+    spOn.addEventListener('change', (e) => sp && sp.setOn(e.target.checked));
+    $('#speechVoice').textContent = !sp || !sp.available ? '(이 브라우저는 음성 합성을 지원하지 않음)' : '';
+    o.querySelectorAll('[data-gfx]').forEach((b) => b.addEventListener('click', () => setGfxMode(b.dataset.gfx)));
+    const syncGfx = () => o.querySelectorAll('[data-gfx]').forEach((b) => b.classList.toggle('on', b.dataset.gfx === gfxMode()));
+    syncGfx();
+    onGfxMode(syncGfx);
     $('#openDebug').addEventListener('click', () => this.toggle('debug', true));
     $('#openHelp').addEventListener('click', () => {
       this.toggle('settings', false);

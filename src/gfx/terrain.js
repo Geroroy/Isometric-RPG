@@ -1,7 +1,8 @@
 // Chunked per-pixel terrain renderer. Ground colors are blended smoothly
 // between tiles (no diamond seams), then textured with grain / pebbles,
 // paving patterns, roads and craters and finally ordered-dithered to a
-// reduced palette for an old-school look.
+// reduced palette for an old-school look. Remaster graphics (density 2) build
+// chunks at twice the pixel density in full colour with a finer grain.
 import { HALF_W, HALF_H } from '../core/iso.js';
 import { BIOME } from '../world/worldgen.js';
 import { valueNoise, hash2, clamp } from '../core/math.js';
@@ -60,6 +61,14 @@ export class Terrain {
     this.cache = new Map();
     this.frame = 0;
     this.maxChunks = 64;
+    this.S = 1; // pixels per game pixel
+  }
+
+  setDensity(S) {
+    if (S === this.S) return;
+    this.S = S;
+    this.cache.clear();
+    this.job = null;
   }
 
   sample(arr, u, v) {
@@ -81,21 +90,33 @@ export class Terrain {
   }
 
   buildChunk(cx, cy) {
+    const gen = this.buildGen(cx, cy);
+    let r;
+    while (!(r = gen.next()).done);
+    return r.value;
+  }
+
+  /** Builds a chunk, yielding every few rows (prefetch spreads it over frames). */
+  *buildGen(cx, cy) {
+    const S = this.S;
+    const hd = S > 1;
+    const PW = CW * S;
+    const PH = CHH * S;
     const canvas = document.createElement('canvas');
-    canvas.width = CW;
-    canvas.height = CHH;
+    canvas.width = PW;
+    canvas.height = PH;
     const ctx = canvas.getContext('2d');
-    const img = ctx.createImageData(CW, CHH);
+    const img = ctx.createImageData(PW, PH);
     const d = img.data;
     const x0 = cx * CH;
     const y0 = cy * CH;
     const sx0 = (x0 - (y0 + CH)) * HALF_W;
     const sy0 = (x0 + y0) * HALF_H;
     const q = 255 / 30;
-    for (let py = 0; py < CHH; py++) {
-      const sy = sy0 + py;
-      for (let px = 0; px < CW; px++) {
-        const sx = sx0 + px;
+    for (let py = 0; py < PH; py++) {
+      const sy = sy0 + py / S;
+      for (let px = 0; px < PW; px++) {
+        const sx = sx0 + px / S;
         const fx = (sx / HALF_W + sy / HALF_H) / 2;
         const fy = (sy / HALF_H - sx / HALF_W) / 2;
         if (fx < x0 || fx >= x0 + CH || fy < y0 || fy >= y0 + CH) continue;
@@ -109,7 +130,7 @@ export class Terrain {
         const cry = this.sample(this.K, u, v);
         const base = this.sample(this.Bs, u, v);
         const lava = this.sample(this.L, u, v);
-        const grain = hash2(sx, sy, 99);
+        const grain = hd ? hash2(Math.floor(sx * S), Math.floor(sy * S), 99) : hash2(sx, sy, 99);
         const blot = valueNoise(fx * 1.7, fy * 1.7, 13) - 0.5;
         // blotchy mid-frequency variation
         r += blot * 16;
@@ -177,18 +198,29 @@ export class Terrain {
           g = 230;
           b = 255;
         }
+        const i = (py * PW + px) * 4;
+        if (hd) {
+          // full colour; a little fine grain in place of the dither
+          const fine = (hash2(px + sx0 * S, py + sy0 * S, 7) - 0.5) * 6;
+          d[i] = clamp(r + fine, 0, 255);
+          d[i + 1] = clamp(g + fine, 0, 255);
+          d[i + 2] = clamp(b + fine * 0.9, 0, 255);
+          d[i + 3] = 255;
+          continue;
+        }
         const t = BAYER[(py & 3) * 4 + (px & 3)] * q;
-        const i = (py * CW + px) * 4;
         d[i] = clamp(Math.round((r + t) / q) * q, 0, 255);
         d[i + 1] = clamp(Math.round((g + t) / q) * q, 0, 255);
         d[i + 2] = clamp(Math.round((b + t) / q) * q, 0, 255);
         d[i + 3] = 255;
       }
+      if ((py & 7) === 7) yield;
     }
     ctx.putImageData(img, 0, 0);
 
     // Craters & scorch decals.
     ctx.save();
+    ctx.scale(S, S);
     ctx.beginPath();
     ctx.moveTo((x0 - y0) * HALF_W - sx0, 0);
     ctx.lineTo((x0 + CH - y0) * HALF_W - sx0, CH * HALF_H);
@@ -223,8 +255,23 @@ export class Terrain {
     const key = cx + ',' + cy;
     let c = this.cache.get(key);
     if (!c) {
-      c = this.buildChunk(cx, cy);
-      this.cache.set(key, c);
+      if (this.job && this.job.key === key) {
+        // the prefetch was building this one: finish it now
+        let r;
+        while (!(r = this.job.gen.next()).done);
+        c = r.value;
+        this.job = null;
+      } else c = this.buildChunk(cx, cy);
+      this.insert(key, c);
+    }
+    c.used = this.frame;
+    return c;
+  }
+
+  insert(key, c) {
+    c.used = this.frame;
+    this.cache.set(key, c);
+    {
       if (this.cache.size > this.maxChunks) {
         let oldK = null;
         let oldT = Infinity;
@@ -237,8 +284,6 @@ export class Terrain {
         this.cache.delete(oldK);
       }
     }
-    c.used = this.frame;
-    return c;
   }
 
   /** Draw every chunk overlapping the view rectangle (in world-screen px). */
@@ -270,21 +315,33 @@ export class Terrain {
         const key = cx + ',' + cy;
         if (!this.cache.has(key)) built++;
         const c = this.getChunk(cx, cy);
-        ctx.drawImage(c.canvas, Math.round(c.sx - vx), Math.round(c.sy - vy));
+        ctx.drawImage(c.canvas, Math.round(c.sx - vx), Math.round(c.sy - vy), CW, CHH);
       }
     }
-    // Prefetch one chunk just outside the view per frame to avoid hitches.
+    // Prefetch chunks just outside the view a few rows per frame (~4 ms) so
+    // walking never stalls on building one.
     if (!built) {
-      for (let cy = Math.max(0, minY - 1); cy <= Math.min(nC - 1, maxY + 1) && !built; cy++) {
-        for (let cx = Math.max(0, minX - 1); cx <= Math.min(nC - 1, maxX + 1); cx++) {
-          if (this.cache.has(cx + ',' + cy) || visible(cx, cy)) continue;
-          const pad = 160;
-          const sx0 = (cx * CH - (cy * CH + CH)) * HALF_W;
-          const sy0 = (cx * CH + cy * CH) * HALF_H;
-          if (sx0 > vx + vw + pad || sx0 + CW < vx - pad || sy0 > vy + vh + pad || sy0 + CHH < vy - pad) continue;
-          this.getChunk(cx, cy);
-          built++;
-          break;
+      if (!this.job) {
+        for (let cy = Math.max(0, minY - 1); cy <= Math.min(nC - 1, maxY + 1) && !this.job; cy++) {
+          for (let cx = Math.max(0, minX - 1); cx <= Math.min(nC - 1, maxX + 1); cx++) {
+            if (this.cache.has(cx + ',' + cy) || visible(cx, cy)) continue;
+            const pad = 160;
+            const sx0 = (cx * CH - (cy * CH + CH)) * HALF_W;
+            const sy0 = (cx * CH + cy * CH) * HALF_H;
+            if (sx0 > vx + vw + pad || sx0 + CW < vx - pad || sy0 > vy + vh + pad || sy0 + CHH < vy - pad) continue;
+            this.job = { key: cx + ',' + cy, gen: this.buildGen(cx, cy) };
+            break;
+          }
+        }
+      }
+      if (this.job) {
+        const end = performance.now() + 4;
+        let r;
+        do r = this.job.gen.next();
+        while (!r.done && performance.now() < end);
+        if (r.done) {
+          this.insert(this.job.key, r.value);
+          this.job = null;
         }
       }
     }

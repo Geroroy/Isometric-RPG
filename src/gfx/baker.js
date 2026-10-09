@@ -2,6 +2,9 @@
 // orthographic camera into trimmed, outlined, posterized sprite frames that
 // are shelf-packed into atlas pages. This mimics the pre-rendered 3D sprite
 // workflow of StarCraft / Diablo II, but happens at load time in the browser.
+// An `hd` bake (Remaster graphics) renders at 2× pixel density, keeps
+// anti-aliased alpha edges and full colour (no posterize / dither); its
+// frames carry `k: 0.5`, the game-pixel size of one of their pixels.
 import * as THREE from 'three';
 import { PX_PER_UNIT, CAM_ELEVATION } from '../core/iso.js';
 import { detail } from './models/parts.js';
@@ -86,7 +89,7 @@ export class Baker {
     return this.packer.pages;
   }
 
-  setFrame(fw, fh, ax, ay, ss = 1, tiles = [1, 1]) {
+  setFrame(fw, fh, ax, ay, ss = 1, tiles = [1, 1], R = 1) {
     const W = fw * ss * tiles[0];
     const H = fh * ss * tiles[1];
     if (this.size[0] !== W || this.size[1] !== H) {
@@ -97,7 +100,8 @@ export class Baker {
     }
     this.ss = ss;
     this.tiles = tiles;
-    const s = PX_PER_UNIT;
+    this.R = R;
+    const s = PX_PER_UNIT * R;
     const cam = this.camera;
     cam.left = -ax / s;
     cam.right = (fw - ax) / s;
@@ -134,7 +138,7 @@ export class Baker {
     const out = [];
     for (let i = 0; i < n; i++) {
       const src = ctx.getImageData((i % cols) * fw * ss, Math.floor(i / cols) * fh * ss, fw * ss, fh * ss);
-      out.push(ss > 1 ? downsample(src.data, fw, fh, ss) : src.data);
+      out.push(ss > 1 ? downsample(src.data, fw, fh, ss, this.R > 1) : src.data);
     }
     return out;
   }
@@ -151,7 +155,7 @@ export class Baker {
       m.getWorldPosition(this.tmpV);
       markersW[m.name] = { w: this.tmpV.clone() };
       this.tmpV.project(this.camera);
-      markers[m.name] = [((this.tmpV.x + 1) / 2) * fw - ax, ((1 - this.tmpV.y) / 2) * fh - ay];
+      markers[m.name] = [(((this.tmpV.x + 1) / 2) * fw - ax) / this.R, (((1 - this.tmpV.y) / 2) * fh - ay) / this.R];
     }
     return { markers, markersW };
   }
@@ -182,6 +186,7 @@ export class Baker {
       return { page: this.packer.page, sx: 0, sy: 0, w: 1, h: 1, ox: 0, oy: 0, markers, empty: true };
     }
 
+    const hd = this.R > 1;
     const pad = opts.outline === false ? 0 : 1;
     const w = x1 - x0 + 1 + pad * 2;
     const h = y1 - y0 + 1 + pad * 2;
@@ -194,8 +199,16 @@ export class Baker {
         const si = (y * fw + x) * 4;
         if (d[si + 3] === 0) continue;
         const di = ((y - y0 + pad) * w + (x - x0 + pad)) * 4;
-        const t = (bayer[(y & 3) * 4 + (x & 3)] / 16 - 0.5) * (255 / levels);
         const rgb = isGlowPx(d, si) ? [d[si], d[si + 1], d[si + 2]] : grade(d[si], d[si + 1], d[si + 2]);
+        if (hd) {
+          // full colour, soft edges
+          o[di] = rgb[0];
+          o[di + 1] = rgb[1];
+          o[di + 2] = rgb[2];
+          o[di + 3] = d[si + 3];
+          continue;
+        }
+        const t = (bayer[(y & 3) * 4 + (x & 3)] / 16 - 0.5) * (255 / levels);
         for (let c = 0; c < 3; c++) {
           const v = rgb[c] + t;
           o[di + c] = Math.max(0, Math.min(255, Math.round(v / (255 / levels)) * (255 / levels)));
@@ -215,7 +228,7 @@ export class Baker {
             const ny = y + dy;
             if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
             const ni = (ny * w + nx) * 4;
-            if (o[ni + 3] === 255 && !isGlowPx(o, ni)) solid++;
+            if ((hd ? o[ni + 3] >= 128 : o[ni + 3] === 255) && !isGlowPx(o, ni)) solid++;
           }
           if (solid) add.push(i);
         }
@@ -224,12 +237,14 @@ export class Baker {
         o[i] = 14;
         o[i + 1] = 11;
         o[i + 2] = 16;
-        o[i + 3] = 150;
+        o[i + 3] = hd ? 120 : 150;
       }
     }
     const slot = this.packer.alloc(w, h);
     slot.ctx.putImageData(out, slot.x, slot.y);
-    return { page: slot.page, sx: slot.x, sy: slot.y, w, h, ox: ax - (x0 - pad), oy: ay - (y0 - pad), markers };
+    const fr = { page: slot.page, sx: slot.x, sy: slot.y, w, h, ox: ax - (x0 - pad), oy: ay - (y0 - pad), markers };
+    if (hd) fr.k = 1 / this.R;
+    return fr;
   }
 
   /**
@@ -327,7 +342,8 @@ export class Baker {
   }
 
   /** Bake a static object from N viewing angles (variants). */
-  bakeStatic(object, { angles = [0], margin = 4, outline = true, posterize } = {}) {
+  bakeStatic(object, { angles = [0], margin = 4, outline = true, posterize, hd = false } = {}) {
+    const R = hd ? 2 : 1;
     detail(object);
     this.holder.add(object);
     const frames = [];
@@ -336,7 +352,7 @@ export class Baker {
       object.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(object);
       // project the 8 corners to find pixel extents relative to origin
-      const s = PX_PER_UNIT;
+      const s = PX_PER_UNIT * R;
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
       for (const x of [box.min.x, box.max.x]) {
         for (const y of [box.min.y, box.max.y]) {
@@ -350,11 +366,12 @@ export class Baker {
           }
         }
       }
-      const ax = Math.ceil(-minX) + margin;
-      const ay = Math.ceil(-minY) + margin;
-      const fw = Math.ceil(maxX) + ax + margin;
-      const fh = Math.ceil(maxY) + ay + margin;
-      this.setFrame(fw, fh, ax, ay);
+      const m = margin * R;
+      const ax = Math.ceil(-minX) + m;
+      const ay = Math.ceil(-minY) + m;
+      const fw = Math.ceil(maxX) + ax + m;
+      const fh = Math.ceil(maxY) + ay + m;
+      this.setFrame(fw, fh, ax, ay, hd ? 2 : 1, [1, 1], R);
       frames.push(this.capture([], { outline, posterize }));
       this.renderer.setScissorTest(false);
     }
@@ -368,7 +385,7 @@ export class Baker {
  * if at least half its samples are covered — or any of them is blade glow, so
  * thin saber blades stay continuous.
  */
-function downsample(src, fw, fh, ss) {
+function downsample(src, fw, fh, ss, smooth = false) {
   const out = new Uint8ClampedArray(fw * fh * 4);
   const W = fw * ss;
   const n = ss * ss;
@@ -386,12 +403,12 @@ function downsample(src, fw, fh, ss) {
           if (isGlowPx(src, i)) glow = true;
         }
       }
-      if (cov * 2 < n && !glow) continue;
+      if (smooth ? !cov : cov * 2 < n && !glow) continue;
       const o = (y * fw + x) * 4;
       out[o] = r / cov;
       out[o + 1] = g / cov;
       out[o + 2] = b / cov;
-      out[o + 3] = 255;
+      out[o + 3] = smooth && !glow ? Math.round((255 * cov) / n) : 255; // smooth: coverage → alpha
     }
   }
   return out;

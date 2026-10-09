@@ -1,10 +1,14 @@
 // World renderer: low-resolution canvas (scaled up with nearest-neighbour for
 // chunky pixels), depth-sorted sprites, Diablo-style light map and additive
-// glow pass for sabers, blaster bolts and Force effects.
+// glow pass for sabers, blaster bolts and Force effects. In Remaster graphics
+// the canvas holds D device pixels per game pixel (all drawing stays in game
+// pixels under a D× transform), so 2×-density terrain and props, glow lines,
+// soft shadows and the light map come out at the screen's own resolution.
 import { worldToScreen, screenToWorld } from '../core/iso.js';
 import { Terrain } from './terrain.js';
 import { PROPS } from './models/props.js';
 import { dist } from '../core/math.js';
+import { isHD } from '../core/gfx.js';
 
 const AMBIENT = [150, 146, 178];
 export const ZOOM_MIN = 0.5;
@@ -28,7 +32,19 @@ export class Renderer {
     this.time = 0;
     this.zoom = 1;
     this.touchMode = false;
+    this.hd = false;
+    this.D = 1;
+    this.shadow = softShadow();
+    this.applyMode();
+  }
+
+  /** Original / Remaster graphics (props must already be baked for the mode). */
+  applyMode() {
+    this.hd = isHD() && !!this.assets.propsHD;
+    this.assets.props = this.hd ? this.assets.propsHD : this.assets.propsSD || this.assets.props;
     this.prepareProps();
+    this.terrain.setDensity(this.hd ? 2 : 1);
+    this.canvas.style.imageRendering = this.hd ? 'auto' : '';
     this.resize();
   }
 
@@ -82,8 +98,10 @@ export class Renderer {
     this.scale = devScale / dpr;
     this.w = Math.ceil((W * dpr) / devScale);
     this.h = Math.ceil((H * dpr) / devScale);
-    this.canvas.width = this.w;
-    this.canvas.height = this.h;
+    // Remaster: up to 3 device pixels per game pixel (CSS scales the rest)
+    this.D = this.hd ? Math.min(3, devScale) : 1;
+    this.canvas.width = this.w * this.D;
+    this.canvas.height = this.h * this.D;
     this.canvas.style.width = this.w * this.scale + 'px';
     this.canvas.style.height = this.h * this.scale + 'px';
     this.light.width = this.w;
@@ -144,6 +162,8 @@ export class Renderer {
     this.cam.y = Math.round(ps.y - viewH * (this.touchMode ? 0.6 : 0.55) + dr.y + (sh ? (Math.random() - 0.5) * sh : 0));
     const cam = this.cam;
 
+    ctx.setTransform(this.D, 0, 0, this.D, 0, 0);
+    this.smooth(this.hd);
     ctx.fillStyle = '#07070a';
     ctx.fillRect(0, 0, W, H);
     this.terrain.draw(ctx, cam.x, cam.y, W, H);
@@ -173,22 +193,27 @@ export class Renderer {
     // --- ground markers: selection ellipses, click marks, strike targets
     this.drawGroundMarkers(ctx, cam);
 
-    // --- shadows
+    // --- shadows: flat ellipses (original) or soft alpha blobs (remaster)
+    const shadow = (x, y, rx) => {
+      if (this.hd) {
+        this.smooth(true);
+        ctx.drawImage(this.shadow, x - cam.x - rx * 1.35, y - cam.y - rx * 0.68, rx * 2.7, rx * 1.36);
+        return;
+      }
+      ctx.beginPath();
+      ctx.ellipse(x - cam.x, y - cam.y, rx, rx * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    };
     ctx.fillStyle = 'rgba(0,0,0,0.32)';
     for (const u of g.activeUnits) {
       if (u.dead) continue;
       const s = worldToScreen(u.x, u.y);
       const r = u.kind === 'b2' ? 11 : u.kind === 'r2' ? 7 : 9;
-      const k = 1 / (1 + u.z * 0.4);
-      ctx.beginPath();
-      ctx.ellipse(s.x - cam.x, s.y - cam.y, r * k, r * 0.5 * k, 0, 0, Math.PI * 2);
-      ctx.fill();
+      shadow(s.x, s.y, r / (1 + u.z * 0.4));
     }
     for (const pk of g.pickups) {
       const s = worldToScreen(pk.x, pk.y);
-      ctx.beginPath();
-      ctx.ellipse(s.x - cam.x, s.y - cam.y, 4, 2, 0, 0, Math.PI * 2);
-      ctx.fill();
+      shadow(s.x, s.y, 4);
     }
 
     // --- depth-sorted standing objects
@@ -244,7 +269,21 @@ export class Renderer {
   }
 
   drawFrame(f, x, y) {
-    this.ctx.drawImage(f.page, f.sx, f.sy, f.w, f.h, Math.round(x - f.ox - this.cam.x), Math.round(y - f.oy - this.cam.y), f.w, f.h);
+    const k = f.k;
+    if (!k) {
+      // a game-resolution sprite: whole game pixels, nearest-neighbour
+      this.smooth(false);
+      this.ctx.drawImage(f.page, f.sx, f.sy, f.w, f.h, Math.round(x - f.ox - this.cam.x), Math.round(y - f.oy - this.cam.y), f.w, f.h);
+      return;
+    }
+    // a 2×-density (remaster) frame, snapped to device pixels
+    const D = this.D;
+    this.smooth(true);
+    this.ctx.drawImage(f.page, f.sx, f.sy, f.w, f.h, Math.round((x - f.ox * k - this.cam.x) * D) / D, Math.round((y - f.oy * k - this.cam.y) * D) / D, f.w * k, f.h * k);
+  }
+
+  smooth(on) {
+    if (this.ctx.imageSmoothingEnabled !== on) this.ctx.imageSmoothingEnabled = on;
   }
 
   drawUnit(u) {
@@ -358,6 +397,7 @@ export class Renderer {
     // composite
     const ctx = this.ctx;
     ctx.globalCompositeOperation = 'multiply';
+    this.smooth(this.hd); // remaster: the light map is smoothly upscaled
     ctx.drawImage(this.light, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
   }
@@ -547,4 +587,18 @@ export class Renderer {
     }
     g.fx.drawText(o, cam, S);
   }
+}
+
+/** A soft elliptical contact shadow (drawn squashed to 2:1). */
+function softShadow() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, 'rgba(0,0,0,0.5)');
+  g.addColorStop(0.55, 'rgba(0,0,0,0.32)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = g;
+  x.fillRect(0, 0, 64, 64);
+  return c;
 }

@@ -71,6 +71,7 @@ export class DialogueUI {
     if (!c) return;
     if (this.shown < this.node.text.length) return this.skip();
     this.audio.play('click');
+    this.game.emit('reply', c.text); // Anakin's side of the conversation is the choice
     this.show(c.go());
   }
 
