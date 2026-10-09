@@ -18,6 +18,7 @@ export class Fullscreen {
 
     const btn = (this.btn = document.createElement('button'));
     btn.id = 'fsBtn';
+    btn.className = 'hud-btn';
     btn.type = 'button';
     btn.title = '전체 화면 (F)';
     btn.setAttribute('aria-label', '전체 화면 전환');

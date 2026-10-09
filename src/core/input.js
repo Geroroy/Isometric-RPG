@@ -190,6 +190,17 @@ export class Input {
       case 'f':
         if (this.onFullscreen) this.onFullscreen();
         break;
+      case '-':
+      case '_':
+        if (this.onZoom) this.onZoom(-1);
+        break;
+      case '=':
+      case '+':
+        if (this.onZoom) this.onZoom(1);
+        break;
+      case '0':
+        if (this.onZoom) this.onZoom(0);
+        break;
       case 'm':
         this.audio.toggleMute();
         g.fx.text(p.x, p.y, this.audio.muted ? '음소거' : '소리 켜짐', '#ddd', 0.8);

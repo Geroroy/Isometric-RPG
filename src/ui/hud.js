@@ -30,7 +30,6 @@ export class HUD {
     this.pendingSkill = null;
     this.miniT = 0;
     this.textT = 0;
-    this.subQueue = [];
     this.sub = null;
     this.open = { tree: false, char: false, map: false };
     this.buildConsole();
@@ -45,7 +44,7 @@ export class HUD {
       this.fitPanel($('#skilltree'));
       this.fitPanel($('#charsheet'));
     });
-    game.on('say', (text) => this.say(text));
+    game.on('say', (text, key, dur) => this.say(text, dur));
     game.on('region', (name) => this.banner(name));
     game.on('hurt', () => portrait.hurt());
     game.on('levelup', () => this.refreshPanels());
@@ -448,16 +447,11 @@ export class HUD {
 
   // ------------------------------------------------------------------ messages
 
-  say(text) {
-    this.subQueue = [text];
-    this.nextSub();
-  }
-
-  nextSub() {
-    const text = this.subQueue.shift();
-    if (!text) return;
-    this.sub = { text, shown: 0, t: 0, hold: 2.2 + text.length * 0.05 };
-    this.portrait.talk(Math.min(3, 0.6 + text.length * 0.045));
+  /** Show a subtitle; `dur` is the voice clip length when one is playing. */
+  say(text, dur = null) {
+    const talk = dur ?? Math.min(3, 0.6 + text.length * 0.045);
+    this.sub = { text, shown: 0, t: 0, hold: Math.max(2.2 + text.length * 0.05, talk + 1) };
+    this.portrait.talk(talk);
   }
 
   banner(name) {

@@ -10,6 +10,7 @@ import { Input } from './core/input.js';
 import { Audio } from './core/audio.js';
 import { TouchControls, isTouchDevice } from './ui/touch.js';
 import { Fullscreen } from './ui/fullscreen.js';
+import { ZoomControl } from './ui/zoom.js';
 
 const loading = document.getElementById('loading');
 const bar = document.querySelector('#loading .bar div');
@@ -34,6 +35,9 @@ async function boot() {
   const touch = new TouchControls(game, renderer, hud, input, audio);
   const fullscreen = new Fullscreen();
   input.onFullscreen = () => fullscreen.toggle();
+  const zoom = new ZoomControl(renderer, touch);
+  input.onZoom = (dir) => (dir === 0 ? zoom.reset() : zoom.step(dir));
+  touch.onEnable = () => zoom.restore();
 
   const measure = () => {
     renderer.resize();
@@ -42,6 +46,7 @@ async function boot() {
   };
   window.addEventListener('resize', measure);
   if (isTouchDevice()) touch.enable();
+  else zoom.restore();
   window.addEventListener('touchstart', () => touch.enable(), { once: true, passive: true });
   measure();
 
@@ -59,7 +64,8 @@ async function boot() {
     // phones go fullscreen (and landscape) right away; on PC use the button or F
     if (touch.enabled) fullscreen.enter();
     audio.play('ignite');
-    game.say('intro');
+    // let a user sound bank finish loading so the opening line can be voiced
+    Promise.race([audio.bankReady, new Promise((r) => setTimeout(r, 1500))]).then(() => game.say('intro'));
   };
 
   window.__game = game; // handy for debugging in the console

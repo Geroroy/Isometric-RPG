@@ -7,6 +7,8 @@ import { PROPS } from './models/props.js';
 import { dist } from '../core/math.js';
 
 const AMBIENT = [150, 146, 178];
+export const ZOOM_MIN = 0.5;
+export const ZOOM_MAX = 2.5;
 
 export class Renderer {
   constructor(game, assets, canvas, overlay) {
@@ -24,6 +26,8 @@ export class Renderer {
     this.clickMarks = [];
     this.consoleH = 0;
     this.time = 0;
+    this.zoom = 1;
+    this.touchMode = false;
     this.prepareProps();
     this.resize();
   }
@@ -43,14 +47,32 @@ export class Renderer {
     }
   }
 
+  /**
+   * How many device pixels one game pixel covers. Integer upscaling keeps the
+   * pixels crisp on high-DPI phones. The view shows about BASE_H game pixels
+   * vertically (fewer on phones so characters read at arm's length — tuned for
+   * a Galaxy S25 Ultra in landscape), divided by the user's zoom.
+   */
+  computeDevScale() {
+    const H = window.innerHeight * (window.devicePixelRatio || 1);
+    const baseH = this.touchMode ? 240 : 450;
+    return Math.max(1, Math.min(14, Math.round(H / (baseH / this.zoom))));
+  }
+
+  /** Change the zoom; only reallocates the canvases when the pixel scale changes. */
+  setZoom(z) {
+    this.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+    if (this.computeDevScale() !== this.devScale) this.resize();
+    return this.zoom;
+  }
+
   resize() {
     const W = window.innerWidth;
     const H = window.innerHeight;
     const dpr = window.devicePixelRatio || 1;
     this.dpr = dpr;
-    // Integer upscale in *device* pixels keeps the pixels crisp on high-DPI
-    // phones; `scale` is then CSS px per game pixel (may be fractional).
-    const devScale = Math.max(2, Math.min(6, Math.round((H * dpr) / 450)));
+    const devScale = (this.devScale = this.computeDevScale());
+    // `scale` is CSS px per game pixel (may be fractional on high-DPI screens)
     this.scale = devScale / dpr;
     this.w = Math.ceil((W * dpr) / devScale);
     this.h = Math.ceil((H * dpr) / devScale);
@@ -111,7 +133,7 @@ export class Renderer {
     const viewH = H - this.consoleH / this.scale;
     const sh = g.fx.shakeAmt;
     this.cam.x = Math.round(ps.x - W / 2 + (sh ? (Math.random() - 0.5) * sh : 0));
-    this.cam.y = Math.round(ps.y - viewH * 0.55 + (sh ? (Math.random() - 0.5) * sh : 0));
+    this.cam.y = Math.round(ps.y - viewH * (this.touchMode ? 0.6 : 0.55) + (sh ? (Math.random() - 0.5) * sh : 0));
     const cam = this.cam;
 
     ctx.fillStyle = '#07070a';

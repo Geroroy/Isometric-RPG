@@ -48,10 +48,23 @@ export class Game {
     for (const fn of this.listeners[evt] || []) fn(...args);
   }
 
+  /**
+   * Anakin speaks: a voice clip from the user's sound bank if one exists for
+   * this key (its own subtitle text wins), otherwise a subtitle-only line.
+   */
   say(key) {
     const list = LINES[key];
-    if (!list) return;
-    this.emit('say', list[Math.floor(Math.random() * list.length)], key);
+    const clip = this.audio.voice(key);
+    if (!clip && !list) return;
+    const text = (clip && clip.text) || (list ? list[Math.floor(Math.random() * list.length)] : '');
+    this.nextChatter = this.time + 7;
+    if (text) this.emit('say', text, key, clip ? clip.duration : null);
+  }
+
+  /** Optional ambient remark: rate-limited and random, never interrupts. */
+  chatter(key, chance = 1) {
+    if (this.time < (this.nextChatter || 0) || Math.random() > chance) return;
+    this.say(key);
   }
 
   // ------------------------------------------------------------------ spawning
@@ -210,6 +223,7 @@ export class Game {
       if (src === p || (src && src.owner === p)) this.fx.text(tgt.x, tgt.y, String(amount), crit ? '#ffe060' : src === p ? '#ffffff' : '#d0d8e8', crit ? 1.3 : src === p ? 1 : 0.75);
       else if (tgt === p) this.fx.text(tgt.x, tgt.y, String(amount), '#ff5a4a', 0.9);
     }
+    if (tgt === p || src === p) this.lastCombatT = this.time;
     if (tgt === p) {
       this.emit('hurt', amount);
       if (p.hp < p.maxHp * 0.25 && !this.lowHpSaid) {
@@ -236,6 +250,9 @@ export class Game {
     }
     if (u.team === 'cis') {
       p.kills++;
+      this.streak = this.time - (this.lastKillT ?? -99) < 4 ? (this.streak || 0) + 1 : 1;
+      this.lastKillT = this.time;
+      if (this.streak === 4) this.chatter('streak', 0.9);
       if (dist(u.x, u.y, p.x, p.y) < 40) p.gainXp(u.xp);
       this.fx.debris(u.x, u.y, u.kind === 'b2' ? 10 : 6, u.kind === 'b2' ? '#56606b' : '#b39f74');
       this.fx.smoke(u.x, u.y, 0.8, 3);
@@ -247,6 +264,8 @@ export class Game {
   }
 
   deflect(p, b) {
+    this.deflects = (this.deflects || 0) + 1;
+    if (this.deflects % 8 === 0) this.chatter('deflect', 0.7);
     const redirect = chance(p.redirectChance()) && b.owner && !b.owner.dead;
     let ang;
     if (redirect) ang = Math.atan2(b.owner.y - b.y, b.owner.x - b.x) + rand(-0.05, 0.05);
@@ -384,6 +403,8 @@ export class Game {
       if (reg !== this.region) {
         this.region = reg;
         this.emit('region', reg);
+        const rk = /공화국/.test(reg) ? 'regionBase' : /공장/.test(reg) ? 'regionFactory' : /폐허/.test(reg) ? 'regionRuins' : /수정/.test(reg) ? 'regionCrystal' : /격전지/.test(reg) ? 'regionBattle' : null;
+        if (rk && this.time > 3) this.chatter(rk, 0.7);
       }
     }
 
@@ -391,6 +412,10 @@ export class Game {
     this.campT -= dt;
     if (this.campT <= 0) {
       this.campT = 1;
+      if (!p.dead && this.time - (this.lastCombatT ?? 0) > 45 && this.time - (this.lastIdleT ?? 0) > 75) {
+        this.lastIdleT = this.time;
+        this.chatter('idle', 0.6);
+      }
       for (const c of this.world.camps) {
         if (!c.cleared && c.alive.every((u) => u.dead)) {
           c.cleared = true;

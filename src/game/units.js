@@ -268,6 +268,10 @@ export class Soldier extends Unit {
     if (this.thinkT <= 0) {
       this.thinkT = 0.3;
       if (!this.target || this.target.dead || dist(this.x, this.y, this.target.x, this.target.y) > 18) this.target = this.pickTarget();
+      if (this.elite && !this.announced && this.target && this.target.kind === 'player') {
+        this.announced = true;
+        g.chatter('elite', 0.9);
+      }
       if (this.lastAttacker && !this.lastAttacker.dead && this.lastAttacker.team !== this.team && !this.target) this.target = this.lastAttacker;
     }
     // Owner leash for summons.

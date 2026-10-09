@@ -1,0 +1,19 @@
+{
+  "volume": { "sfx": 1.0, "voice": 1.1 },
+  "sfx": {
+    "hum": "sfx/saber_hum.ogg",
+    "swing": ["sfx/saber_swing1.ogg", "sfx/saber_swing2.ogg", "sfx/saber_swing3.ogg"],
+    "clash": ["sfx/saber_clash1.ogg", "sfx/saber_clash2.ogg"],
+    "hit": "sfx/saber_hit.ogg",
+    "ignite": "sfx/saber_ignite.ogg"
+  },
+  "voice": {
+    "intro": [{ "file": "voice/intro.ogg", "text": "여기에 자막 문장" }],
+    "levelup": ["voice/levelup1.ogg"],
+    "campClear": ["voice/camp_clear1.ogg"],
+    "lowHp": ["voice/low_hp1.ogg"],
+    "streak": ["voice/streak1.ogg"],
+    "deflect": ["voice/deflect1.ogg"],
+    "poke": ["voice/poke1.ogg", "voice/poke2.ogg"]
+  }
+}

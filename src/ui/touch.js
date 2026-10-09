@@ -41,7 +41,16 @@ export class TouchControls {
     if (this.enabled) return;
     this.enabled = true;
     document.body.classList.add('touch');
+    this.renderer.touchMode = true;
+    if (this.onEnable) this.onEnable();
     window.dispatchEvent(new Event('resize'));
+  }
+
+  cancelJoystick() {
+    if (!this.joy) return;
+    this.joy = null;
+    this.stick.classList.add('hidden');
+    this.game.player.stopSteer();
   }
 
   build() {
