@@ -110,6 +110,7 @@ export class Audio {
       let e = 0;
       for (let i = 0; i < d.length; i += 4) e += d[i] * d[i];
       trim.gain.value = Math.min(12, 0.4 / (Math.sqrt(e / (d.length / 4)) || 1));
+      this.humTrim = trim.gain.value;
     }
     s.connect(trim).connect(this.humGain);
     s.start();
@@ -148,6 +149,63 @@ export class Audio {
     g.setValueAtTime(Math.max(lvl, 0.03), t);
     g.linearRampToValueAtTime(0.16 * strength + lvl, t + dur * 0.28);
     g.linearRampToValueAtTime(lvl, t + dur);
+  }
+
+  /**
+   * Film swing, after Ben Burtt's method: the hum was played through a
+   * speaker and re-recorded with a microphone swung past it, so a swing is
+   * the hum itself flying by — no air whoosh. A second copy of the hum moves
+   * along a straight line past the listener: Doppler pitch (up while it
+   * approaches, down as it leaves), an inverse-distance swell, a filter that
+   * opens as it comes close, and the comb filtering of the changing path
+   * length (a short, moving delay mixed with the direct sound).
+   */
+  passBy(strength = 1, dur = 0.4, pan = 0) {
+    const buf = this.humSample && this.humSample.buffer;
+    if (!buf) return false;
+    const c = this.ctx;
+    const t = c.currentTime + 0.005;
+    const N = 96;
+    const rate = new Float32Array(N);
+    const amp = new Float32Array(N);
+    const dly = new Float32Array(N);
+    const cut = new Float32Array(N);
+    const near = 0.42 - 0.18 * strength; // closest approach: a harder swing passes closer
+    const k = 0.16 + 0.12 * strength; // Doppler depth (v / c)
+    for (let i = 0; i < N; i++) {
+      const u = i / (N - 1);
+      const x = u * 2.2 - 1.2; // passes a little before the middle
+      const r = Math.hypot(x, near);
+      rate[i] = 1 / (1 + (k * x) / r); // approaching: x < 0 -> higher
+      const taper = Math.min(1, u / 0.12, (1 - u) / 0.2);
+      amp[i] = Math.pow(near / r, 1.4) * taper;
+      dly[i] = 0.0006 + 0.0024 * r; // reflection path: sweeps the comb
+      cut[i] = 900 + 7000 * (near / r);
+    }
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    src.playbackRate.setValueCurveAtTime(rate, t, dur);
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueCurveAtTime(cut, t, dur);
+    const delay = c.createDelay(0.01);
+    delay.delayTime.setValueCurveAtTime(dly, t, dur);
+    const wet = c.createGain();
+    wet.gain.value = 0.7;
+    const g = c.createGain();
+    g.gain.value = 0;
+    const peak = (this.humTrim || 1) * (0.12 + 0.1 * strength);
+    g.gain.setValueCurveAtTime(amp.map((a) => a * peak), t, dur);
+    const pn = c.createStereoPanner();
+    pn.pan.value = pan;
+    src.connect(lp);
+    lp.connect(g);
+    lp.connect(delay).connect(wet).connect(g);
+    g.connect(pn).connect(this.sfxBus);
+    src.start(t, Math.random() * buf.duration);
+    src.stop(t + dur + 0.05);
+    return true;
   }
 
   // ------------------------------------------------------------------ sound bank
@@ -328,10 +386,12 @@ export class Audio {
     const t = this.ctx.currentTime;
     switch (name) {
       case 'swing': {
-        const heavy = o.heavy && this.bank.sfx.swingHeavy;
+        const heavy = !!o.heavy;
         const rate = Math.min(1.25, Math.max(0.8, (o.rate || 1) * jit(0.05)));
-        if (!this.sample(heavy ? 'swingHeavy' : 'swing', { vol: vol * (heavy ? 0.95 : 0.8), rate, pan })) return false;
-        this.dopplerSweep(heavy ? 0.9 : 0.55, (heavy ? 0.45 : 0.3) / rate);
+        // the hum flying past is the swing; the recorded swing only adds texture
+        if (!this.passBy(heavy ? 1 : 0.6 * jit(0.15), (heavy ? 0.5 : 0.34) / rate, pan)) return false;
+        this.sample(heavy && this.bank.sfx.swingHeavy ? 'swingHeavy' : 'swing', { vol: vol * 0.3, rate, pan });
+        this.dopplerSweep(heavy ? 0.45 : 0.25, (heavy ? 0.45 : 0.3) / rate);
         return true;
       }
       case 'ignite':
