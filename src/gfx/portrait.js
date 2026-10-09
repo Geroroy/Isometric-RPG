@@ -1,4 +1,8 @@
-// StarCraft-style animated unit portrait, hand-composed as pixel art (no 3D).
+// Anakin's HUD portrait. Two modes:
+//   * photo: a photo the player picks (stored on their device) or one deployed
+//     at portrait/anakin.jpg, cropped and graded live (breathing drift, dark
+//     side grade, hit flash).
+//   * fallback: the hand-composed pixel-art portrait described below.
 //
 // Composition follows the reference art: Anakin in 3/4 view looking to the
 // left, saber held low in his right hand with the blade cutting diagonally up
@@ -9,7 +13,7 @@
 // Pipeline per frame: large shapes are painted with canvas paths at 4x
 // resolution → downsampled to 96x80 → posterized with a Bayer dither → facial
 // features are placed pixel by pixel → the saber blade is lit per-pixel and
-// spills blue light → CRT scanlines / static.
+// spills blue light.
 
 const LW = 96;
 const LH = 80;
@@ -88,29 +92,39 @@ export class Portrait {
     this.t = 0;
     this.blinkT = 2.5;
     this.talkT = 0;
-    this.staticT = 0.4;
     this.lookT = 1;
     this.look = 0;
     this.darkness = 0;
     this.dead = false;
     this.scene = 'corridor';
+    this.hurtT = 0;
+    this.photo = null; // user photo (HTMLImageElement) replaces the pixel art
+    this.crop = { x: 0.5, y: 0.3, zoom: 1.6 };
+  }
+
+  /** Use a photo as the portrait. crop = focus point (0..1) + zoom (>= 1). */
+  setPhoto(img, crop) {
+    this.photo = img;
+    if (crop) this.crop = { ...this.crop, ...crop };
+  }
+
+  clearPhoto() {
+    this.photo = null;
   }
 
   /** 'corridor' (lavender starship interior) or 'hangar' (green droid factory). */
   setScene(name) {
     if (name !== this.scene) {
       this.scene = name;
-      this.staticT = Math.max(this.staticT, 0.25);
     }
   }
 
   talk(dur) {
     this.talkT = dur;
-    this.staticT = Math.max(this.staticT, 0.15);
   }
 
   hurt() {
-    this.staticT = Math.max(this.staticT, 0.3);
+    this.hurtT = 0.35;
   }
 
   update(dt, darkness = 0, dead = false) {
@@ -125,7 +139,7 @@ export class Portrait {
       this.look = Math.random() < 0.6 ? 0 : Math.random() < 0.5 ? -1 : 1;
     }
     if (this.talkT > 0) this.talkT -= dt;
-    if (this.staticT > 0) this.staticT -= dt;
+    if (this.hurtT > 0) this.hurtT -= dt;
   }
 
   // ------------------------------------------------------------------ painting
@@ -428,17 +442,6 @@ export class Portrait {
     };
     this.placeFeatures(px, by);
     if (!this.dead) this.lightBlade(d);
-    if (this.staticT > 0) {
-      const a = Math.min(1, this.staticT * 4);
-      for (let i = 0; i < d.length; i += 4) {
-        if (Math.random() < 0.65 * a) {
-          const v = Math.random() * 255;
-          d[i] = v * 0.85;
-          d[i + 1] = v;
-          d[i + 2] = v * 0.9;
-        }
-      }
-    }
     if (this.dead) {
       for (let i = 0; i < d.length; i += 4) {
         const g = (d[i] + d[i + 1] + d[i + 2]) / 3;
@@ -448,21 +451,64 @@ export class Portrait {
     l.putImageData(img, 0, 0);
   }
 
-  /** Draw the portrait (with CRT treatment) into a target 2D context. */
+  /** Draw the photo, cropped to cover the target with a slow "breathing" drift. */
+  drawPhoto(ctx, w, h) {
+    const img = this.photo;
+    const iw = img.naturalWidth || img.width;
+    const ih = img.naturalHeight || img.height;
+    const a = w / h;
+    let sw = iw / ih > a ? ih * a : iw;
+    let sh = iw / ih > a ? ih : iw / a;
+    const z = this.crop.zoom * (1 + 0.012 * Math.sin(this.t * 0.8));
+    sw /= z;
+    sh /= z;
+    const cx = Math.max(sw / 2, Math.min(iw - sw / 2, this.crop.x * iw + Math.sin(this.t * 0.37) * sw * 0.006));
+    const cy = Math.max(sh / 2, Math.min(ih - sh / 2, this.crop.y * ih));
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, cx - sw / 2, cy - sh / 2, sw, sh, 0, 0, w, h);
+  }
+
+  /** Draw the portrait into a target 2D context (photo if set, else pixel art). */
   draw(target, w, h) {
-    // portraits animate at ~15 fps, like the originals
-    const step = Math.floor(this.t * 15);
-    if (step !== this.lastStep || this.staticT > 0) {
-      this.lastStep = step;
-      this.render();
+    target.save();
+    target.globalCompositeOperation = 'source-over';
+    if (this.photo) this.drawPhoto(target, w, h);
+    else {
+      // pixel portraits animate at ~15 fps, like the originals
+      const step = Math.floor(this.t * 15);
+      if (step !== this.lastStep) {
+        this.lastStep = step;
+        this.render();
+      }
+      target.imageSmoothingEnabled = false;
+      target.drawImage(this.lo, 0, 0, w, h);
     }
-    target.imageSmoothingEnabled = false;
-    target.drawImage(this.lo, 0, 0, w, h);
-    const sy = h / LH;
-    target.fillStyle = 'rgba(0,0,0,0.2)';
-    for (let y = 0; y < LH; y++) target.fillRect(0, Math.floor(y * sy + sy * 0.5), w, Math.max(1, Math.floor(sy * 0.35)));
-    const bar = ((this.t * 26) % (h + 40)) - 20;
-    target.fillStyle = 'rgba(200,255,220,0.05)';
-    target.fillRect(0, bar, w, 10);
+    // the dark side: warm, desaturated grade creeping in
+    const k = Math.max(0, (this.darkness - 40) / 60);
+    if (k > 0 && this.photo) {
+      target.globalCompositeOperation = 'saturation';
+      target.fillStyle = `rgba(128,128,128,${0.45 * k})`;
+      target.fillRect(0, 0, w, h);
+      target.globalCompositeOperation = 'multiply';
+      target.fillStyle = `rgba(255,${Math.round(200 - 90 * k)},${Math.round(170 - 110 * k)},1)`;
+      target.fillRect(0, 0, w, h);
+    }
+    if (this.dead) {
+      target.globalCompositeOperation = 'saturation';
+      target.fillStyle = '#808080';
+      target.fillRect(0, 0, w, h);
+      target.globalCompositeOperation = 'multiply';
+      target.fillStyle = '#5a5a5a';
+      target.fillRect(0, 0, w, h);
+    }
+    target.globalCompositeOperation = 'source-over';
+    // soft vignette + hit flash
+    const g = target.createRadialGradient(w / 2, h * 0.45, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, `rgba(${this.hurtT > 0 ? '170,20,20' : '0,0,0'},${this.hurtT > 0 ? 0.55 + this.hurtT : 0.45})`);
+    target.fillStyle = g;
+    target.fillRect(0, 0, w, h);
+    target.restore();
   }
 }

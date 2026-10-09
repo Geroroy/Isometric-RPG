@@ -267,7 +267,7 @@ export class Effects {
       const x = (s.x - cam.x) * scale;
       const y = (s.y - cam.y) * scale;
       const size = Math.round(13 * t.scale * (k < 0.15 ? 1 + (0.15 - k) * 3 : 1));
-      ctx.font = `bold ${size}px Galmuri11, monospace`;
+      ctx.font = `700 ${size + 2}px Rajdhani, 'Pretendard Variable', sans-serif`;
       ctx.globalAlpha = k > 0.7 ? (1 - k) / 0.3 : 1;
       ctx.fillStyle = '#000';
       ctx.fillText(t.str, x + 1, y + 1);

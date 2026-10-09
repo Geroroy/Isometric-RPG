@@ -1,5 +1,8 @@
 // Entry point: bake sprites, build the world, then run the game loop.
-import 'galmuri/dist/galmuri.css';
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+import '@fontsource/rajdhani/latin-500.css';
+import '@fontsource/rajdhani/latin-600.css';
+import '@fontsource/rajdhani/latin-700.css';
 import './style.css';
 import { bakeAssets } from './gfx/assets.js';
 import { Game } from './game/game.js';
@@ -11,6 +14,7 @@ import { Audio } from './core/audio.js';
 import { TouchControls, isTouchDevice } from './ui/touch.js';
 import { Fullscreen } from './ui/fullscreen.js';
 import { ZoomControl } from './ui/zoom.js';
+import { PortraitPhoto } from './ui/portraitPhoto.js';
 
 const loading = document.getElementById('loading');
 const bar = document.querySelector('#loading .bar div');
@@ -30,7 +34,9 @@ async function boot() {
   const overlay = document.getElementById('overlay');
   const renderer = new Renderer(game, assets, canvas, overlay);
   const portrait = new Portrait();
-  const hud = new HUD(game, renderer, portrait, audio);
+  const photo = new PortraitPhoto(portrait);
+  await photo.init();
+  const hud = new HUD(game, renderer, portrait, audio, photo);
   const input = new Input(game, renderer, hud, audio, canvas);
   const touch = new TouchControls(game, renderer, hud, input, audio);
   const fullscreen = new Fullscreen();
@@ -41,8 +47,7 @@ async function boot() {
 
   const measure = () => {
     renderer.resize();
-    // on phones the HUD floats over the world instead of a bottom console
-    renderer.consoleH = touch.enabled ? 0 : document.getElementById('console').offsetHeight;
+    renderer.consoleH = 0; // the HUD floats over the world
   };
   window.addEventListener('resize', measure);
   if (isTouchDevice()) touch.enable();
@@ -77,7 +82,9 @@ async function boot() {
     last = now;
     input.update(dt);
     touch.update(dt);
-    if (help.classList.contains('hidden') || !help.dataset.pause) game.update(dt);
+    // menus pause the action (the map does not)
+    const paused = !help.classList.contains('hidden') || hud.open.tree || hud.open.char || hud.open.settings;
+    if (!paused) game.update(dt);
     renderer.render(dt);
     hud.update(dt);
     requestAnimationFrame(loop);

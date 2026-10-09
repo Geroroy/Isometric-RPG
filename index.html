@@ -17,42 +17,39 @@
   <body>
     <canvas id="world"></canvas>
     <canvas id="overlay"></canvas>
-    <div id="hud">
-      <div id="console"></div>
-    </div>
+    <div id="hud"></div>
 
     <div id="help" data-pause="1">
       <div class="help-box">
-        <div class="help-title">STAR WARS · CLONE WARS</div>
-        <div class="help-sub">선택받은 자 — 크리스토프시스 외곽</div>
+        <div class="help-kicker">STAR WARS · THE CLONE WARS</div>
+        <h1 class="help-title">선택받은 자</h1>
+        <div class="help-sub">크리스토프시스 외곽 · 아나킨 스카이워커</div>
         <p class="help-intro">
-          분리주의 연합의 드로이드 군대가 크리스토프시스 외곽을 점령했습니다. 제다이 기사이자 501군단의 장군,
+          분리주의 연합의 드로이드 군대가 크리스토프시스 외곽을 점령했습니다. 제다이 기사이자 501군단의 장군
           <b>아나킨 스카이워커</b>가 되어 공화국 전진 기지에서 출발해 드로이드 거점을 소탕하고, 북쪽의 드로이드 공장을 파괴하십시오.
         </p>
         <div class="help-grid desktop-only">
-          <div><kbd>좌클릭</kbd> 이동 / 공격 (누르고 있으면 계속)</div>
-          <div><kbd>Shift</kbd>+<kbd>좌클릭</kbd> 제자리 공격</div>
-          <div><kbd>우클릭</kbd> 지정된 스킬 시전 (R 표시 슬롯)</div>
-          <div><kbd>1</kbd>~<kbd>6</kbd> 커서 위치에 스킬 시전</div>
-          <div><kbd>Q</kbd> 박타 주사기 사용</div>
-          <div><kbd>K</kbd> 스킬 트리 · <kbd>C</kbd> 캐릭터</div>
-          <div><kbd>Tab</kbd> 자동 지도 · <kbd>M</kbd> 음소거</div>
-          <div><kbd>F</kbd> 전체 화면 · <kbd>F1</kbd> 도움말</div>
-          <div><kbd>F9</kbd> 개발자: +5 레벨</div>
+          <div><kbd>좌클릭</kbd>이동 · 공격 (누르고 있으면 계속)</div>
+          <div><kbd>Shift</kbd>+<kbd>좌클릭</kbd>제자리 공격</div>
+          <div><kbd>우클릭</kbd>RMB 표시 스킬 사용</div>
+          <div><kbd>1</kbd>~<kbd>6</kbd>커서 위치에 스킬 사용</div>
+          <div><kbd>Q</kbd>박타 주사기</div>
+          <div><kbd>K</kbd>스킬 · <kbd>C</kbd>정보 · <kbd>Tab</kbd>지도</div>
+          <div><kbd>O</kbd>설정 (초상화 사진) · <kbd>M</kbd>소리</div>
+          <div><kbd>F</kbd>전체 화면 · 휠 / <kbd>-</kbd><kbd>=</kbd>확대·축소</div>
         </div>
         <div class="help-grid touch-only">
-          <div><kbd>왼쪽 화면 드래그</kbd> 가상 스틱으로 이동</div>
-          <div><kbd>공격</kbd> 누르고 있으면 가까운 드로이드 공격</div>
-          <div><kbd>스킬 탭</kbd> 가까운 적에게 자동 조준</div>
-          <div><kbd>스킬 드래그</kbd> 원하는 방향으로 조준 후 손 떼면 시전</div>
-          <div><kbd>화면 탭</kbd> 그곳으로 이동 / 적 탭 = 공격</div>
-          <div><kbd>스킬</kbd> 트리 · <kbd>캐릭터</kbd> · <kbd>⌖</kbd> 지도 (오른쪽 위)</div>
-          <div><kbd>⛶</kbd> 오른쪽 위 버튼으로 전체 화면</div>
+          <div><kbd>왼쪽 드래그</kbd>가상 스틱으로 이동</div>
+          <div><kbd>공격</kbd>누르고 있으면 가까운 적 공격</div>
+          <div><kbd>스킬 탭</kbd>가까운 적에게 자동 조준</div>
+          <div><kbd>스킬 드래그</kbd>조준한 뒤 손을 떼면 사용</div>
+          <div><kbd>두 손가락</kbd>화면 확대 · 축소</div>
+          <div><kbd>⚙ 설정</kbd>초상화 사진 · 소리</div>
         </div>
         <p class="help-tip">
-          쉬엔 반사로 블래스터 볼트를 튕겨내고, 초상화를 클릭해 아나킨과 대화해 보세요. 어둠의 기술을 쓰면 어둠 게이지가 오릅니다 — 강해지지만, 대가가 있습니다.
+          블래스터 볼트는 광선검으로 튕겨낼 수 있습니다. 어둠의 기술은 강력하지만, 쓸수록 어둠에 가까워집니다.
         </p>
-        <button id="startBtn">광선검 점화</button>
+        <button id="startBtn" type="button">광선검 점화</button>
       </div>
     </div>
 
@@ -63,11 +60,10 @@
 
     <div id="loading">
       <div class="load-box">
-        <div class="load-title">CLONE WARS</div>
-        <div class="load-sub">선택받은 자</div>
+        <div class="load-kicker">STAR WARS · THE CLONE WARS</div>
+        <div class="load-title">선택받은 자</div>
         <div class="bar"><div></div></div>
         <div class="label">3D 모델 준비 중…</div>
-        <div class="load-note">3D 모델을 실시간으로 아이소메트릭 스프라이트로 사전 렌더링하고 있습니다</div>
       </div>
     </div>
     <script type="module" src="/src/main.js"></script>

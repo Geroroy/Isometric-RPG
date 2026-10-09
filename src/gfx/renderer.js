@@ -96,7 +96,7 @@ export class Renderer {
     return screenToWorld(ix, iy);
   }
 
-  addClickMark(x, y, color = '#5dff7a') {
+  addClickMark(x, y, color = '#cfe9ff') {
     this.clickMarks.push({ x, y, t: 0, color });
   }
 
@@ -275,10 +275,10 @@ export class Renderer {
       ctx.restore();
     };
     const p = g.player;
-    if (!p.dead) ell(p.x, p.y, 13, '#4dff6a', 0.9);
+    if (!p.dead) ell(p.x, p.y, 13, '#9fdcff', 0.45);
     for (const u of g.activeUnits) {
       if (u.dead || u === p) continue;
-      if (u.owner === p) ell(u.x, u.y, u.kind === 'r2' ? 8 : 10, '#3fbf5a', 0.6);
+      if (u.owner === p) ell(u.x, u.y, u.kind === 'r2' ? 8 : 10, '#6fd0ff', 0.35);
       if (u.elite) ell(u.x, u.y, 13, '#5aa0ff', 0.5 + Math.sin(this.time * 5) * 0.3, true);
     }
     if (g.hover && !g.hover.dead) ell(g.hover.x, g.hover.y, g.hover.kind === 'b2' ? 14 : 12, g.hover.team === 'cis' ? '#ff4a3a' : '#e6e66a', 1);
@@ -478,10 +478,10 @@ export class Renderer {
       const x = (s.x - cam.x) * S;
       const y = (s.y - cam.y - top) * S;
       const w = 34;
-      o.fillStyle = 'rgba(0,0,0,0.7)';
-      o.fillRect(x - w / 2 - 1, y - 1, w + 2, 5);
-      o.fillStyle = u.team === 'cis' ? '#d8352a' : '#38c95a';
-      o.fillRect(x - w / 2, y, (w * Math.max(0, u.hp)) / u.maxHp, 3);
+      o.fillStyle = 'rgba(0,0,0,0.55)';
+      o.fillRect(x - w / 2 - 1, y - 1, w + 2, 4);
+      o.fillStyle = u.team === 'cis' ? '#e2483d' : '#5cc8ff';
+      o.fillRect(x - w / 2, y, (w * Math.max(0, u.hp)) / u.maxHp, 2);
     }
     g.fx.drawText(o, cam, S);
   }

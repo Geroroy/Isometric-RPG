@@ -80,13 +80,13 @@ export class TouchControls {
     const menu = el('div', 't-menu');
     const items = [
       ['skills', '스킬', () => this.hud.toggle('tree')],
-      ['character', '캐릭터', () => this.hud.toggle('char')],
+      ['character', '정보', () => this.hud.toggle('char')],
       ['map', '지도', () => this.hud.toggle('map')],
-      ['help', '도움말', () => document.getElementById('help').classList.toggle('hidden')],
+      ['settings', '설정', () => this.hud.toggle('settings')],
     ];
     this.menuBtns = {};
     for (const [icon, label, fn] of items) {
-      const b = el('div', 't-mbtn', icon === 'map' || icon === 'help' ? `<b>${icon === 'map' ? '⌖' : '?'}</b><span>${label}</span>` : `<img src="${iconURL(icon)}" alt=""><span>${label}</span>`);
+      const b = el('div', 't-mbtn', icon === 'map' || icon === 'settings' ? `<b>${icon === 'map' ? '⌖' : '⚙'}</b><span>${label}</span>` : `<img src="${iconURL(icon)}" alt=""><span>${label}</span>`);
       // 'click' (not pointerdown) so the follow-up click can't hit the panel that just opened
       b.addEventListener('click', (e) => {
         e.stopPropagation();

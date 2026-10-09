@@ -1,6 +1,13 @@
-// DOM-based HUD: StarCraft-style bottom console (minimap, unit info, portrait,
-// command card), Diablo-style orbs, skill tree & character panels, automap,
-// tooltips, subtitles and banners.
+// HUD in the style of Star Wars Battlefront II / Jedi: Survivor: minimal,
+// translucent and floating.
+//   bottom-left   portrait + health (with damage chip), segmented Force bar,
+//                 bacta stims, light/dark meter, XP line
+//   bottom-right  ability cards (1-6, cooldown sweeps, RMB marker), buffs, menu
+//   top-left      circular radar centred on Anakin
+//   top-right     objective tracker
+//   top-centre    target info · bottom-centre cinematic subtitles
+// Full-screen overlays: skill tree (node graph with a detail pane), info
+// (attributes), map, settings (portrait photo, sound).
 import { SKILLS, TREES, TIER_LEVELS, canLearn, isActive } from '../game/skills.js';
 import { iconURL } from './icons.js';
 import { dist } from '../core/math.js';
@@ -14,36 +21,42 @@ const el = (tag, cls, html) => {
 };
 
 const ATTR_INFO = {
-  str: ['힘', '광선검 피해 +1.5%/포인트'],
-  agi: ['민첩', '공격 속도 +0.6%, 볼트 반사 +0.3%/포인트'],
-  vit: ['활력', '생명력 +4/포인트'],
-  for: ['포스 친화', '포스 +2, 포스 피해 +1.2%/포인트'],
+  str: ['힘', 'STR', '광선검 피해 +1.5% / 포인트'],
+  agi: ['민첩', 'AGI', '공격 속도 +0.6%, 볼트 반사 +0.3% / 포인트'],
+  vit: ['활력', 'VIT', '생명력 +4 / 포인트'],
+  for: ['포스 친화', 'FOR', '포스 +2, 포스 피해 +1.2% / 포인트'],
 };
+const KIND = { active: '액티브', passive: '패시브', buff: '버프', summon: '소환' };
+const FORCE_SEGMENTS = 8;
 
 export class HUD {
-  constructor(game, renderer, portrait, audio) {
+  constructor(game, renderer, portrait, audio, photo) {
     this.game = game;
     this.renderer = renderer;
     this.portrait = portrait;
     this.audio = audio;
+    this.photo = photo;
     this.root = $('#hud');
     this.pendingSkill = null;
-    this.miniT = 0;
     this.textT = 0;
+    this.miniT = 0;
     this.sub = null;
-    this.open = { tree: false, char: false, map: false };
-    this.buildConsole();
-    this.buildPanels();
+    this.hpChip = 1;
+    this.tab = 0;
+    this.open = { tree: false, char: false, map: false, settings: false };
     this.mapImg = renderer.terrain.minimapImage();
     this.fogCanvas = document.createElement('canvas');
     this.fogCanvas.width = game.world.w;
     this.fogCanvas.height = game.world.h;
+    this.buildHud();
+    this.buildSkillTree();
+    this.buildInfo();
+    this.buildMap();
+    this.buildSettings();
+    this.buildMisc();
     this.updateFog();
+    this.refreshPanels();
 
-    window.addEventListener('resize', () => {
-      this.fitPanel($('#skilltree'));
-      this.fitPanel($('#charsheet'));
-    });
     game.on('say', (text, key, dur) => this.say(text, dur));
     game.on('region', (name) => this.banner(name));
     game.on('hurt', () => portrait.hurt());
@@ -51,34 +64,29 @@ export class HUD {
     game.on('death', () => setTimeout(() => this.showDeath(), 1600));
   }
 
-  // ------------------------------------------------------------------ console
+  // ================================================================== HUD
 
-  buildConsole() {
-    const c = $('#console');
-    c.innerHTML = `
-      <div class="c-left plate">
-        <div class="mini-wrap"><canvas id="minimap" width="300" height="300"></canvas></div>
-      </div>
-      <div class="c-orb plate"><div class="orb hp"><div class="orb-fill"></div><div class="orb-glass"></div></div><div class="orb-label" id="hpText"></div></div>
-      <div class="c-center plate">
-        <div class="unit-head"><span class="unit-name">아나킨 스카이워커</span><span class="unit-rank">제다이 기사 · 501군단 장군</span><span class="unit-lvl" id="lvlText"></span></div>
-        <div class="xpbar" id="xpbar"><div></div><span></span></div>
-        <div class="unit-body">
-          <div class="dark-meter"><span class="dm-l">빛</span><div class="dm-bar"><div class="dm-mark" id="dmMark"></div></div><span class="dm-r">어둠</span></div>
-          <div class="buffs" id="buffs"></div>
-          <div class="pts" id="ptsText"></div>
+  buildHud() {
+    const r = this.root;
+    // bottom-left status
+    const st = el('div', 'hud-status');
+    st.innerHTML = `
+      <div class="ps-portrait"><canvas id="portrait" width="240" height="240"></canvas><div class="ps-eq"><i></i><i></i><i></i><i></i><i></i></div></div>
+      <div class="ps-info">
+        <div class="ps-name"><span class="ps-en">ANAKIN SKYWALKER</span><span class="ps-lvl" id="lvlText">LV 1</span></div>
+        <div class="hp-bar"><div class="hp-chip"></div><div class="hp-fill"></div></div>
+        <div class="fp-bar" id="forceSeg">${'<i><b></b></i>'.repeat(FORCE_SEGMENTS)}</div>
+        <div class="ps-row">
+          <button class="stims" id="stims" type="button" title="박타 주사기 (Q)"></button>
+          <div class="ps-nums"><span id="hpText"></span><span id="fpText"></span></div>
         </div>
-        <div class="subtitle" id="subtitle"></div>
-      </div>
-      <div class="c-orb plate"><div class="orb force"><div class="orb-fill"></div><div class="orb-glass"></div></div><div class="orb-label" id="fpText"></div></div>
-      <div class="c-portrait plate">
-        <div class="portrait-frame"><canvas id="portrait" width="192" height="160"></canvas><div class="portrait-name">ANAKIN</div></div>
-      </div>
-      <div class="c-cmd plate"><div class="cmdcard" id="cmdcard"></div></div>`;
-    this.minimap = $('#minimap');
-    this.mctx = this.minimap.getContext('2d');
+        <div class="dark-meter" title="빛과 어둠"><span>빛</span><div class="dm"><i id="dmMark"></i></div><span>어둠</span></div>
+        <div class="xp-line"><i id="xpFill"></i></div>
+      </div>`;
+    r.appendChild(st);
     this.pcanvas = $('#portrait');
     this.pctx = this.pcanvas.getContext('2d');
+    this.eq = st.querySelector('.ps-eq');
     this.pcanvas.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       this.pokes = (this.pokes || 0) + 1;
@@ -86,21 +94,28 @@ export class HUD {
       this.pokeReset = setTimeout(() => (this.pokes = 0), 4000);
       this.game.say(this.pokes > 4 ? 'pokeAnnoyed' : 'poke');
     });
-    this.minimap.addEventListener('mousedown', (e) => {
+    const stims = $('#stims');
+    stims.addEventListener('mousedown', (e) => e.stopPropagation());
+    stims.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (e.button !== 0) return;
-      const r = this.minimap.getBoundingClientRect();
-      const w = this.miniToWorld((e.clientX - r.left) * (300 / r.width), (e.clientY - r.top) * (300 / r.height));
-      this.game.player.commandMove(w.x, w.y);
-      this.renderer.addClickMark(w.x, w.y);
+      this.game.useBacta();
     });
 
-    const card = $('#cmdcard');
+    // bottom-right abilities
+    const ab = el('div', 'abilities');
+    ab.innerHTML = `<div class="buffs" id="buffs"></div><div class="ab-row"></div>
+      <div class="ab-menu">
+        <button type="button" data-open="tree"><kbd>K</kbd>스킬<i class="dot"></i></button>
+        <button type="button" data-open="char"><kbd>C</kbd>정보<i class="dot"></i></button>
+        <button type="button" data-open="map"><kbd>Tab</kbd>지도</button>
+        <button type="button" data-open="settings"><kbd>O</kbd>설정</button>
+      </div>`;
+    r.appendChild(ab);
+    const row = ab.querySelector('.ab-row');
     this.slots = [];
-    const keys = ['1', '2', '3', '4', '5', '6'];
     for (let i = 0; i < 6; i++) {
-      const b = el('div', 'cmd');
-      b.innerHTML = `<img><div class="cd"></div><span class="key">${keys[i]}</span><span class="rmb">R</span><span class="lv"></span>`;
+      const b = el('div', 'ab');
+      b.innerHTML = `<img alt=""><div class="cd"></div><span class="cdt"></span><span class="ab-key">${i + 1}</span><span class="ab-rmb" title="마우스 우버튼">RMB</span><span class="ab-lv"></span>`;
       b.addEventListener('mousedown', (e) => {
         e.stopPropagation();
         const id = this.game.player.hotbar[i];
@@ -108,36 +123,47 @@ export class HUD {
           if (id) this.game.player.rmbSlot = i;
           return;
         }
-        if (!id) {
-          this.toggle('tree', true);
-          return;
-        }
+        if (!id) return this.toggle('tree', true);
         this.activateSlot(i);
       });
-      b.addEventListener('mouseenter', () => this.showSkillTip(this.game.player.hotbar[i], b, i));
+      b.addEventListener('mouseenter', () => this.showSkillTip(this.game.player.hotbar[i], b, true));
       b.addEventListener('mouseleave', () => this.hideTip());
-      card.appendChild(b);
+      row.appendChild(b);
       this.slots.push(b);
     }
-    const extra = [
-      ['bacta', 'Q', '박타 주사기', '생명력 45% 회복. 드로이드에게서 획득.', () => this.game.useBacta()],
-      ['skills', 'K', '스킬 트리', '스킬 포인트를 분배합니다.', () => this.toggle('tree')],
-      ['character', 'C', '캐릭터 정보', '능력치 포인트를 분배합니다.', () => this.toggle('char')],
-    ];
-    for (const [icon, key, name, desc, fn] of extra) {
-      const b = el('div', 'cmd');
-      b.innerHTML = `<img src="${iconURL(icon)}"><span class="key">${key}</span><span class="lv"></span>`;
-      b.addEventListener('mousedown', (e) => {
+    ab.querySelectorAll('.ab-menu button').forEach((b) => {
+      b.addEventListener('mousedown', (e) => e.stopPropagation());
+      b.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (e.button === 0) fn();
+        this.toggle(b.dataset.open);
       });
-      b.addEventListener('mouseenter', () => this.showTip(`<b>${name}</b> <span class="hk">[${key}]</span><br>${desc}`, b));
-      b.addEventListener('mouseleave', () => this.hideTip());
-      card.appendChild(b);
-      if (icon === 'bacta') this.bactaBtn = b;
-      if (icon === 'skills') this.skillBtn = b;
-      if (icon === 'character') this.charBtn = b;
-    }
+    });
+    this.menuTree = ab.querySelector('[data-open="tree"]');
+    this.menuChar = ab.querySelector('[data-open="char"]');
+
+    // top-left radar
+    const rd = el('div', 'radar');
+    rd.innerHTML = `<canvas id="radar" width="360" height="360"></canvas><div class="radar-region" id="regionText"></div>`;
+    r.appendChild(rd);
+    this.radar = $('#radar');
+    this.rctx = this.radar.getContext('2d');
+    this.radar.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      if (e.button !== 0) return;
+      const rect = this.radar.getBoundingClientRect();
+      const w = this.radarToWorld(((e.clientX - rect.left) / rect.width) * 360, ((e.clientY - rect.top) / rect.height) * 360);
+      this.game.player.commandMove(w.x, w.y);
+      this.renderer.addClickMark(w.x, w.y);
+    });
+
+    // top-right objectives, top-centre target, bottom-centre subtitles
+    this.objectives = el('div', 'objectives');
+    r.appendChild(this.objectives);
+    this.target = el('div', 'target-info hidden', '<div class="ti-name"></div><div class="ti-bar"><i></i></div><div class="ti-sub"></div>');
+    r.appendChild(this.target);
+    this.subEl = el('div', 'subtitle');
+    this.subEl.id = 'subtitle';
+    r.appendChild(this.subEl);
   }
 
   activateSlot(i) {
@@ -145,8 +171,7 @@ export class HUD {
     const p = g.player;
     const id = p.hotbar[i];
     if (!id) return;
-    const s = SKILLS[id];
-    if (s.target === 'self') {
+    if (SKILLS[id].target === 'self') {
       const m = g.mouseWorld || p;
       p.tryCast(id, m.x, m.y, null);
     } else {
@@ -160,93 +185,66 @@ export class HUD {
     document.body.classList.remove('targeting');
   }
 
-  // ------------------------------------------------------------------ panels
+  // ================================================================== overlays
 
-  buildPanels() {
-    // Skill tree
-    const tree = el('div', 'panel hidden', '');
-    tree.id = 'skilltree';
-    tree.innerHTML = `<div class="panel-title">스킬 트리 <span class="sub">— 남은 스킬 포인트: <b id="spLeft">0</b></span><div class="close">✕</div></div>
-      <div class="trees"></div>
-      <div class="panel-hint desktop-only">좌클릭: 포인트 투자 · 스킬 위에서 <b>1~6</b>: 단축키 지정 · 우클릭: <b>마우스 우버튼</b> 스킬로 지정</div>
-      <div class="slot-row touch-only"><span class="sel-name">스킬을 탭해 선택하세요</span><button class="sel-learn">투자</button><span class="dim">버튼 슬롯</span>${[1, 2, 3, 4, 5, 6].map((n) => `<button class="sel-slot" data-slot="${n - 1}">${n}</button>`).join('')}</div>`;
-    this.root.appendChild(tree);
-    $('.close', tree).onclick = () => this.toggle('tree', false);
-    $('.sel-learn', tree).addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const p = this.game.player;
-      if (this.selSkill && canLearn(p, this.selSkill)) {
-        p.learn(this.selSkill);
-        this.audio.play('levelup');
-        this.refreshPanels();
-        this.selectSkill(this.selSkill);
-      } else this.audio.play('deny');
-    });
-    tree.querySelectorAll('.sel-slot').forEach((b) =>
-      b.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const p = this.game.player;
-        const id = this.selSkill;
-        if (!id || !p.skillLevel(id) || !isActive(id)) return this.audio.play('deny');
-        const i = +b.dataset.slot;
-        const prev = p.hotbar.indexOf(id);
-        if (prev >= 0) p.hotbar[prev] = p.hotbar[i];
-        p.hotbar[i] = id;
-        this.audio.play('click');
-        this.selectSkill(id);
+  overlay(id, title, extraHead = '') {
+    const o = el('div', 'overlay hidden');
+    o.id = id;
+    o.innerHTML = `<div class="ov-head"><div class="ov-title">${title}</div>${extraHead}<button class="ov-close" type="button" aria-label="닫기"><kbd>Esc</kbd>닫기</button></div><div class="ov-body"></div>`;
+    o.addEventListener('mousedown', (e) => e.stopPropagation());
+    o.querySelector('.ov-close').addEventListener('click', () => this.toggle(id === 'skilltree' ? 'tree' : id === 'charsheet' ? 'char' : id === 'mapview' ? 'map' : 'settings', false));
+    this.root.appendChild(o);
+    return o;
+  }
+
+  buildSkillTree() {
+    const tabs = TREES.map((t, i) => `<button type="button" class="ov-tab" data-tab="${i}" style="--tc:${t.color}">${t.name}<small>${t.en}</small></button>`).join('');
+    const o = this.overlay('skilltree', '스킬', `<div class="ov-tabs">${tabs}</div><div class="ov-points">스킬 포인트 <b id="spLeft">0</b></div>`);
+    const body = $('.ov-body', o);
+    body.innerHTML = `<div class="st-graph"><div class="st-plane"><svg class="st-lines" viewBox="0 0 300 500" preserveAspectRatio="none"></svg></div></div><div class="st-detail"></div>`;
+    this.graph = $('.st-graph', body);
+    this.plane = $('.st-plane', body);
+    this.detail = $('.st-detail', body);
+    o.querySelectorAll('.ov-tab').forEach((b) =>
+      b.addEventListener('click', () => {
+        this.tab = +b.dataset.tab;
+        this.renderTree();
       }),
     );
-    const trees = $('.trees', tree);
+    for (let r = 0; r < 5; r++) {
+      const lab = el('div', 'st-tier', `LV ${TIER_LEVELS[r]}`);
+      lab.style.top = ((r + 0.5) / 5) * 100 + '%';
+      this.plane.appendChild(lab);
+    }
     this.treeCells = {};
-    TREES.forEach((t, ti) => {
-      const col = el('div', 'tree');
-      col.style.setProperty('--tc', t.color);
-      col.innerHTML = `<div class="tree-head"><div class="tree-name">${t.name}</div><div class="tree-en">${t.en}</div><div class="tree-spent" data-tree="${ti}"></div></div>`;
-      const grid = el('div', 'tree-grid');
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('class', 'tree-lines');
-      svg.setAttribute('viewBox', '0 0 210 370');
-      grid.appendChild(svg);
-      for (let r = 0; r < 5; r++) {
-        const lab = el('div', 'tier-label', `Lv ${TIER_LEVELS[r]}`);
-        lab.style.top = 18 + r * 74 + 'px';
-        grid.appendChild(lab);
+    const svg = $('.st-lines', this.plane);
+    for (const s of Object.values(SKILLS)) {
+      const cx = (s.col + 0.5) * 100;
+      const cy = (s.row + 0.5) * 100;
+      for (const pid of s.prereq) {
+        const q = SKILLS[pid];
+        const x1 = (q.col + 0.5) * 100;
+        const y1 = (q.row + 0.5) * 100;
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        // drop half a row below the prerequisite, then across, then down
+        path.setAttribute('d', `M${x1} ${y1} L${x1} ${y1 + 50} L${cx} ${y1 + 50} L${cx} ${cy}`);
+        path.setAttribute('vector-effect', 'non-scaling-stroke');
+        path.dataset.from = pid;
+        path.dataset.tree = s.tree;
+        svg.appendChild(path);
       }
-      const pos = (s) => [35 + s.col * 70, 32 + s.row * 74];
-      for (const s of Object.values(SKILLS).filter((s) => s.tree === ti)) {
-        for (const pid of s.prereq) {
-          const [x1, y1] = pos(SKILLS[pid]);
-          const [x2, y2] = pos(s);
-          const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          line.setAttribute('d', `M${x1} ${y1 + 24} L${x1} ${(y1 + y2) / 2} L${x2} ${(y1 + y2) / 2} L${x2} ${y2 - 24}`);
-          line.dataset.from = pid;
-          line.dataset.to = s.id;
-          svg.appendChild(line);
-        }
-        const cell = el('div', 'skill');
-        const [x, y] = pos(s);
-        cell.style.left = x - 24 + 'px';
-        cell.style.top = y - 24 + 'px';
-        cell.innerHTML = `<img src="${iconURL(s.icon)}"><span class="slv"></span>${s.dark ? '<span class="dark-tag">어둠</span>' : ''}`;
-        cell.addEventListener('mousedown', (e) => {
-          e.stopPropagation();
-          const p = this.game.player;
-          // touch: first tap selects (shows details), second tap learns
-          if (e.button === 0 && document.body.classList.contains('touch') && this.selSkill !== s.id) {
-            this.selectSkill(s.id);
-            return;
-          }
-          if (e.button === 0) {
-            if (canLearn(p, s.id)) {
-              p.learn(s.id);
-              this.audio.play('levelup');
-              this.refreshPanels();
-              if (this.selSkill === s.id) this.selectSkill(s.id);
-              else this.showSkillTip(s.id, cell);
-            } else this.audio.play('deny');
-          } else if (e.button === 2 && p.skillLevel(s.id) && isActive(s.id)) {
+      const node = el('button', 'st-node');
+      node.type = 'button';
+      node.style.left = ((s.col + 0.5) / 3) * 100 + '%';
+      node.style.top = ((s.row + 0.5) / 5) * 100 + '%';
+      node.style.setProperty('--tc', TREES[s.tree].color);
+      node.dataset.tree = s.tree;
+      node.innerHTML = `<img src="${iconURL(s.icon)}" alt=""><span class="st-lv"></span>${s.dark ? '<span class="st-dark">어둠</span>' : ''}<span class="st-name">${s.name}</span>`;
+      node.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        const p = this.game.player;
+        if (e.button === 2) {
+          if (p.skillLevel(s.id) && isActive(s.id)) {
             let i = p.hotbar.indexOf(s.id);
             if (i < 0) {
               i = p.hotbar.indexOf(null);
@@ -255,81 +253,213 @@ export class HUD {
             }
             p.rmbSlot = i;
             this.audio.play('click');
+            this.selectSkill(s.id);
           }
-        });
-        cell.addEventListener('mouseenter', () => {
-          this.hoverSkill = s.id;
-          this.showSkillTip(s.id, cell);
-        });
-        cell.addEventListener('mouseleave', () => {
-          this.hoverSkill = null;
-          this.hideTip();
-        });
-        grid.appendChild(cell);
-        this.treeCells[s.id] = cell;
+          return;
+        }
+        // touch: first tap selects, second tap learns. Mouse: click learns.
+        const touch = document.body.classList.contains('touch');
+        if (touch && this.selSkill !== s.id) return this.selectSkill(s.id);
+        this.learn(s.id);
+      });
+      node.addEventListener('mouseenter', () => {
+        if (!document.body.classList.contains('touch')) this.selectSkill(s.id);
+      });
+      this.plane.appendChild(node);
+      this.treeCells[s.id] = node;
+    }
+    this.selectSkill('flurry');
+  }
+
+  learn(id) {
+    const p = this.game.player;
+    if (canLearn(p, id)) {
+      p.learn(id);
+      this.audio.play('levelup');
+      this.refreshPanels();
+    } else this.audio.play('deny');
+    this.selectSkill(id);
+  }
+
+  renderTree() {
+    const o = $('#skilltree');
+    o.querySelectorAll('.ov-tab').forEach((b) => b.classList.toggle('on', +b.dataset.tab === this.tab));
+    o.style.setProperty('--tc', TREES[this.tab].color);
+    for (const [id, n] of Object.entries(this.treeCells)) n.hidden = SKILLS[id].tree !== this.tab;
+    o.querySelectorAll('.st-lines path').forEach((path) => (path.style.display = +path.dataset.tree === this.tab ? '' : 'none'));
+    if (!this.selSkill || SKILLS[this.selSkill].tree !== this.tab) {
+      const first = Object.values(SKILLS).find((s) => s.tree === this.tab);
+      this.selectSkill(first.id);
+    }
+  }
+
+  selectSkill(id) {
+    this.selSkill = id;
+    this.hoverSkill = id;
+    for (const [k, c] of Object.entries(this.treeCells)) c.classList.toggle('sel', k === id);
+    const s = SKILLS[id];
+    const p = this.game.player;
+    const l = p.skillLevel(id);
+    const tree = TREES[s.tree];
+    const fmt = (lv) => s.lines(lv, s, p).map((x) => `<li>${x[0]}</li>`).join('');
+    const req = [];
+    if (p.level < s.reqLevel) req.push(`캐릭터 레벨 ${s.reqLevel} 필요`);
+    for (const q of s.prereq) if (!p.skillLevel(q)) req.push(`선행 스킬: ${SKILLS[q].name}`);
+    const slot = p.hotbar.indexOf(id);
+    const active = isActive(id);
+    this.detail.style.setProperty('--tc', tree.color);
+    this.detail.innerHTML = `
+      <div class="sd-icon"><img src="${iconURL(s.icon)}" alt=""></div>
+      <div class="sd-kind">${tree.name} · ${KIND[s.kind]}${s.dark ? ' · <em>어둠의 기술</em>' : ''}</div>
+      <h3 class="sd-name">${s.name}</h3>
+      <div class="sd-en">${s.en.toUpperCase()}</div>
+      <div class="sd-rank"><b>${l}</b> / ${s.max}</div>
+      <p class="sd-lore">${s.lore}</p>
+      ${l ? `<div class="sd-sec">현재</div><ul>${fmt(l)}</ul>` : ''}
+      ${l < s.max ? `<div class="sd-sec">${l ? '다음 단계' : '1단계'}</div><ul class="next">${fmt(l + 1)}</ul>` : ''}
+      ${req.length ? `<div class="sd-req">${req.join('<br>')}</div>` : ''}
+      <div class="sd-actions">
+        <button type="button" class="sd-learn" ${canLearn(p, id) ? '' : 'disabled'}>${l ? '강화' : '습득'} <small>스킬 포인트 1</small></button>
+        ${
+          active && l
+            ? `<div class="sd-slots"><span>단축키${slot >= 0 ? ` · 현재 ${slot + 1}번` : ''}</span>${[0, 1, 2, 3, 4, 5].map((i) => `<button type="button" data-slot="${i}" class="${slot === i ? 'on' : ''}">${i + 1}</button>`).join('')}</div>`
+            : ''
+        }
+      </div>
+      <div class="sd-hint desktop-only">클릭: 습득/강화 · 우클릭: 마우스 우버튼 스킬로 지정 · 1~6: 단축키</div>
+      <div class="sd-hint touch-only">한 번 탭: 선택 · 다시 탭 또는 버튼: 습득</div>`;
+    $('.sd-learn', this.detail).addEventListener('click', () => this.learn(id));
+    this.detail.querySelectorAll('.sd-slots button').forEach((b) =>
+      b.addEventListener('click', () => {
+        const i = +b.dataset.slot;
+        const prev = p.hotbar.indexOf(id);
+        if (prev >= 0) p.hotbar[prev] = p.hotbar[i];
+        p.hotbar[i] = id;
+        this.audio.play('click');
+        this.selectSkill(id);
+      }),
+    );
+  }
+
+  buildInfo() {
+    const o = this.overlay('charsheet', '정보');
+    this.infoBody = $('.ov-body', o);
+  }
+
+  buildMap() {
+    const o = this.overlay('mapview', '지도', '<div class="ov-sub">크리스토프시스 외곽</div>');
+    const body = $('.ov-body', o);
+    body.innerHTML = `<canvas class="map-canvas"></canvas>
+      <div class="map-legend"><span><i class="lg-me"></i>아나킨</span><span><i class="lg-base"></i>전진 기지</span><span><i class="lg-camp"></i>드로이드 거점</span><span><i class="lg-boss"></i>드로이드 공장</span><span><i class="lg-ally"></i>아군</span><span><i class="lg-enemy"></i>적</span></div>`;
+    this.mapCanvas = $('.map-canvas', body);
+  }
+
+  buildSettings() {
+    const o = this.overlay('settings', '설정');
+    const body = $('.ov-body', o);
+    body.innerHTML = `
+      <section class="set-card">
+        <h4>초상화</h4>
+        <div class="set-portrait">
+          <canvas id="setPortrait" width="320" height="320"></canvas>
+          <div class="set-controls">
+            <p class="set-note">원하는 사진(예: 아나킨 사진)을 고르면 HUD 초상화가 됩니다. 사진은 <b>이 기기에만</b> 저장되고 어디에도 업로드되지 않습니다.</p>
+            <label class="btn-file">사진 선택<input type="file" id="photoInput" accept="image/*"></label>
+            <button type="button" class="btn-ghost" id="photoReset">기본 초상화로</button>
+            <div class="set-crop">
+              <label>확대 <input type="range" id="cropZoom" min="1" max="4" step="0.05"></label>
+              <label>좌우 <input type="range" id="cropX" min="0" max="1" step="0.01"></label>
+              <label>상하 <input type="range" id="cropY" min="0" max="1" step="0.01"></label>
+            </div>
+            <div class="set-status" id="photoStatus"></div>
+          </div>
+        </div>
+      </section>
+      <section class="set-card">
+        <h4>소리</h4>
+        <label class="set-toggle"><input type="checkbox" id="soundOn"> 효과음과 음성 켜기 <kbd>M</kbd></label>
+        <p class="set-note">대사 음성·효과음 파일을 직접 넣는 방법은 저장소의 <code>public/audio/README.md</code>를 참고하세요.</p>
+      </section>
+      <section class="set-card">
+        <h4>화면</h4>
+        <p class="set-note">확대·축소: 휴대폰은 두 손가락, PC는 마우스 휠 또는 <kbd>-</kbd> <kbd>=</kbd> (<kbd>0</kbd> 기본). 전체 화면: <kbd>F</kbd></p>
+        <button type="button" class="btn-ghost" id="openHelp">조작법 보기</button>
+      </section>`;
+    this.setCanvas = $('#setPortrait');
+    this.setCtx = this.setCanvas.getContext('2d');
+    const input = $('#photoInput');
+    input.addEventListener('change', async () => {
+      const f = input.files && input.files[0];
+      if (!f) return;
+      $('#photoStatus').textContent = '불러오는 중…';
+      try {
+        await this.photo.fromFile(f);
+        $('#photoStatus').textContent = '적용됨 · 이 기기에 저장되었습니다';
+      } catch {
+        $('#photoStatus').textContent = '이 파일은 열 수 없습니다. JPG/PNG 사진을 골라 주세요.';
       }
-      col.appendChild(grid);
-      trees.appendChild(col);
+      input.value = '';
+      this.syncCropInputs();
     });
+    $('#photoReset').addEventListener('click', async () => {
+      await this.photo.reset();
+      $('#photoStatus').textContent = '기본 초상화로 되돌렸습니다';
+      this.syncCropInputs();
+    });
+    for (const [id, k] of [['cropZoom', 'zoom'], ['cropX', 'x'], ['cropY', 'y']]) {
+      $('#' + id).addEventListener('input', (e) => this.photo.setCrop({ [k]: +e.target.value }));
+    }
+    $('#soundOn').addEventListener('change', (e) => {
+      if (e.target.checked === this.audio.muted) this.audio.toggleMute();
+    });
+    $('#openHelp').addEventListener('click', () => {
+      this.toggle('settings', false);
+      document.getElementById('help').classList.remove('hidden');
+    });
+  }
 
-    // Character sheet
-    const ch = el('div', 'panel hidden');
-    ch.id = 'charsheet';
-    ch.innerHTML = `<div class="panel-title">아나킨 스카이워커 <span class="sub">제다이 기사</span><div class="close">✕</div></div><div class="char-body"></div>`;
-    this.root.appendChild(ch);
-    $('.close', ch).onclick = () => this.toggle('char', false);
+  syncCropInputs() {
+    const c = this.portrait.crop;
+    $('#cropZoom').value = c.zoom;
+    $('#cropX').value = c.x;
+    $('#cropY').value = c.y;
+    const has = !!this.portrait.photo;
+    $('.set-crop').classList.toggle('disabled', !has);
+    $('#cropZoom').disabled = $('#cropX').disabled = $('#cropY').disabled = !has;
+    $('#soundOn').checked = !this.audio.muted;
+  }
 
-    // Tooltip, banner, nameplate, automap, death, help
+  buildMisc() {
     this.tip = el('div', 'tooltip hidden');
     this.root.appendChild(this.tip);
     this.bannerEl = el('div', 'banner');
     this.root.appendChild(this.bannerEl);
-    this.plate = el('div', 'nameplate hidden', '<div class="np-name"></div><div class="np-bar"><div></div></div><div class="np-sub"></div>');
-    this.root.appendChild(this.plate);
-    this.automap = el('canvas', 'automap hidden');
-    this.root.appendChild(this.automap);
-    this.death = el('div', 'death hidden', `<div class="death-title">쓰러졌습니다</div><div class="death-sub">포스와 함께하길…</div><button>공화국 전진 기지에서 재정비</button>`);
+    this.death = el(
+      'div',
+      'death hidden',
+      `<div class="death-kicker">ANAKIN SKYWALKER</div><div class="death-title">쓰러졌습니다</div><div class="death-sub">포스와 함께하길.</div><button type="button">전진 기지에서 재개</button>`,
+    );
     this.root.appendChild(this.death);
     $('button', this.death).onclick = (e) => {
       e.stopPropagation();
       this.death.classList.add('hidden');
       this.game.respawnPlayer();
     };
-    this.refreshPanels();
-  }
-
-  selectSkill(id) {
-    this.selSkill = id;
-    for (const [k, c] of Object.entries(this.treeCells)) c.classList.toggle('sel', k === id);
-    const p = this.game.player;
-    const s = SKILLS[id];
-    const slot = p.hotbar.indexOf(id);
-    $('#skilltree .sel-name').innerHTML = `<b>${s.name}</b> Lv ${p.skillLevel(id)}${slot >= 0 ? ` · 슬롯 ${slot + 1}` : ''}`;
-    $('#skilltree .sel-learn').disabled = !canLearn(p, id);
-    this.showSkillTip(id, this.treeCells[id]);
-  }
-
-  /** Scale a panel down so it always fits the screen (phones). */
-  fitPanel(elm) {
-    if (!elm || elm.classList.contains('hidden')) return;
-    const w = elm.offsetWidth;
-    const h = elm.offsetHeight;
-    const top = parseFloat(getComputedStyle(elm).top) || 0;
-    const s = Math.min(1, (window.innerWidth - 12) / w, (window.innerHeight - top - 8) / h);
-    elm.style.setProperty('--fit', s.toFixed(3));
   }
 
   toggle(which, force) {
     const v = force ?? !this.open[which];
+    if (v) for (const k of Object.keys(this.open)) if (k !== which && this.open[k]) this.toggle(k, false);
     this.open[which] = v;
-    const map = { tree: '#skilltree', char: '#charsheet' };
-    if (which === 'map') this.automap.classList.toggle('hidden', !v);
-    else $(map[which]).classList.toggle('hidden', !v);
+    const ids = { tree: '#skilltree', char: '#charsheet', map: '#mapview', settings: '#settings' };
+    $(ids[which]).classList.toggle('hidden', !v);
+    document.body.classList.toggle('overlay-open', Object.values(this.open).some(Boolean));
     if (v) {
       this.refreshPanels();
-      if (which !== 'map') this.fitPanel($(map[which]));
-    }
-    if (!v) this.hideTip();
+      if (which === 'tree') this.renderTree();
+      if (which === 'map') this.drawMapView();
+      if (which === 'settings') this.syncCropInputs();
+    } else this.hideTip();
     this.audio.play('click');
   }
 
@@ -341,67 +471,76 @@ export class HUD {
   refreshPanels() {
     const p = this.game.player;
     $('#spLeft').textContent = p.skillPoints;
-    for (const [id, cell] of Object.entries(this.treeCells)) {
+    for (const [id, n] of Object.entries(this.treeCells)) {
       const l = p.skillLevel(id);
       const s = SKILLS[id];
-      $('.slv', cell).textContent = l ? l : '';
-      cell.classList.toggle('learned', l > 0);
-      cell.classList.toggle('can', canLearn(p, id));
-      cell.classList.toggle('locked', p.level < s.reqLevel || !s.prereq.every((q) => p.skillLevel(q) > 0));
+      $('.st-lv', n).textContent = l ? l : '';
+      n.classList.toggle('learned', l > 0);
+      n.classList.toggle('can', canLearn(p, id));
+      n.classList.toggle('locked', p.level < s.reqLevel || !s.prereq.every((q) => p.skillLevel(q) > 0));
     }
-    document.querySelectorAll('.tree-lines path').forEach((path) => {
-      path.classList.toggle('on', p.skillLevel(path.dataset.from) > 0);
+    document.querySelectorAll('.st-lines path').forEach((path) => path.classList.toggle('on', p.skillLevel(path.dataset.from) > 0));
+    document.querySelectorAll('#skilltree .ov-tab').forEach((b) => {
+      const ti = +b.dataset.tab;
+      b.classList.toggle('avail', Object.values(SKILLS).some((s) => s.tree === ti && canLearn(p, s.id)));
     });
-    document.querySelectorAll('.tree-spent').forEach((e) => {
-      const ti = +e.dataset.tree;
-      const n = Object.values(SKILLS).filter((s) => s.tree === ti).reduce((a, s) => a + p.skillLevel(s.id), 0);
-      e.textContent = n ? `투자 ${n}` : '';
-    });
+    if (this.selSkill && this.open.tree) this.selectSkill(this.selSkill);
     this.refreshChar();
   }
 
   refreshChar() {
     const p = this.game.player;
-    const body = $('#charsheet .char-body');
     const [lo, hi] = p.weaponRange();
     const strMult = 1 + p.attr.str * 0.015;
-    const rows = Object.entries(ATTR_INFO)
+    const attrs = Object.entries(ATTR_INFO)
       .map(
-        ([k, [name, desc]]) =>
-          `<div class="attr"><span class="an">${name}</span><span class="av">${p.attr[k]}</span>${p.attrPoints > 0 ? `<button data-attr="${k}">+</button>` : '<span class="nb"></span>'}<span class="ad">${desc}</span></div>`,
+        ([k, [name, en, desc]]) => `
+        <div class="at-row"><div class="at-label"><span class="at-en">${en}</span>${name}</div><div class="at-val">${p.attr[k]}</div>
+        <button type="button" data-attr="${k}" ${p.attrPoints > 0 ? '' : 'disabled'} aria-label="${name} 올리기">+</button><div class="at-desc">${desc}</div></div>`,
       )
       .join('');
-    body.innerHTML = `
-      <div class="char-top"><div>레벨 <b>${p.level}</b></div><div>경험치 <b>${Math.floor(p.xp)}</b> / ${p.xpNext}</div><div>처치 <b>${p.kills}</b></div></div>
-      <div class="attr-points">${p.attrPoints > 0 ? `남은 능력치 포인트: <b>${p.attrPoints}</b>` : ''}</div>
-      ${rows}
-      <div class="derived">
-        <div><span>광선검 피해</span><b>${Math.round(lo * strMult)} - ${Math.round(hi * strMult)}</b></div>
-        <div><span>공격 속도</span><b>${Math.round(p.attackSpeed() * 100)}%</b></div>
-        <div><span>생명력</span><b>${Math.round(p.hp)} / ${p.maxHp}</b></div>
-        <div><span>포스</span><b>${Math.round(p.force)} / ${p.maxForce}</b></div>
-        <div><span>볼트 반사 확률</span><b>${Math.round(p.deflectChance() * 100)}%</b></div>
-        <div><span>되돌려 보내기</span><b>${Math.round(p.redirectChance() * 100)}%</b></div>
-        <div><span>회피 / 치명타</span><b>${Math.round(p.dodgeChance() * 100)}% / ${Math.round(p.critChance() * 100)}%</b></div>
-        <div><span>피해 감소 (흉갑)</span><b>${Math.round(p.damageReduction() * 100)}%</b></div>
-        <div><span>포스 위력</span><b>×${p.forceMult().toFixed(2)}</b></div>
-        <div><span>어둠</span><b>${Math.round(p.darkness)}</b></div>
+    const stat = (label, v) => `<div class="ds-row"><span>${label}</span><b>${v}</b></div>`;
+    this.infoBody.innerHTML = `
+      <div class="info-grid">
+        <section class="info-id">
+          <div class="info-name">아나킨 스카이워커</div>
+          <div class="info-title">제다이 기사 · 501군단 장군</div>
+          <div class="info-level"><span>LV</span><b>${p.level}</b></div>
+          <div class="info-xp"><i style="width:${(p.xp / p.xpNext) * 100}%"></i></div>
+          <div class="info-xpt">경험치 ${Math.floor(p.xp)} / ${p.xpNext} · 처치 ${p.kills}</div>
+        </section>
+        <section class="info-attrs">
+          <div class="info-h">능력치 ${p.attrPoints > 0 ? `<span class="pts">남은 포인트 ${p.attrPoints}</span>` : ''}</div>
+          ${attrs}
+        </section>
+        <section class="info-stats">
+          <div class="info-h">전투 능력</div>
+          ${stat('광선검 피해', `${Math.round(lo * strMult)} – ${Math.round(hi * strMult)}`)}
+          ${stat('공격 속도', `${Math.round(p.attackSpeed() * 100)}%`)}
+          ${stat('생명력', `${Math.round(p.hp)} / ${p.maxHp}`)}
+          ${stat('포스', `${Math.round(p.force)} / ${p.maxForce}`)}
+          ${stat('볼트 반사', `${Math.round(p.deflectChance() * 100)}%`)}
+          ${stat('되돌려 보내기', `${Math.round(p.redirectChance() * 100)}%`)}
+          ${stat('회피 / 치명타', `${Math.round(p.dodgeChance() * 100)}% / ${Math.round(p.critChance() * 100)}%`)}
+          ${stat('피해 감소', `${Math.round(p.damageReduction() * 100)}%`)}
+          ${stat('포스 위력', `×${p.forceMult().toFixed(2)}`)}
+          ${stat('어둠', Math.round(p.darkness))}
+        </section>
       </div>`;
-    body.querySelectorAll('button[data-attr]').forEach((b) => {
-      b.onmousedown = (e) => {
+    this.infoBody.querySelectorAll('button[data-attr]').forEach((b) => {
+      b.addEventListener('click', (e) => {
         e.stopPropagation();
-        const k = b.dataset.attr;
         if (p.attrPoints <= 0) return;
-        p.attr[k]++;
+        p.attr[b.dataset.attr]++;
         p.attrPoints--;
         p.recalc();
         this.audio.play('click');
         this.refreshChar();
-      };
+      });
     });
   }
 
-  // ------------------------------------------------------------------ tooltips
+  // ================================================================== tooltips
 
   showTip(html, anchor) {
     this.tip.innerHTML = html;
@@ -410,8 +549,8 @@ export class HUD {
     const tw = this.tip.offsetWidth;
     const th = this.tip.offsetHeight;
     let x = r.left + r.width / 2 - tw / 2;
-    let y = r.top - th - 8;
-    if (y < 8) y = r.bottom + 8;
+    let y = r.top - th - 10;
+    if (y < 8) y = r.bottom + 10;
     x = Math.max(8, Math.min(window.innerWidth - tw - 8, x));
     this.tip.style.left = x + 'px';
     this.tip.style.top = y + 'px';
@@ -421,41 +560,32 @@ export class HUD {
     this.tip.classList.add('hidden');
   }
 
-  showSkillTip(id, anchor, slot) {
+  showSkillTip(id, anchor, isSlot) {
     if (!id) {
-      this.showTip(`<b>빈 슬롯</b><br><span class="dim">스킬 트리(K)에서 스킬을 배우면 자동으로 등록됩니다.</span>`, anchor);
+      this.showTip(`<div class="tt-name">빈 슬롯</div><div class="tt-dim">스킬(K)에서 액티브 스킬을 배우면 자동으로 들어갑니다.</div>`, anchor);
       return;
     }
     const s = SKILLS[id];
     const p = this.game.player;
     const l = p.skillLevel(id);
-    const kind = { active: '액티브', passive: '패시브', buff: '버프', summon: '소환' }[s.kind];
-    const tree = TREES[s.tree];
-    const fmt = (lv) => s.lines(lv, s, p).map((x) => `<div>${x[0]}</div>`).join('');
-    let html = `<div class="tt-name" style="color:${tree.color}">${s.name} <span class="tt-en">${s.en}</span></div>
-      <div class="tt-kind">${tree.name} · ${kind}${s.dark ? ' · <span class="dark">어둠의 기술</span>' : ''}</div>
-      <div class="tt-lore">${s.lore}</div>`;
-    if (l) html += `<div class="tt-sec">현재 레벨 ${l}</div>${fmt(l)}`;
-    if (l < s.max) html += `<div class="tt-sec">${l ? '다음 레벨' : '레벨 1'}</div><div class="dim">${fmt(l + 1)}</div>`;
-    const req = [];
-    if (p.level < s.reqLevel) req.push(`캐릭터 레벨 ${s.reqLevel} 필요`);
-    for (const q of s.prereq) if (!p.skillLevel(q)) req.push(`선행: ${SKILLS[q].name}`);
-    if (req.length) html += `<div class="tt-req">${req.join('<br>')}</div>`;
-    if (slot !== undefined) html += `<div class="tt-hint">좌클릭: 사용 · 우클릭: 마우스 우버튼에 지정</div>`;
-    this.showTip(html, anchor);
+    const lines = s.lines(Math.max(1, l), s, p).map((x) => `<div>${x[0]}</div>`).join('');
+    this.showTip(
+      `<div class="tt-name" style="color:${TREES[s.tree].color}">${s.name} <span class="tt-lv">${l}/${s.max}</span></div>${lines}${isSlot ? '<div class="tt-dim">클릭: 사용 · 우클릭: 마우스 우버튼에 지정</div>' : ''}`,
+      anchor,
+    );
   }
 
-  // ------------------------------------------------------------------ messages
+  // ================================================================== messages
 
   /** Show a subtitle; `dur` is the voice clip length when one is playing. */
   say(text, dur = null) {
     const talk = dur ?? Math.min(3, 0.6 + text.length * 0.045);
-    this.sub = { text, shown: 0, t: 0, hold: Math.max(2.2 + text.length * 0.05, talk + 1) };
+    this.sub = { text, t: 0, talk, hold: Math.max(2.4 + text.length * 0.05, talk + 1) };
     this.portrait.talk(talk);
   }
 
   banner(name) {
-    this.bannerEl.innerHTML = `<span>${name}</span>`;
+    this.bannerEl.innerHTML = `<div class="bn-kicker">CHRISTOPHSIS</div><div class="bn-name">${name}</div>`;
     this.bannerEl.classList.remove('show');
     void this.bannerEl.offsetWidth;
     this.bannerEl.classList.add('show');
@@ -465,106 +595,146 @@ export class HUD {
     this.death.classList.remove('hidden');
   }
 
-  // ------------------------------------------------------------------ per frame
+  // ================================================================== per frame
 
   update(dt) {
     const g = this.game;
     const p = g.player;
 
-    // orbs
+    // health with a trailing damage chip, Force segments
     const hpK = Math.max(0, p.hp / p.maxHp);
-    const fpK = Math.max(0, p.force / p.maxForce);
-    $('.orb.hp .orb-fill').style.height = hpK * 100 + '%';
-    $('.orb.force .orb-fill').style.height = fpK * 100 + '%';
+    this.hpChip = this.hpChip > hpK ? Math.max(hpK, this.hpChip - dt * 0.35) : hpK;
+    $('.hp-fill').style.width = hpK * 100 + '%';
+    $('.hp-chip').style.width = this.hpChip * 100 + '%';
+    $('.hp-bar').classList.toggle('low', hpK < 0.25);
+    const fpK = Math.max(0, p.force / p.maxForce) * FORCE_SEGMENTS;
+    const segs = $('#forceSeg').children;
+    for (let i = 0; i < FORCE_SEGMENTS; i++) segs[i].firstChild.style.width = Math.max(0, Math.min(1, fpK - i)) * 100 + '%';
 
-    // portrait: green hangar backdrop around the droid factory / battlefields
+    // portrait + voice equaliser
     this.portrait.setScene(/드로이드 공장|격전지/.test(g.region) ? 'hangar' : 'corridor');
     this.portrait.update(dt, p.darkness, p.dead);
     this.portrait.draw(this.pctx, this.pcanvas.width, this.pcanvas.height);
+    if (this.open.settings) this.portrait.draw(this.setCtx, 320, 320);
+    const talking = this.sub && this.sub.t < this.sub.talk;
+    this.eq.classList.toggle('on', !!talking);
+    if (talking) for (const b of this.eq.children) b.style.height = 20 + Math.random() * 80 + '%';
 
     // subtitles (typewriter)
-    const subEl = $('#subtitle');
     if (this.sub) {
       const s = this.sub;
       s.t += dt;
-      s.shown = Math.min(s.text.length, Math.floor(s.t * 40));
-      subEl.innerHTML = `<b>아나킨:</b> ${s.text.slice(0, s.shown)}`;
-      subEl.style.opacity = 1;
+      const shown = Math.min(s.text.length, Math.floor(s.t * 40));
+      this.subEl.innerHTML = `<span class="sub-speaker">아나킨</span><span class="sub-text">${s.text.slice(0, shown)}</span>`;
+      this.subEl.classList.add('show');
       if (s.t > s.hold) {
         this.sub = null;
-        subEl.style.opacity = 0;
+        this.subEl.classList.remove('show');
       }
     }
 
-    // command card
+    // ability cards
     for (let i = 0; i < 6; i++) {
       const b = this.slots[i];
       const id = p.hotbar[i];
-      const img = $('img', b);
-      const want = id ? iconURL(SKILLS[id].icon) : iconURL('empty');
+      const img = b.firstChild;
+      const want = id ? iconURL(SKILLS[id].icon) : '';
       if (img.dataset.src !== want) {
-        img.src = want;
+        img.src = want || 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
         img.dataset.src = want;
       }
+      b.classList.toggle('empty', !id);
       const cd = id ? p.cooldowns[id] || 0 : 0;
-      const total = id && SKILLS[id].cd ? SKILLS[id].cd(p.skillLevel(id)) : 1;
-      $('.cd', b).style.background = cd > 0 ? `conic-gradient(rgba(0,0,0,0.72) ${(cd / total) * 360}deg, transparent 0)` : 'none';
+      const total = id && SKILLS[id].cd ? SKILLS[id].cd(p.skillLevel(id)) || 1 : 1;
+      b.children[1].style.background = cd > 0 ? `conic-gradient(rgba(6,8,12,0.78) ${(cd / total) * 360}deg, transparent 0)` : 'none';
+      b.children[2].textContent = cd > 0 ? (cd < 1 ? cd.toFixed(1) : Math.ceil(cd)) : '';
       const cost = id && SKILLS[id].cost ? SKILLS[id].cost(p.skillLevel(id)) : 0;
       b.classList.toggle('nofp', !!id && p.force < cost);
-      b.classList.toggle('rmb-bound', p.rmbSlot === i && !!id);
+      b.classList.toggle('rmb', p.rmbSlot === i && !!id);
       b.classList.toggle('pending', this.pendingSkill === id && !!id);
-      $('.lv', b).textContent = id ? p.skillLevel(id) : '';
+      b.lastChild.textContent = id ? p.skillLevel(id) : '';
     }
-    $('.lv', this.bactaBtn).textContent = p.bacta;
-    this.skillBtn.classList.toggle('glow', p.skillPoints > 0);
-    this.charBtn.classList.toggle('glow', p.attrPoints > 0);
+    this.menuTree.classList.toggle('alert', p.skillPoints > 0);
+    this.menuChar.classList.toggle('alert', p.attrPoints > 0);
 
-    // hover nameplate
+    // target info (hovered / engaged unit)
     const h = g.hover;
     if (h && !h.dead) {
-      this.plate.classList.remove('hidden');
-      const nm = $('.np-name', this.plate);
+      this.target.classList.remove('hidden');
+      const nm = $('.ti-name', this.target);
       nm.textContent = h.name;
-      nm.className = 'np-name' + (h.elite ? ' elite' : h.team === 'rep' ? ' ally' : '');
-      $('.np-bar div', this.plate).style.width = Math.max(0, (h.hp / h.maxHp) * 100) + '%';
-      $('.np-sub', this.plate).textContent = h.team === 'cis' ? `레벨 ${h.level}${h.elite ? ' · 정예' : ''}` : h.owner ? '아군 (지휘 중)' : '아군';
-    } else this.plate.classList.add('hidden');
+      this.target.className = 'target-info' + (h.elite ? ' elite' : h.team === 'rep' ? ' ally' : '');
+      $('.ti-bar i', this.target).style.width = Math.max(0, (h.hp / h.maxHp) * 100) + '%';
+      $('.ti-sub', this.target).textContent = h.team === 'cis' ? `LV ${h.level}${h.elite ? ' · 정예' : ''}` : h.owner ? '아군 · 지휘 중' : '아군';
+    } else this.target.classList.add('hidden');
 
-    // throttled text updates
+    // throttled text
     this.textT -= dt;
     if (this.textT <= 0) {
-      this.textT = 0.1;
-      $('#hpText').textContent = `${Math.ceil(Math.max(0, p.hp))} / ${p.maxHp}`;
-      $('#fpText').textContent = `${Math.floor(p.force)} / ${p.maxForce}`;
-      $('#lvlText').textContent = `Lv ${p.level}`;
-      $('#xpbar div').style.width = (p.xp / p.xpNext) * 100 + '%';
-      $('#xpbar span').textContent = `경험치 ${Math.floor(p.xp)} / ${p.xpNext}`;
+      this.textT = 0.12;
+      $('#hpText').textContent = `${Math.ceil(Math.max(0, p.hp))}`;
+      $('#fpText').textContent = `${Math.floor(p.force)}`;
+      $('#lvlText').textContent = `LV ${p.level}`;
+      $('#xpFill').style.width = (p.xp / p.xpNext) * 100 + '%';
       $('#dmMark').style.left = p.darkness + '%';
-      const pts = [];
-      if (p.skillPoints) pts.push(`<span class="glowtxt">스킬 포인트 ${p.skillPoints} (K)</span>`);
-      if (p.attrPoints) pts.push(`<span class="glowtxt">능력치 포인트 ${p.attrPoints} (C)</span>`);
-      $('#ptsText').innerHTML = pts.join(' · ') || `<span class="dim">${g.region}</span>`;
+      $('#stims').innerHTML = `<kbd>Q</kbd>${[0, 1, 2, 3, 4].map((i) => `<i class="${i < p.bacta ? 'on' : ''}"></i>`).join('')}`;
+      $('#regionText').textContent = g.region;
       const buffs = [];
-      for (const [k, b] of Object.entries(p.buffs)) buffs.push(`<span class="buff"><img src="${iconURL(k)}">${Math.ceil(b.t)}</span>`);
-      if (p.saberOut) buffs.push(`<span class="buff warn">세이버 비행 중</span>`);
-      if (p.darkness >= 60) buffs.push(`<span class="buff dark">어둠의 유혹</span>`);
+      for (const [k, b] of Object.entries(p.buffs)) buffs.push(`<span class="buff"><img src="${iconURL(k)}" alt="">${Math.ceil(b.t)}s</span>`);
+      if (p.saberOut) buffs.push('<span class="buff info">광선검 회수 중</span>');
+      if (p.darkness >= 60) buffs.push('<span class="buff dark">어둠의 유혹</span>');
+      if (p.skillPoints) buffs.push(`<span class="buff gold">스킬 포인트 ${p.skillPoints} <kbd>K</kbd></span>`);
+      if (p.attrPoints) buffs.push(`<span class="buff gold">능력치 포인트 ${p.attrPoints} <kbd>C</kbd></span>`);
       $('#buffs').innerHTML = buffs.join('');
+      this.updateObjectives();
       if (this.open.char) this.refreshChar();
     }
 
-    // minimap
+    // radar / map
     this.miniT -= dt;
     if (this.miniT <= 0) {
-      this.miniT = 0.1;
+      this.miniT = 0.08;
       this.fogT = (this.fogT || 0) - 1;
       if (this.fogT <= 0) {
-        this.fogT = 5;
+        this.fogT = 6;
         this.updateFog();
       }
-      this.drawMinimap();
-      if (this.open.map) this.drawAutomap();
+      this.drawRadar();
+      if (this.open.map) this.drawMapView();
     }
   }
+
+  updateObjectives() {
+    const g = this.game;
+    const p = g.player;
+    const camps = g.world.camps.filter((c) => !c.boss);
+    const boss = g.world.camps.find((c) => c.boss);
+    const cleared = camps.filter((c) => c.cleared).length;
+    let near = null;
+    let nd = Infinity;
+    for (const c of g.world.camps) {
+      if (c.cleared) continue;
+      const d = dist(p.x, p.y, c.x, c.y);
+      if (d < nd) {
+        nd = d;
+        near = c;
+      }
+    }
+    let arrow = '';
+    if (near) {
+      // screen-space direction of the camp
+      const dx = near.x - p.x;
+      const dy = near.y - p.y;
+      const ang = (Math.atan2((dx + dy) * 0.5, dx - dy) * 180) / Math.PI;
+      arrow = `<li class="ob-near"><span class="ob-arrow" style="transform:rotate(${ang.toFixed(0)}deg)">➜</span>가장 가까운 ${near.boss ? '공장' : '거점'} <b>${Math.round(nd)}m</b>${near.level ? ` · LV ${near.level}` : ''}</li>`;
+    }
+    this.objectives.innerHTML = `<div class="ob-h">목표</div><ul>
+      <li class="${cleared === camps.length ? 'done' : ''}"><i></i>드로이드 거점 소탕 <b>${cleared} / ${camps.length}</b></li>
+      <li class="${boss && boss.cleared ? 'done' : ''}"><i></i>북쪽의 드로이드 공장 파괴</li>
+      ${arrow}</ul>`;
+  }
+
+  // ================================================================== map drawing
 
   updateFog() {
     const w = this.game.world;
@@ -581,126 +751,163 @@ export class HUD {
     const d = this.fogData.data;
     for (let i = 0; i < w.w * w.h; i++) {
       const j = i * 4;
-      if (w.explored[i]) {
-        d[j] = src[j];
-        d[j + 1] = src[j + 1];
-        d[j + 2] = src[j + 2];
-      } else {
-        d[j] = src[j] * 0.16;
-        d[j + 1] = src[j + 1] * 0.16;
-        d[j + 2] = src[j + 2] * 0.2;
-      }
+      const seen = w.explored[i];
+      // cool, desaturated holo-map tones
+      const l = (src[j] * 0.3 + src[j + 1] * 0.5 + src[j + 2] * 0.2) / 255;
+      const k = seen ? 1 : 0.18;
+      d[j] = (40 + l * 120) * k;
+      d[j + 1] = (60 + l * 140) * k;
+      d[j + 2] = (80 + l * 150) * k;
       d[j + 3] = 255;
     }
     this.fogCanvas.getContext('2d').putImageData(this.fogData, 0, 0);
   }
 
-  miniK() {
-    return 300 / (this.game.world.w * 2);
-  }
-
-  miniToWorld(mx, my) {
-    const k = this.miniK();
-    const a = mx / k - this.game.world.w; // x - y
-    const b = my / k; // x + y
-    return { x: (a + b) / 2, y: (b - a) / 2 };
-  }
-
-  drawMap(ctx, k, ox, oy) {
+  /** Draw the iso map with markers; T maps world → canvas. */
+  drawMap(ctx, k, ox, oy, opts = {}) {
     const g = this.game;
     const w = g.world;
     const p = g.player;
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-    ctx.setTransform(k, k, -k, k, ox, oy);
+    ctx.setTransform(k, k * 0.5, -k, k * 0.5, ox, oy);
     ctx.drawImage(this.fogCanvas, 0, 0);
     ctx.restore();
-    const T = (x, y) => [(x - y) * k + ox, (x + y) * k + oy];
-    // camps
+    const T = (x, y) => [(x - y) * k + ox, (x + y) * k * 0.5 + oy];
+    const s = opts.markerScale || 1;
     for (const c of w.camps) {
-      if (!w.explored[Math.floor(c.y) * w.w + Math.floor(c.x)] || c.cleared) continue;
+      if (!w.explored[Math.floor(c.y) * w.w + Math.floor(c.x)] && !c.boss) continue;
+      if (c.cleared) continue;
       const [x, y] = T(c.x, c.y);
-      ctx.fillStyle = c.boss ? '#ff3030' : '#c84030';
-      ctx.fillRect(x - 3, y - 3, 6, 6);
-      ctx.strokeStyle = '#000';
-      ctx.strokeRect(x - 3.5, y - 3.5, 7, 7);
+      ctx.strokeStyle = c.boss ? '#ff5a4a' : '#ff8a6a';
+      ctx.lineWidth = 2 * s;
+      ctx.beginPath();
+      ctx.moveTo(x, y - 6 * s);
+      ctx.lineTo(x + 6 * s, y);
+      ctx.lineTo(x, y + 6 * s);
+      ctx.lineTo(x - 6 * s, y);
+      ctx.closePath();
+      ctx.stroke();
     }
-    // base marker
     const [bx, by] = T(w.spawn.x, w.spawn.y);
-    ctx.strokeStyle = '#5aa0ff';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(bx - 5, by - 5, 10, 10);
-    // units
+    ctx.fillStyle = '#5cc8ff';
+    ctx.fillRect(bx - 4 * s, by - 4 * s, 8 * s, 8 * s);
     for (const u of g.units) {
       if (u.dead || u === p) continue;
-      if (u.team === 'cis' && dist(u.x, u.y, p.x, p.y) > 24) continue;
+      if (u.team === 'cis' && dist(u.x, u.y, p.x, p.y) > 26) continue;
       const [x, y] = T(u.x, u.y);
-      ctx.fillStyle = u.team === 'cis' ? '#ff3a2a' : '#3cdc5a';
-      ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+      ctx.fillStyle = u.team === 'cis' ? '#ff4a3a' : '#6fd0ff';
+      ctx.beginPath();
+      ctx.arc(x, y, 2.2 * s, 0, Math.PI * 2);
+      ctx.fill();
     }
+    // Anakin: arrow in his facing direction (screen space)
     const [px, py] = T(p.x, p.y);
-    ctx.fillStyle = Math.floor(g.time * 4) % 2 ? '#ffffff' : '#7dff8a';
-    ctx.fillRect(px - 2.5, py - 2.5, 5, 5);
-    // camera viewport
-    const r = this.renderer;
-    const corners = [
-      [0, 0],
-      [window.innerWidth, 0],
-      [window.innerWidth, window.innerHeight - r.consoleH],
-      [0, window.innerHeight - r.consoleH],
-    ].map(([sx, sy]) => r.screenToWorldPos(sx, sy));
-    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-    ctx.lineWidth = 1;
+    const fx = Math.cos(p.facing) - Math.sin(p.facing);
+    const fy = (Math.cos(p.facing) + Math.sin(p.facing)) * 0.5;
+    const a = Math.atan2(fy, fx);
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(a);
+    ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    corners.forEach((c, i) => {
-      const [x, y] = T(c.x, c.y);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
+    ctx.moveTo(7 * s, 0);
+    ctx.lineTo(-5 * s, -5 * s);
+    ctx.lineTo(-2 * s, 0);
+    ctx.lineTo(-5 * s, 5 * s);
     ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  radarScale() {
+    return 2.6;
+  }
+
+  radarToWorld(cx, cy) {
+    const p = this.game.player;
+    const k = this.radarScale();
+    const a = (cx - 180) / k; // x - y
+    const b = (cy - 180) / (k * 0.5); // x + y
+    return { x: p.x + (a + b) / 2, y: p.y + (b - a) / 2 };
+  }
+
+  drawRadar() {
+    const ctx = this.rctx;
+    const p = this.game.player;
+    const k = this.radarScale();
+    ctx.clearRect(0, 0, 360, 360);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(180, 180, 172, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(6,10,16,0.85)';
+    ctx.fillRect(0, 0, 360, 360);
+    this.drawMap(ctx, k, 180 - (p.x - p.y) * k, 180 - (p.x + p.y) * k * 0.5, { markerScale: 1.6 });
+    // rings + sweep
+    ctx.strokeStyle = 'rgba(160,210,255,0.18)';
+    ctx.lineWidth = 2;
+    for (const r of [60, 120]) {
+      ctx.beginPath();
+      ctx.arc(180, 180, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    const sw = (this.game.time * 1.4) % (Math.PI * 2);
+    const grd = ctx.createConicGradient ? ctx.createConicGradient(sw, 180, 180) : null;
+    if (grd) {
+      grd.addColorStop(0, 'rgba(120,200,255,0.18)');
+      grd.addColorStop(0.12, 'rgba(120,200,255,0)');
+      grd.addColorStop(1, 'rgba(120,200,255,0)');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, 360, 360);
+    }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(235,242,250,0.55)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(180, 180, 172, 0, Math.PI * 2);
     ctx.stroke();
+    // ticks
+    ctx.strokeStyle = 'rgba(235,242,250,0.5)';
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      const r0 = i % 6 === 0 ? 156 : 164;
+      ctx.beginPath();
+      ctx.moveTo(180 + Math.cos(a) * r0, 180 + Math.sin(a) * r0);
+      ctx.lineTo(180 + Math.cos(a) * 172, 180 + Math.sin(a) * 172);
+      ctx.stroke();
+    }
   }
 
-  drawMinimap() {
-    const ctx = this.mctx;
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, 300, 300);
-    const k = this.miniK();
-    this.drawMap(ctx, k, this.game.world.w * k, 0);
-  }
-
-  drawAutomap() {
-    const c = this.automap;
-    const W = window.innerWidth;
-    const H = window.innerHeight - this.renderer.consoleH;
-    if (c.width !== W || c.height !== H) {
-      c.width = W;
-      c.height = H;
+  drawMapView() {
+    const c = this.mapCanvas;
+    const W = c.clientWidth || window.innerWidth;
+    const H = c.clientHeight || window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) {
+      c.width = Math.round(W * dpr);
+      c.height = Math.round(H * dpr);
     }
     const ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, W, H);
-    ctx.globalAlpha = 0.75;
-    const p = this.game.player;
-    const k = 3.2;
-    const ox = W / 2 - (p.x - p.y) * k;
-    const oy = H / 2 - (p.x + p.y) * k;
-    this.drawMap(ctx, k, ox, oy);
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = '#ffd27f';
-    ctx.font = '14px Galmuri11, monospace';
-    ctx.fillText('크리스토프시스 외곽 — 자동 지도 (Tab)', 20, 30);
-    // POI labels
-    ctx.font = '12px Galmuri11, monospace';
-    for (const poi of this.game.world.pois) {
-      const w = this.game.world;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.scale(dpr, dpr);
+    const w = this.game.world;
+    // fit the whole map diamond
+    const k = Math.min(W / (w.w * 2) , H / w.h) * 0.95;
+    const ox = W / 2 - 0 * k;
+    const oy = (H - w.h * k) / 2;
+    this.drawMap(ctx, k, ox, oy, { markerScale: 1.2 });
+    ctx.font = '600 12px "Pretendard Variable", Pretendard, sans-serif';
+    ctx.textAlign = 'center';
+    for (const poi of w.pois) {
       if (!w.explored[Math.floor(poi.y) * w.w + Math.floor(poi.x)]) continue;
       const x = (poi.x - poi.y) * k + ox;
-      const y = (poi.x + poi.y) * k + oy;
-      ctx.fillStyle = '#000';
-      ctx.fillText(poi.name, x - 39, y + 1);
-      ctx.fillStyle = '#e8e0c8';
-      ctx.fillText(poi.name, x - 40, y);
+      const y = (poi.x + poi.y) * k * 0.5 + oy;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillText(poi.name, x + 1, y - 9);
+      ctx.fillStyle = '#eaf2fa';
+      ctx.fillText(poi.name, x, y - 10);
     }
   }
 }
-

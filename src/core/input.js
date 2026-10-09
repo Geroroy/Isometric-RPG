@@ -187,6 +187,9 @@ export class Input {
       case 'a':
         hud.toggle('char');
         break;
+      case 'o':
+        hud.toggle('settings');
+        break;
       case 'f':
         if (this.onFullscreen) this.onFullscreen();
         break;
