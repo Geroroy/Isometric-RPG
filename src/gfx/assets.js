@@ -5,6 +5,7 @@ import * as M from './models/characters.js';
 import * as A from './models/anims.js';
 import { PROPS, buildPropVariants, buildLaat, buildFighter } from './models/props.js';
 import { RNG } from '../core/math.js';
+import { setDetail } from './models/parts.js';
 import { loadBundle, saveBundle } from './assetCache.js';
 
 const SABER = ['saberBase', 'saberTip'];
@@ -163,6 +164,46 @@ export async function bakeHDProps(onProgress) {
   saveBundle('props-hd', { props });
   baker.dispose();
   return props;
+}
+
+/**
+ * Remaster graphics: the characters re-rendered from their models at 2×
+ * pixel density with remaster detail (smoother curves and shading, soft
+ * edges, full colour) — the same frames, timing and markers as the original
+ * set, so either can be drawn. Like StarCraft: Remastered, nothing about a
+ * unit changes but how finely it is drawn. `extra` = the Movie Duel's
+ * cast and/or an equipped appearance, each cached on its own.
+ */
+export async function bakeHDSprites(onProgress, { duel = null, skin = null } = {}) {
+  const groups = [['chars-hd', CHARACTERS]];
+  if (duel) groups.push([(duel === 'geonosis' ? 'duel' : 'duel-' + duel) + '-hd', DUELS[duel]]);
+  if (skin && SKINS[skin]) groups.push([skin + '-hd', { [skin]: SKINS[skin] }]);
+  const out = {};
+  const todo = [];
+  for (const [key, set] of groups) {
+    const cached = await loadBundle(key);
+    if (cached) Object.assign(out, cached.sprites);
+    else todo.push([key, set]);
+  }
+  if (!todo.length) return out;
+  const baker = new Baker();
+  // models are built with remaster detail (only while building them)
+  setDetail(true);
+  let built;
+  try {
+    built = todo.map(([key, set]) => [key, Object.fromEntries(Object.entries(set).map(([k, f]) => [k, { ...f(), hd: true }]))]);
+  } finally {
+    setDetail(false);
+  }
+  const tick = progress(onProgress, built.reduce((a, [, specs]) => a + frameCost(specs), 0));
+  for (const [key, specs] of built) {
+    const sprites = await bakeCharacters(baker, specs, (label, w) => tick('리마스터 ' + label, w));
+    saveBundle(key, { sprites });
+    Object.assign(out, sprites);
+  }
+  onProgress(1, '완료');
+  baker.dispose();
+  return out;
 }
 
 /** Sprites for one Movie Duel, baked on demand. */

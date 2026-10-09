@@ -6,16 +6,31 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 
 const cache = new Map();
 
+// Remaster detail (StarCraft: Remastered's approach — the same units, redrawn
+// finer): models built while it is on get twice the curve segments and
+// smooth-shaded Phong materials with a soft specular sheen on metal and
+// armour instead of flat Lambert facets. The baker renders them at 2×.
+let HD = false;
+export function setDetail(hd) {
+  HD = !!hd;
+}
+const segs = (n) => (HD ? n * 2 : n); // curve segments
+
 /**
- * Lambert material. `tex` picks the surface detail applied at bake time:
- * 'metal' (default: seams, rivets, scratches, grime), 'cloth', 'rock' or
- * 'none' (skin, hair, glass). Emissive materials never get one.
+ * Lambert material (Phong in remaster detail). `tex` picks the surface
+ * detail applied at bake time: 'metal' (default: seams, rivets, scratches,
+ * grime), 'cloth', 'rock' or 'none' (skin, hair, glass). Emissive materials
+ * never get one.
  */
 export function mat(color, opts = {}) {
-  const key = `l:${color}:${JSON.stringify(opts)}`;
+  const key = `${HD ? 'h' : 'l'}:${color}:${JSON.stringify(opts)}`;
   if (!cache.has(key)) {
     const { tex = 'metal', ...rest } = opts;
-    const m = new THREE.MeshLambertMaterial({ color, flatShading: true, ...rest });
+    let m;
+    if (HD) {
+      const shine = { metal: [34, 0x3a3a3a], none: [16, 0x202020], cloth: [4, 0x080808], rock: [4, 0x0a0a0a] }[tex] || [10, 0x141414];
+      m = new THREE.MeshPhongMaterial({ color, shininess: shine[0], specular: shine[1], flatShading: false, ...rest });
+    } else m = new THREE.MeshLambertMaterial({ color, flatShading: true, ...rest });
     m.userData.tex = rest.emissive ? 'none' : tex;
     cache.set(key, m);
   }
@@ -121,7 +136,7 @@ export function detail(root) {
     m.userData.detailed = true;
     const base = m.material;
     let kind = base.userData && base.userData.tex;
-    if (!kind || kind === 'none' || !base.isMeshLambertMaterial) return;
+    if (!kind || kind === 'none' || !(base.isMeshLambertMaterial || base.isMeshPhongMaterial)) return;
     const geo = m.geometry;
     if (!geo.boundingBox) geo.computeBoundingBox();
     const b = geo.boundingBox;
@@ -155,29 +170,29 @@ function place(mesh, x = 0, y = 0, z = 0) {
 /** Box; larger ones get chamfered edges that catch the light. */
 export function box(w, h, d, material, x, y, z) {
   const m = Math.min(w, h, d);
-  const geo = m >= 0.12 ? new RoundedBoxGeometry(w, h, d, 1, m * 0.16) : new THREE.BoxGeometry(w, h, d);
+  const geo = m >= 0.12 ? new RoundedBoxGeometry(w, h, d, segs(1), m * 0.16) : new THREE.BoxGeometry(w, h, d);
   return place(new THREE.Mesh(geo, material), x, y, z);
 }
 
 /** Vertical cylinder (along Y). */
 export function cyl(rTop, rBot, h, material, x, y, z, seg = 8) {
-  return place(new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, h, seg), material), x, y, z);
+  return place(new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, h, segs(seg)), material), x, y, z);
 }
 
 /** Cylinder lying along +X, starting at x0. */
 export function cylX(r0, r1, len, material, x0 = 0, y = 0, z = 0, seg = 8) {
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, len, seg), material);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, len, segs(seg)), material);
   m.rotation.z = -Math.PI / 2;
   m.position.set(x0 + len / 2, y, z);
   return m;
 }
 
 export function sph(r, material, x, y, z, ws = 8, hs = 6) {
-  return place(new THREE.Mesh(new THREE.SphereGeometry(r, ws, hs), material), x, y, z);
+  return place(new THREE.Mesh(new THREE.SphereGeometry(r, segs(ws), segs(hs)), material), x, y, z);
 }
 
 export function cone(r, h, material, x, y, z, seg = 6) {
-  return place(new THREE.Mesh(new THREE.ConeGeometry(r, h, seg), material), x, y, z);
+  return place(new THREE.Mesh(new THREE.ConeGeometry(r, h, segs(seg)), material), x, y, z);
 }
 
 export function group(...children) {
@@ -211,7 +226,7 @@ export function marker(name, x = 0, y = 0, z = 0) {
 
 /** Open cylinder sector (skirts, tabards, curved plates). theta 0 = +Z, π/2 = +X. */
 export function sector(rTop, rBot, h, t0, t1, material, x = 0, y = 0, z = 0, seg = 6) {
-  const geo = new THREE.CylinderGeometry(rTop, rBot, h, seg, 1, true, t0, t1 - t0);
+  const geo = new THREE.CylinderGeometry(rTop, rBot, h, segs(seg), 1, true, t0, t1 - t0);
   return place(new THREE.Mesh(geo, material), x, y, z);
 }
 

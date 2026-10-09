@@ -4,7 +4,8 @@
 // workflow of StarCraft / Diablo II, but happens at load time in the browser.
 // An `hd` bake (Remaster graphics) renders at 2× pixel density, keeps
 // anti-aliased alpha edges and full colour (no posterize / dither); its
-// frames carry `k: 0.5`, the game-pixel size of one of their pixels.
+// frames carry `k: 0.5`, the game-pixel size of one of their pixels. Props
+// and characters (spec.hd) both bake this way.
 import * as THREE from 'three';
 import { PX_PER_UNIT, CAM_ELEVATION } from '../core/iso.js';
 import { detail } from './models/parts.js';
@@ -297,7 +298,9 @@ export class Baker {
     // read back together (one GPU sync per pose instead of one per sprite)
     const cols = Math.min(dirs, 4);
     const rows = Math.ceil(dirs / cols);
-    this.setFrame(fw, fh, ax, ay, spec.ss || 1, [cols, rows]);
+    // remaster: twice the pixel density, always supersampled, soft edges
+    const R = spec.hd ? 2 : 1;
+    this.setFrame(fw * R, fh * R, ax * R, ay * R, spec.hd ? 2 : spec.ss || 1, [cols, rows], R);
     const markerObjs = [];
     const occluders = [];
     model.root.traverse((o) => {

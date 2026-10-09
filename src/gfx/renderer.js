@@ -49,6 +49,7 @@ export class Renderer {
   applyMode() {
     this.hd = isHD() && !!this.assets.propsHD;
     this.assets.props = this.hd ? this.assets.propsHD : this.assets.propsSD || this.assets.props;
+    this.assets.hdChars = this.hd && !!this.assets.spritesHD; // characters at 2× too
     this.prepareProps();
     this.terrain.setDensity(this.hd ? 2 : 1);
     this.canvas.style.imageRendering = this.hd ? 'auto' : '';

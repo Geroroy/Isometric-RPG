@@ -1,7 +1,7 @@
 // Entry point: bake sprites, build the world, then run the game loop.
 import './style.css';
 import { applySkin } from './ui/skin.js';
-import { bakeAssets, bakeDuelAssets, bakeSkin, bakeHDProps } from './gfx/assets.js';
+import { bakeAssets, bakeDuelAssets, bakeSkin, bakeHDProps, bakeHDSprites } from './gfx/assets.js';
 import { isHD, setGfxMode, onGfxMode, GFX_LABEL } from './core/gfx.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
@@ -66,6 +66,9 @@ async function boot() {
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
   if (look && !assets.sprites[look.sprite]) assets.sprites[look.sprite] = await bakeSkin(look.sprite, (k) => onProgress(k, '외형 준비 중…'));
+  // remaster characters (the Movie Duel's cast and the equipped look too)
+  const hdOpts = { duel: DUEL, skin: look && look.sprite };
+  if (isHD()) assets.spritesHD = await bakeHDSprites(onProgress, hdOpts);
   label.textContent = MODE === 'duel' ? DUEL_TITLES[DUEL][3] : '코러산트 · 크리스토프시스 생성 중…';
   await new Promise((r) => setTimeout(r, 20));
 
@@ -106,16 +109,18 @@ async function boot() {
   // Original / Remaster graphics (F5 or Settings), switched in place
   let gfxBusy = false;
   onGfxMode(async (m) => {
-    if (m === 'remaster' && !assets.propsHD) {
+    if (m === 'remaster' && (!assets.propsHD || !assets.spritesHD)) {
       if (gfxBusy) return;
       gfxBusy = true;
       hud.log('리마스터 그래픽 준비 중… (처음 한 번만)', 'sys');
       let shown = 0;
-      const hd = await bakeHDProps((k) => {
-        if (k - shown >= 0.25 && k < 1) hud.log(`리마스터 그래픽 준비 중… ${Math.round(k * 100)}%`, 'sys');
-        if (k - shown >= 0.25) shown = k;
-      });
-      assets.propsHD = { ...assets.propsSD, ...hd };
+      const report = (base, part) => (k) => {
+        const all = base + k * part;
+        if (all - shown >= 0.25 && all < 1) hud.log(`리마스터 그래픽 준비 중… ${Math.round(all * 100)}%`, 'sys');
+        if (all - shown >= 0.25) shown = all;
+      };
+      if (!assets.propsHD) assets.propsHD = { ...assets.propsSD, ...(await bakeHDProps(report(0, 0.3))) };
+      if (!assets.spritesHD) assets.spritesHD = await bakeHDSprites(report(0.3, 0.7), hdOpts);
       gfxBusy = false;
       if (!isHD()) return; // switched back meanwhile
     }
