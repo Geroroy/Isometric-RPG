@@ -636,3 +636,24 @@ const OBI_DOWN = {
 export const OBIWAN_ANIMS = npcSet({ rest: pose(NPC_REST, { shR: [-0.1, 0, 0.5], elR: [0, 0, 1.6], haR: [0, 0, 0.5] }), down: OBI_DOWN });
 export const AHSOKA_ANIMS = npcSet({ rest: pose(NPC_REST, { shR: [-0.3, 0, -0.1], elR: [0, 0, 0.9], shL: [0.3, 0, -0.1], elL: [0, 0, 0.9], spine: [0, 0.15, 0], head: [0, -0.15, 0] }) });
 export const NPC_CLONE_ANIMS = npcSet({ rest: { shR: [0.15, 0, 0.3], elR: [0, 0, 1.2], wpn: [0, 0, -1.2], shL: [-0.45, 0.2, 0.75], elL: [0, 0, 0.95] } });
+
+// Figrin D'an playing the kloo horn: both hands on the horn below his mouth,
+// swaying to the beat; when Anakin talks to him he lowers it a little.
+const BITH_PLAY = { shR: [0.25, 0, 0.75], elR: [0, 0, 1.45], haR: [0, 0, 0.3], shL: [-0.25, 0, 0.45], elL: [0, 0, 1.2], haL: [0, 0, 0.3] };
+export const BITH_ANIMS = {
+  idle: {
+    frames: 8,
+    fps: 8,
+    loop: true,
+    pose: (t) => {
+      const s = sin(t * TAU);
+      return pose(BITH_PLAY, { pelvisY: Math.abs(s) * 0.012, spine: [0, s * 0.06, -0.04], chest: [0, s * 0.05, Math.abs(s) * 0.05], head: [0, 0, -0.08 + Math.abs(s) * 0.06], knL: [0, 0, -Math.max(0, s) * 0.12], hipL: [0, 0, Math.max(0, s) * 0.06] });
+    },
+  },
+  talk: {
+    frames: 6,
+    fps: 6,
+    loop: true,
+    pose: (t) => pose(BITH_PLAY, { chest: [0, 0.08, -0.12], head: [0, sin(t * TAU) * 0.1, 0.05], shR: [0.25, 0, 0.55], elR: [0, 0, 1.3] }),
+  },
+};

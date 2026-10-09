@@ -514,6 +514,76 @@ function tent() {
   return g;
 }
 
+// --- Mos Eisley cantina --------------------------------------------------------
+// Tatooine adobe after A New Hope: a low drum under a large smooth dome with a
+// vent cap, a blocky entrance with a deep arched doorway (warm light inside),
+// a smaller domed annex, a flat-roofed back wing, pipes and round ports, and a
+// moisture vaporator outside. The door faces +Z (world south).
+
+const ADOBE = 0xd8cbb0;
+const ADOBE_DARK = 0xb7a587;
+const ADOBE_SHADE = 0x9c8b70;
+
+function cantina() {
+  const g = new THREE.Group();
+  const adobe = mat(ADOBE, { tex: 'rock' });
+  const band = mat(ADOBE_DARK, { tex: 'rock' });
+  const dark = mat(0x2a211b, { tex: 'none' });
+  const pipe = mat(0x6d665c);
+  // main hall: drum + dome
+  g.add(cyl(3.0, 3.15, 1.4, adobe, 0, 0.7, 0, 20));
+  g.add(cyl(3.16, 3.22, 0.18, band, 0, 0.09, 0, 20)); // footing
+  g.add(cyl(3.07, 3.07, 0.14, band, 0, 1.42, 0, 20)); // dome ring
+  const dome = sph(3.05, adobe, 0, 1.45, 0, 20, 10);
+  dome.scale.set(1, 0.48, 1);
+  g.add(dome);
+  g.add(cyl(0.55, 0.62, 0.3, band, 0.3, 2.95, -0.2, 12)); // vent cap
+  g.add(cyl(0.4, 0.4, 0.08, dark, 0.3, 3.12, -0.2, 12));
+  // round ports around the drum
+  for (const a of [0.25, 0.75, 2.4, 2.9, 3.9]) {
+    const port = cyl(0.17, 0.17, 0.08, dark, Math.cos(a) * 3.02, 0.95, Math.sin(a) * 3.02, 10);
+    port.rotation.order = 'YXZ'; // tip the disc onto the wall, then turn it to face outwards
+    port.rotation.set(Math.PI / 2, Math.PI / 2 - a, 0);
+    g.add(port);
+  }
+  // entrance block on the +Z side
+  g.add(box(2.8, 2.1, 2.2, adobe, 0.2, 1.05, 2.75));
+  g.add(box(3.0, 0.16, 2.4, band, 0.2, 2.13, 2.75)); // roof lip
+  g.add(box(1.2, 0.35, 0.9, band, -0.4, 2.35, 2.55)); // roof hump
+  // the arched doorway: frame, deep dark opening, warm light spilling out
+  g.add(box(1.5, 1.75, 0.12, band, 0.2, 0.87, 3.86));
+  g.add(box(1.1, 1.3, 0.1, dark, 0.2, 0.65, 3.9));
+  const arch = cyl(0.55, 0.55, 0.1, dark, 0.2, 1.3, 3.9, 14);
+  arch.rotation.x = Math.PI / 2;
+  g.add(arch);
+  g.add(box(1.0, 0.08, 0.6, glow(0xffb36a), 0.2, 0.04, 3.7)); // light on the threshold
+  g.add(box(0.9, 1.1, 0.04, glow(0x5a2f18), 0.2, 0.6, 3.93)); // dim warm interior
+  // side annex with a small dome (+X)
+  g.add(cyl(1.4, 1.5, 1.1, adobe, 3.0, 0.55, 1.0, 14));
+  const d2 = sph(1.42, adobe, 3.0, 1.1, 1.0, 14, 8);
+  d2.scale.set(1, 0.55, 1);
+  g.add(d2);
+  g.add(cyl(1.44, 1.44, 0.1, band, 3.0, 1.12, 1.0, 14));
+  // flat-roofed back wing (-X, -Z)
+  g.add(box(2.6, 1.6, 2.8, adobe, -2.4, 0.8, -2.0));
+  g.add(box(2.8, 0.14, 3.0, band, -2.4, 1.62, -2.0));
+  // pipes and a wall vent
+  g.add(cylX(0.07, 0.07, 2.6, pipe, -1.2, 1.75, 3.9));
+  g.add(cyl(0.07, 0.07, 1.7, pipe, -1.25, 0.9, 3.88, 6));
+  g.add(box(0.5, 0.35, 0.1, mat(ADOBE_SHADE), 1.45, 1.45, 3.88));
+  for (let i = 0; i < 3; i++) g.add(box(0.42, 0.04, 0.12, dark, 1.45, 1.35 + i * 0.09, 3.9));
+  // moisture vaporator outside the door
+  const vx = 2.6, vz = 3.6;
+  g.add(cyl(0.22, 0.28, 0.35, mat(0x8d8a84), vx, 0.17, vz, 8));
+  g.add(cyl(0.12, 0.14, 1.9, mat(0xa7a49d), vx, 1.2, vz, 8));
+  for (const y of [0.7, 1.2, 1.7]) g.add(cyl(0.2, 0.2, 0.08, mat(0x6f6c66), vx, y, vz, 8));
+  g.add(cyl(0.05, 0.05, 0.5, mat(0x6f6c66), vx, 2.35, vz, 6));
+  g.add(cyl(0.28, 0.18, 0.12, mat(0x8d8a84), vx, 2.1, vz, 8));
+  // a couple of barrels by the wall
+  for (const [x, z] of [[-1.6, 3.3], [-1.95, 3.0]]) g.add(cyl(0.25, 0.25, 0.6, mat(0x7a5a3c), x, 0.3, z, 10));
+  return g;
+}
+
 // --- Separatist -------------------------------------------------------------
 // Confederacy gear in Trade Federation tan and slate blue with the CIS
 // hexagonal emblem; red sensor lights.
@@ -753,6 +823,7 @@ export const PROPS = {
   laat: { build: laat, variants: 1, angles: [0], rect: [4, 4] },
   landingPad: { build: landingPad, variants: 1, flat: true, light: [255, 210, 120, 120, 0.2] },
   tent: { build: tent, variants: 1, rect: [3, 3], light: [110, 180, 255, 50, 1] },
+  cantina: { build: cantina, variants: 1, angles: [0], rect: [8, 8], light: [255, 170, 100, 90, 1] },
   sepCrate: { build: sepCrate, variants: 4, block: 0.6, light: [255, 90, 50, 22, 0.6] },
   sepBarrier: { build: sepBarrier, variants: 1, angles: [0, Math.PI / 2], rectByAngle: [[1, 2], [2, 1]] },
   sepTower: { build: sepTower, variants: 1, block: 0.7, light: [255, 60, 40, 60, 6] },

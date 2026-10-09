@@ -42,7 +42,7 @@ export class HUD {
     this.sub = null;
     this.hpChip = 1;
     this.tab = 0;
-    this.open = { tree: false, char: false, map: false, settings: false, cards: false, look: false };
+    this.open = { tree: false, char: false, map: false, settings: false, cards: false, look: false, juke: false };
     this.mapImg = renderer.terrain.minimapImage();
     this.fogCanvas = document.createElement('canvas');
     this.fogCanvas.width = game.world.w;
@@ -216,7 +216,7 @@ export class HUD {
     o.id = id;
     o.innerHTML = `<div class="ov-head"><div class="ov-title">${title}</div>${extraHead}<button class="ov-close" type="button" aria-label="닫기"><kbd>Esc</kbd>닫기</button></div><div class="ov-body"></div>`;
     o.addEventListener('mousedown', (e) => e.stopPropagation());
-    const key = { skilltree: 'tree', charsheet: 'char', mapview: 'map', settings: 'settings', starcards: 'cards', appearance: 'look' }[id];
+    const key = { skilltree: 'tree', charsheet: 'char', mapview: 'map', settings: 'settings', starcards: 'cards', appearance: 'look', jukebox: 'juke' }[id];
     o.querySelector('.ov-close').addEventListener('click', () => this.toggle(key, false));
     this.root.appendChild(o);
     return o;
@@ -477,7 +477,7 @@ export class HUD {
     const v = force ?? !this.open[which];
     if (v) for (const k of Object.keys(this.open)) if (k !== which && this.open[k]) this.toggle(k, false);
     this.open[which] = v;
-    const ids = { tree: '#skilltree', char: '#charsheet', map: '#mapview', settings: '#settings', cards: '#starcards', look: '#appearance' };
+    const ids = { tree: '#skilltree', char: '#charsheet', map: '#mapview', settings: '#settings', cards: '#starcards', look: '#appearance', juke: '#jukebox' };
     $(ids[which]).classList.toggle('hidden', !v);
     document.body.classList.toggle('overlay-open', Object.values(this.open).some(Boolean));
     if (v) {
@@ -487,9 +487,11 @@ export class HUD {
       if (which === 'settings') this.syncCropInputs();
       if (which === 'cards') this.cardsUI.render();
       if (which === 'look') this.lookUI.open();
+      if (which === 'juke') this.jukeUI.open();
     } else {
       this.hideTip();
       if (which === 'look') this.lookUI.close();
+      if (which === 'juke') this.jukeUI.close();
     }
     this.audio.play('click');
   }

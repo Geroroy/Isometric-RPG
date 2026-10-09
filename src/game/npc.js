@@ -10,6 +10,8 @@ export const NPC_DEFS = {
   ahsoka: { name: '아소카 타노', title: '제다이 파다완', sprite: 'ahsoka', pos: [4.5, 4.5] },
   quartermaster: { name: "보급관 '체인'", title: '501군단 보급 하사관', sprite: 'quartermaster', pos: [-5.5, -8] },
   r2: { name: 'R2-D2', title: '아스트로멕 드로이드', sprite: 'r2', pos: [4, -1.5] },
+  // at the cantina door north of the base (see CANTINA_POS)
+  figrin: { name: "피그린 단", title: '모달 노드 · 클루 혼 연주자', sprite: 'bith', pos: [2.8, -19.2] },
 };
 
 export const TALK_RANGE = 2.2;

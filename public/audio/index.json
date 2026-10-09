@@ -52,37 +52,76 @@
   },
   "music": {
     "title": [
-      "music/title.webm"
+      {
+        "file": "music/title.webm",
+        "title": "Anakin's Dark Deeds"
+      }
     ],
     "explore": [
-      "music/explore_1.webm",
-      "music/explore_2.webm"
+      {
+        "file": "music/explore_1.webm",
+        "title": "Anakin's Dark Deeds (Lucas King)"
+      },
+      {
+        "file": "music/explore_2.webm",
+        "title": "Anakin's Dark Deeds"
+      }
     ],
     "base": [
-      "music/base_1.webm",
-      "music/base_2.webm"
+      {
+        "file": "music/base_1.webm",
+        "title": "The Boys Continue"
+      },
+      {
+        "file": "music/base_2.webm",
+        "title": "The Boys Continue"
+      }
     ],
     "combat": [
-      "music/combat_1.webm",
-      "music/combat_2.webm"
+      {
+        "file": "music/combat_1.webm",
+        "title": "Anakin vs Obi-Wan / Inquisitor Duel"
+      },
+      {
+        "file": "music/combat_2.webm",
+        "title": "Anakin vs Obi-Wan"
+      }
     ],
     "boss": [
-      "music/boss.webm"
+      {
+        "file": "music/boss.webm",
+        "title": "Mace Windu's Theme (Lucas King)"
+      }
     ],
     "duel": [
-      "music/duel.webm"
+      {
+        "file": "music/duel.webm",
+        "title": "Battle of the Heroes"
+      }
     ],
     "credits": [
-      "music/credits.webm"
+      {
+        "file": "music/credits.webm",
+        "title": "A New Hope and End Credits"
+      }
     ],
     "victory": [
-      "music/victory.webm"
+      {
+        "file": "music/victory.webm",
+        "title": "Anakin Skywalker Theme (Battlefront II)"
+      }
     ],
     "death": [
-      "music/death.webm"
+      {
+        "file": "music/death.webm",
+        "title": "Anakin Sees His Future"
+      }
     ],
     "dark": [
-      "music/dark.webm"
+      {
+        "file": "music/dark.webm",
+        "title": "Vader: Shards of the Past"
+      }
     ]
   }
 }

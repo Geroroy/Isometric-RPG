@@ -32,6 +32,8 @@ export const BIOME_NAMES = {
 
 export const BASE_POS = { x: 150, y: 152 };
 export const FACTORY_POS = { x: 36, y: 40 };
+// Mos Eisley-style cantina north of the base; its door faces the north gate
+export const CANTINA_POS = { x: BASE_POS.x + 1, y: BASE_POS.y - 24 };
 const RUIN_CENTERS = [
   { x: 62, y: 128, r: 17, name: '은빛 첨탑 폐허' },
   { x: 118, y: 62, r: 15, name: '수정 성채 폐허' },
@@ -86,6 +88,7 @@ export class World {
     const S = this.seed;
 
     this.pois.push({ ...BASE_POS, r: 17, name: '공화국 전진 기지' });
+    this.pois.push({ ...CANTINA_POS, r: 7.5, name: '모스 아이슬리 칸티나' });
     this.pois.push({ ...FACTORY_POS, r: 16, name: '분리주의 드로이드 공장' });
     for (const rc of RUIN_CENTERS) this.pois.push(rc);
 
@@ -123,6 +126,7 @@ export class World {
       const db = dist(x, y, BASE_POS.x, BASE_POS.y);
       if (db < 26) continue;
       if (dist(x, y, FACTORY_POS.x, FACTORY_POS.y) < 26) continue;
+      if (dist(x, y, CANTINA_POS.x, CANTINA_POS.y) < 18) continue;
       if (campSpots.some((c) => dist(c.x, c.y, x, y) < 24)) continue;
       if (RUIN_CENTERS.some((r) => dist(r.x, r.y, x, y) < r.r - 4)) continue;
       campSpots.push({ x, y });
@@ -204,6 +208,7 @@ export class World {
       this.road[y * MAP_W + x] < 2.2 ||
       this.camps.some((c) => dist(c.x, c.y, x, y) < 7) ||
       dist(x, y, BASE_POS.x, BASE_POS.y) < 18 ||
+      dist(x, y, CANTINA_POS.x, CANTINA_POS.y) < 9 ||
       dist(x, y, FACTORY_POS.x, FACTORY_POS.y) < 13;
     for (let y = 2; y < MAP_H - 2; y++) {
       for (let x = 2; x < MAP_W - 2; x++) {
@@ -316,6 +321,8 @@ export class World {
       this.guards.push({ x: bx + dx, y: by + dy, facing: f });
     }
     this.spawn = { x: bx + 0.5, y: by + 1.5 };
+    this.clearArea(CANTINA_POS.x, CANTINA_POS.y, 8);
+    this.addProp('cantina', CANTINA_POS.x, CANTINA_POS.y);
   }
 
   buildFactory() {

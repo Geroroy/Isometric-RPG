@@ -66,7 +66,7 @@ def main():
                  '-vn', '-af', fade, '-c:a', 'libopus', '-b:a', BITRATE, str(dst)],
                 check=True,
             )
-            manifest[situation].append(f'music/{name}.webm')
+            manifest[situation].append({'file': f'music/{name}.webm', 'title': title})
             print(f'  {dst.name:16} {a // 60}:{a % 60:02}-{b // 60}:{b % 60:02}  {title}')
     index = root / 'public/audio/index.json'
     data = json.loads(index.read_text()) if index.exists() else {}

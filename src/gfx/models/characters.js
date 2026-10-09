@@ -800,3 +800,52 @@ export function buildAhsoka() {
   j.pelvis.add(at(rot(group(cylX(0.018, 0.018, 0.2, mat(C.silver), -0.1, 0, 0, 6)), 0, 0, -1.4), 0.04, 0.02, 0.15));
   return rig;
 }
+
+// ----------------------------------------------------------------------------
+// Figrin D'an of the Modal Nodes (A New Hope's cantina band): a Bith — tall
+// bulbous cranium sweeping back, huge black eyes, small folded mouth, pale
+// pink skin, long fingers — in a dark high-collared outfit, playing a black
+// kloo horn with a flared bell held from the mouth down in front of him.
+
+export function buildBith() {
+  const rig = new Rig({ shW: 0.18, uarm: 0.29, farm: 0.28 });
+  const j = rig.j;
+  const d = rig.dims;
+  const skin = mat(0xebbca4, { tex: 'none' });
+  const fold = mat(0xc9947c, { tex: 'none' });
+  const suit = 0x3a3036;
+  const vest = 0x6a5662;
+  for (const side of ['L', 'R']) {
+    j['hip' + side].add(cyl(0.075, 0.06, d.thigh, mat(suit, { tex: 'cloth' }), 0, -d.thigh / 2, 0, 8));
+    j['kn' + side].add(cyl(0.06, 0.052, d.shin, mat(suit, { tex: 'cloth' }), 0, -d.shin / 2, 0, 8));
+    j['an' + side].add(box(0.22, 0.07, 0.09, mat(0x1c1816), 0.05, -0.03, 0));
+    j['sh' + side].add(cyl(0.055, 0.048, d.uarm, mat(suit, { tex: 'cloth' }), 0, -d.uarm / 2, 0, 8));
+    j['el' + side].add(cyl(0.048, 0.04, d.farm, mat(suit, { tex: 'cloth' }), 0, -d.farm / 2, 0, 8));
+    // long thin fingers
+    j['ha' + side].add(scl(sph(0.04, skin, 0, -0.05, 0, 6, 4), 0.8, 1.6, 0.7));
+  }
+  j.pelvis.add(cyl(0.14, 0.15, 0.18, mat(suit, { tex: 'cloth' }), 0, -0.03, 0, 8));
+  addSkirt(rig, { outer: cloth(vest), len: 0.42, gap: 0.3 });
+  j.spine.add(scl(cyl(0.14, 0.15, 0.27, mat(vest, { tex: 'cloth' }), 0, 0.12, 0, 8), 0.78, 1, 1));
+  j.chest.add(scl(cyl(0.16, 0.145, 0.31, mat(vest, { tex: 'cloth' }), 0, 0.15, 0, 8), 0.74, 1, 1));
+  j.chest.add(cyl(0.075, 0.09, 0.09, mat(suit, { tex: 'cloth' }), 0, 0.34, 0, 8)); // high collar
+  // head: cranium swelling up and back, wrinkled at the back
+  j.neck.add(cyl(0.04, 0.046, 0.08, skin, 0, 0.03, 0, 7));
+  j.head.add(scl(sph(0.075, skin, 0.035, 0.07, 0, 9, 7), 0.95, 1.0, 0.9)); // face
+  j.head.add(scl(sph(0.15, skin, -0.05, 0.25, 0, 12, 9), 1.05, 1.3, 0.95)); // tall cranium
+  for (const y of [0.16, 0.23, 0.3]) j.head.add(scl(cyl(0.12, 0.12, 0.014, fold, -0.1, y, 0, 10), 0.62, 1, 0.98)); // back folds
+  for (const zs of [1, -1]) {
+    j.head.add(scl(sph(0.042, mat(0x0c0b0c, { tex: 'none' }), 0.09, 0.12, 0.048 * zs, 8, 6), 0.75, 1.2, 1)); // big black eyes
+    j.head.add(scl(sph(0.022, fold, 0.098, 0.035, 0.025 * zs, 6, 4), 0.7, 1, 1)); // mouth folds
+  }
+  // kloo horn: mouthpiece at the lips, body down and forward, flared bell
+  const horn = new THREE.Group();
+  horn.add(cylX(0.014, 0.026, 0.55, mat(0x18171c), 0, 0, 0, 7));
+  horn.add(cylX(0.026, 0.085, 0.13, mat(0x18171c), 0.55, 0, 0, 9));
+  horn.add(cylX(0.088, 0.088, 0.02, mat(0xc8a860), 0.67, 0, 0, 10)); // brass bell rim
+  for (const x of [0.12, 0.2, 0.28]) horn.add(cylX(0.026, 0.026, 0.015, mat(0xb9a170), x, 0, 0, 7)); // keys
+  horn.position.set(0.11, 0.42, 0.02);
+  horn.rotation.z = -0.85;
+  j.chest.add(horn);
+  return rig;
+}

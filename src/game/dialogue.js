@@ -225,7 +225,18 @@ function r2(g) {
   };
 }
 
-const TREES = { rex, ahsoka, obiwan, quartermaster, r2 };
+function figrin(g) {
+  return {
+    text: '(피그린 단이 클루 혼을 내리며 커다란 검은 눈을 깜빡인다) 공화국 장군이 이런 데까지 웬일이오? 한 곡 들려 드릴까. 전쟁터에서 들은 곡이라면 뭐든 다시 틀어 드리지.',
+    choices: [
+      { text: '주크박스를 보여 줘.', go: () => (g.emit('jukebox'), null) },
+      { text: '연주 잘 들었어.', go: () => ({ text: '모달 노드는 늘 같은 곡만 한다고들 하지. 그래도 이 은하에서 이만한 밴드는 없소.', choices: [bye()] }) },
+      bye(),
+    ],
+  };
+}
+
+const TREES = { rex, ahsoka, obiwan, quartermaster, r2, figrin };
 
 export function startDialogue(g, npc) {
   return TREES[npc.npcId](g);
