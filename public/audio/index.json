@@ -10,5 +10,40 @@
     "clash": "sfx/saber_clash.wav",
     "ignite": "sfx/saber_on.wav",
     "retract": "sfx/saber_off.wav"
+  },
+  "music": {
+    "title": [
+      "music/title.webm"
+    ],
+    "explore": [
+      "music/explore_1.webm",
+      "music/explore_2.webm"
+    ],
+    "base": [
+      "music/base_1.webm",
+      "music/base_2.webm"
+    ],
+    "combat": [
+      "music/combat_1.webm",
+      "music/combat_2.webm"
+    ],
+    "boss": [
+      "music/boss.webm"
+    ],
+    "duel": [
+      "music/duel.webm"
+    ],
+    "credits": [
+      "music/credits.webm"
+    ],
+    "victory": [
+      "music/victory.webm"
+    ],
+    "death": [
+      "music/death.webm"
+    ],
+    "dark": [
+      "music/dark.webm"
+    ]
   }
 }

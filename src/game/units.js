@@ -585,7 +585,10 @@ export class Player extends Unit {
   addDarkness(n) {
     const before = this.darkness;
     this.darkness = clamp(this.darkness + n, 0, 100);
-    if (before < 60 && this.darkness >= 60) this.game.say('dark');
+    if (before < 60 && this.darkness >= 60) {
+      this.game.say('dark');
+      this.game.emit('darkSide');
+    }
   }
 
   gainXp(n) {

@@ -11,6 +11,7 @@ import { Portrait } from './gfx/portrait.js';
 import { HUD } from './ui/hud.js';
 import { Input } from './core/input.js';
 import { Audio } from './core/audio.js';
+import { Music } from './core/music.js';
 import { TouchControls, isTouchDevice, hasMouse } from './ui/touch.js';
 import { Fullscreen } from './ui/fullscreen.js';
 import { ZoomControl } from './ui/zoom.js';
@@ -100,6 +101,14 @@ async function boot() {
   setTimeout(() => loading.remove(), 800);
 
   const help = document.getElementById('help');
+  // music starts with the first touch / key (browsers block autoplay)
+  const music = new Music(audio);
+  const wake = () => {
+    audio.unlock();
+    music.init(game, () => !help.classList.contains('hidden'));
+  };
+  window.addEventListener('pointerdown', wake, { once: true, capture: true });
+  window.addEventListener('keydown', wake, { once: true, capture: true });
   const startBtn = document.getElementById('startBtn');
   const controls = document.getElementById('controls');
   document.getElementById('controlsBtn').onclick = () => controls.classList.remove('hidden');
@@ -151,6 +160,7 @@ async function boot() {
   window.__renderer = renderer;
   window.__hud = hud;
   window.__dialogue = dialogue;
+  window.__music = music;
   let last = performance.now();
   let titleT = 0;
   const loop = (now) => {
@@ -177,6 +187,7 @@ async function boot() {
     renderer.render(dt);
     hud.update(dt);
     dialogue.update(dt);
+    music.update();
     if (duelHud) duelHud.update(dt);
     requestAnimationFrame(loop);
   };

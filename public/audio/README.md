@@ -48,6 +48,10 @@
 - `voice` 항목은 파일 경로 또는 `{ "file", "text" }`. `text`가 있으면 그 문장이 자막으로 표시되고,
   없으면 게임의 기본 대사 중 하나가 표시됩니다. 음성이 나오는 동안 효과음은 자동으로 작아집니다.
 
+## 배경 음악 (`music`)
+
+`"music": { "상황": ["music/파일.webm", …] }` — 상황: `title` `explore` `base` `combat` `boss` `duel` `credits`(반복), `victory` `death` `dark`(짧은 스팅). 같은 상황에 여러 곡을 넣으면 번갈아 재생합니다. `volume.music`으로 음량(기본 0.5). 기본 곡은 `tools/cut_music.py`로 아나킨 테마 모음집에서 잘라 냈습니다.
+
 ## 효과음 이름
 
 `hum` `buzz` `swing` `hit` `clash`(볼트 반사) `ignite` `retract` `slam` `push` `repulse` `leap` `speed` `choke`

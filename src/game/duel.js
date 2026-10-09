@@ -230,6 +230,7 @@ export class Duel {
   }
 
   start() {
+    this.started = true;
     this.scene('intro');
   }
 
