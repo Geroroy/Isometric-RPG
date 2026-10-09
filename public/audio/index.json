@@ -1,15 +1,54 @@
 {
   "sfx": {
-    "hum": "sfx/saber_hum.wav",
-    "buzz": "sfx/saber_buzz.wav",
+    "hum": "sfx/saber/hum.wav",
     "swing": [
-      "sfx/saber_swing_1.wav",
-      "sfx/saber_swing_2.wav",
-      "sfx/saber_swing_3.wav"
+      "sfx/saber/swing_1.wav",
+      "sfx/saber/swing_2.wav",
+      "sfx/saber/swing_3.wav",
+      "sfx/saber/swing_4.wav",
+      "sfx/saber/swing_5.wav",
+      "sfx/saber/swing_6.wav"
     ],
-    "clash": "sfx/saber_clash.wav",
-    "ignite": "sfx/saber_on.wav",
-    "retract": "sfx/saber_off.wav"
+    "clash": [
+      "sfx/saber/clash_1.wav",
+      "sfx/saber/clash_2.wav",
+      "sfx/saber/clash_3.wav",
+      "sfx/saber/clash_4.wav"
+    ],
+    "ignite": [
+      "sfx/saber/ignite_1.wav",
+      "sfx/saber/ignite_2.wav",
+      "sfx/saber/ignite_3.wav",
+      "sfx/saber/ignite_4.wav",
+      "sfx/saber/ignite_5.wav"
+    ],
+    "retract": [
+      "sfx/saber/retract_1.wav",
+      "sfx/saber/retract_2.wav",
+      "sfx/saber/retract_3.wav",
+      "sfx/saber/retract_4.wav",
+      "sfx/saber/retract_5.wav",
+      "sfx/saber/retract_6.wav"
+    ],
+    "swingHeavy": [
+      "sfx/saber/swingHeavy_1.wav",
+      "sfx/saber/swingHeavy_2.wav",
+      "sfx/saber/swingHeavy_3.wav",
+      "sfx/saber/swingHeavy_4.wav",
+      "sfx/saber/swingHeavy_5.wav",
+      "sfx/saber/swingHeavy_6.wav"
+    ],
+    "hit": [
+      "sfx/saber/hit_1.wav",
+      "sfx/saber/hit_2.wav",
+      "sfx/saber/hit_3.wav"
+    ],
+    "deflect": [
+      "sfx/saber/deflect_1.wav",
+      "sfx/saber/deflect_2.wav",
+      "sfx/saber/deflect_3.wav"
+    ],
+    "lock": "sfx/saber/lock.wav"
   },
   "music": {
     "title": [

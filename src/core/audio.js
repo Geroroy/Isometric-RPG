@@ -21,6 +21,7 @@ export class Audio {
     this.listener = null; // unit used for distance attenuation
     this.last = {};
     this.bank = { sfx: {}, voice: {} };
+    this.lastPick = {};
     this.voiceSrc = null;
   }
 
@@ -102,7 +103,15 @@ export class Audio {
     const s = c.createBufferSource();
     s.buffer = buf;
     s.loop = true;
-    s.connect(this.humGain);
+    // any hum file plays at the synthesized hum's loudness (buzz keeps its own)
+    const trim = c.createGain();
+    if (name === 'hum') {
+      const d = buf.getChannelData(0);
+      let e = 0;
+      for (let i = 0; i < d.length; i += 4) e += d[i] * d[i];
+      trim.gain.value = Math.min(12, 0.4 / (Math.sqrt(e / (d.length / 4)) || 1));
+    }
+    s.connect(trim).connect(this.humGain);
     s.start();
     if (name === 'hum') this.humSample = s;
   }
@@ -268,7 +277,138 @@ export class Audio {
     for (let i = 0; i < n; i++) this.noiseBurst(0.02 + Math.random() * 0.03, vol, 'highpass', 3500, 1800, Math.random() * spread, 0.7);
   }
 
-  play(name, src = null) {
+  // ------------------------------------------------------------------ lightsaber (sound bank)
+
+  /** Next buffer of a bank list, never the same one twice in a row. */
+  pickBuf(name) {
+    const list = this.bank.sfx[name];
+    if (!list || !list.length) return null;
+    let i = Math.floor(Math.random() * list.length);
+    if (list.length > 1 && i === this.lastPick[name]) i = (i + 1) % list.length;
+    this.lastPick[name] = i;
+    return list[i];
+  }
+
+  /** Stereo position: the source's place on screen relative to Anakin. */
+  panFor(src) {
+    if (!src || !this.listener) return 0;
+    const sx = src.x - this.listener.x - (src.y - this.listener.y); // isometric screen x
+    return Math.max(-0.8, Math.min(0.8, sx / 14));
+  }
+
+  /** One bank sample through gain and panner. */
+  sample(name, { vol = 1, rate = 1, pan = 0, delay = 0 } = {}) {
+    const buf = this.pickBuf(name);
+    if (!buf) return null;
+    const c = this.ctx;
+    const s = c.createBufferSource();
+    s.buffer = buf;
+    s.playbackRate.value = rate;
+    const g = c.createGain();
+    g.gain.value = vol;
+    const p = c.createStereoPanner();
+    p.pan.value = pan;
+    s.connect(g).connect(p).connect(this.sfxBus);
+    s.start(c.currentTime + delay);
+    return { s, g };
+  }
+
+  /**
+   * Lightsaber sounds from the bank, shaped by the moment: light or heavy
+   * swings at the attack's speed with the hum bending along, ignitions the
+   * hum rises out of, deflections that crack harder when the bolt is sent
+   * back, clashes with a bright ring for a perfect parry or a low impact for
+   * a guard break, burns that bite more on a critical hit, and a crackling
+   * saber lock that surges with every push. Returns false to fall back to
+   * the synth when the bank lacks the sample.
+   */
+  saberSound(name, vol, pan, o) {
+    const jit = (a) => 1 + (Math.random() * 2 - 1) * a;
+    const hum = this.humSample && this.humSample.playbackRate;
+    const t = this.ctx.currentTime;
+    switch (name) {
+      case 'swing': {
+        const heavy = o.heavy && this.bank.sfx.swingHeavy;
+        const rate = Math.min(1.25, Math.max(0.8, (o.rate || 1) * jit(0.05)));
+        if (!this.sample(heavy ? 'swingHeavy' : 'swing', { vol: vol * (heavy ? 0.95 : 0.8), rate, pan })) return false;
+        this.dopplerSweep(heavy ? 0.9 : 0.55, (heavy ? 0.45 : 0.3) / rate);
+        return true;
+      }
+      case 'ignite':
+      case 'retract':
+        if (!this.sample(name, { vol: vol * 0.9, rate: jit(0.02), pan })) return false;
+        if (hum) {
+          // the hum climbs out of the ignition / sinks with the blade
+          hum.cancelScheduledValues(t);
+          hum.setValueAtTime(name === 'ignite' ? 0.55 : 1, t);
+          if (name === 'ignite') {
+            hum.exponentialRampToValueAtTime(1.05, t + 0.35);
+            hum.linearRampToValueAtTime(1, t + 0.6);
+          } else hum.exponentialRampToValueAtTime(0.45, t + 0.4);
+        }
+        return true;
+      case 'deflect':
+        if (!this.sample('deflect', { vol: vol * (o.heavy ? 0.95 : 0.8), rate: jit(0.12), pan })) return false;
+        if (o.heavy) this.sample('clash', { vol: vol * 0.45, rate: 1.3, pan });
+        this.dopplerSweep(0.4, 0.2);
+        return true;
+      case 'clash': {
+        const rate = o.heavy ? 0.82 : o.perfect ? 1.06 : jit(0.07);
+        if (!this.sample('clash', { vol: vol * (o.heavy ? 1 : 0.85), rate, pan })) return false;
+        if (o.perfect) this.sample('clash', { vol: vol * 0.5, rate: 1.6, pan, delay: 0.03 }); // bright ring
+        if (o.heavy) this.sample('hit', { vol: vol * 0.6, rate: 0.7, pan });
+        this.dopplerSweep(o.heavy ? 1 : 0.6, 0.25);
+        return true;
+      }
+      case 'hit':
+        if (!this.sample('hit', { vol: vol * 0.6, rate: jit(0.1), pan })) return false;
+        if (o.crit) this.sample('clash', { vol: vol * 0.35, rate: 1.2, pan });
+        return true;
+      case 'lockStart': {
+        if (!this.bank.sfx.lock) return false;
+        this.saberSound('clash', vol, pan, { heavy: true });
+        this.stopLock(0.05);
+        const v = this.sample('lock', { vol: 0, pan });
+        v.s.loop = true;
+        v.g.gain.setValueAtTime(0, t);
+        v.g.gain.linearRampToValueAtTime(vol * 0.7, t + 0.3);
+        this.lockVoice = v;
+        return true;
+      }
+      case 'lockPush': {
+        const v = this.lockVoice;
+        if (!v) return false;
+        // each push makes the blades grind harder for a moment
+        v.g.gain.cancelScheduledValues(t);
+        v.g.gain.setValueAtTime(vol * 1.1, t);
+        v.g.gain.setTargetAtTime(vol * 0.7, t + 0.05, 0.12);
+        v.s.playbackRate.setValueAtTime(1.12, t);
+        v.s.playbackRate.setTargetAtTime(1, t + 0.05, 0.15);
+        this.dopplerSweep(0.35, 0.15);
+        return true;
+      }
+      case 'lockEnd':
+        if (!this.lockVoice) return false;
+        this.stopLock(0.2);
+        this.saberSound('clash', vol, pan, { heavy: true });
+        return true;
+    }
+    return false;
+  }
+
+  stopLock(secs) {
+    const v = this.lockVoice;
+    if (!v) return;
+    const t = this.ctx.currentTime;
+    v.g.gain.cancelScheduledValues(t);
+    v.g.gain.setValueAtTime(v.g.gain.value, t);
+    v.g.gain.linearRampToValueAtTime(0, t + secs);
+    v.s.stop(t + secs + 0.02);
+    this.lockVoice = null;
+  }
+
+  /** `o`: { heavy, rate, perfect, crit } — see saberSound. */
+  play(name, src = null, o = {}) {
     if (!this.ctx || this.muted) return;
     let vol = 1;
     if (src && this.listener) {
@@ -279,6 +419,10 @@ export class Audio {
     const now = this.ctx.currentTime;
     if (this.last[name] && now - this.last[name] < 0.03) return;
     this.last[name] = now;
+
+    if (this.saberSound(name, vol, this.panFor(src), o)) return;
+    // synth stand-ins for saber events without a sample
+    name = { lockStart: 'clash', lockEnd: 'clash', lockPush: 'swing', deflect: 'clash' }[name] || name;
 
     // sound bank first
     const bank = this.bank.sfx[name];

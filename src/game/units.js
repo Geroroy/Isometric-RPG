@@ -810,7 +810,7 @@ export class Player extends Unit {
             act.phase = 'swing';
             act.fired = false;
             this.setAnim(hit.anim, hit.speed * this.attackSpeed(), true);
-            g.audio.play('swing');
+            g.audio.play('swing', this, { heavy: hit.anim === 'attack3', rate: (hit.speed * this.attackSpeed()) / 1.7 });
           }
         } else {
           if (t && !t.dead) this.faceTo(t.x, t.y);
@@ -829,7 +829,7 @@ export class Player extends Unit {
               const nh = act.hits[act.i];
               act.fired = false;
               this.setAnim(nh.anim, nh.speed * this.attackSpeed(), true);
-              g.audio.play('swing');
+              g.audio.play('swing', this, { heavy: nh.anim === 'attack3', rate: (nh.speed * this.attackSpeed()) / 1.7 });
             } else {
               this.action = null;
               this.setAnim('idle');
@@ -884,7 +884,7 @@ export class Player extends Unit {
         if (this.anim !== 'attack1' || this.animInfo().done) this.setAnim('attack1', 2.4, true);
         if (act.tick <= 0) {
           act.tick = 0.25;
-          g.audio.play('swing');
+          g.audio.play('swing', this, { rate: 1.15 }); // quick spinning cuts
           for (const e of g.hostilesInRadius(this, this.x, this.y, 2.0)) {
             g.damage(this, e, this.weaponDamage() * act.mult, { type: 'saber', knock: { ang: Math.atan2(e.y - this.y, e.x - this.x), power: 2 } });
           }

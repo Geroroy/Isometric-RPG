@@ -173,7 +173,7 @@ export class Game {
     const ang = Math.atan2(ty - p.y, tx - p.x);
     p.saberOut = true;
     this.throws.push({ x: p.x, y: p.y, z: 1.1, ang, travelled: 0, range, out: true, mult, hit: new Set(), spin: 0, owner: p });
-    this.audio.play('swing');
+    this.audio.play('swing', p, { heavy: true, rate: 0.85 });
   }
 
   callGunship(p, tx, ty, dmg) {
@@ -272,7 +272,7 @@ export class Game {
     }
     if (opts.type === 'saber') {
       this.fx.sparks(tgt.x, tgt.y, 1.0, tgt.def.droid ? '#ffcf70' : '#ff9a6a', crit ? 12 : 6);
-      this.audio.play('hit');
+      this.audio.play('hit', tgt, { crit });
     }
     if (!opts.quiet) {
       if (src === p || (src && src.owner === p)) this.fx.text(tgt.x, tgt.y, String(amount), crit ? '#ffe060' : src === p ? '#ffffff' : '#d0d8e8', crit ? 1.3 : src === p ? 1 : 0.75);
@@ -342,7 +342,7 @@ export class Game {
     b.life = 1.2;
     b.deflected = true;
     this.fx.sparks(b.x, b.y, b.z, '#bfe8ff', 6, 3);
-    this.audio.play('clash');
+    this.audio.play('deflect', p, { heavy: redirect });
     p.deflectFlash = 0.15;
     if (Math.random() < 0.2) this.fx.text(p.x, p.y, redirect ? '반격!' : '반사', '#9fd8ff', 0.8, 2.2);
   }

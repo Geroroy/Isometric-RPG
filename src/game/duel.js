@@ -59,7 +59,7 @@ export class Dooku extends Unit {
     this.strikeN = n;
     this.struck = false;
     this.setAnim('attack' + n, 1, true);
-    this.game.audio.play('swing');
+    this.game.audio.play('swing', this, { heavy: n === 3 });
   }
 
   update(dt) {
@@ -252,7 +252,7 @@ export class Duel {
     if (p.blocking && !p.busy && this.facing(p, dk)) {
       const perfect = g.time - p.blockT < PERFECT_WINDOW;
       g.fx.sparks((p.x + dk.x) / 2, (p.y + dk.y) / 2, 1.2, '#fff2c8', perfect ? 18 : 9, 3);
-      g.audio.play('clash');
+      g.audio.play('clash', dk, { perfect });
       p.clashFlash = dk.clashFlash = 0.15;
       if (perfect) {
         this.stats.parries++;
@@ -286,7 +286,7 @@ export class Duel {
     const g = this.game;
     g.fx.text(u.x, u.y, '자세 붕괴!', '#ff9a6a', 1.25, 2.6);
     g.fx.shockwave(u.x, u.y, 1.2, '#ffd9a0', 0.4);
-    g.audio.play('clash');
+    g.audio.play('clash', u, { heavy: true });
     if (u === this.dooku) {
       u.set('broken', 2.2);
       u.composure = 0;
@@ -334,7 +334,7 @@ export class Duel {
       dk.composure -= Math.min(22, amount * 0.6);
       dk.clashFlash = 0.15;
       g.fx.sparks(dk.x, dk.y, 1.2, '#ffd8c8', 7, 2.5);
-      g.audio.play('clash');
+      g.audio.play('clash', dk);
       g.fx.text(dk.x, dk.y, '막음', '#d8dde4', 0.7);
       if (dk.composure <= 0) this.breakGuard(dk);
       return 0;
@@ -392,7 +392,7 @@ export class Duel {
     dk.setAnim('lock', 1, true);
     this.lock = { v: 0.5, t: 0, push: scripted ? 0.34 : 0.26 + this.phase * 0.04 };
     this.locked = true;
-    g.audio.play('clash');
+    g.audio.play('lockStart', dk);
     g.emit('lock', true);
   }
 
@@ -400,7 +400,7 @@ export class Duel {
   press() {
     if (!this.lock) return false;
     this.lock.v += 0.075;
-    this.game.audio.play('swing');
+    this.game.audio.play('lockPush', this.dooku);
     return true;
   }
 
@@ -418,7 +418,7 @@ export class Duel {
     this.locked = false;
     g.emit('lock', false);
     g.fx.shockwave((p.x + dk.x) / 2, (p.y + dk.y) / 2, 1.6, '#ffe8c0', 0.45);
-    g.audio.play('clash');
+    g.audio.play('lockEnd', dk);
     const a = Math.atan2(dk.y - p.y, dk.x - p.x);
     if (won) {
       this.stats.locksWon++;

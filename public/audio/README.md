@@ -4,7 +4,11 @@
 **효과음은 합성음 대신**, **대사는 자막과 함께 음성으로** 재생합니다.
 `index.json`이 없으면 모든 소리는 WebAudio로 절차적으로 합성됩니다.
 
-## 기본 광선검 효과음 (`sfx/saber_*.wav`)
+## 기본 광선검 효과음 (`sfx/saber/*.wav`)
+
+`tools/saber_from_recording.py`가 배틀프론트 2 모드 'Improved Lightsaber Sounds V1.5' 시연 녹음에서 잘라 재구성한 소리입니다. 키: `hum`(루프) `ignite` `retract` `swing` `swingHeavy` `deflect` `clash` `hit` `lock`(칼날 겨루기 루프). 게임은 상황에 따라 이들을 고르고 겹치고 음높이를 바꿉니다(`src/core/audio.js`의 `saberSound`).
+
+### 이전: 순수 합성 버전
 
 `tools/saber_sfx.py`가 numpy · scipy로 **직접 합성한 오리지널 소리**입니다(영화 음원·샘플 사용 없음).
 
