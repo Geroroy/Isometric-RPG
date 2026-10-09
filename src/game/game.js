@@ -95,7 +95,7 @@ export class Game {
 
   /** The Christophsis world (camps, the droid war), wherever Anakin is. */
   get front() {
-    return this.places.christophsis ? this.places.christophsis.world : this.world;
+    return this.places && this.places.christophsis ? this.places.christophsis.world : this.world;
   }
 
   populateChristophsis() {

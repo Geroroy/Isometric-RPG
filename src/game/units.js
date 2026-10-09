@@ -63,6 +63,8 @@ export class Unit {
   }
 
   setAnim(name, speed = 1, restart = false) {
+    const set = this.sprites;
+    if (set && !set.anims[name]) name = 'idle'; // a sprite without that animation stands
     if (this.anim !== name || restart) {
       this.anim = name;
       this.animT = 0;

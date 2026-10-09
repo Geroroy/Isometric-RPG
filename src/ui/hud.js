@@ -114,7 +114,14 @@ export class HUD {
       this.pokes = (this.pokes || 0) + 1;
       clearTimeout(this.pokeReset);
       this.pokeReset = setTimeout(() => (this.pokes = 0), 4000);
-      this.game.say(this.pokes > 4 ? 'pokeAnnoyed' : 'poke');
+      // his own recorded voice (audio/voice/anakin), else a subtitled line
+      const a = this.game.audio;
+      const clip = a.voice('portrait');
+      if (clip) {
+        if (a.speech) a.speech.stop();
+        this.portrait.talk(clip.duration);
+        this.sub = { t: 0, talk: clip.duration, speaker: '아나킨' };
+      } else this.game.say(this.pokes > 4 ? 'pokeAnnoyed' : 'poke');
     });
     cn.addEventListener('mousedown', (e) => e.stopPropagation());
     $('#stims').addEventListener('click', (e) => {
@@ -767,6 +774,7 @@ export class HUD {
 
   updateObjectives() {
     const g = this.game;
+    if (g.duel) return; // the Movie Duels have no campaign objectives
     const p = g.player;
     const front = g.front;
     const camps = front.camps.filter((c) => !c.boss);

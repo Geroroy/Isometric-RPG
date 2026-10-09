@@ -229,6 +229,7 @@ async function boot() {
   window.__music = music;
   let last = performance.now();
   let titleT = 0;
+  const reported = new Set();
   const loop = (now) => {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
@@ -249,14 +250,18 @@ async function boot() {
     dr.y += (ty - dr.y) * Math.min(1, dt * (onTitle ? 1 : 3));
     // menus pause the action (the map does not)
     const paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
-    if (!paused) game.update(dt);
-    renderer.render(dt);
-    hud.update(dt);
-    dialogue.update(dt);
-    music.update();
-    jukebox.update();
-    if (duelHud) duelHud.update(dt);
+    // one failing system must not freeze the whole game: report it once, keep running
     requestAnimationFrame(loop);
+    for (const step of [() => paused || game.update(dt), () => renderer.render(dt), () => hud.update(dt), () => dialogue.update(dt), () => music.update(), () => jukebox.update(), () => duelHud && duelHud.update(dt)]) {
+      try {
+        step();
+      } catch (err) {
+        if (!reported.has(err.message)) {
+          reported.add(err.message);
+          console.error(err);
+        }
+      }
+    }
   };
   requestAnimationFrame(loop);
   window.__ready = true;

@@ -664,6 +664,63 @@ function sepBody(rng) {
 }
 
 /** Control room console bank with glowing screens. */
+// --- Mustafar, the end of the duel: the river and the collector arm ---------
+
+/** A mining droid's hover platform (Anakin rides one down the lava river). */
+function droidPlatform() {
+  const g = new THREE.Group();
+  const dark = mat(0x2e2a28);
+  const steel = mat(0x5a5652);
+  g.add(box(2.2, 0.16, 1.8, steel, 0, 0.32, 0));
+  g.add(box(2.3, 0.08, 1.9, dark, 0, 0.22, 0));
+  for (const x of [-0.75, 0, 0.75]) g.add(box(0.05, 0.02, 1.7, dark, x, 0.41, 0)); // deck plates
+  g.add(cylX(0.32, 0.26, 0.9, dark, -0.45, 0.02, 0, 8)); // the droid's body hangs below
+  g.add(sph(0.2, glow(0xffc070), 0.5, 0.02, 0, 6, 4)); // its sensor eye
+  for (const z of [-0.95, 0.95]) g.add(box(2.1, 0.22, 0.06, mat(0x3a3430), 0, 0.48, z)); // low rails
+  return g;
+}
+
+/** The collector platform broken off the arm, floating on the river. */
+function collectorRaft() {
+  const g = new THREE.Group();
+  const dark = mat(0x2a2624);
+  const steel = mat(0x4e4a46);
+  g.add(box(5.0, 0.3, 3.8, dark, 0, 0.15, 0));
+  g.add(box(4.6, 0.06, 3.4, steel, 0, 0.33, 0));
+  for (let x = -2; x <= 2; x += 1) g.add(box(0.04, 0.02, 3.3, dark, x, 0.37, 0)); // grating
+  // the snapped end of the arm: twisted beams at the back corner
+  const beam = box(2.2, 0.18, 0.22, mat(0x3a3430), -1.6, 0.6, -1.5);
+  beam.rotation.z = 0.35;
+  g.add(beam);
+  const beam2 = box(1.6, 0.16, 0.2, mat(0x3a3430), 1.9, 0.5, 1.4);
+  beam2.rotation.y = 0.5;
+  beam2.rotation.z = -0.25;
+  g.add(beam2);
+  for (const [x, z] of [[-2.3, -1.7], [2.3, -1.7], [-2.3, 1.7], [2.3, 1.7]]) g.add(box(0.14, 0.05, 0.14, glow(0xffa040), x, 0.37, z));
+  return g;
+}
+
+/** Catwalk railing on the balcony and the collector arm. */
+function catwalkRail() {
+  const g = new THREE.Group();
+  const dark = mat(0x2c2826);
+  for (const x of [-0.95, 0, 0.95]) g.add(box(0.07, 0.95, 0.07, dark, x, 0.47, 0));
+  g.add(box(2.0, 0.06, 0.08, mat(0x45403a), 0, 0.95, 0));
+  g.add(box(2.0, 0.04, 0.06, dark, 0, 0.5, 0));
+  g.add(box(0.1, 0.06, 0.1, glow(0xffa040), 0, 0.99, 0));
+  return g;
+}
+
+/** A length of the collector arm's great pipe, beside its catwalk. */
+function collectorPipe() {
+  const g = new THREE.Group();
+  const black = mat(0x24211f);
+  g.add(cylX(0.55, 0.55, 2.0, black, -1.0, 0.75, 0, 10));
+  for (const x of [-0.8, 0.8]) g.add(cylX(0.6, 0.6, 0.18, mat(0x3a3430), x - 0.09, 0.75, 0, 10));
+  g.add(box(1.8, 0.06, 0.08, glow(0xff8030), 0, 1.15, 0.45));
+  return g;
+}
+
 function mustafarConsole() {
   const g = new THREE.Group();
   g.add(box(1.8, 0.9, 0.8, mat(0x2c2826), 0, 0.45, 0));
@@ -1122,6 +1179,10 @@ export const PROPS = {
   mustafarWall: { build: mustafarWall, variants: 1, angles: [0, Math.PI / 2], rectByAngle: [[2, 1], [1, 2]], light: [255, 140, 60, 40, 1.7] },
   confTable: { build: confTable, variants: 1, angles: [0], rect: [5, 1], light: [255, 150, 80, 60, 1] },
   sepBody: { build: sepBody, variants: 4, block: 0, flat: true },
+  droidPlatform: { build: droidPlatform, variants: 1, flat: true, block: 0 },
+  collectorRaft: { build: collectorRaft, variants: 1, flat: true, block: 0 },
+  catwalkRail: { build: catwalkRail, variants: 1, angles: [0, Math.PI / 2], block: 0 },
+  collectorPipe: { build: collectorPipe, variants: 1, angles: [0, Math.PI / 2], block: 0, light: [255, 120, 40, 40, 1.2] },
   mustafarConsole: { build: mustafarConsole, variants: 1, angles: [0, Math.PI / 2], rectByAngle: [[2, 1], [1, 2]], light: [120, 200, 255, 40, 1.1] },
   cloakPile: { build: robePile(0x5a3426), variants: 1, block: 0, flat: true },
   robePile: { build: robePile(0x6a4a32), variants: 1, block: 0, flat: true },

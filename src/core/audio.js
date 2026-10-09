@@ -311,7 +311,10 @@ export class Audio {
     if (!this.ctx || this.muted) return null;
     const list = this.bank.voice[key];
     if (!list) return null;
-    const clip = list[Math.floor(Math.random() * list.length)];
+    // random, but never the same clip twice in a row
+    let i = Math.floor(Math.random() * list.length);
+    if (list.length > 1 && list[i] === list.last) i = (i + 1) % list.length;
+    const clip = (list.last = list[i]);
     if (this.voiceSrc) {
       try {
         this.voiceSrc.stop();
