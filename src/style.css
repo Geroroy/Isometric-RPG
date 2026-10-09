@@ -3991,3 +3991,98 @@ body.touch #jukebox .ov-body {
 .dbg-sw.on b {
   color: #7dff9a;
 }
+
+/* cutscenes: letterbox, subtitles, fades -------------------------------- */
+body.cinema #hud,
+body.cinema #overlay,
+body.cinema .hud-btn,
+body.cinema .touch-ui,
+body.cinema .jb-chip {
+  visibility: hidden;
+}
+.cinema-ui {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+}
+.cn-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: #000;
+  transition: height 0.8s ease;
+}
+.cn-bar.top {
+  top: 0;
+}
+.cn-bar.bot {
+  bottom: 0;
+}
+body.cinema .cn-bar {
+  height: 12vh;
+}
+.cn-fade {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+}
+.cn-sub {
+  position: absolute;
+  left: 50%;
+  bottom: calc(12vh + 18px);
+  width: min(900px, calc(100vw - 48px));
+  transform: translateX(-50%);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  text-shadow: 0 2px 6px #000, 0 0 2px #000;
+}
+.cn-sub.on {
+  opacity: 1;
+}
+.cn-sub span {
+  display: block;
+  margin-bottom: 4px;
+  font: 500 13px Jost, 'Pretendard Variable', Pretendard, sans-serif;
+  letter-spacing: 0.14em;
+  color: #e9c47a;
+}
+.cn-sub p {
+  margin: 0;
+  font: 500 clamp(17px, 2.1vw, 24px) / 1.45 'Pretendard Variable', Pretendard, sans-serif;
+  color: #f6f2ea;
+}
+.cn-skip {
+  position: absolute;
+  top: calc(12vh - 34px);
+  right: 18px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  font: 500 12px Jost, 'Pretendard Variable', Pretendard, sans-serif;
+  letter-spacing: 0.1em;
+  color: rgba(243, 238, 230, 0.75);
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+body.cinema .cn-skip {
+  display: flex;
+}
+.cn-skip kbd {
+  padding: 1px 6px;
+  font: 600 11px Jost, sans-serif;
+  color: #1a1c20;
+  background: #ebe6de;
+  border: 0;
+  border-radius: 3px;
+}
+body.touch .cn-skip kbd {
+  display: none;
+}

@@ -89,7 +89,7 @@ export class Input {
     this.audio.unlock();
     const g = this.game;
     const p = g.player;
-    if (p.dead) return;
+    if (p.dead || g.cinema) return;
     this.updateMouse();
     const duel = g.duel;
     if (duel && e.button === 0 && duel.press()) return;
@@ -177,6 +177,12 @@ export class Input {
     if (e.repeat && !/^[1-6]$/.test(e.key)) return;
     this.audio.unlock();
     const k = e.key.toLowerCase();
+    if (g.cinema) {
+      // cutscene: only skipping
+      if (k === 'escape' || k === 'enter') g.cinema.skip();
+      e.preventDefault();
+      return;
+    }
     if (this.dialogue && this.dialogue.key(k)) {
       e.preventDefault();
       return;

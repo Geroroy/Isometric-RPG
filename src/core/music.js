@@ -21,7 +21,7 @@ import { dist } from './math.js';
 
 const FADE = 1.6; // crossfade seconds
 const STINGS = new Set(['victory', 'death', 'dark']);
-const ONE_SHOT = new Set(['credits']); // plays once, then silence
+const ONE_SHOT = new Set(['credits', 'mustafarIntro', 'mustafarEnd']); // play once, then silence
 const SAVE = 'cw.music';
 // situations whose music the player may replace, in jukebox order
 export const SITUATIONS = [
@@ -31,6 +31,7 @@ export const SITUATIONS = [
   ['combat', '전투'],
   ['boss', '정예 · 공장 보스'],
   ['duel', '두쿠와의 결투'],
+  ['mustafar', '오비완과의 결투'],
   ['credits', '결투 승리'],
   ['victory', '전투 종료'],
   ['death', '사망'],
@@ -101,7 +102,7 @@ export class Music {
     game.on('darkSide', () => this.playSting('dark'));
     game.on('duelEnd', (r) => {
       this.duelOver = r.won ? 'credits' : 'silence';
-      if (r.won) this.playSting('victory');
+      if (r.won && !game.duel.music) this.playSting('victory'); // Mustafar ends in tragedy
     });
   }
 
@@ -196,6 +197,7 @@ export class Music {
     if (this.juke) return 'jukebox';
     if (this.isTitle()) return 'title';
     if (p.dead) return 'silence'; // the death sting plays over it
+    if (g.duel && g.duel.music) return g.duel.music();
     if (g.duel) return this.duelOver || (g.duel.started ? 'duel' : 'title');
     if (g.inCombat) {
       const boss = g.activeUnits.some((u) => u.elite && !u.dead && u.target === p && dist(u.x, u.y, p.x, p.y) < 14);

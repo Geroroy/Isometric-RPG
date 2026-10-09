@@ -34,6 +34,7 @@ export class NPC extends Unit {
 
   update(dt) {
     this.baseUpdate(dt);
+    if (this.scripted) return;
     const g = this.game;
     const p = g.player;
     const talking = g.talkingTo === this;

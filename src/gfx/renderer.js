@@ -33,7 +33,12 @@ export class Renderer {
   }
 
   prepareProps() {
-    for (const p of this.game.world.props) {
+    for (const p of this.game.world.props) this.placeProp(p);
+  }
+
+  /** Screen placement of a prop (again after a cutscene moves one). */
+  placeProp(p) {
+    {
       const frames = this.assets.props[p.type];
       p.frame = frames[p.frameIdx % frames.length];
       const s = worldToScreen(p.x, p.y);
@@ -130,8 +135,9 @@ export class Renderer {
     const ctx = this.ctx;
     const W = this.w;
     const H = this.h;
-    const ps = worldToScreen(p.x, p.y, p.z * 0.4);
-    const viewH = H - this.consoleH / this.scale;
+    const f = g.camFocus; // a cutscene's camera
+    const ps = f ? worldToScreen(f.x, f.y, 0) : worldToScreen(p.x, p.y, p.z * 0.4);
+    const viewH = H - (g.cinema ? 0 : this.consoleH) / this.scale; // cutscenes use the whole screen
     const sh = g.fx.shakeAmt;
     const dr = this.drift; // slow title-screen camera move, in game pixels
     this.cam.x = Math.round(ps.x - W / 2 + dr.x + (sh ? (Math.random() - 0.5) * sh : 0));
@@ -148,6 +154,7 @@ export class Renderer {
     // --- flat layer: pads, debris, corpses
     const standing = [];
     for (const pr of g.world.props) {
+      if (pr.hidden) continue; // placed but not shown yet (scripted)
       const [rx, ry, rw, rh] = pr.rect;
       if (!inView(rx, ry, rw, rh)) continue;
       if (pr.flat) this.drawFrame(pr.frame, pr.sx, pr.sy);

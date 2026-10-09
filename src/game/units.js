@@ -14,6 +14,8 @@ export const UNIT_DEFS = {
   r2: { name: 'R2-D2', sprite: 'r2', team: 'rep', hp: 150, speed: 4.6, radius: 0.3, knockRes: 0.3 },
   npc: { name: '', sprite: 'clone', team: 'rep', hp: 100, radius: 0.34, knockRes: 0 },
   dooku: { name: '두쿠 백작', sprite: 'dooku', team: 'cis', hp: 900, radius: 0.36, knockRes: 0.35 },
+  obiwan3: { name: '오비완 케노비', sprite: 'obiwan3', team: 'cis', hp: 950, radius: 0.36, knockRes: 0.4 },
+  padme: { name: '파드메 아미달라', sprite: 'padme', team: 'rep', hp: 100, radius: 0.3, knockRes: 0 },
 };
 
 let NEXT_ID = 1;
@@ -717,6 +719,7 @@ export class Player extends Unit {
 
   update(dt) {
     this.baseUpdate(dt);
+    if (this.scripted) return; // a cutscene is moving him
     if (this.dead) {
       this.deathT += dt;
       return;

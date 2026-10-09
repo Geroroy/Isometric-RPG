@@ -117,7 +117,7 @@ export function addSkirt(rig, { outer, inner, len = 0.62, innerLen = 0.5, gap = 
 }
 
 export function buildAnakin({ dual = false, outfit = 'armor' } = {}) {
-  if (outfit !== 'armor') return armAnakin(buildAnakinEp3(outfit === 'robe'), dual, 0.2);
+  if (outfit !== 'armor') return armAnakin(buildAnakinEp3(outfit === 'robe' || outfit === 'hood', { hood: outfit === 'hood' }), dual, 0.2);
   const K = ANAKIN_COL;
   const rig = new Rig({ shW: 0.2, uarm: 0.29, farm: 0.27, chest: 0.31 });
   const j = rig.j;
@@ -243,8 +243,9 @@ const EP3 = {
   robeDark: 0x3a2018,
 };
 
-function buildAnakinEp3(robe) {
-  const K = EP3;
+/** `o.K` palette, `o.hood` adds a hood that poses raise / lower (toggles hoodUp / hoodDown), `o.obiwan` = Obi-Wan's face, hair and bare hands. */
+function buildAnakinEp3(robe, o = {}) {
+  const K = o.K || EP3;
   const rig = new Rig({ shW: 0.2, uarm: 0.29, farm: 0.27, chest: 0.31 });
   const j = rig.j;
   const d = rig.dims;
@@ -298,12 +299,12 @@ function buildAnakinEp3(robe) {
     sh.add(cyl(0.064, 0.068, d.uarm, tunic, 0, -d.uarm / 2, 0, 8));
     el.add(cyl(0.068, 0.1, d.farm * 0.9, tunic, 0, -d.farm * 0.45, 0, 9));
     el.add(cyl(0.094, 0.094, 0.008, mat(0x140d0a, { tex: 'none' }), 0, -d.farm * 0.9 + 0.006, 0, 9)); // sleeve opening
-    if (side === 'R') {
+    if (side === 'R' && !o.obiwan) {
       el.add(cyl(0.046, 0.04, d.farm, mat(K.glove, { tex: 'none' }), 0, -d.farm / 2, 0, 8));
       j.haR.add(scl(sph(0.05, mat(K.glove, { tex: 'none' }), 0.0, -0.045, 0, 7, 5), 0.9, 1.15, 0.8));
     } else {
       el.add(cyl(0.036, 0.034, 0.08, skin, 0, -d.farm + 0.03, 0, 7)); // bare wrist
-      j.haL.add(scl(sph(0.047, skin, 0.0, -0.045, 0, 7, 5), 0.9, 1.15, 0.8));
+      j['ha' + side].add(scl(sph(0.047, skin, 0.0, -0.045, 0, 7, 5), 0.9, 1.15, 0.8));
     }
   }
 
@@ -316,8 +317,25 @@ function buildAnakinEp3(robe) {
     for (const zs of [1, -1]) j.chest.add(scl(sph(0.1, rm, -0.01, 0.3, 0.13 * zs, 8, 5), 1.15, 0.5, 0.9)); // shoulders
     // hood lying folded on the back, cowl round the neck
     j.chest.add(scl(sector(0.11, 0.135, 0.07, F + 0.9, F + 2 * Math.PI - 0.9, rm, 0, 0.34, 0, 10), 0.95, 1, 1.05));
-    j.chest.add(scl(sph(0.12, rd, -0.165, 0.27, 0, 9, 6), 0.42, 0.95, 1.05));
-    j.chest.add(scl(sph(0.1, rm, -0.17, 0.3, 0, 9, 6), 0.45, 0.85, 1.0));
+    const down = group(scl(sph(0.12, rd, -0.165, 0.27, 0, 9, 6), 0.42, 0.95, 1.05), scl(sph(0.1, rm, -0.17, 0.3, 0, 9, 6), 0.45, 0.85, 1.0));
+    j.chest.add(down);
+    if (o.hood) {
+      // raised hood: a deep cowl over the head, open at the face, its shadow inside
+      const up = new THREE.Group();
+      const shell = new THREE.Mesh(new THREE.SphereGeometry(0.155, 12, 9, Math.PI + 0.85, 2 * Math.PI - 1.7, 0, Math.PI * 0.62), rm);
+      shell.position.set(-0.01, 0.13, 0);
+      shell.scale.set(1.08, 1.2, 1.02);
+      up.add(shell);
+      const inner = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8, Math.PI + 0.85, 2 * Math.PI - 1.7, 0, Math.PI * 0.62), mat(0x0d0806, { tex: 'none', side: THREE.BackSide }));
+      inner.position.copy(shell.position);
+      inner.scale.copy(shell.scale);
+      up.add(inner);
+      up.add(scl(sph(0.06, rm, -0.1, 0.24, 0, 7, 5), 0.8, 1, 0.9)); // peak at the back
+      up.add(scl(cyl(0.14, 0.2, 0.16, rm, -0.02, -0.04, 0, 10), 1, 1, 1.05)); // drape onto the shoulders
+      j.head.add(up);
+      rig.toggles.hoodUp = up;
+      rig.toggles.hoodDown = down;
+    }
     // long skirt to the ankles, open in front
     addSkirt(rig, { outer: rm, len: 0.86, gap: 0.75, rTop: 0.2, rBot: 0.4, follow: 0.4 });
     // wide sleeves over the tunic sleeves
@@ -333,11 +351,15 @@ function buildAnakinEp3(robe) {
   j.head.add(scl(sph(0.096, skin, 0.01, 0.1, 0, 10, 8), 0.98, 1.16, 0.88));
   j.head.add(scl(sph(0.05, skin, 0.05, 0.035, 0, 7, 5), 1.0, 0.8, 1.2)); // jaw
   j.head.add(box(0.02, 0.028, 0.02, skin, 0.1, 0.09, 0)); // nose
-  const brow = mat(0x3a2418, { tex: 'none' });
-  const eye = mat(0x5d7f86, { tex: 'none' });
+  const brow = mat(o.obiwan ? 0x6a3c20 : 0x3a2418, { tex: 'none' });
+  const eye = mat(o.obiwan ? 0x6f8fa0 : 0x5d7f86, { tex: 'none' });
   for (const zs of [1, -1]) {
     j.head.add(box(0.006, 0.01, 0.022, eye, 0.094, 0.115, 0.033 * zs));
     j.head.add(box(0.008, 0.008, 0.032, brow, 0.095, 0.133, 0.033 * zs));
+  }
+  if (o.obiwan) {
+    obiWanHair(j.head);
+    return rig;
   }
   j.head.add(rot(box(0.006, 0.05, 0.005, mat(0x8a3a2e, { tex: 'none' }), 0.093, 0.122, 0.052), 0.25, 0, 0)); // scar
   j.head.add(box(0.006, 0.007, 0.03, mat(0x9b5a4e, { tex: 'none' }), 0.093, 0.05, 0)); // mouth
@@ -847,5 +869,92 @@ export function buildBith() {
   horn.position.set(0.11, 0.42, 0.02);
   horn.rotation.z = -0.85;
   j.chest.add(horn);
+  return rig;
+}
+
+// ----------------------------------------------------------------------------
+// Obi-Wan Kenobi, Episode III: the Jedi costume in light colours — cream
+// undertunic, oatmeal tunic and tabards, brown obi and belt, brown boots —
+// the brown hooded robe over it, short swept hair and a full trimmed beard.
+
+const OBI3 = {
+  skin: 0xe2b598,
+  tunic: 0xcbb795,
+  tunicDark: 0xae9a77,
+  under: 0xe8dfcc,
+  leather: 0xb59e78,
+  obi: 0x8e7454,
+  belt: 0x5a3c26,
+  pouch: 0x5a3c26,
+  black: 0x2a2420,
+  pants: 0xb8a582,
+  boot: 0x4a3324,
+  strap: 0x3a281c,
+  glove: 0x3a2a20,
+  robe: 0x6a4a32,
+  robeDark: 0x4a3222,
+};
+
+function obiWanHair(head) {
+  const hm = mat(0xa8683a, { tex: 'cloth' });
+  const hd = mat(0x7e4a28, { tex: 'cloth' });
+  head.add(scl(sph(0.104, hm, -0.022, 0.15, 0, 10, 7), 1.04, 0.78, 1.04)); // short, swept back
+  head.add(scl(sph(0.07, hm, 0.045, 0.2, 0, 8, 5), 1.0, 0.5, 1.2)); // front sweep
+  head.add(scl(sph(0.07, hd, -0.07, 0.08, 0, 8, 6), 0.9, 1.0, 1.15)); // back
+  for (const zs of [1, -1]) head.add(scl(sph(0.04, hm, -0.01, 0.1, 0.085 * zs, 6, 4), 1, 1.2, 0.6)); // over the ears
+  // beard and moustache
+  head.add(scl(sph(0.062, hd, 0.052, 0.03, 0, 8, 6), 0.85, 1.05, 1.12));
+  head.add(scl(sph(0.03, hd, 0.096, 0.065, 0, 6, 4), 0.5, 0.45, 1.6));
+}
+
+export function buildObiWan3({ robe = false } = {}) {
+  const rig = buildAnakinEp3(robe, { K: OBI3, obiwan: true });
+  const belt = group(cylX(0.021, 0.021, 0.24, mat(0xc9ccd2), -0.12, 0, 0, 6), cylX(0.023, 0.023, 0.09, mat(0x1b1b1f), -0.04, 0, 0, 6));
+  belt.rotation.z = -1.35;
+  belt.position.set(0.02, 0.0, 0.2);
+  rig.j.pelvis.add(belt);
+  rig.beltHilt = belt;
+  rig.enableSaberIK(buildSaber(1.0));
+  return rig;
+}
+
+// ----------------------------------------------------------------------------
+// Padmé Amidala on Mustafar (Episode III): a slim figure in a pale cream
+// travelling outfit — long fitted coat over trousers, a dark belt, soft brown
+// boots — her dark brown hair gathered low at the back of the head.
+
+export function buildPadme() {
+  const rig = new Rig({ hip: 0.9, thigh: 0.42, shin: 0.42, hipW: 0.085, spine: 0.22, chest: 0.27, shW: 0.165, shY: 0.24, uarm: 0.26, farm: 0.24 });
+  const j = rig.j;
+  const d = rig.dims;
+  const skin = mat(0xebc3a6, { tex: 'none' });
+  const coat = cloth(0xe2d6c0);
+  const coatDark = cloth(0xc7b89c);
+  const pants = 0xd8ccb4;
+  const boot = 0x6a4a34;
+  const hair = mat(0x3e2418, { tex: 'cloth' });
+  for (const side of ['L', 'R']) {
+    j['hip' + side].add(cyl(0.065, 0.05, d.thigh, mat(pants, { tex: 'cloth' }), 0, -d.thigh / 2, 0, 8));
+    j['kn' + side].add(cyl(0.05, 0.045, d.shin, mat(boot, { tex: 'none' }), 0, -d.shin / 2, 0, 8));
+    j['an' + side].add(box(0.19, 0.065, 0.08, mat(boot, { tex: 'none' }), 0.045, -0.03, 0));
+    j['sh' + side].add(cyl(0.045, 0.04, d.uarm, coat, 0, -d.uarm / 2, 0, 7));
+    j['el' + side].add(cyl(0.04, 0.034, d.farm, coat, 0, -d.farm / 2, 0, 7));
+    j['ha' + side].add(scl(sph(0.036, skin, 0, -0.04, 0, 6, 4), 0.9, 1.1, 0.8));
+  }
+  j.pelvis.add(cyl(0.12, 0.13, 0.15, mat(pants, { tex: 'cloth' }), 0, -0.02, 0, 8));
+  j.pelvis.add(scl(cyl(0.135, 0.137, 0.04, mat(0x3a2a22, { tex: 'none' }), 0, 0.06, 0, 10), 0.85, 1, 1.05));
+  addSkirt(rig, { outer: coat, len: 0.5, gap: 0.35, rTop: 0.14, rBot: 0.22 });
+  j.spine.add(scl(cyl(0.115, 0.125, 0.24, coat, 0, 0.11, 0, 8), 0.78, 1, 1));
+  j.chest.add(scl(cyl(0.14, 0.12, 0.27, coat, 0, 0.13, 0, 8), 0.76, 1, 1));
+  j.chest.add(box(0.012, 0.2, 0.03, coatDark, 0.105, 0.14, 0.02)); // coat closure
+  j.chest.add(cyl(0.05, 0.065, 0.06, coatDark, 0, 0.29, 0, 8)); // collar
+  j.neck.add(cyl(0.032, 0.036, 0.07, skin, 0, 0.03, 0, 7));
+  j.head.add(scl(sph(0.085, skin, 0.01, 0.09, 0, 10, 8), 0.96, 1.14, 0.86));
+  j.head.add(box(0.016, 0.022, 0.016, skin, 0.088, 0.085, 0)); // nose
+  for (const zs of [1, -1]) j.head.add(box(0.006, 0.009, 0.018, mat(0x3a2418, { tex: 'none' }), 0.083, 0.105, 0.028 * zs));
+  j.head.add(box(0.006, 0.007, 0.022, mat(0xb0605a, { tex: 'none' }), 0.083, 0.048, 0)); // lips
+  j.head.add(scl(sph(0.094, hair, -0.02, 0.135, 0, 10, 7), 1.03, 0.82, 1.04)); // hair, parted and smoothed back
+  j.head.add(scl(sph(0.06, hair, -0.1, 0.06, 0, 8, 6), 0.9, 0.85, 1.1)); // low knot at the back
+  for (const zs of [1, -1]) j.head.add(scl(sph(0.035, hair, 0.0, 0.08, 0.075 * zs, 6, 4), 1, 1.3, 0.6));
   return rig;
 }

@@ -12,10 +12,22 @@ export class DuelHUD {
   constructor(game) {
     this.game = game;
     const root = document.getElementById('hud');
+    // each duel describes itself (the Geonosis duel uses these defaults)
+    this.cfg = {
+      kicker: 'MOVIE DUEL · 지오노시스의 결투',
+      name: '두쿠 백작',
+      sub: '다스 티라누스 · 마카시',
+      marks: [0.6, 0.25],
+      win: '두쿠 백작이 무릎을 꿇었다. 영화와 다른 결말 — 공화국은 분리주의 연합의 지도자를 손에 넣었다.',
+      lose: '두쿠의 일격에 아나킨은 오른팔을 잃었다. 그 순간, 격납고 입구에 작은 그림자가 나타난다. 마스터 요다다.',
+      ...(game.duel.hud || {}),
+    };
+    const c = this.cfg;
+    if (game.duel.hud) c.kicker = `${c.kicker} · ${c.title}`;
     this.boss = el(
       'boss-bar',
-      `<div class="bb-name">두쿠 백작 <span>다스 티라누스 · 마카시</span></div>
-       <div class="bb-hp"><i class="bb-chip"></i><i class="bb-fill"></i><b style="left:60%"></b><b style="left:25%"></b></div>
+      `<div class="bb-name">${c.name} <span>${c.sub}</span></div>
+       <div class="bb-hp"><i class="bb-chip"></i><i class="bb-fill"></i>${c.marks.map((m) => `<b style="left:${m * 100}%"></b>`).join('')}</div>
        <div class="bb-comp"><i></i></div>`,
     );
     this.comp = el('ps-comp', '<span>평정</span><div><i></i></div>');
@@ -32,7 +44,7 @@ export class DuelHUD {
 
   update(dt) {
     const d = this.game.duel;
-    const dk = d.dooku;
+    const dk = d.foe;
     const p = this.game.player;
     const k = Math.max(0, dk.hp / dk.maxHp);
     this.chip = this.chip > k ? Math.max(k, this.chip - dt * 0.3) : k;
@@ -53,12 +65,10 @@ export class DuelHUD {
   showResult(r) {
     const mm = Math.floor(r.t / 60);
     const ss = String(Math.floor(r.t % 60)).padStart(2, '0');
-    const epilogue = r.won
-      ? '두쿠 백작이 무릎을 꿇었다. 영화와 다른 결말 — 공화국은 분리주의 연합의 지도자를 손에 넣었다.'
-      : '두쿠의 일격에 아나킨은 오른팔을 잃었다. 그 순간, 격납고 입구에 작은 그림자가 나타난다. 마스터 요다다.';
+    const epilogue = r.won ? this.cfg.win : this.cfg.lose;
     this.result.innerHTML = `
-      <div class="dr-kicker">MOVIE DUEL · 지오노시스의 결투</div>
-      <div class="dr-title">${r.won ? '승리' : '패배'}</div>
+      <div class="dr-kicker">${this.cfg.kicker}</div>
+      <div class="dr-title">${r.won ? (this.game.duel.hud ? '끝' : '승리') : '패배'}</div>
       <p class="dr-epi">${epilogue}</p>
       ${r.won ? `<div class="dr-rank"><span>등급</span><b>${r.rank}</b></div>` : ''}
       <div class="dr-stats">

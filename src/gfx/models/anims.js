@@ -657,3 +657,119 @@ export const BITH_ANIMS = {
     pose: (t) => pose(BITH_PLAY, { chest: [0, 0.08, -0.12], head: [0, sin(t * TAU) * 0.1, 0.05], shR: [0.25, 0, 0.55], elR: [0, 0, 1.3] }),
   },
 };
+
+// ----------------------------------------------------------------------------
+// Mustafar (Episode III).
+
+// Anakin in the hooded robe for the opening: blade off, hilt on the belt.
+// Every pose names which hood mesh to hide (raised / lying on the back).
+const HOODED = pose(OFF, { hide: ['saber', 'hoodDown'] });
+const BARE = pose(OFF, { hide: ['saber', 'hoodUp'] });
+// the Force choke: right hand raised towards Padmé, fingers closing
+const CHOKE = pose(HOODED, {
+  spine: [0, -0.15, 0],
+  chest: [0, -0.1, -0.04],
+  head: [0, 0.15, -0.08],
+  shR: [-0.12, 0, 1.45],
+  elR: [0, 0, 0.18],
+  haR: [0, 0.3, -0.35],
+});
+const REACH = pose(HOODED, { shR: [-0.35, 0, 2.5], elR: [0, 0, 1.55], shL: [0.35, 0, 2.5], elL: [0, 0, 1.55], head: [0, 0, 0.12] });
+const angry = (base) => (t) => {
+  const s = sin(t * TAU);
+  return pose(base, { chest: [0, 0.1 + s * 0.06, -0.05], head: [0, -0.1 + s * 0.1, -0.06], shR: [-0.25, 0, 0.6 + s * 0.25], elR: [0, 0, 0.9 - s * 0.2], haR: [0, 0, 0.3] });
+};
+export const ANAKIN_HOOD_ANIMS = {
+  idle: { frames: 6, fps: 5, loop: true, pose: (t) => pose(HOODED, { pelvisY: sin(t * TAU) * 0.006, chest: [0, 0, sin(t * TAU) * 0.015] }) },
+  walk: { frames: 8, fps: 10, loop: true, pose: (t) => pose(HOODED, legCycle(t, 0.42, 0.8), { spine: [0, 0, -0.05] }) },
+  choke: { frames: 6, fps: 8, loop: true, pose: (t) => pose(CHOKE, { haR: [0, 0.3, -0.35 - sin(t * TAU) * 0.12], elR: [0, 0, 0.18 + sin(t * TAU * 2) * 0.03] }) },
+  hoodOff: { frames: 10, fps: 9, loop: false, pose: keyframes([{ t: 0, p: HOODED }, { t: 0.45, p: REACH }, { t: 0.55, p: pose(REACH, { hide: BARE.hide }) }, { t: 1, p: BARE }], easeInOut) },
+  idleBare: { frames: 6, fps: 5, loop: true, pose: (t) => pose(BARE, { pelvisY: sin(t * TAU) * 0.006, chest: [0, 0.05, sin(t * TAU) * 0.015] }) },
+  walkBare: { frames: 8, fps: 10, loop: true, pose: (t) => pose(BARE, legCycle(t, 0.42, 0.8), { spine: [0, 0, -0.05] }) },
+  talkBare: { frames: 6, fps: 6, loop: true, pose: angry(BARE) },
+};
+
+// The fight: Anakin's Djem So set plus the backflip that opens it.
+const flip = (t) => {
+  const h = 0.95;
+  const u = Math.min(1, Math.max(0, (t - 0.15) / 0.65)); // airborne part
+  const th = u * TAU;
+  const tuck = sin(u * PI);
+  const crouch = t < 0.15 ? t / 0.15 : t > 0.8 ? 1 - (t - 0.8) / 0.2 : 0;
+  // the hilt turns with the body round the hips (blade stays in the hand)
+  const lift = tuck * 0.95 - crouch * 0.12;
+  const [hx, hy] = [0.25, 1.2 - tuck * 0.1];
+  const c = Math.cos(th);
+  const sn = sin(th);
+  const sab = [hx * c - (hy - h) * sn, h + hx * sn + (hy - h) * c + lift, 0.32, 0.3, 1.2 + th];
+  return pose(GUARD, {
+    body: [0, 0, th],
+    bodyX: h * sin(th),
+    bodyY: h * (1 - Math.cos(th)) + lift,
+    hipL: [0.2, 0, 0.36 + tuck * 1.5 + crouch * 0.6],
+    knL: [0, 0, -0.42 - tuck * 1.9 - crouch * 0.8],
+    hipR: [-0.2, 0, -0.3 + tuck * 1.6 + crouch * 0.6],
+    knR: [0, 0, -0.22 - tuck * 1.9 - crouch * 0.8],
+    spine: [0, 0.2, -0.05 - tuck * 0.35],
+    sab,
+    two: 0,
+    shL: [0.3, 0, 0.4 + tuck * 0.8],
+    elL: [0, 0, 1.2],
+  });
+};
+export const ANAKIN_MUSTAFAR_ANIMS = { ...ANAKIN_ANIMS, backflip: { frames: 14, fps: 18, loop: false, pose: flip } };
+
+// Obi-Wan's Soresu ready stance: blade drawn back over the right shoulder,
+// left hand extended open towards the opponent.
+const SORESU = pose(STANCE, {
+  spine: [0, 0.3, -0.02],
+  chest: [0, 0.12, -0.02],
+  head: [0, -0.35, 0],
+  sab: [-0.02, 1.6, 0.28, 0.2, 2.65],
+  two: 0,
+  shL: [-0.1, 0, 1.25],
+  elL: [0, 0, 0.35],
+  haL: [0, 0, 0.9],
+});
+const OB_BLOCK = pose(BLOCK, { two: 0, shL: [-0.1, 0, 0.9], elL: [0, 0, 0.6], haL: [0, 0, 0.8] });
+export const OBIWAN3_ANIMS = bake(SORESU, {
+  attack1: { frames: 9, fps: 18, loop: false, hit: 5, pose: swing(SORESU, SLASH_A, SLASH_B, SLASH_C) },
+  attack2: { frames: 9, fps: 18, loop: false, hit: 5, pose: swing(SORESU, BACK_A, BACK_B, BACK_C) },
+  attack3: { frames: 9, fps: 16, loop: false, hit: 5, pose: swing(SORESU, OVER_A, OVER_B, OVER_C) },
+  cast: { frames: 8, fps: 14, loop: false, hit: 4, pose: swing(SORESU, CAST_A, CAST_B) },
+  block: { frames: 4, fps: 8, loop: true, pose: (t) => wobble(OB_BLOCK, t, 0.02) },
+  parry: { frames: 6, fps: 20, loop: false, hit: 2, pose: keyframes([{ t: 0, p: OB_BLOCK }, { t: 0.35, p: pose(PARRY, { two: 0 }) }, { t: 1, p: SORESU }], easeInOut) },
+  hurt: { frames: 6, fps: 14, loop: false, pose: keyframes([{ t: 0, p: SORESU }, { t: 0.3, p: HURT }, { t: 1, p: SORESU }], easeInOut) },
+  lock: { frames: 4, fps: 10, loop: true, pose: (t) => wobble(LOCK, t, 0.04) },
+  leap: { frames: 8, fps: 12, loop: false, pose: keyframes([{ t: 0, p: LEAP_CROUCH }, { t: 0.3, p: LEAP_AIR }, { t: 0.7, p: LEAP_AIR }, { t: 1, p: SORESU }], easeInOut) },
+  death: { frames: 7, fps: 8, loop: false, pose: keyframes([{ t: 0, p: SORESU }, { t: 1, p: pose(SORESU, { pelvisY: -0.3, spine: [0, 0.2, -0.3] }) }], easeInOut) },
+});
+// in the robe before the fight: blade off, then lit
+export const OBIWAN3_ROBE_ANIMS = {
+  idle: { frames: 6, fps: 5, loop: true, pose: (t) => pose(OFF, { pelvisY: sin(t * TAU) * 0.006, head: [0, 0, sin(t * TAU) * 0.02] }) },
+  talk: { frames: 6, fps: 6, loop: true, pose: (t) => pose(OFF, { chest: [0, 0.08, 0], head: [0, sin(t * TAU) * 0.08, 0.04], shL: [0.2, 0, 0.7 + sin(t * TAU) * 0.15], elL: [0, 0, 0.9] }) },
+};
+
+// Padmé: standing, choked (hands at her throat, rising onto her toes), collapse.
+const PADME_REST = { shR: [-0.1, 0, 0.1], elR: [0, 0, 0.4], shL: [0.1, 0, 0.1], elL: [0, 0, 0.4] };
+const CHOKED = {
+  bodyY: 0.06,
+  spine: [0, 0, 0.1],
+  chest: [0, 0, 0.12],
+  head: [0, 0, 0.4],
+  shR: [-0.35, 0, 1.0],
+  elR: [0, 0, 2.15],
+  shL: [0.35, 0, 1.0],
+  elL: [0, 0, 2.15],
+  anL: [0, 0, -0.5],
+  anR: [0, 0, -0.5],
+  knL: [0, 0, -0.1],
+};
+const PADME_DOWN = pose(DEAD, { shR: [-1.0, 0, 0.9], elR: [0, 0, 0.6], shL: [0.6, 0, 0.4] });
+export const PADME_ANIMS = {
+  idle: { frames: 6, fps: 5, loop: true, pose: (t) => pose(PADME_REST, { pelvisY: sin(t * TAU) * 0.005, head: [0, sin(t * TAU) * 0.1, 0] }) },
+  talk: { frames: 6, fps: 6, loop: true, pose: (t) => pose(PADME_REST, { head: [0, sin(t * TAU) * 0.08, 0.05], shR: [-0.2, 0, 0.6], elR: [0, 0, 1.2 + sin(t * TAU) * 0.2] }) },
+  choked: { frames: 6, fps: 9, loop: true, pose: (t) => pose(CHOKED, { head: [0, sin(t * TAU) * 0.15, 0.4], bodyY: 0.06 + sin(t * TAU * 2) * 0.01 }) },
+  collapse: { frames: 8, fps: 8, loop: false, pose: keyframes([{ t: 0, p: CHOKED }, { t: 0.4, p: pose(FALLING, { fk: 1, hide: [] }) }, { t: 1, p: PADME_DOWN }], easeInOut) },
+  down: { frames: 2, fps: 2, loop: true, pose: () => PADME_DOWN },
+};

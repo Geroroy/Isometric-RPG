@@ -19,6 +19,7 @@ import { Fullscreen } from './ui/fullscreen.js';
 import { ZoomControl } from './ui/zoom.js';
 import { PortraitPhoto } from './ui/portraitPhoto.js';
 import { DialogueUI } from './ui/dialogue.js';
+import { CinemaUI } from './ui/cinemaUI.js';
 import { startDialogue } from './game/dialogue.js';
 
 applySkin();
@@ -26,21 +27,29 @@ const loading = document.getElementById('loading');
 const bar = document.querySelector('#loading .bar div');
 const label = document.querySelector('#loading .label');
 
-// '#duel' selects the Movie Duel (a hash works on any host); switching reloads
-const MODE = location.hash === '#duel' ? 'duel' : 'campaign';
+// '#duel' / '#duel-mustafar' select a Movie Duel (a hash works on any host); switching reloads
+const DUEL = location.hash === '#duel' ? 'geonosis' : location.hash === '#duel-mustafar' ? 'mustafar' : null;
+const MODE = DUEL ? 'duel' : 'campaign';
 window.addEventListener('hashchange', () => location.reload());
 
-const DUEL_MENU = `
+const DUEL_TITLES = {
+  geonosis: ['#duel', '지오노시스의 결투', 'MOVIE DUEL · EPISODE II — 지오노시스의 결투 · 두쿠 백작의 비밀 격납고', '지오노시스 격납고 준비 중…'],
+  mustafar: ['#duel-mustafar', '무스타파의 결투', 'MOVIE DUEL · EPISODE III — 무스타파의 결투 · 아나킨 vs 오비완', '무스타파 채굴 시설 준비 중…'],
+};
+const duelMenu = (d) => {
+  const other = d === 'geonosis' ? 'mustafar' : 'geonosis';
+  return `
   <button id="startBtn" class="tm-item sel" type="button"><span>결투 시작</span></button>
+  <a class="tm-item" href="${DUEL_TITLES[other][0]}"><span>다른 결투</span><small>${DUEL_TITLES[other][1]}</small></a>
   <a id="modeLink" class="tm-item" href="#campaign"><span>캠페인으로</span><small>크리스토프시스 외곽</small></a>
   <button id="controlsBtn" class="tm-item" type="button"><span>조작법</span></button>`;
-const DUEL_LEGAL = 'MOVIE DUEL · EPISODE II — 지오노시스의 결투 · 두쿠 백작의 비밀 격납고<br />비상업 팬 프로젝트. STAR WARS © &amp; ™ LUCASFILM LTD. 모든 권리는 각 권리자에게 있습니다.';
+};
 
 async function boot() {
   document.querySelector('.title-crest').src = iconURL('command');
   if (MODE === 'duel') {
-    document.querySelector('.title-menu').innerHTML = DUEL_MENU;
-    document.querySelector('.title-legal').innerHTML = DUEL_LEGAL;
+    document.querySelector('.title-menu').innerHTML = duelMenu(DUEL);
+    document.querySelector('.title-legal').innerHTML = `${DUEL_TITLES[DUEL][2]}<br />비상업 팬 프로젝트. STAR WARS © &amp; ™ LUCASFILM LTD. 모든 권리는 각 권리자에게 있습니다.`;
     document.body.classList.add('duel');
   }
   const onProgress = (k, text) => {
@@ -48,19 +57,19 @@ async function boot() {
     label.textContent = text;
   };
   const assets = await bakeAssets(onProgress);
-  if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress)).sprites);
+  if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, DUEL)).sprites);
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
   if (look && !assets.sprites[look.sprite]) assets.sprites[look.sprite] = await bakeSkin(look.sprite, (k) => onProgress(k, '외형 준비 중…'));
-  label.textContent = MODE === 'duel' ? '지오노시스 격납고 준비 중…' : '크리스토프시스 외곽 지형 생성 중…';
+  label.textContent = MODE === 'duel' ? DUEL_TITLES[DUEL][3] : '크리스토프시스 외곽 지형 생성 중…';
   await new Promise((r) => setTimeout(r, 20));
 
   const audio = new Audio();
-  const game = new Game(assets, audio, MODE);
+  const game = new Game(assets, audio, MODE, DUEL || undefined);
   if (look) game.player.sprite = look.sprite;
   const canvas = document.getElementById('world');
   const overlay = document.getElementById('overlay');
-  const renderer = new Renderer(game, assets, canvas, overlay);
+  const renderer = (game.renderer = new Renderer(game, assets, canvas, overlay));
   const portrait = new Portrait();
   const photo = new PortraitPhoto(portrait);
   await photo.init();
@@ -104,7 +113,9 @@ async function boot() {
 
   const help = document.getElementById('help');
   // music starts with the first touch / key (browsers block autoplay)
-  const music = new Music(audio);
+  const music = (game.music = new Music(audio));
+  new CinemaUI(game);
+  game.on('cinema', (on) => on || zoom.restore()); // back to the player's zoom after a cutscene
   const jukebox = (hud.jukeUI = new JukeboxUI(hud, music, audio));
   hud.debugUI = new DebugUI(hud, game, music, audio);
   game.on('jukebox', () => setTimeout(() => hud.toggle('juke', true), 0)); // after the dialogue closes

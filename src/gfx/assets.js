@@ -24,11 +24,21 @@ export const CHARACTERS = {
   bith: () => ({ model: M.buildBith(), dirs: 8, frame: [120, 110, 60, 90], anims: A.BITH_ANIMS, markers: [], ss: 2 }),
 };
 
-/** Baked only when a Movie Duel starts. */
-export const DUEL_CHARACTERS = {
-  anakinDual: () => ({ model: M.buildAnakin({ dual: true }), dirs: 16, frame: [170, 160, 85, 120], anims: A.ANAKIN_DUAL_ANIMS, markers: SABERS, ss: 2 }),
-  dooku: () => ({ model: M.buildDooku(), dirs: 16, frame: [180, 170, 90, 125], anims: A.DOOKU_ANIMS, markers: SABER, ss: 2 }),
+/** Baked only when that Movie Duel starts. */
+export const DUELS = {
+  geonosis: {
+    anakinDual: () => ({ model: M.buildAnakin({ dual: true }), dirs: 16, frame: [170, 160, 85, 120], anims: A.ANAKIN_DUAL_ANIMS, markers: SABERS, ss: 2 }),
+    dooku: () => ({ model: M.buildDooku(), dirs: 16, frame: [180, 170, 90, 125], anims: A.DOOKU_ANIMS, markers: SABER, ss: 2 }),
+  },
+  mustafar: {
+    anakinHood: () => ({ model: M.buildAnakin({ outfit: 'hood' }), dirs: 8, frame: [170, 160, 85, 120], anims: A.ANAKIN_HOOD_ANIMS, markers: [], ss: 2 }),
+    anakinMustafar: () => ({ model: M.buildAnakin({ outfit: 'tunic' }), dirs: 16, frame: [200, 220, 100, 170], anims: A.ANAKIN_MUSTAFAR_ANIMS, markers: SABER, ss: 2 }),
+    obiwan3: () => ({ model: M.buildObiWan3(), dirs: 16, frame: [170, 160, 85, 120], anims: A.OBIWAN3_ANIMS, markers: SABER, ss: 2 }),
+    obiwan3Robe: () => ({ model: M.buildObiWan3({ robe: true }), dirs: 8, frame: [170, 160, 85, 120], anims: A.OBIWAN3_ROBE_ANIMS, markers: [], ss: 2 }),
+    padme: () => ({ model: M.buildPadme(), dirs: 8, frame: [140, 130, 70, 100], anims: A.PADME_ANIMS, markers: [], ss: 2 }),
+  },
 };
+export const DUEL_CHARACTERS = Object.assign({}, ...Object.values(DUELS));
 
 /** Anakin's alternative appearances (sprite name `anakin_<id>`), baked when equipped. */
 export const SKINS = {
@@ -106,16 +116,17 @@ export async function bakeAssets(onProgress) {
   return assets;
 }
 
-/** Sprites for the Movie Duel (Dooku, dual-wielding Anakin), baked on demand. */
-export async function bakeDuelAssets(onProgress) {
-  const cached = await loadBundle('duel');
+/** Sprites for one Movie Duel, baked on demand. */
+export async function bakeDuelAssets(onProgress, duel = 'geonosis') {
+  const key = duel === 'geonosis' ? 'duel' : 'duel-' + duel;
+  const cached = await loadBundle(key);
   if (cached) return cached;
   const baker = new Baker();
-  const specs = Object.fromEntries(Object.entries(DUEL_CHARACTERS).map(([k, f]) => [k, f()]));
+  const specs = Object.fromEntries(Object.entries(DUELS[duel]).map(([k, f]) => [k, f()]));
   const tick = progress(onProgress, frameCost(specs));
   const sprites = await bakeCharacters(baker, specs, tick);
   const assets = { sprites };
-  saveBundle('duel', assets);
+  saveBundle(key, assets);
   baker.dispose();
   return assets;
 }

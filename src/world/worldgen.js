@@ -17,6 +17,9 @@ export const BIOME = {
   BASE: 5,
   GRASS: 6,
   HANGAR: 7,
+  MUSTAFAR: 8, // the mining facility's metal decks
+  LAVA: 9,
+  ASH: 10, // black volcanic sand
 };
 
 export const BIOME_NAMES = {
@@ -28,6 +31,9 @@ export const BIOME_NAMES = {
   5: '공화국 전진 기지',
   6: '마른 초원',
   7: '지오노시스 · 비밀 격납고',
+  8: '무스타파 · 채굴 시설',
+  9: '무스타파 · 용암 강',
+  10: '무스타파 · 검은 모래 언덕',
 };
 
 export const BASE_POS = { x: 150, y: 152 };
@@ -421,6 +427,60 @@ export class Arena extends World {
     this.addProp('sepCrate', cx + 6.5, cy - 6);
     this.addProp('sepCrate', cx + 7.2, cy - 5);
     this.spawn = { x: cx - 3, y: cy + 3 };
+    this.roadSegs = [];
+    this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Movie Duel #2 arena: Mustafar. Everything floats on lava: the mining
+// facility's landing platform (where Padmé's skiff lands and the duel begins),
+// a collector platform drifting on the lava river (the second half of the
+// fight) and the black sand bank above it — the high ground.
+
+export const MUSTAFAR = {
+  deck: { x: 96, y: 88, hw: 9, hh: 6 }, // landing platform (tile half-sizes)
+  raft: { x: 96, y: 118, hw: 4.5, hh: 3.5 }, // collector platform on the lava river
+  bank: { x: 96, y: 131 }, // the high ground
+};
+
+export class MustafarArena extends World {
+  generate() {
+    this.rng = new RNG(this.seed);
+    const { deck, raft } = MUSTAFAR;
+    this.ambient = [150, 86, 70];
+    this.pois.push({ x: deck.x, y: deck.y, r: 14, name: BIOME_NAMES[BIOME.MUSTAFAR] });
+    this.pois.push({ x: raft.x, y: raft.y, r: 9, name: BIOME_NAMES[BIOME.LAVA] });
+    const inRect = (x, y, r) => Math.abs(x - r.x) <= r.hw && Math.abs(y - r.y) <= r.hh;
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        const i = y * MAP_W + x;
+        const cx = x + 0.5;
+        const cy = y + 0.5;
+        // the bank: a black sand slope rising south of the river
+        const bankEdge = MUSTAFAR.bank.y - 3 + (fbm(x / 5, 3, 11) - 0.5) * 3;
+        let b = BIOME.LAVA;
+        if (inRect(cx, cy, deck) || inRect(cx, cy, raft)) b = BIOME.MUSTAFAR;
+        else if (cy > bankEdge && Math.abs(cx - MUSTAFAR.bank.x) < 22) b = BIOME.ASH;
+        this.biome[i] = b;
+        this.blocked[i] = b === BIOME.MUSTAFAR ? 0 : 2; // only the decks are walkable in the fight
+        this.explored[i] = 1;
+      }
+    }
+    // the facility side of the deck: collector towers, Padmé's skiff
+    for (const [dx, dy] of [[-8, -5], [8, -5], [-8, 5], [8, 5]]) this.addProp('mustafarTower', deck.x + dx, deck.y + dy);
+    this.addProp('skiff', deck.x + 1, deck.y - 9.5, { noBlock: true });
+    for (const [dx, dy] of [[-4, -4.2], [4, 4.2]]) this.addProp('mustafarTower', raft.x + dx, raft.y + dy);
+    // the robes thrown off before the fight (shown by the opening scene)
+    this.cloak = this.addProp('cloakPile', deck.x - 2.2, deck.y + 1.6);
+    this.robe = this.addProp('robePile', deck.x + 3.4, deck.y - 1.8);
+    this.cloak.hidden = this.robe.hidden = true;
+    // lava glow all round the decks
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 7) {
+      this.lights.push({ x: deck.x + Math.cos(a) * (deck.hw + 2.5), y: deck.y + Math.sin(a) * (deck.hh + 2.5), z: 0.2, r: 255, g: 120, b: 40, rad: 150, flicker: 0.12 });
+      this.lights.push({ x: raft.x + Math.cos(a) * (raft.hw + 2), y: raft.y + Math.sin(a) * (raft.hh + 2), z: 0.2, r: 255, g: 110, b: 30, rad: 130, flicker: 0.12 });
+    }
+    this.spawn = { x: deck.x - 1.5, y: deck.y + 1.5 };
     this.roadSegs = [];
     this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
   }

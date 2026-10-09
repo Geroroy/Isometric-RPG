@@ -11,12 +11,15 @@ const HINT = {
   combat: '전투 중에 들을 수 있다',
   boss: '정예 드로이드나 드로이드 공장에서 들을 수 있다',
   duel: '무비 듀얼에서 들을 수 있다',
+  mustafar: '무스타파의 결투에서 들을 수 있다',
+  mustafarIntro: '무스타파의 결투 첫 장면에서 들을 수 있다',
+  mustafarEnd: '무스타파의 결투 마지막 장면에서 들을 수 있다',
   credits: '두쿠를 쓰러뜨리면 들을 수 있다',
   victory: '전투에서 이기면 들을 수 있다',
   death: '쓰러지면 들을 수 있다',
   dark: '어둠에 가까워지면 들을 수 있다',
 };
-const LABEL = Object.fromEntries(SITUATIONS);
+const LABEL = { ...Object.fromEntries(SITUATIONS), mustafarIntro: '무스타파 · 첫 장면', mustafarEnd: '무스타파 · 높은 곳' };
 const fmt = (s) => (isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` : '-:--');
 
 export class JukeboxUI {

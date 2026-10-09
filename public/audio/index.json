@@ -122,6 +122,24 @@
         "file": "music/dark.webm",
         "title": "Vader: Shards of the Past"
       }
+    ],
+    "mustafarIntro": [
+      {
+        "file": "music/mustafar_intro.webm",
+        "title": "Mustafar — \"You will try.\""
+      }
+    ],
+    "mustafar": [
+      {
+        "file": "music/mustafar.webm",
+        "title": "Battle of the Heroes (Mustafar)"
+      }
+    ],
+    "mustafarEnd": [
+      {
+        "file": "music/mustafar_end.webm",
+        "title": "Mustafar — The High Ground"
+      }
     ]
   }
 }

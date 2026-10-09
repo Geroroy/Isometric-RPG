@@ -1,4 +1,5 @@
-// Movie Duel #1 — Anakin vs Count Dooku, Geonosis hangar (Episode II).
+// Movie Duel #1 — Anakin vs Count Dooku, Geonosis hangar (Episode II). The
+// Duel class holds the shared rules; duelMustafar.js extends it.
 //
 // Rules on top of the normal combat:
 //   composure   both duellists have it; blocking costs it, at 0 the guard
@@ -15,7 +16,7 @@ import { ARENA } from '../world/worldgen.js';
 const PERFECT_WINDOW = 0.25;
 
 /** Anakin's kit for the duel: level 12 with a fixed set of skills. */
-function equip(p) {
+export function equip(p) {
   p.level = 12;
   p.xp = 0;
   p.xpNext = 1e9; // no experience in the duel
@@ -31,8 +32,8 @@ function equip(p) {
 // ----------------------------------------------------------------------------
 
 export class Dooku extends Unit {
-  constructor(game, x, y) {
-    super(game, 'dooku', x, y);
+  constructor(game, x, y, kind = 'dooku') {
+    super(game, kind, x, y);
     this.name = '두쿠 백작';
     this.maxHp = this.hp = 900;
     this.saberColor = [255, 50, 40];
@@ -42,6 +43,7 @@ export class Dooku extends Unit {
     this.stateT = 1.2;
     this.combo = 0;
     this.lastHurtT = -9;
+    this.blockChance = [0, 0.62, 0.5, 0.42]; // per phase
   }
 
   get duel() {
@@ -64,6 +66,7 @@ export class Dooku extends Unit {
 
   update(dt) {
     this.baseUpdate(dt);
+    if (this.scripted) return;
     const g = this.game;
     const d = this.duel;
     const p = g.player;
@@ -189,6 +192,8 @@ const SPEAKERS = { anakin: '아나킨', dooku: '두쿠 백작', obiwan: '오비�
 export class Duel {
   constructor(game) {
     this.game = game;
+    this.lines = LINES;
+    this.speakers = SPEAKERS;
     this.phase = 1;
     this.locked = true; // controls locked during cinematics
     this.cine = true;
@@ -198,26 +203,33 @@ export class Duel {
     const p = game.player;
     equip(p);
     p.composure = 100;
+    this.setup();
+  }
+
+  /** Place the duellists (each duel overrides this). */
+  setup() {
+    const g = this.game;
+    const p = g.player;
     p.x = ARENA.x - 2.2;
     p.y = ARENA.y + 2.2;
     p.faceTo(ARENA.x, ARENA.y);
-    const dk = (this.dooku = new Dooku(game, ARENA.x + 2.2, ARENA.y - 2.2));
+    const dk = (this.foe = new Dooku(g, ARENA.x + 2.2, ARENA.y - 2.2));
     dk.faceTo(p.x, p.y);
-    game.units.push(dk);
+    g.units.push(dk);
   }
 
   line(who, key) {
-    const list = LINES[key];
+    const list = this.lines[key];
     const [w, text] = list[Math.floor(Math.random() * list.length)];
-    this.game.emit('say', text, key, null, SPEAKERS[w || who]);
+    this.game.emit('say', text, key, null, this.speakers[w || who]);
   }
 
   /** Play a scripted exchange of lines; controls stay locked meanwhile. */
   async scene(key, extra) {
     this.locked = this.cine = true;
     this.game.emit('cine', true);
-    for (const [w, text] of LINES[key]) {
-      this.game.emit('say', text, key, null, SPEAKERS[w]);
+    for (const [w, text] of this.lines[key]) {
+      this.game.emit('say', text, key, null, this.speakers[w]);
       await this.wait(Math.min(3.6, 1.4 + text.length * 0.06));
       if (extra && extra[w]) extra[w]();
     }
@@ -287,7 +299,7 @@ export class Duel {
     g.fx.text(u.x, u.y, '자세 붕괴!', '#ff9a6a', 1.25, 2.6);
     g.fx.shockwave(u.x, u.y, 1.2, '#ffd9a0', 0.4);
     g.audio.play('clash', u, { heavy: true });
-    if (u === this.dooku) {
+    if (u === this.foe) {
       u.set('broken', 2.2);
       u.composure = 0;
       this.line('dooku', 'broken');
@@ -302,7 +314,7 @@ export class Duel {
   /** Damage dealt by anyone in the duel passes through here. */
   filter(src, tgt, amount, opts) {
     const g = this.game;
-    const dk = this.dooku;
+    const dk = this.foe;
     if (tgt === g.player) {
       this.stats.taken += amount;
       return amount;
@@ -327,7 +339,7 @@ export class Duel {
       }
       return amount;
     }
-    const blockChance = [0, 0.62, 0.5, 0.42][this.phase];
+    const blockChance = dk.blockChance[this.phase];
     if (dk.state !== 'cast' && Math.random() < blockChance) {
       dk.set('parry', 0.5);
       dk.setAnim('parry', 1, true);
@@ -373,7 +385,7 @@ export class Duel {
   startLock(scripted = false) {
     const g = this.game;
     const p = g.player;
-    const dk = this.dooku;
+    const dk = this.foe;
     if (this.lock || p.dead) return;
     // bring them face to face
     const a = Math.atan2(dk.y - p.y, dk.x - p.x);
@@ -400,7 +412,7 @@ export class Duel {
   press() {
     if (!this.lock) return false;
     this.lock.v += 0.075;
-    this.game.audio.play('lockPush', this.dooku);
+    this.game.audio.play('lockPush', this.foe);
     return true;
   }
 
@@ -408,7 +420,7 @@ export class Duel {
     const L = this.lock;
     const g = this.game;
     const p = g.player;
-    const dk = this.dooku;
+    const dk = this.foe;
     L.t += dt;
     L.v -= L.push * dt;
     if ((L.t * 12) % 1 < 0.2) g.fx.sparks((p.x + dk.x) / 2, (p.y + dk.y) / 2, 1.45, '#ffe0c0', 1, 2);
@@ -441,7 +453,7 @@ export class Duel {
   update(dt) {
     const g = this.game;
     const p = g.player;
-    const dk = this.dooku;
+    const dk = this.foe;
     for (const w of this.waits || []) w.t -= dt;
     for (const w of (this.waits || []).filter((x) => x.t <= 0)) w.res();
     this.waits = (this.waits || []).filter((x) => x.t > 0);
@@ -450,7 +462,13 @@ export class Duel {
     if (this.lock) this.updateLock(dt);
     if (p.composure < 100 && g.time - (p.composureT || 0) > 1.6 && !p.blocking) p.composure = Math.min(100, p.composure + dt * 14);
 
-    const k = dk.hp / dk.maxHp;
+    this.phases(dk.hp / dk.maxHp);
+    if (dk.dead && !this.over) this.finish(true);
+    else if (p.dead && !this.over) this.finish(false);
+  }
+
+  /** Phase changes by the foe's remaining health `k`. */
+  phases(k) {
     if (this.phase === 1 && k <= 0.6) {
       this.phase = 2;
       this.toPhase2();
@@ -458,8 +476,6 @@ export class Duel {
       this.phase = 3;
       this.scene('phase3').then(() => this.startLock(true));
     }
-    if (dk.dead && !this.over) this.finish(true);
-    else if (p.dead && !this.over) this.finish(false);
   }
 
   toPhase2() {
@@ -468,7 +484,7 @@ export class Duel {
     const ob = g.units.find((u) => u.npcId === 'obiwan');
     p.action = null;
     p.blocking = false;
-    this.dooku.set('circle', 4);
+    this.foe.set('circle', 4);
     this.scene('phase2', {
       obiwan: () => {
         // Obi-Wan slides his saber across the floor to Anakin

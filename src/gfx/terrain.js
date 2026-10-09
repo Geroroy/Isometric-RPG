@@ -19,6 +19,9 @@ const PAL = {
   [BIOME.BASE]: [138, 140, 138],
   [BIOME.GRASS]: [134, 132, 82],
   [BIOME.HANGAR]: [150, 108, 74],
+  [BIOME.MUSTAFAR]: [88, 84, 82],
+  [BIOME.LAVA]: [70, 30, 18],
+  [BIOME.ASH]: [52, 46, 44],
 };
 const ROAD = [128, 108, 84];
 const EDGE = [62, 57, 54];
@@ -36,16 +39,18 @@ export class Terrain {
     this.Rd = new Float32Array(n); // road weight
     this.K = new Float32Array(n); // crystal weight (sparkles)
     this.Bs = new Float32Array(n); // base weight (hazard pattern)
+    this.L = new Float32Array(n); // lava weight
     for (let y = 0; y < world.h; y++) {
       for (let x = 0; x < world.w; x++) {
         const i = y * world.w + x;
         const b = world.biome[i];
-        let c = world.blocked[i] === 2 ? EDGE : PAL[b];
+        let c = world.blocked[i] === 2 && b !== BIOME.LAVA && b !== BIOME.ASH ? EDGE : PAL[b];
         const v = (valueNoise(x / 3.5, y / 3.5, 7) - 0.5) * 22 + (hash2(x, y, 3) - 0.5) * 8;
         this.R[i] = c[0] + v;
         this.G[i] = c[1] + v;
         this.B[i] = c[2] + v * 0.9;
-        this.P[i] = b === BIOME.RUIN || b === BIOME.BASE || b === BIOME.HANGAR ? 1 : 0;
+        this.P[i] = b === BIOME.RUIN || b === BIOME.BASE || b === BIOME.HANGAR || b === BIOME.MUSTAFAR ? 1 : 0;
+        this.L[i] = b === BIOME.LAVA ? 1 : 0;
         this.Bs[i] = b === BIOME.BASE ? 1 : 0;
         this.K[i] = b === BIOME.CRYSTAL ? 1 : 0;
         const rd = world.road[i];
@@ -103,6 +108,7 @@ export class Terrain {
         const road = this.sample(this.Rd, u, v);
         const cry = this.sample(this.K, u, v);
         const base = this.sample(this.Bs, u, v);
+        const lava = this.sample(this.L, u, v);
         const grain = hash2(sx, sy, 99);
         const blot = valueNoise(fx * 1.7, fy * 1.7, 13) - 0.5;
         // blotchy mid-frequency variation
@@ -154,6 +160,16 @@ export class Terrain {
           r -= 24;
           g -= 24;
           b -= 20;
+        }
+        // lava: dark crust plates split by glowing molten veins
+        if (lava > 0.35) {
+          const n1 = valueNoise(fx * 0.9, fy * 0.9, 51);
+          const n2 = valueNoise(fx * 2.6, fy * 2.6, 52);
+          const vein = 1 - Math.abs(n1 - 0.5) * 2; // ridges of the noise
+          const hot = clamp((vein * 0.75 + n2 * 0.4 - 0.45) * 3, 0, 1) * clamp((lava - 0.35) * 2, 0, 1);
+          r += (255 - r) * hot;
+          g += (150 * hot + 60 * hot * hot - g) * hot;
+          b += (30 - b) * hot;
         }
         // crystal sparkle
         if (cry > 0.5 && grain > 0.994 && blot > 0) {

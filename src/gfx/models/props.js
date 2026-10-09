@@ -584,6 +584,61 @@ function cantina() {
   return g;
 }
 
+// --- Mustafar ------------------------------------------------------------------
+// The mining facility's landing platform: J-type Naboo star skiff (mirror
+// chrome, long needle nose, three-engine tail), black collector towers with
+// orange lights, and the robes Anakin and Obi-Wan throw off before the duel.
+
+function skiff() {
+  const g = new THREE.Group();
+  const chrome = mat(0xe6e9ee, { tex: 'none' });
+  const chromeDark = mat(0x9aa0a8, { tex: 'none' });
+  const body = sph(1.0, chrome, 0, 0.9, 0, 16, 10);
+  body.scale.set(2.6, 0.42, 0.85);
+  g.add(body);
+  const nose = cone(0.42, 2.6, chrome, 3.4, 0.9, 0, 12);
+  nose.rotation.z = -Math.PI / 2;
+  g.add(nose);
+  g.add(scl(sph(0.5, mat(0x2a3440, { tex: 'none' }), 1.2, 1.18, 0, 10, 6), 1.1, 0.4, 0.7)); // canopy
+  for (const z of [-0.7, 0.7, 0]) {
+    const e = cylX(0.24, 0.3, 1.4, z ? chrome : chromeDark, -3.3, z ? 0.85 : 1.25, z, 12);
+    g.add(e);
+    g.add(cylX(0.18, 0.18, 0.06, glow(0x9fd0ff), -3.36, z ? 0.85 : 1.25, z, 10));
+  }
+  for (const z of [-1, 1]) g.add(scl(sph(0.5, chrome, -1.2, 0.75, z * 0.75, 10, 6), 2.2, 0.25, 0.8)); // wing roots
+  for (const [x, z] of [[1.2, 0.4], [1.2, -0.4], [-1.6, 0.6], [-1.6, -0.6]]) g.add(cyl(0.05, 0.07, 0.5, chromeDark, x, 0.25, z, 6)); // landing legs
+  return g;
+}
+
+function mustafarTower() {
+  const g = new THREE.Group();
+  const black = mat(0x24211f);
+  const dark = mat(0x3a3430);
+  g.add(cyl(0.7, 0.9, 0.5, dark, 0, 0.25, 0, 8));
+  g.add(cyl(0.38, 0.5, 4.2, black, 0, 2.6, 0, 8));
+  for (const y of [1.6, 2.8, 4.0]) g.add(cyl(0.55, 0.55, 0.16, dark, 0, y, 0, 8));
+  g.add(cone(0.6, 0.9, black, 0, 5.1, 0, 8));
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2;
+    g.add(box(0.12, 0.12, 0.12, glow(0xffa040), Math.cos(a) * 0.56, 4.0, Math.sin(a) * 0.56));
+  }
+  return g;
+}
+
+function robePile(color) {
+  return () => {
+    const g = new THREE.Group();
+    const rm = mat(color, { tex: 'cloth', side: THREE.DoubleSide });
+    const a = sph(0.42, rm, 0, 0.05, 0, 10, 6);
+    a.scale.set(1.25, 0.16, 0.85);
+    g.add(a);
+    const b = sph(0.28, mat(0x2a1a12, { tex: 'cloth' }), 0.25, 0.08, 0.15, 8, 5);
+    b.scale.set(1, 0.25, 0.8);
+    g.add(b);
+    return g;
+  };
+}
+
 // --- Separatist -------------------------------------------------------------
 // Confederacy gear in Trade Federation tan and slate blue with the CIS
 // hexagonal emblem; red sensor lights.
@@ -823,6 +878,10 @@ export const PROPS = {
   laat: { build: laat, variants: 1, angles: [0], rect: [4, 4] },
   landingPad: { build: landingPad, variants: 1, flat: true, light: [255, 210, 120, 120, 0.2] },
   tent: { build: tent, variants: 1, rect: [3, 3], light: [110, 180, 255, 50, 1] },
+  skiff: { build: skiff, variants: 1, angles: [0], rect: [7, 3] },
+  mustafarTower: { build: mustafarTower, variants: 1, block: 0.8, light: [255, 140, 60, 70, 4] },
+  cloakPile: { build: robePile(0x5a3426), variants: 1, block: 0, flat: true },
+  robePile: { build: robePile(0x6a4a32), variants: 1, block: 0, flat: true },
   cantina: { build: cantina, variants: 1, angles: [0], rect: [8, 8], light: [255, 170, 100, 90, 1] },
   sepCrate: { build: sepCrate, variants: 4, block: 0.6, light: [255, 90, 50, 22, 0.6] },
   sepBarrier: { build: sepBarrier, variants: 1, angles: [0, Math.PI / 2], rectByAngle: [[1, 2], [2, 1]] },

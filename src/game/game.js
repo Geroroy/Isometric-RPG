@@ -8,17 +8,18 @@ import { dist, rand, chance, angleDiff } from '../core/math.js';
 import { LINES } from './lines.js';
 import { NPC, NPC_DEFS, TALK_RANGE } from './npc.js';
 import { QuestLog } from './quests.js';
-import { BASE_POS, Arena, ARENA } from '../world/worldgen.js';
+import { BASE_POS, Arena, ARENA, MustafarArena } from '../world/worldgen.js';
 import { Duel } from './duel.js';
+import { MustafarDuel } from './duelMustafar.js';
 
 const ELITE_NAMES = ['OOM 지휘관 드로이드', '전투 드로이드 분대장', '전술 사령 드로이드 T-7', '돌격 지휘 드로이드'];
 
 export class Game {
-  constructor(assets, audio, mode = 'campaign') {
+  constructor(assets, audio, mode = 'campaign', duel = 'geonosis') {
     this.assets = assets;
     this.audio = audio;
     this.mode = mode;
-    this.world = mode === 'duel' ? new Arena(77) : new World(501);
+    this.world = mode !== 'duel' ? new World(501) : duel === 'mustafar' ? new MustafarArena(66) : new Arena(77);
     this.pathfinder = new PathFinder(this.world);
     this.fx = new Effects();
     this.units = [];
@@ -42,6 +43,11 @@ export class Game {
     this.audio.listener = this.player;
     this.quests = new QuestLog(this);
     this.talkingTo = null;
+    if (mode === 'duel' && duel === 'mustafar') {
+      this.duel = new MustafarDuel(this);
+      this.updateActive();
+      return;
+    }
     if (mode === 'duel') {
       // Obi-Wan lies wounded by the wall, as in the film
       const ob = new NPC(this, 'obiwan', ARENA.x - 4.5, ARENA.y - 4.5);
@@ -308,7 +314,7 @@ export class Game {
       this.emit('death');
       return;
     }
-    if (u.kind === 'dooku') return;
+    if (u === (this.duel && this.duel.foe)) return;
     if (u.team === 'cis') {
       p.kills++;
       this.streak = this.time - (this.lastKillT ?? -99) < 4 ? (this.streak || 0) + 1 : 1;
@@ -413,6 +419,7 @@ export class Game {
     }
     this.time += dt;
     const p = this.player;
+    if (this.cinema) this.cinema.update(dt);
     if (this.duel) this.duel.update(dt);
     this.updateActive();
     for (const u of this.activeUnits) u.update(dt);
