@@ -525,7 +525,7 @@ export class Renderer {
       const giver = u.npcId;
       const mark = q.readyFrom(giver) ? '?' : q.offerFrom(giver) ? '!' : '';
       if (mark) {
-        o.font = '700 20px "Stardos Stencil", sans-serif';
+        o.font = '20px Michroma, sans-serif';
         o.fillStyle = '#e9c47a';
         o.fillText(mark, x, y - 16);
       }

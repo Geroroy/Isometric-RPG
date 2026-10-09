@@ -1,11 +1,12 @@
-// Interface skin after Fallout 1/2: rusted gunmetal plates, dark CRT glass
-// and stained paper are generated here once (no image files) and exposed to
-// the stylesheet as CSS variables; the Galmuri pixel fonts are registered.
+// Interface skin: Fallout 1/2's chunky console structure built from Star Wars
+// materials — weathered Republic hull plating, blue holo glass and datapad
+// screens — generated here once (no image files) and exposed to the
+// stylesheet as CSS variables. Registers the Galmuri pixel fonts (Korean) and
+// Michroma (Eurostile-like cockpit lettering).
 import g11 from 'galmuri/dist/Galmuri11.woff2?url';
 import g11b from 'galmuri/dist/Galmuri11-Bold.woff2?url';
 import g9 from 'galmuri/dist/Galmuri9.woff2?url';
-import '@fontsource/stardos-stencil/400.css';
-import '@fontsource/stardos-stencil/700.css';
+import '@fontsource/michroma/400.css';
 
 function rng(seed) {
   return () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -33,7 +34,7 @@ function pixels(g, w, h, f) {
   g.putImageData(img, 0, 0);
 }
 
-/** Wrapping blobs: smooth stains for rust, grime, paper spots. */
+/** Wrapping blobs: smooth patches for chipped paint and grime. */
 function blobs(w, h, n, rnd, rMin, rMax) {
   const field = new Float32Array(w * h);
   for (let k = 0; k < n; k++) {
@@ -48,61 +49,78 @@ function blobs(w, h, n, rnd, rMin, rMax) {
   return field;
 }
 
-const metal = () =>
+// Republic hull plating (Clone Wars gunships / AT-TEs): cool grey panels with
+// seams, rivets, chipped paint showing darker metal and carbon scoring.
+const hull = () =>
   canvas(256, 256, (g, w, h) => {
     const rnd = rng(7);
-    const rust = blobs(w, h, 22, rnd, 6, 34);
-    const grime = blobs(w, h, 14, rnd, 20, 70);
+    const chips = blobs(w, h, 30, rnd, 3, 12);
+    const grime = blobs(w, h, 12, rnd, 24, 80);
     pixels(g, w, h, (x, y) => {
-      const n = (rnd() - 0.5) * 18 + Math.sin(y * 0.9 + Math.sin(x * 0.05) * 3) * 3;
-      const ru = Math.min(1, rust[y * w + x] * 1.4);
+      const n = (rnd() - 0.5) * 12;
+      const ch = chips[y * w + x] > 0.55 ? 1 : 0; // chipped paint: bare metal
       const gr = Math.min(1, grime[y * w + x]);
-      // olive gunmetal → rust orange-brown, darkened by grime
-      let r = 78 + n, gg = 80 + n, b = 70 + n;
-      r += (112 - r) * ru;
-      gg += (62 - gg) * ru;
-      b += (34 - b) * ru;
-      const k = 1 - gr * 0.35;
+      let r = 112 + n, gg = 117 + n, b = 122 + n;
+      if (ch) (r = 74 + n), (gg = 77 + n), (b = 80 + n);
+      const k = 1 - gr * 0.3;
       return [r * k, gg * k, b * k];
     });
-    // scratches
-    g.strokeStyle = 'rgba(200,200,185,0.18)';
-    for (let i = 0; i < 40; i++) {
-      const x = rnd() * w, y = rnd() * h, l = 4 + rnd() * 18, a = rnd() * Math.PI;
-      g.beginPath();
-      g.moveTo(x, y);
-      g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l);
-      g.stroke();
+    // panel seams with a lit lip, offset like hull plating
+    const seam = (x0, y0, x1, y1) => {
+      g.fillStyle = 'rgba(10,12,14,0.75)';
+      g.fillRect(x0, y0, x1 - x0 || 1, y1 - y0 || 1);
+      g.fillStyle = 'rgba(220,230,240,0.18)';
+      if (x1 === x0) g.fillRect(x0 + 1, y0, 1, y1 - y0);
+      else g.fillRect(x0, y0 + 1, x1 - x0, 1);
+    };
+    seam(0, 0, w, 0);
+    seam(0, 128, w, 128);
+    seam(0, 0, 0, 128);
+    seam(160, 0, 160, 128);
+    seam(80, 128, 80, h);
+    seam(208, 128, 208, h);
+    g.fillStyle = 'rgba(16,18,20,0.6)';
+    for (let x = 6; x < w; x += 16) for (const y of [5, 123, 133, 251]) g.fillRect(x, y, 2, 2); // rivets
+    // carbon scoring: soft dark streaks
+    for (let i = 0; i < 5; i++) {
+      const x = rnd() * w, y = rnd() * h, l = 20 + rnd() * 40;
+      const gr = g.createLinearGradient(x, y, x + l, y + l * 0.3);
+      gr.addColorStop(0, 'rgba(20,18,16,0)');
+      gr.addColorStop(0.5, 'rgba(20,18,16,0.35)');
+      gr.addColorStop(1, 'rgba(20,18,16,0)');
+      g.fillStyle = gr;
+      g.fillRect(x, y - 3, l, 6 + l * 0.3);
     }
   });
 
-const screen = () =>
+// Holo display glass: deep blue, fine scanlines and a faint grid.
+const holo = () =>
   canvas(64, 64, (g, w, h) => {
     const rnd = rng(3);
     pixels(g, w, h, (x, y) => {
-      const n = (rnd() - 0.5) * 6;
-      const line = y % 2 ? -3 : 0; // scanlines
-      const grid = x % 16 === 0 || y % 16 === 0 ? 7 : 0;
-      return [12 + n + line + grid * 0.5, 20 + n + line + grid, 14 + n + line + grid * 0.6];
+      const n = (rnd() - 0.5) * 5;
+      const line = y % 3 === 0 ? 5 : 0;
+      const grid = x % 16 === 0 || y % 16 === 0 ? 6 : 0;
+      return [6 + n + grid * 0.4, 14 + n + line + grid, 24 + n + line * 1.6 + grid * 1.4];
     });
   });
 
-const paper = () =>
-  canvas(256, 256, (g, w, h) => {
+// Datapad screen: dark slate with faint ruled lines.
+const pad = () =>
+  canvas(64, 64, (g, w, h) => {
     const rnd = rng(11);
-    const stain = blobs(w, h, 10, rnd, 10, 50);
     pixels(g, w, h, (x, y) => {
-      const n = (rnd() - 0.5) * 14;
-      const s = Math.min(1, stain[y * w + x]) * 40;
-      return [206 + n - s, 188 + n - s * 1.1, 146 + n - s * 1.3];
+      const n = (rnd() - 0.5) * 4;
+      const rule = y % 8 === 0 ? 4 : 0;
+      return [14 + n, 24 + n + rule, 34 + n + rule * 1.4];
     });
   });
 
 export function applySkin() {
   const root = document.documentElement.style;
-  root.setProperty('--tex-metal', `url(${metal()})`);
-  root.setProperty('--tex-screen', `url(${screen()})`);
-  root.setProperty('--tex-paper', `url(${paper()})`);
+  root.setProperty('--tex-hull', `url(${hull()})`);
+  root.setProperty('--tex-holo', `url(${holo()})`);
+  root.setProperty('--tex-pad', `url(${pad()})`);
   for (const [name, url, weight] of [
     ['Galmuri11', g11, '400'],
     ['Galmuri11', g11b, '700'],

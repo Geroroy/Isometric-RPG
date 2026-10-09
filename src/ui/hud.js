@@ -1,8 +1,9 @@
-// HUD in the style of the Fallout 1/2 interface: a rusted metal console
-// along the bottom with CRT monitors (portrait, green message log, radar),
-// red push buttons with stencilled labels, Force lamps over the skill
-// sockets, digital HP / Force counters. Full-screen panels (skills, info,
-// map, settings, Star Cards) use the same metal frame and green screens.
+// HUD laid out like the Fallout 1/2 interface but built from Star Wars
+// hardware: a weathered Republic hull console along the bottom with holo
+// displays (portrait, message log, radar), backlit cockpit keys, a bar of
+// Force indicator segments over the skill sockets and amber LED HP / Force
+// readouts. Full-screen panels (skills, info, map, settings, Star Cards,
+// appearances) use the same hull frame, holo screens and datapads.
 import { SKILLS, TREES, TIER_LEVELS, canLearn, isActive } from '../game/skills.js';
 import { iconURL } from './icons.js';
 import { dist } from '../core/math.js';
@@ -72,7 +73,7 @@ export class HUD {
 
   buildHud() {
     const r = this.root;
-    // Fallout-style console along the bottom edge
+    // the console along the bottom edge
     const cn = el('div', 'console');
     cn.innerHTML = `
       <div class="cn-portrait monitor"><canvas id="portrait" width="240" height="240"></canvas><div class="ps-eq"><i></i><i></i><i></i><i></i><i></i></div></div>
@@ -175,7 +176,7 @@ export class HUD {
     r.appendChild(this.target);
   }
 
-  /** Add a line to the console's message monitor (Fallout's message window). */
+  /** Add a line to the console's message display. */
   log(text, cls = '') {
     const line = el('div', 'log-line ' + cls);
     line.textContent = text;
@@ -640,7 +641,7 @@ export class HUD {
     $('.hp-fill').style.width = hpK * 100 + '%';
     $('.hp-chip').style.width = this.hpChip * 100 + '%';
     $('.hp-bar').classList.toggle('low', hpK < 0.25);
-    // Force as a row of lamps (Fallout's action point lights)
+    // Force as a bar of indicator segments
     const fpK = Math.max(0, p.force / p.maxForce) * FORCE_SEGMENTS;
     const segs = $('#forceSeg').children;
     for (let i = 0; i < FORCE_SEGMENTS; i++) segs[i].className = fpK >= i + 1 ? 'on' : fpK > i ? 'half' : '';

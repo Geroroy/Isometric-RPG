@@ -1,6 +1,7 @@
-// Conversation screen after Fallout 1/2: a "talking head" monitor (the game
-// view zoomed in on the speaker), the reply in green on a dark panel and the
-// numbered choices on a second monitor. The game pauses while it is open.
+// Conversation screen: Fallout 1/2's talking head as a Star Wars hologram
+// transmission (the game view zoomed in on the speaker, tinted blue with
+// scanlines), the reply on a holo panel and the numbered choices below it.
+// The game pauses while it is open.
 import { iconURL } from './icons.js';
 import { worldToScreen } from '../core/iso.js';
 
@@ -118,7 +119,7 @@ export class DialogueUI {
     const y = Math.max(0, Math.min(r.canvas.height - h, Math.round(s.y - r.cam.y - h / 2 - (n.sprite === 'r2' ? 14 : 30))));
     const g = this.fctx;
     g.imageSmoothingEnabled = false;
-    g.fillStyle = '#0b120c';
+    g.fillStyle = '#071019';
     g.fillRect(0, 0, w, h);
     g.drawImage(r.canvas, x, y, w, h, 0, 0, w, h);
   }
