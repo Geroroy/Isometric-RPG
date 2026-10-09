@@ -22,7 +22,6 @@ export class Renderer {
     this.lctx = this.light.getContext('2d');
     this.terrain = new Terrain(game.world);
     this.cam = { x: 0, y: 0 };
-    this.trail = [];
     this.clickMarks = [];
     this.consoleH = 0;
     this.time = 0;
@@ -315,7 +314,8 @@ export class Renderer {
     const W = this.w;
     const H = this.h;
     l.globalCompositeOperation = 'source-over';
-    l.fillStyle = `rgb(${AMBIENT[0]},${AMBIENT[1]},${AMBIENT[2]})`;
+    const amb = g.world.ambient || AMBIENT;
+    l.fillStyle = `rgb(${amb[0]},${amb[1]},${amb[2]})`;
     l.fillRect(0, 0, W, H);
     l.globalCompositeOperation = 'lighter';
     const spot = (x, y, z, r, gg, b, rad, a = 1) => {
@@ -336,7 +336,11 @@ export class Renderer {
       const fl = 1 + Math.sin(this.time * 3 + L.x * 7) * L.flicker;
       spot(L.x, L.y, L.z, L.r, L.g, L.b, L.rad * fl, 0.55);
     }
-    if (!p.dead && !p.saberOut) spot(p.x, p.y, 1.2 + p.z, 90, 160, 255, 70, 0.55 + (p.deflectFlash > 0 ? 0.4 : 0));
+    for (const u of g.activeUnits) {
+      if (!u.saberColor || u.dead || u.saberOut) continue;
+      const [r, gg, b] = u.saberColor;
+      spot(u.x, u.y, 1.2 + u.z, Math.min(255, r * 1.4), Math.min(255, gg * 1.25), b, 70, 0.55 + (u.deflectFlash > 0 ? 0.4 : 0));
+    }
     for (const t of g.throws) spot(t.x, t.y, t.z, 90, 160, 255, 60, 0.6);
     for (const b of g.bolts) spot(b.x, b.y, b.z, b.color === 'red' ? 255 : 90, b.color === 'red' ? 70 : 140, b.color === 'red' ? 60 : 255, 26, 0.6);
     for (const fl of g.fx.lights) spot(fl.x, fl.y, fl.z, fl.r, fl.g, fl.b, fl.rad, 0.8 * (1 - fl.t / fl.life));
@@ -348,42 +352,60 @@ export class Renderer {
     ctx.globalCompositeOperation = 'source-over';
   }
 
+  /**
+   * Saber glow for every saber-wielding unit. The baked sprite already has
+   * the blade core; the glow is added only along the stretches the baker
+   * found in front of the body, so a blade behind Anakin's back stays hidden.
+   */
   drawSabers(ctx, cam, dt) {
-    const p = this.game.player;
-    // decay trail
-    for (const t of this.trail) t.t += dt;
-    this.trail = this.trail.filter((t) => t.t < 0.09);
-    if (p.dead || p.saberOut) return;
-    const f = p.frame();
-    const m = f.markers;
-    if (!m.saberBase || !m.saberTip) return;
-    const s = worldToScreen(p.x, p.y, p.z);
-    const bx = s.x + m.saberBase[0];
-    const by = s.y + m.saberBase[1];
-    const tx = s.x + m.saberTip[0];
-    const ty = s.y + m.saberTip[1];
-    const swinging = p.anim.startsWith('attack') || p.anim === 'leap';
-    if (swinging) this.trail.push({ bx, by, tx, ty, t: 0 });
-    // trail polygon
-    if (this.trail.length > 1) {
-      ctx.fillStyle = 'rgba(70,140,255,0.22)';
-      for (let i = 1; i < this.trail.length; i++) {
-        const a = this.trail[i - 1];
-        const b = this.trail[i];
-        ctx.beginPath();
-        ctx.moveTo(a.bx - cam.x, a.by - cam.y);
-        ctx.lineTo(a.tx - cam.x, a.ty - cam.y);
-        ctx.lineTo(b.tx - cam.x, b.ty - cam.y);
-        ctx.lineTo(b.bx - cam.x, b.by - cam.y);
-        ctx.closePath();
-        ctx.fill();
+    for (const u of this.game.activeUnits) {
+      const tr = u.saberTrail;
+      if (tr) {
+        for (const t of tr) t.t += dt;
+        while (tr.length && tr[0].t > 0.09) tr.shift();
+      }
+      if (!u.saberColor || u.dead || u.saberOut) continue;
+      const f = u.frame();
+      const s = worldToScreen(u.x, u.y, u.z);
+      const swinging = u.anim.startsWith('attack') || u.anim === 'leap' || u.anim === 'parry';
+      for (const k of ['saber', 'saber2']) {
+        const b = f.markers[k + 'Base'];
+        const e = f.markers[k + 'Tip'];
+        if (!b || !e) continue;
+        const bx = s.x + b[0] - cam.x;
+        const by = s.y + b[1] - cam.y;
+        const tx = s.x + e[0] - cam.x;
+        const ty = s.y + e[1] - cam.y;
+        const segs = f.blades ? f.blades[k] : [[0, 1]];
+        // swing trail (world-anchored so it survives camera motion)
+        const trail = (u.saberTrail ||= []);
+        if (swinging) trail.push({ k, bx: bx + cam.x, by: by + cam.y, tx: tx + cam.x, ty: ty + cam.y, t: 0 });
+        const pts = trail.filter((t) => t.k === k);
+        if (pts.length > 1) {
+          const [r, g, bl] = u.saberColor;
+          ctx.fillStyle = `rgba(${r},${g},${bl},0.2)`;
+          for (let i = 1; i < pts.length; i++) {
+            const A = pts[i - 1];
+            const B = pts[i];
+            ctx.beginPath();
+            ctx.moveTo(A.bx - cam.x, A.by - cam.y);
+            ctx.lineTo(A.tx - cam.x, A.ty - cam.y);
+            ctx.lineTo(B.tx - cam.x, B.ty - cam.y);
+            ctx.lineTo(B.bx - cam.x, B.by - cam.y);
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+        const flash = u.deflectFlash > 0 ? 1.6 : u.clashFlash > 0 ? 1.8 : 1;
+        for (const [s0, s1] of segs) {
+          if (s1 - s0 < 0.02) continue;
+          this.glowLine(ctx, bx + (tx - bx) * s0, by + (ty - by) * s0, bx + (tx - bx) * s1, by + (ty - by) * s1, u.saberColor, flash, u.saberCore);
+        }
       }
     }
-    const flash = p.deflectFlash > 0 ? 1.6 : 1;
-    this.glowLine(ctx, bx - cam.x, by - cam.y, tx - cam.x, ty - cam.y, [60, 130, 255], flash);
   }
 
-  glowLine(ctx, x1, y1, x2, y2, rgb, k = 1) {
+  glowLine(ctx, x1, y1, x2, y2, rgb, k = 1, core = 'rgba(235,245,255,0.95)') {
     ctx.lineCap = 'round';
     ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${0.18 * k})`;
     ctx.lineWidth = 7;
@@ -394,7 +416,7 @@ export class Renderer {
     ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${0.45 * k})`;
     ctx.lineWidth = 3.5;
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(235,245,255,0.95)';
+    ctx.strokeStyle = core;
     ctx.lineWidth = 1.4;
     ctx.stroke();
     ctx.lineCap = 'butt';
@@ -482,6 +504,36 @@ export class Renderer {
       o.fillRect(x - w / 2 - 1, y - 1, w + 2, 4);
       o.fillStyle = u.team === 'cis' ? '#e2483d' : '#5cc8ff';
       o.fillRect(x - w / 2, y, (w * Math.max(0, u.hp)) / u.maxHp, 2);
+    }
+    // friendly NPCs: name, quest marker, talk prompt
+    const p = g.player;
+    for (const u of g.activeUnits) {
+      if (!u.npc) continue;
+      const d = dist(u.x, u.y, p.x, p.y);
+      if (d > 11) continue;
+      const s = worldToScreen(u.x, u.y);
+      const x = (s.x - cam.x) * S;
+      const y = (s.y - cam.y - (u.sprite === 'r2' ? 30 : 56)) * S;
+      o.textAlign = 'center';
+      o.font = '600 12px Pretendard Variable, Pretendard, sans-serif';
+      o.fillStyle = 'rgba(0,0,0,0.6)';
+      o.fillText(u.name, x + 1, y + 1);
+      o.fillStyle = '#e8eef4';
+      o.fillText(u.name, x, y);
+      const q = g.quests;
+      const giver = u.npcId;
+      const mark = q.readyFrom(giver) ? '?' : q.offerFrom(giver) ? '!' : '';
+      if (mark) {
+        o.font = '700 20px Rajdhani, sans-serif';
+        o.fillStyle = '#e9c47a';
+        o.fillText(mark, x, y - 16);
+      }
+      if (d < 2.6 && !g.talkingTo) {
+        o.font = '600 11px Pretendard Variable, Pretendard, sans-serif';
+        o.fillStyle = 'rgba(233,196,122,0.95)';
+        o.fillText(this.touchMode ? '대화 버튼으로 말 걸기' : '[E] 대화', x, y + 16);
+      }
+      o.textAlign = 'start';
     }
     g.fx.drawText(o, cam, S);
   }

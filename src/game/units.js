@@ -11,6 +11,8 @@ export const UNIT_DEFS = {
   guard: { name: '501군단 경비병', sprite: 'clone', team: 'rep', hp: 140, dmg: [6, 9], range: 9, fireCd: [0.9, 1.3], speed: 3.5, radius: 0.33, burst: 1, knockRes: 1 },
   rex: { name: '렉스 대위', sprite: 'rex', team: 'rep', hp: 200, dmg: [8, 10], range: 8, fireCd: [0.3, 0.45], speed: 4.6, radius: 0.34, burst: 1, knockRes: 0.6 },
   r2: { name: 'R2-D2', sprite: 'r2', team: 'rep', hp: 150, speed: 4.6, radius: 0.3, knockRes: 0.3 },
+  npc: { name: '', sprite: 'clone', team: 'rep', hp: 100, radius: 0.34, knockRes: 0 },
+  dooku: { name: '두쿠 백작', sprite: 'dooku', team: 'cis', hp: 900, radius: 0.36, knockRes: 0.35 },
 };
 
 let NEXT_ID = 1;
@@ -466,6 +468,9 @@ export class Player extends Unit {
     this.bacta = 3;
     this.action = null;
     this.saberOut = false;
+    this.saberColor = [60, 130, 255];
+    this.credits = 0;
+    this.upgrades = { lens: 0, plate: 0 };
     this.kills = 0;
     this.recalc(true);
   }
@@ -487,7 +492,7 @@ export class Player extends Unit {
   recalc(full = false) {
     const a = this.attr;
     const oldMax = this.maxHp;
-    this.maxHp = Math.round(50 + a.vit * 4 + (this.level - 1) * 6);
+    this.maxHp = Math.round(50 + a.vit * 4 + (this.level - 1) * 6 + this.upgrades.plate * 15);
     this.maxForce = Math.round(30 + a.for * 2 + (this.level - 1) * 2);
     if (full) {
       this.hp = this.maxHp;
@@ -505,13 +510,13 @@ export class Player extends Unit {
     const strMult = 1 + this.attr.str * 0.015;
     const dark = 1 + this.darkness * 0.003;
     const cmd = 1 + this.skillLevel('command') * 0.01;
-    return rand(lo, hi) * strMult * dark * cmd;
+    return rand(lo, hi) * strMult * dark * cmd * (1 + this.upgrades.lens * 0.06);
   }
   forceMult() {
     return (1 + this.attr.for * 0.012) * (1 + this.darkness * 0.003);
   }
   attackSpeed() {
-    return (1 + this.attr.agi * 0.006) * (1 + (this.buffs.speed ? this.buffs.speed.atk : 0));
+    return (1 + this.attr.agi * 0.006) * (1 + (this.buffs.speed ? this.buffs.speed.atk : 0)) * (1 + (this.buffs.spar ? this.buffs.spar.atk : 0));
   }
   moveSpeed() {
     let s = 4.6 * (1 + (this.buffs.speed ? this.buffs.speed.move : 0));
@@ -578,7 +583,7 @@ export class Player extends Unit {
   }
 
   canAct() {
-    return !this.dead && this.stun <= 0 && !this.choke;
+    return !this.dead && this.stun <= 0 && !this.choke && !(this.game.duel && this.game.duel.locked);
   }
 
   commandMove(x, y) {
@@ -594,6 +599,13 @@ export class Player extends Unit {
       return;
     }
     this.action = { type: 'move', x, y };
+    this.path = null;
+  }
+
+  /** Walk up to a friendly NPC, then open the conversation. */
+  commandTalk(npc) {
+    if (!this.canAct() || this.busy) return;
+    this.action = { type: 'talk', target: npc };
     this.path = null;
   }
 
@@ -614,8 +626,9 @@ export class Player extends Unit {
       if (this.action.type === 'melee' && this.action.phase === 'swing') this.queued = { type: 'attack', target };
       return;
     }
-    this.alt = !this.alt;
-    this.startMelee(target, [{ anim: this.alt ? 'attack1' : 'attack2', speed: 1.15, mult: 1 }], inPlace);
+    // three-swing combo: horizontal slash, overhead strike, rising backhand
+    this.combo = ((this.combo || 0) % 3) + 1;
+    this.startMelee(target, [{ anim: 'attack' + this.combo, speed: 1.15, mult: this.combo === 3 ? 1.15 : 1 }], inPlace);
   }
 
   startMelee(target, hits, inPlace = false) {
@@ -687,7 +700,19 @@ export class Player extends Unit {
     }
     if (this.stun > 0 || this.choke) {
       this.action = null;
-      this.setAnim('idle', 0.3);
+      if (this.anim !== 'hurt' || this.animInfo().done) this.setAnim('idle', 0.3);
+      return;
+    }
+    const duel = g.duel;
+    if (duel && duel.lock) return this.setAnim('lock');
+    if (duel && duel.locked && !this.action) {
+      if (!(this.anim === 'hurt' && !this.animInfo().done)) this.setAnim('idle');
+      return;
+    }
+    // duel guard: hold still behind the blade (a parry flourish plays through)
+    if (this.blocking && !this.busy) {
+      this.action = null;
+      if (this.anim !== 'parry' || this.animInfo().done) this.setAnim('block');
       return;
     }
 
@@ -709,6 +734,17 @@ export class Player extends Unit {
           this.action = null;
           this.setAnim('idle');
         }
+        break;
+      }
+      case 'talk': {
+        const n = act.target;
+        const sp = this.moveSpeed();
+        if (this.navigate(n.x, n.y, sp, dt, 1.4)) {
+          this.action = null;
+          this.setAnim('idle');
+          this.faceTo(n.x, n.y);
+          g.talkTo(n);
+        } else this.setAnim('run', sp / 4.6);
         break;
       }
       case 'steer': {

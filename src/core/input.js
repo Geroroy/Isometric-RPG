@@ -3,7 +3,7 @@
 //   Shift + LMB  attack in place
 //   RMB          cast the right-button skill at the cursor (hold to repeat)
 //   1-6          cast hotbar skill at the cursor
-//   Q bacta · K skill tree · C character · Tab automap · M mute · F1 help
+//   E talk · Q bacta · K skill tree · C character · Tab automap · M mute · F1 help
 import { SKILLS } from '../game/skills.js';
 import { dist } from '../core/math.js';
 
@@ -27,7 +27,10 @@ export class Input {
         this.lmb = false;
         this.lmbTarget = null;
       }
-      if (e.button === 2) this.rmb = false;
+      if (e.button === 2) {
+        this.rmb = false;
+        this.game.player.blocking = false;
+      }
     });
     window.addEventListener('mousemove', (e) => {
       this.mx = e.clientX;
@@ -81,6 +84,14 @@ export class Input {
     const p = g.player;
     if (p.dead) return;
     this.updateMouse();
+    const duel = g.duel;
+    if (duel && e.button === 0 && duel.press()) return;
+    if (duel && e.button === 2) {
+      // in the duel the right button is the guard
+      p.blocking = true;
+      p.blockT = g.time;
+      return;
+    }
     if (e.button === 0) {
       if (this.hud.pendingSkill) {
         this.cast(this.hud.pendingSkill);
@@ -90,7 +101,10 @@ export class Input {
       this.lmb = true;
       this.holdT = 0;
       const t = this.enemyUnderCursor();
-      if (t) {
+      if (g.hover && g.hover.npc) {
+        this.lmb = false;
+        p.commandTalk(g.hover);
+      } else if (t) {
         this.lmbTarget = t;
         p.basicAttack(t);
       } else if (this.shift) {
@@ -152,6 +166,14 @@ export class Input {
     if (e.repeat && !/^[1-6]$/.test(e.key)) return;
     this.audio.unlock();
     const k = e.key.toLowerCase();
+    if (this.dialogue && this.dialogue.key(k)) {
+      e.preventDefault();
+      return;
+    }
+    if (k === ' ' && g.duel && g.duel.press()) {
+      e.preventDefault();
+      return;
+    }
     if (k === 'tab') {
       e.preventDefault();
       hud.toggle('map');
@@ -178,6 +200,11 @@ export class Input {
       case 'q':
         g.useBacta();
         break;
+      case 'e': {
+        const n = g.nearestNpc(4);
+        if (n) p.commandTalk(n);
+        break;
+      }
       case 'k':
       case 't':
       case 's':
@@ -250,7 +277,7 @@ export class Input {
         if (!p.action || p.moving) p.commandMove(m.x, m.y);
       }
     }
-    if (this.rmb && !p.busy) {
+    if (this.rmb && !p.busy && !g.duel) {
       this.rmbT = (this.rmbT || 0) - dt;
       if (this.rmbT <= 0) {
         this.rmbT = 0.15;

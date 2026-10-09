@@ -298,6 +298,32 @@ const DRAW = {
   empty(ctx) {
     base(ctx, '#181c24', '#0a0c10');
   },
+  spar(ctx) {
+    base(ctx, '#1d2a1e', '#0a100a');
+    saber(ctx, 8, 26, 24, 6, '#5ab0ff');
+    saber(ctx, 24, 26, 8, 6, '#6aff7a');
+  },
+  credits(ctx) {
+    base(ctx, '#2a2414', '#100c06');
+    ctx.fillStyle = '#e9c47a';
+    ctx.beginPath();
+    ctx.arc(16, 16, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#8a6a2a';
+    ctx.fillRect(12, 12, 8, 8);
+    ctx.fillStyle = '#e9c47a';
+    ctx.fillRect(14, 14, 4, 4);
+  },
+  talk(ctx) {
+    base(ctx, '#1a2430', '#0a0e14');
+    ctx.fillStyle = '#d6e6f2';
+    ctx.fillRect(6, 8, 20, 12);
+    ctx.fillRect(10, 20, 4, 4);
+    ctx.fillStyle = '#1a2430';
+    ctx.fillRect(9, 12, 3, 3);
+    ctx.fillRect(15, 12, 3, 3);
+    ctx.fillRect(21, 12, 3, 3);
+  },
 };
 
 export function iconCanvas(id) {

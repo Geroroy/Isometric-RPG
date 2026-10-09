@@ -57,11 +57,11 @@ export class HUD {
     this.updateFog();
     this.refreshPanels();
 
-    game.on('say', (text, key, dur) => this.say(text, dur));
+    game.on('say', (text, key, dur, speaker) => this.say(text, dur, speaker));
     game.on('region', (name) => this.banner(name));
     game.on('hurt', () => portrait.hurt());
     game.on('levelup', () => this.refreshPanels());
-    game.on('death', () => setTimeout(() => this.showDeath(), 1600));
+    game.on('death', () => !game.duel && setTimeout(() => this.showDeath(), 1600));
   }
 
   // ================================================================== HUD
@@ -508,6 +508,7 @@ export class HUD {
           <div class="info-level"><span>LV</span><b>${p.level}</b></div>
           <div class="info-xp"><i style="width:${(p.xp / p.xpNext) * 100}%"></i></div>
           <div class="info-xpt">경험치 ${Math.floor(p.xp)} / ${p.xpNext} · 처치 ${p.kills}</div>
+          <div class="info-xpt">크레딧 ${p.credits} · 집속 렌즈 ${p.upgrades.lens}/5 · 보강판 ${p.upgrades.plate}/5</div>
         </section>
         <section class="info-attrs">
           <div class="info-h">능력치 ${p.attrPoints > 0 ? `<span class="pts">남은 포인트 ${p.attrPoints}</span>` : ''}</div>
@@ -578,14 +579,14 @@ export class HUD {
   // ================================================================== messages
 
   /** Show a subtitle; `dur` is the voice clip length when one is playing. */
-  say(text, dur = null) {
+  say(text, dur = null, speaker = '아나킨') {
     const talk = dur ?? Math.min(3, 0.6 + text.length * 0.045);
-    this.sub = { text, t: 0, talk, hold: Math.max(2.4 + text.length * 0.05, talk + 1) };
-    this.portrait.talk(talk);
+    this.sub = { text, t: 0, talk, speaker, hold: Math.max(2.4 + text.length * 0.05, talk + 1) };
+    if (speaker === '아나킨') this.portrait.talk(talk);
   }
 
   banner(name) {
-    this.bannerEl.innerHTML = `<div class="bn-kicker">CHRISTOPHSIS</div><div class="bn-name">${name}</div>`;
+    this.bannerEl.innerHTML = `<div class="bn-kicker">${this.game.duel ? 'GEONOSIS' : 'CHRISTOPHSIS'}</div><div class="bn-name">${name}</div>`;
     this.bannerEl.classList.remove('show');
     void this.bannerEl.offsetWidth;
     this.bannerEl.classList.add('show');
@@ -616,7 +617,7 @@ export class HUD {
     this.portrait.update(dt, p.darkness, p.dead);
     this.portrait.draw(this.pctx, this.pcanvas.width, this.pcanvas.height);
     if (this.open.settings) this.portrait.draw(this.setCtx, 320, 320);
-    const talking = this.sub && this.sub.t < this.sub.talk;
+    const talking = this.sub && this.sub.speaker === '아나킨' && this.sub.t < this.sub.talk;
     this.eq.classList.toggle('on', !!talking);
     if (talking) for (const b of this.eq.children) b.style.height = 20 + Math.random() * 80 + '%';
 
@@ -625,7 +626,7 @@ export class HUD {
       const s = this.sub;
       s.t += dt;
       const shown = Math.min(s.text.length, Math.floor(s.t * 40));
-      this.subEl.innerHTML = `<span class="sub-speaker">아나킨</span><span class="sub-text">${s.text.slice(0, shown)}</span>`;
+      this.subEl.innerHTML = `<span class="sub-speaker">${s.speaker}</span><span class="sub-text">${s.text.slice(0, shown)}</span>`;
       this.subEl.classList.add('show');
       if (s.t > s.hold) {
         this.sub = null;
@@ -665,7 +666,7 @@ export class HUD {
       nm.textContent = h.name;
       this.target.className = 'target-info' + (h.elite ? ' elite' : h.team === 'rep' ? ' ally' : '');
       $('.ti-bar i', this.target).style.width = Math.max(0, (h.hp / h.maxHp) * 100) + '%';
-      $('.ti-sub', this.target).textContent = h.team === 'cis' ? `LV ${h.level}${h.elite ? ' · 정예' : ''}` : h.owner ? '아군 · 지휘 중' : '아군';
+      $('.ti-sub', this.target).textContent = h.npc ? `${h.title} · 대화 (E / 클릭)` : h.team === 'cis' ? `LV ${h.level}${h.elite ? ' · 정예' : ''}` : h.owner ? '아군 · 지휘 중' : '아군';
     } else this.target.classList.add('hidden');
 
     // throttled text
@@ -728,10 +729,14 @@ export class HUD {
       const ang = (Math.atan2((dx + dy) * 0.5, dx - dy) * 180) / Math.PI;
       arrow = `<li class="ob-near"><span class="ob-arrow" style="transform:rotate(${ang.toFixed(0)}deg)">➜</span>가장 가까운 ${near.boss ? '공장' : '거점'} <b>${Math.round(nd)}m</b>${near.level ? ` · LV ${near.level}` : ''}</li>`;
     }
+    const quests = g.quests
+      .tracked()
+      .map(({ id, q, s }) => `<li class="ob-quest ${s.state === 'ready' ? 'ready' : ''}"><i></i>${q.title} <b>${s.state === 'ready' ? '보고하기' : g.quests.progress(id)}</b></li>`)
+      .join('');
     this.objectives.innerHTML = `<div class="ob-h">목표</div><ul>
       <li class="${cleared === camps.length ? 'done' : ''}"><i></i>드로이드 거점 소탕 <b>${cleared} / ${camps.length}</b></li>
       <li class="${boss && boss.cleared ? 'done' : ''}"><i></i>북쪽의 드로이드 공장 파괴</li>
-      ${arrow}</ul>`;
+      ${quests}${arrow}</ul>`;
   }
 
   // ================================================================== map drawing

@@ -5,201 +5,178 @@ const { sin, PI } = Math;
 const TAU = PI * 2;
 
 // ----------------------------------------------------------------------------
-// Anakin — Form V (Djem So / Shien) guard: saber raised two-handed in front.
+// Sabers are animated by hilt position + blade direction (`sab`, `sab2`:
+// [x, y, z, yaw, pitch] in model space; the model faces +X, +Z is its right)
+// and the arms follow through IK — see Rig.enableSaberIK. Swings interpolate
+// the angles, so blades sweep in arcs instead of cutting through the body.
 
-const GUARD = {
+const STANCE = {
   pelvisY: -0.05,
-  spine: [0, 0.25, -0.05],
-  chest: [0, 0.15, -0.05],
-  head: [0, -0.35, 0],
-  neck: [0, 0, 0.05],
-  shR: [0.35, -0.2, 0.75],
-  elR: [0, 0, 1.15],
-  wpn: [0.2, 0, -0.55],
-  haR: [0, 0, 0],
-  shL: [-0.45, 0.1, 0.65],
-  elL: [0, 0, 1.25],
-  hipL: [0.22, 0, 0.3],
-  knL: [0, 0, -0.35],
-  anL: [0, 0, 0.05],
-  hipR: [-0.22, 0, -0.25],
-  knR: [0, 0, -0.25],
-  anR: [0, 0, 0.25],
+  hipL: [0.24, 0, 0.36],
+  knL: [0, 0, -0.42],
+  anL: [0, 0, 0.06],
+  hipR: [-0.24, 0, -0.3],
+  knR: [0, 0, -0.22],
+  anR: [0, 0, 0.3],
+};
+const LUNGE = {
+  pelvisY: -0.14,
+  hipL: [0.24, 0, 0.75],
+  knL: [0, 0, -0.85],
+  anL: [0, 0, 0.1],
+  hipR: [-0.24, 0, -0.5],
+  knR: [0, 0, -0.3],
+  anR: [0, 0, 0.45],
 };
 
-const anakinIdle = (t) => {
-  const b = sin(t * TAU);
-  return pose(GUARD, {
-    pelvisY: -0.05 + b * 0.008,
-    chest: [0, 0.15, -0.05 + b * 0.02],
-    shR: [0.35, -0.2, 0.75 + b * 0.03],
-    wpn: [0.2 + b * 0.03, 0, -0.55],
-  });
-};
-
-const anakinRun = (t) => {
-  const a = t * TAU;
-  const s = sin(a);
-  return pose(legCycle(t, 0.75, 1.15), {
-    spine: [0, 0, -0.18],
-    chest: [0, -s * 0.12, -0.05],
-    head: [0, s * 0.1, 0.12],
-    // saber held low and trailing behind
-    shR: [-0.25, 0, -0.35 - s * 0.35],
-    elR: [0, 0, 0.45],
-    wpn: [0.3, 0, -2.75],
-    shL: [0.25, 0, s * 0.7],
-    elL: [0, 0, 0.9],
-  });
-};
-
-// Horizontal slash: wind up to the right, sweep across to the left.
-const SLASH_A = pose(GUARD, {
-  spine: [0, -0.55, -0.05],
-  chest: [0, -0.45, -0.05],
-  head: [0, 0.4, 0],
-  shR: [-1.25, -0.4, 0.4],
-  elR: [0, 0, 0.6],
-  wpn: [-1.35, 0, -0.35],
-  shL: [-0.2, 0, 0.3],
-  elL: [0, 0, 0.8],
+// Djem So high guard (Revenge of the Sith): both hands on the hilt beside the
+// right shoulder, blade upright and tilted slightly back. (yaw 0 / pitch past
+// vertical so swings into the overhead chop stay in one vertical plane.)
+const GUARD = pose(STANCE, {
+  spine: [0, 0.3, -0.05],
+  chest: [0, 0.12, -0.04],
+  neck: [0, 0, 0.04],
+  head: [0, -0.38, 0],
+  sab: [0.3, 1.36, 0.22, 0, 1.79],
+  two: 1,
 });
-const SLASH_B = pose(GUARD, {
-  spine: [0, 0.35, -0.15],
-  chest: [0, 0.55, -0.1],
-  head: [0, -0.5, 0],
-  shR: [-1.3, 0.9, 1.35],
-  elR: [0, 0, 0.15],
-  wpn: [-1.4, 0, 0.1],
-  shL: [0.6, 0, -0.2],
-  elL: [0, 0, 0.5],
-  hipL: [0.22, 0, 0.5],
-  knL: [0, 0, -0.55],
+
+const wobble = (base, t, amt) => {
+  const b = sin(t * TAU);
+  return pose(base, {
+    pelvisY: (base.pelvisY || 0) + b * 0.008,
+    chest: [base.chest[0], base.chest[1], base.chest[2] + b * 0.02],
+    ...(base.sab ? { sab: [base.sab[0], base.sab[1] + b * 0.012, base.sab[2], base.sab[3] + b * amt * 0.5, base.sab[4] + b * amt] } : {}),
+    ...(base.sab2 ? { sab2: [base.sab2[0], base.sab2[1] - b * 0.01, base.sab2[2], base.sab2[3] - b * amt * 0.5, base.sab2[4] + b * amt] } : {}),
+  });
+};
+
+// Djem So combo, as against Dooku and Obi-Wan in Episode III:
+// 1) diagonal cut from high right down to low left
+const SLASH_A = pose(GUARD, {
+  spine: [0, -0.35, -0.02],
+  chest: [0, -0.3, 0],
+  head: [0, 0.3, 0],
+  sab: [0.15, 1.6, 0.3, 2.6, 1.0],
+});
+const SLASH_B = pose(GUARD, LUNGE, {
+  spine: [0, 0.35, -0.16],
+  chest: [0, 0.4, -0.1],
+  head: [0, -0.5, 0.05],
+  sab: [0.5, 1.12, 0.02, -0.5, -0.35],
 });
 const SLASH_C = pose(SLASH_B, {
-  chest: [0, 0.75, -0.08],
-  shR: [-1.1, 1.3, 1.1],
-  wpn: [-1.2, 0, 0.3],
+  spine: [0, 0.6, -0.14],
+  chest: [0, 0.55, -0.1],
+  head: [0, -0.65, 0.05],
+  sab: [0.3, 0.92, -0.3, -1.6, -0.75],
 });
-const anakinAttack1 = keyframes(
-  [
-    { t: 0, p: GUARD },
-    { t: 0.3, p: SLASH_A },
-    { t: 0.65, p: SLASH_B },
-    { t: 1, p: SLASH_C },
-  ],
-  easeInOut,
-);
 
-// Overhead Djem So strike.
+// 2) the return cut from high left down to low right (the X)
+const BACK_A = pose(GUARD, {
+  spine: [0, 0.55, -0.04],
+  chest: [0, 0.42, -0.02],
+  head: [0, -0.6, 0],
+  sab: [0.25, 1.55, -0.15, -2.4, 1.0],
+  poleR: [0.2, -0.6, 1],
+});
+const BACK_B = pose(GUARD, LUNGE, {
+  spine: [0, -0.2, -0.16],
+  chest: [0, -0.3, -0.1],
+  head: [0, 0.1, 0.05],
+  sab: [0.5, 1.12, 0.05, 0.5, -0.35],
+});
+const BACK_C = pose(BACK_B, {
+  spine: [0, -0.45, -0.12],
+  chest: [0, -0.5, -0.08],
+  head: [0, 0.3, 0.05],
+  sab: [0.25, 0.92, 0.32, 1.6, -0.75],
+});
+
+// 3) straight overhead chop (also the Djem So Overhead skill)
 const OVER_A = pose(GUARD, {
-  spine: [0, 0.1, 0.12],
-  chest: [0, 0.1, 0.12],
-  head: [0, -0.1, -0.1],
-  shR: [0.2, 0, 2.9],
-  elR: [0, 0, 0.6],
-  wpn: [0, 0, 1.0],
-  shL: [-0.25, 0, 2.7],
-  elL: [0, 0, 0.7],
+  spine: [0, 0.08, 0.14],
+  chest: [0, 0.02, 0.1],
+  head: [0, -0.15, -0.1],
+  sab: [0.02, 1.86, 0.05, 0, 2.3],
+  poleR: [0.1, -0.3, 1],
+  poleL: [0.1, -0.3, -1],
 });
-const OVER_B = pose(GUARD, {
-  pelvisY: -0.16,
-  spine: [0, 0.05, -0.35],
-  chest: [0, 0.05, -0.2],
-  head: [0, 0, 0.2],
-  shR: [0.25, 0, 1.05],
-  elR: [0, 0, 0.05],
-  wpn: [0, 0, -0.5],
-  shL: [-0.3, 0, 0.95],
-  elL: [0, 0, 0.15],
-  hipL: [0.25, 0, 0.75],
-  knL: [0, 0, -0.95],
-  hipR: [-0.25, 0, -0.45],
-  knR: [0, 0, -0.5],
+const OVER_B = pose(GUARD, LUNGE, {
+  pelvisY: -0.17,
+  spine: [0, 0.08, -0.36],
+  chest: [0, 0.04, -0.2],
+  head: [0, -0.1, 0.22],
+  sab: [0.56, 1.0, 0.0, 0, -0.45],
 });
-const anakinAttack2 = keyframes(
-  [
-    { t: 0, p: GUARD },
-    { t: 0.35, p: OVER_A },
-    { t: 0.7, p: OVER_B },
-    { t: 1, p: OVER_B },
-  ],
-  easeInOut,
-);
+const OVER_C = pose(OVER_B, { sab: [0.5, 0.82, 0.0, 0, -0.85] });
 
-// Force push: left palm thrust forward, saber held back.
+const swing = (a, b, c, d = c) =>
+  keyframes(
+    [
+      { t: 0, p: a },
+      { t: 0.34, p: b },
+      { t: 0.6, p: c },
+      { t: 1, p: d },
+    ],
+    easeInOut,
+  );
+
+// Force push: saber held back in the right hand, left palm thrust forward.
 const CAST_A = pose(GUARD, {
   spine: [0, -0.35, 0.05],
   chest: [0, -0.3, 0],
+  head: [0, 0.2, 0],
+  sab: [-0.04, 1.02, 0.33, 2.7, -0.35],
+  two: 0,
   shL: [-0.2, 0, 0.3],
   elL: [0, 0, 2.0],
-  shR: [-0.3, 0, -0.5],
-  elR: [0, 0, 0.4],
-  wpn: [0.2, 0, -2.6],
 });
-const CAST_B = pose(GUARD, {
+const CAST_B = pose(GUARD, LUNGE, {
   spine: [0, 0.35, -0.12],
   chest: [0, 0.3, -0.08],
   head: [0, -0.3, 0.05],
+  sab: [0.0, 1.0, 0.34, 2.8, -0.4],
+  two: 0,
   shL: [-0.05, 0, 1.55],
   elL: [0, 0, 0.0],
   haL: [0, 0, 1.3],
-  shR: [-0.35, 0, -0.6],
-  elR: [0, 0, 0.35],
-  wpn: [0.2, 0, -2.7],
-  hipL: [0.22, 0, 0.55],
-  knL: [0, 0, -0.5],
-  hipR: [-0.22, 0, -0.45],
 });
-const anakinCast = keyframes(
-  [
-    { t: 0, p: GUARD },
-    { t: 0.35, p: CAST_A },
-    { t: 0.6, p: CAST_B },
-    { t: 1, p: CAST_B },
-  ],
-  easeInOut,
-);
 
-// Saber throw: wind back, hurl, saber leaves the hand.
+// Saber throw: wind back, hurl, the saber leaves the hand (catch pose after).
 const THROW_A = pose(GUARD, {
   spine: [0, -0.6, 0.05],
   chest: [0, -0.4, 0.05],
-  shR: [-0.8, 0, -0.6],
-  elR: [0, 0, 0.9],
-  wpn: [-1.4, 0, 0],
+  head: [0, 0.3, 0],
+  sab: [-0.15, 1.55, 0.36, 2.6, 0.5],
+  two: 0,
   shL: [-0.3, 0, 1.0],
   elL: [0, 0, 0.3],
 });
-const THROW_B = pose(GUARD, {
+const THROW_B = pose(GUARD, LUNGE, {
   spine: [0, 0.5, -0.12],
   chest: [0, 0.45, -0.1],
-  shR: [-0.9, 0.6, 1.5],
-  elR: [0, 0, 0.1],
+  head: [0, -0.4, 0],
+  sab: [0.52, 1.42, 0.12, 0, 0.3],
+  two: 0,
   shL: [0.4, 0, -0.3],
   elL: [0, 0, 0.6],
   hide: ['saber'],
 });
-const anakinThrow = keyframes(
-  [
-    { t: 0, p: GUARD },
-    { t: 0.4, p: THROW_A },
-    { t: 0.6, p: THROW_B },
-    { t: 1, p: pose(THROW_B, { shR: [-0.5, 0.3, 0.9] }) },
-  ],
-  easeInOut,
-);
 
-// Leap: crouch → airborne tuck with saber raised → landing strike.
 const LEAP_CROUCH = pose(GUARD, {
-  pelvisY: -0.25,
-  spine: [0, 0, -0.35],
-  hipL: [0.2, 0, 0.9],
-  knL: [0, 0, -1.4],
+  pelvisY: -0.26,
+  spine: [0, 0, -0.38],
+  hipL: [0.2, 0, 0.95],
+  knL: [0, 0, -1.45],
   anL: [0, 0, 0.5],
   hipR: [-0.2, 0, 0.5],
-  knR: [0, 0, -1.2],
+  knR: [0, 0, -1.25],
   anR: [0, 0, 0.6],
+  sab: [0.08, 0.92, 0.3, 2.4, -0.3],
+  two: 0,
+  shL: [-0.3, 0, -0.4],
+  elL: [0, 0, 0.5],
 });
 const LEAP_AIR = pose(OVER_A, {
   pelvisY: 0,
@@ -208,18 +185,45 @@ const LEAP_AIR = pose(OVER_A, {
   hipR: [-0.15, 0, 0.4],
   knR: [0, 0, -1.6],
 });
-const anakinLeap = keyframes(
-  [
-    { t: 0, p: LEAP_CROUCH },
-    { t: 0.3, p: LEAP_AIR },
-    { t: 0.7, p: LEAP_AIR },
-    { t: 1, p: OVER_B },
-  ],
-  easeInOut,
-);
+
+// Djem So block: blade angled across the front, both hands, ready to
+// shove the opponent's blade aside and strike back.
+const BLOCK = pose(STANCE, {
+  spine: [0, 0.2, 0.02],
+  chest: [0, 0.08, 0],
+  head: [0, -0.25, 0.06],
+  sab: [0.4, 1.3, 0.1, -0.9, 0.9],
+  two: 1,
+  poleR: [-0.1, -1, 1],
+});
+const PARRY = pose(BLOCK, LUNGE, {
+  spine: [0, -0.15, -0.1],
+  chest: [0, -0.2, -0.05],
+  sab: [0.48, 1.42, 0.2, 0.6, 1.1],
+});
+const HURT = pose(STANCE, {
+  pelvisY: -0.1,
+  spine: [0, -0.2, 0.28],
+  chest: [0, -0.1, 0.12],
+  head: [0, 0.2, -0.25],
+  sab: [0.1, 1.2, 0.4, 1.9, 0.45],
+  two: 0,
+  shL: [-0.9, 0, 0.5],
+  elL: [0, 0, 0.6],
+  hipL: [0.24, 0, 0.2],
+  knL: [0, 0, -0.5],
+});
+// Saber lock: blades bound together, pressing forward.
+const LOCK = pose(LUNGE, {
+  spine: [0, 0.12, -0.26],
+  chest: [0, 0.05, -0.1],
+  head: [0, -0.1, 0.1],
+  sab: [0.42, 1.3, 0.02, -0.12, 1.0],
+  two: 1,
+});
 
 const DEAD = {
-  bodyRot: 0,
+  fk: 1,
   pelvisY: -0.85,
   spine: [0, 0.2, 1.3],
   chest: [0, 0, 0.2],
@@ -232,28 +236,250 @@ const DEAD = {
   knL: [0, 0, -0.5],
   hipR: [-0.2, 0, 1.4],
   knR: [0, 0, -0.2],
-  wpn: [0, 0, -1.5],
-  hide: ['saber'],
+  hide: ['saber', 'saber2'],
 };
-const anakinDeath = keyframes(
-  [
-    { t: 0, p: GUARD },
-    { t: 0.3, p: pose(GUARD, { pelvisY: -0.3, spine: [0, 0.2, 0.4], knL: [0, 0, -1.2], hipL: [0.2, 0, 0.8], knR: [0, 0, -1.0], hipR: [0, 0, 0.6] }) },
-    { t: 1, p: DEAD },
-  ],
-  easeInOut,
-);
+const FALLING = pose(GUARD, {
+  pelvisY: -0.3,
+  spine: [0, 0.2, 0.4],
+  knL: [0, 0, -1.2],
+  hipL: [0.2, 0, 0.8],
+  knR: [0, 0, -1.0],
+  hipR: [0, 0, 0.6],
+  sab: [0.3, 0.8, 0.4, 1.5, -0.9],
+  two: 0,
+  shL: [-0.6, 0, 0.6],
+});
 
-export const ANAKIN_ANIMS = {
-  idle: { frames: 6, fps: 6, loop: true, pose: anakinIdle },
-  run: { frames: 10, fps: 15, loop: true, pose: anakinRun },
-  attack1: { frames: 7, fps: 16, loop: false, hit: 4, pose: anakinAttack1 },
-  attack2: { frames: 7, fps: 14, loop: false, hit: 4, pose: anakinAttack2 },
-  cast: { frames: 6, fps: 14, loop: false, hit: 3, pose: anakinCast },
-  throw: { frames: 6, fps: 16, loop: false, hit: 3, pose: anakinThrow },
-  leap: { frames: 6, fps: 10, loop: false, pose: anakinLeap },
-  death: { frames: 7, fps: 9, loop: false, pose: anakinDeath },
+function runPose(t, sab, sab2) {
+  const s = sin(t * TAU);
+  return pose(legCycle(t, 0.75, 1.15), {
+    spine: [0, 0, -0.2],
+    chest: [0, -s * 0.12, -0.05],
+    head: [0, s * 0.1, 0.14],
+    sab: [sab[0] + s * 0.08, sab[1] + Math.abs(s) * 0.02, sab[2], sab[3] - s * 0.1, sab[4]],
+    ...(sab2 ? { sab2: [sab2[0] - s * 0.08, sab2[1], sab2[2], sab2[3] - s * 0.1, sab2[4]] } : { shL: [0.25, 0, s * 0.7], elL: [0, 0, 0.9] }),
+    two: 0,
+  });
+}
+
+function guardWalk(base) {
+  return (t) => pose(wobble(base, t, 0.02), legCycle(t, 0.42, 0.8), { spine: [0, base.spine[1] * 0.7, -0.08] });
+}
+
+function bake(base, set) {
+  return {
+    idle: { frames: 8, fps: 7, loop: true, pose: (t) => wobble(base, t, 0.03) },
+    walk: { frames: 10, fps: 12, loop: true, pose: guardWalk(base) },
+    ...set,
+  };
+}
+
+export const ANAKIN_ANIMS = bake(GUARD, {
+  run: { frames: 12, fps: 18, loop: true, pose: (t) => runPose(t, [0.02, 0.98, 0.3, 2.5, -0.5]) },
+  attack1: { frames: 9, fps: 20, loop: false, hit: 5, pose: swing(GUARD, SLASH_A, SLASH_B, SLASH_C) },
+  attack2: { frames: 9, fps: 20, loop: false, hit: 5, pose: swing(GUARD, BACK_A, BACK_B, BACK_C) },
+  attack3: { frames: 9, fps: 18, loop: false, hit: 5, pose: swing(GUARD, OVER_A, OVER_B, OVER_C) },
+  cast: { frames: 8, fps: 18, loop: false, hit: 4, pose: swing(GUARD, CAST_A, CAST_B) },
+  throw: { frames: 8, fps: 20, loop: false, hit: 4, pose: swing(GUARD, THROW_A, THROW_B, pose(THROW_B, { sab: [0.45, 1.36, 0.16, 0, 0.2] })) },
+  leap: { frames: 8, fps: 12, loop: false, pose: keyframes([{ t: 0, p: LEAP_CROUCH }, { t: 0.3, p: LEAP_AIR }, { t: 0.7, p: LEAP_AIR }, { t: 1, p: OVER_B }], easeInOut) },
+  block: { frames: 4, fps: 8, loop: true, pose: (t) => wobble(BLOCK, t, 0.02) },
+  parry: { frames: 6, fps: 20, loop: false, hit: 2, pose: keyframes([{ t: 0, p: BLOCK }, { t: 0.35, p: PARRY }, { t: 1, p: GUARD }], easeInOut) },
+  hurt: { frames: 6, fps: 14, loop: false, pose: keyframes([{ t: 0, p: GUARD }, { t: 0.3, p: HURT }, { t: 1, p: GUARD }], easeInOut) },
+  lock: { frames: 4, fps: 10, loop: true, pose: (t) => wobble(LOCK, t, 0.04) },
+  death: { frames: 8, fps: 9, loop: false, pose: keyframes([{ t: 0, p: GUARD }, { t: 0.35, p: FALLING }, { t: 0.36, p: pose(DEAD, { pelvisY: -0.4, spine: [0, 0.2, 0.6] }) }, { t: 1, p: DEAD }], easeInOut) },
+});
+
+// ----------------------------------------------------------------------------
+// Anakin with Obi-Wan's saber in the left hand (Geonosis duel, phase 2).
+
+const GUARD2 = pose(STANCE, {
+  spine: [0, 0.2, -0.05],
+  chest: [0, 0.08, -0.04],
+  head: [0, -0.3, 0],
+  sab: [0.25, 1.2, 0.14, 0.3, 1.2],
+  sab2: [0.27, 0.98, -0.22, -0.5, 0.15],
+});
+const D_SLASH_A = pose(SLASH_A, { two: 0, sab2: [-0.05, 1.0, -0.3, -2.6, -0.3] });
+const D_SLASH_B = pose(SLASH_B, { two: 0, sab2: [0.05, 1.0, -0.33, -2.4, -0.4] });
+const D_SLASH_C = pose(SLASH_C, { two: 0, sab2: [0.1, 0.98, -0.36, -2.6, -0.45] });
+const D_LEFT_A = pose(GUARD2, {
+  spine: [0, 0.55, -0.04],
+  chest: [0, 0.4, -0.04],
+  head: [0, -0.6, 0],
+  sab: [0.0, 1.45, 0.33, 2.4, 0.9],
+  sab2: [0.05, 1.4, -0.38, -2.3, 0.6],
+});
+const D_LEFT_B = pose(D_LEFT_A, LUNGE, {
+  spine: [0, -0.3, -0.16],
+  chest: [0, -0.4, -0.1],
+  head: [0, 0.3, 0],
+  sab2: [0.5, 1.15, -0.04, 0, 0.05],
+});
+const D_LEFT_C = pose(D_LEFT_B, {
+  spine: [0, -0.55, -0.12],
+  chest: [0, -0.55, -0.08],
+  sab2: [0.25, 1.05, 0.33, 2.0, -0.25],
+  poleL: [-0.2, -1, 0.2],
+});
+const D_X_A = pose(GUARD2, {
+  spine: [0, 0.05, 0.14],
+  chest: [0, 0, 0.1],
+  head: [0, -0.15, -0.1],
+  sab: [0.04, 1.8, 0.14, 0.3, 2.3],
+  sab2: [0.04, 1.8, -0.14, -0.3, 2.3],
+  poleR: [0.1, -0.3, 1],
+  poleL: [0.1, -0.3, -1],
+});
+const D_X_B = pose(D_X_A, LUNGE, {
+  spine: [0, 0.05, -0.36],
+  chest: [0, 0.03, -0.2],
+  head: [0, -0.1, 0.2],
+  sab: [0.52, 1.05, 0.1, -0.45, -0.4],
+  sab2: [0.52, 1.05, -0.1, 0.45, -0.4],
+});
+const D_X_C = pose(D_X_B, { sab: [0.48, 0.92, -0.05, -0.8, -0.7], sab2: [0.48, 0.92, 0.05, 0.8, -0.7] });
+const BLOCK2 = pose(STANCE, {
+  spine: [0, 0.1, 0.02],
+  chest: [0, 0.05, 0],
+  head: [0, -0.2, 0.06],
+  sab: [0.38, 1.3, 0.14, -0.9, 0.9],
+  sab2: [0.38, 1.3, -0.14, 0.9, 0.9],
+  poleR: [-0.1, -1, 1],
+  poleL: [-0.1, -1, -1],
+});
+const PARRY2 = pose(BLOCK2, { sab: [0.42, 1.44, 0.25, 0.9, 1.05], spine: [0, -0.15, 0.04] });
+const HURT2 = pose(HURT, { sab2: [0.05, 1.05, -0.38, -2.0, 0.2] });
+const LOCK2 = pose(LOCK, { two: 0, sab2: [0.1, 1.0, -0.35, -2.4, -0.3] });
+const CAST2_A = pose(CAST_A, { sab2: [-0.05, 1.0, -0.33, -2.7, -0.35] });
+const CAST2_B = pose(CAST_B, { sab2: [0.5, 1.25, -0.1, -0.2, 0.4] });
+
+export const ANAKIN_DUAL_ANIMS = bake(GUARD2, {
+  run: { frames: 12, fps: 18, loop: true, pose: (t) => runPose(t, [0.02, 0.98, 0.3, 2.5, -0.5], [0.02, 0.98, -0.3, -2.5, -0.5]) },
+  attack1: { frames: 9, fps: 22, loop: false, hit: 5, pose: swing(GUARD2, D_SLASH_A, D_SLASH_B, D_SLASH_C) },
+  attack2: { frames: 9, fps: 22, loop: false, hit: 5, pose: swing(GUARD2, D_LEFT_A, D_LEFT_B, D_LEFT_C) },
+  attack3: { frames: 9, fps: 18, loop: false, hit: 5, pose: swing(GUARD2, D_X_A, D_X_B, D_X_C) },
+  cast: { frames: 8, fps: 18, loop: false, hit: 4, pose: swing(GUARD2, CAST2_A, CAST2_B) },
+  block: { frames: 4, fps: 8, loop: true, pose: (t) => wobble(BLOCK2, t, 0.02) },
+  parry: { frames: 6, fps: 20, loop: false, hit: 2, pose: keyframes([{ t: 0, p: BLOCK2 }, { t: 0.35, p: PARRY2 }, { t: 1, p: GUARD2 }], easeInOut) },
+  hurt: { frames: 6, fps: 14, loop: false, pose: keyframes([{ t: 0, p: GUARD2 }, { t: 0.3, p: HURT2 }, { t: 1, p: GUARD2 }], easeInOut) },
+  lock: { frames: 4, fps: 10, loop: true, pose: (t) => wobble(LOCK2, t, 0.04) },
+  death: ANAKIN_ANIMS.death,
+});
+
+// ----------------------------------------------------------------------------
+// Count Dooku — Makashi: upright side-on stance, one hand on the curved hilt,
+// blade levelled at the opponent, free hand tucked behind the back.
+
+const D_STANCE = {
+  pelvisY: -0.02,
+  hipL: [0.08, 0, 0.36],
+  knL: [0, 0, -0.22],
+  anL: [0, 0, 0.0],
+  hipR: [-0.06, 0, -0.3],
+  knR: [0, 0, -0.12],
+  anR: [0, 0, 0.28],
 };
+const MAKASHI = pose(D_STANCE, {
+  spine: [0, 0.6, 0.02],
+  chest: [0, 0.18, 0.02],
+  head: [0, -0.72, 0.02],
+  sab: [0.44, 1.16, 0.1, -0.12, 0.28],
+  two: 0,
+  poleR: [-0.6, -1, 0.5],
+  shL: [0.15, 0, -0.55],
+  elL: [0, 0, 1.7],
+  haL: [0, 0, 0.3],
+});
+const DK_LUNGE_A = pose(MAKASHI, { spine: [0, 0.65, 0.06], sab: [0.12, 1.28, 0.26, 0.0, 0.35] });
+const DK_LUNGE_B = pose(MAKASHI, {
+  pelvisY: -0.16,
+  bodyX: 0.22,
+  spine: [0, 0.55, -0.18],
+  head: [0, -0.62, 0.1],
+  hipL: [0.08, 0, 1.0],
+  knL: [0, 0, -0.95],
+  hipR: [-0.06, 0, -0.75],
+  knR: [0, 0, -0.1],
+  anR: [0, 0, 0.5],
+  sab: [0.78, 1.1, 0.04, -0.05, 0.02],
+  shL: [0.6, 0, -1.0],
+  elL: [0, 0, 0.3],
+});
+const DK_FLICK_A = pose(MAKASHI, { spine: [0, 0.3, 0.05], sab: [0.26, 1.58, 0.3, 0.6, 1.5], poleR: [0, -0.5, 1] });
+const DK_FLICK_B = pose(MAKASHI, { spine: [0, 0.7, -0.12], bodyX: 0.1, hipL: [0.08, 0, 0.7], knL: [0, 0, -0.6], sab: [0.58, 1.0, -0.12, -0.6, -0.4] });
+const DK_FLICK_C = pose(DK_FLICK_B, { sab: [0.36, 0.95, -0.3, -1.4, -0.6] });
+const DK_BACK_A = pose(MAKASHI, { spine: [0, 0.9, 0.0], chest: [0, 0.4, 0], sab: [0.2, 1.3, -0.3, -2.0, 0.4] });
+const DK_BACK_B = pose(MAKASHI, { spine: [0, 0.2, -0.12], chest: [0, -0.1, 0], bodyX: 0.1, hipL: [0.08, 0, 0.7], knL: [0, 0, -0.6], sab: [0.56, 1.2, 0.05, 0.0, 0.1] });
+const DK_BACK_C = pose(DK_BACK_B, { spine: [0, -0.1, -0.1], chest: [0, -0.3, 0], sab: [0.3, 1.15, 0.36, 1.9, 0.0] });
+const DK_BLOCK = pose(D_STANCE, {
+  spine: [0, 0.5, 0.02],
+  chest: [0, 0.1, 0],
+  head: [0, -0.6, 0.04],
+  sab: [0.4, 1.42, 0.05, -1.4, 0.4],
+  two: 0,
+  poleR: [-0.2, -1, 1],
+  shL: [0.15, 0, -0.55],
+  elL: [0, 0, 1.7],
+});
+const DK_PARRY = pose(DK_BLOCK, { sab: [0.42, 1.45, 0.2, 0.8, 1.1] });
+const DK_HURT = pose(MAKASHI, {
+  spine: [0, 0.4, 0.3],
+  chest: [0, 0.1, 0.1],
+  head: [0, -0.4, -0.25],
+  sab: [0.1, 1.2, 0.42, 1.8, 0.5],
+  shL: [-0.9, 0, 0.4],
+  elL: [0, 0, 0.5],
+});
+const DK_LOCK = pose(D_STANCE, LUNGE, {
+  spine: [0, 0.2, -0.24],
+  chest: [0, 0.05, -0.1],
+  head: [0, -0.2, 0.1],
+  sab: [0.42, 1.32, 0.0, 0.12, 1.0],
+  two: 1,
+});
+// Force lightning: saber drawn back, left hand clawed forward.
+const DK_CAST = pose(MAKASHI, {
+  spine: [0, -0.1, -0.06],
+  chest: [0, -0.2, -0.04],
+  head: [0, 0.0, 0.05],
+  hipL: [0.08, 0, 0.6],
+  knL: [0, 0, -0.5],
+  sab: [-0.02, 1.0, 0.33, 2.6, -0.45],
+  shL: [-0.05, 0, 1.5],
+  elL: [0, 0, 0.1],
+  haL: [0, 0, 0.6],
+});
+const DK_KNEEL = pose(MAKASHI, {
+  fk: 1,
+  pelvisY: -0.42,
+  spine: [0, 0.1, -0.3],
+  chest: [0, 0, -0.2],
+  head: [0, -0.1, 0.4],
+  hipL: [0, 0, 1.4],
+  knL: [0, 0, -1.4],
+  anL: [0, 0, 0.0],
+  hipR: [0, 0, -0.15],
+  knR: [0, 0, -1.9],
+  anR: [0, 0, 0.6],
+  shR: [0, 0, 0.3],
+  elR: [0, 0, 0.3],
+  shL: [0, 0, 0.6],
+  elL: [0, 0, 0.6],
+  hide: ['saber'],
+});
+
+export const DOOKU_ANIMS = bake(MAKASHI, {
+  idle: { frames: 8, fps: 6, loop: true, pose: (t) => pose(wobble(MAKASHI, t, 0.02), { sab: [0.44 + sin(t * TAU) * 0.02, 1.16, 0.1, -0.12 + Math.cos(t * TAU) * 0.08, 0.28 + sin(t * TAU) * 0.06] }) },
+  attack1: { frames: 9, fps: 18, loop: false, hit: 5, pose: swing(MAKASHI, DK_LUNGE_A, DK_LUNGE_B) },
+  attack2: { frames: 9, fps: 18, loop: false, hit: 5, pose: swing(MAKASHI, DK_FLICK_A, DK_FLICK_B, DK_FLICK_C) },
+  attack3: { frames: 9, fps: 18, loop: false, hit: 5, pose: swing(MAKASHI, DK_BACK_A, DK_BACK_B, DK_BACK_C) },
+  cast: { frames: 4, fps: 10, loop: true, pose: (t) => pose(DK_CAST, { haL: [0, sin(t * TAU) * 0.2, 0.6], elL: [0, 0, 0.1 + sin(t * TAU * 2) * 0.05] }) },
+  block: { frames: 4, fps: 8, loop: true, pose: (t) => wobble(DK_BLOCK, t, 0.02) },
+  parry: { frames: 6, fps: 20, loop: false, hit: 2, pose: keyframes([{ t: 0, p: DK_BLOCK }, { t: 0.35, p: DK_PARRY }, { t: 1, p: MAKASHI }], easeInOut) },
+  hurt: { frames: 6, fps: 14, loop: false, pose: keyframes([{ t: 0, p: MAKASHI }, { t: 0.3, p: DK_HURT }, { t: 1, p: MAKASHI }], easeInOut) },
+  lock: { frames: 4, fps: 10, loop: true, pose: (t) => wobble(DK_LOCK, t, 0.04) },
+  death: { frames: 7, fps: 8, loop: false, pose: keyframes([{ t: 0, p: pose(DK_HURT, { fk: 1, hide: ['saber'] }) }, { t: 1, p: DK_KNEEL }], easeInOut) },
+});
 
 // ----------------------------------------------------------------------------
 // Soldiers (clones, droids): rifle carried at the chest.
@@ -340,3 +566,51 @@ export const R2_ANIMS = {
   idle: { frames: 4, fps: 3, loop: true, pose: (t) => ({ dome: sin(t * TAU) * 0.8 }) },
   walk: { frames: 4, fps: 10, loop: true, pose: (t) => ({ tilt: -0.08, bob: Math.abs(sin(t * TAU)) * 0.02, dome: 0 }) },
 };
+
+// ----------------------------------------------------------------------------
+// Friendly NPCs (base camp): relaxed idle, walk, talking gesture.
+
+const NPC_REST = {
+  shR: [-0.12, 0, 0.08],
+  elR: [0, 0, 0.3],
+  shL: [0.12, 0, 0.08],
+  elL: [0, 0, 0.3],
+};
+function npcSet({ rest = NPC_REST, down = null } = {}) {
+  const idle = (t) => pose(rest, { pelvisY: sin(t * TAU) * 0.006, chest: [0, 0, sin(t * TAU) * 0.015], head: [0, sin(t * TAU) * 0.12, 0] });
+  const walk = (t) => {
+    const s = sin(t * TAU);
+    return pose(rest, legCycle(t, 0.5, 0.85), { spine: [0, 0, -0.06], chest: [0, -s * 0.08, 0], shR: [-0.1, 0, -s * 0.45], shL: [0.1, 0, s * 0.45], elR: [0, 0, 0.35], elL: [0, 0, 0.35] });
+  };
+  const talk = (t) => {
+    const s = sin(t * TAU);
+    return pose(rest, { chest: [0, 0.1 + s * 0.05, 0], head: [0, -0.1 + s * 0.08, 0.04 * s], shR: [-0.2, 0, 0.75 + s * 0.15], elR: [0, 0, 1.0 - s * 0.2], haR: [0, 0, 0.4] });
+  };
+  const set = {
+    idle: { frames: 6, fps: 5, loop: true, pose: idle },
+    walk: { frames: 8, fps: 11, loop: true, pose: walk },
+    talk: { frames: 6, fps: 6, loop: true, pose: talk },
+  };
+  if (down) set.down = { frames: 4, fps: 3, loop: true, pose: (t) => pose(down, { chest: [down.chest[0], down.chest[1], down.chest[2] + sin(t * TAU) * 0.03] }) };
+  return set;
+}
+
+// Obi-Wan wounded on the hangar floor, propped on one arm.
+const OBI_DOWN = {
+  pelvisY: -0.82,
+  spine: [0, 0, 0.75],
+  chest: [0, 0.1, 0.25],
+  head: [0, 0.3, -0.5],
+  hipL: [0.1, 0, 1.4],
+  knL: [0, 0, -0.9],
+  hipR: [-0.1, 0, 1.2],
+  knR: [0, 0, -0.3],
+  shL: [0.4, 0, -0.4],
+  elL: [0, 0, 0.4],
+  shR: [-0.3, 0, 0.7],
+  elR: [0, 0, 0.8],
+};
+
+export const OBIWAN_ANIMS = npcSet({ rest: pose(NPC_REST, { shR: [-0.1, 0, 0.5], elR: [0, 0, 1.6], haR: [0, 0, 0.5] }), down: OBI_DOWN });
+export const AHSOKA_ANIMS = npcSet({ rest: pose(NPC_REST, { shR: [-0.3, 0, -0.1], elR: [0, 0, 0.9], shL: [0.3, 0, -0.1], elL: [0, 0, 0.9], spine: [0, 0.15, 0], head: [0, -0.15, 0] }) });
+export const NPC_CLONE_ANIMS = npcSet({ rest: { shR: [0.15, 0, 0.3], elR: [0, 0, 1.2], wpn: [0, 0, -1.2], shL: [-0.45, 0.2, 0.75], elL: [0, 0, 0.95] } });

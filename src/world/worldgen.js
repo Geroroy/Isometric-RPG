@@ -16,6 +16,7 @@ export const BIOME = {
   RUIN: 4,
   BASE: 5,
   GRASS: 6,
+  HANGAR: 7,
 };
 
 export const BIOME_NAMES = {
@@ -26,6 +27,7 @@ export const BIOME_NAMES = {
   4: '고대 도시 폐허',
   5: '공화국 전진 기지',
   6: '마른 초원',
+  7: '지오노시스 · 비밀 격납고',
 };
 
 export const BASE_POS = { x: 150, y: 152 };
@@ -371,5 +373,48 @@ export class World {
     const b1 = opts.b1 ?? 3 + Math.floor(level / 2) + (this.rng.chance(0.5) ? 1 : 0);
     const b2 = opts.b2 ?? (level >= 3 ? Math.floor((level - 1) / 2) : 0);
     return { x, y, level, b1, b2, radius: opts.radius ?? 4, boss: !!opts.boss, alive: [], cleared: false, respawnAt: 0 };
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Movie Duel arena: Count Dooku's secret hangar on Geonosis — a round rock
+// chamber with paved floor, Geonosian pillars and green work lights.
+
+export const ARENA = { x: 96, y: 96, r: 10.5 };
+
+export class Arena extends World {
+  generate() {
+    this.rng = new RNG(this.seed);
+    const { x: cx, y: cy, r } = ARENA;
+    this.ambient = [104, 118, 104];
+    this.pois.push({ x: cx, y: cy, r: 30, name: BIOME_NAMES[BIOME.HANGAR] });
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        const d = dist(x + 0.5, y + 0.5, cx, cy) + (fbm(x / 4, y / 4, 7) - 0.5) * 1.5;
+        const i = y * MAP_W + x;
+        this.biome[i] = d < r + 0.8 ? BIOME.HANGAR : BIOME.ROCK;
+        if (d > r) this.blocked[i] = 2;
+        this.explored[i] = 1;
+      }
+    }
+    // rock walls around the floor
+    for (let i = 0; i < 34; i++) {
+      const a = (i / 34) * Math.PI * 2;
+      this.addProp('cliff', cx + Math.cos(a) * (r + 1.4), cy + Math.sin(a) * (r + 1.4), { noBlock: true });
+    }
+    // pillars, crates and green floodlights at the edge
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + 0.2;
+      const px = cx + Math.cos(a) * (r - 1.2);
+      const py = cy + Math.sin(a) * (r - 1.2);
+      this.addProp('ruinPillar', px, py);
+      this.lights.push({ x: px, y: py, z: 2.6, r: 80, g: 255, b: 120, rad: 120, flicker: 0.05 });
+    }
+    this.addProp('sepCrate', cx - 7.5, cy + 4.5);
+    this.addProp('sepCrate', cx + 6.5, cy - 6);
+    this.addProp('sepCrate', cx + 7.2, cy - 5);
+    this.spawn = { x: cx - 3, y: cy + 3 };
+    this.roadSegs = [];
+    this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
   }
 }

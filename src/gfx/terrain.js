@@ -18,6 +18,7 @@ const PAL = {
   [BIOME.RUIN]: [146, 152, 164],
   [BIOME.BASE]: [138, 140, 138],
   [BIOME.GRASS]: [134, 132, 82],
+  [BIOME.HANGAR]: [150, 108, 74],
 };
 const ROAD = [128, 108, 84];
 const EDGE = [62, 57, 54];
@@ -44,7 +45,7 @@ export class Terrain {
         this.R[i] = c[0] + v;
         this.G[i] = c[1] + v;
         this.B[i] = c[2] + v * 0.9;
-        this.P[i] = b === BIOME.RUIN || b === BIOME.BASE ? 1 : 0;
+        this.P[i] = b === BIOME.RUIN || b === BIOME.BASE || b === BIOME.HANGAR ? 1 : 0;
         this.Bs[i] = b === BIOME.BASE ? 1 : 0;
         this.K[i] = b === BIOME.CRYSTAL ? 1 : 0;
         const rd = world.road[i];

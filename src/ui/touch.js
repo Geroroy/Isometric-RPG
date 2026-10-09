@@ -64,6 +64,7 @@ export class TouchControls {
     // action cluster
     const cluster = el('div', 't-cluster');
     this.attackBtn = el('div', 't-btn t-attack', `<img src="${iconURL('attack')}" alt=""><span>공격</span>`);
+    this.talkMode = false;
     cluster.appendChild(this.attackBtn);
     this.skillBtns = [];
     for (let i = 0; i < 6; i++) {
@@ -155,7 +156,8 @@ export class TouchControls {
     this.input.my = y;
     this.input.updateMouse();
     const t = g.hover && g.hover.team === 'cis' ? g.hover : null;
-    if (t) p.basicAttack(t);
+    if (g.hover && g.hover.npc) p.commandTalk(g.hover);
+    else if (t) p.basicAttack(t);
     else {
       const m = g.mouseWorld;
       p.commandMove(m.x, m.y);
@@ -171,8 +173,9 @@ export class TouchControls {
       e.preventDefault();
       this.audio.unlock();
       a.setPointerCapture(e.pointerId);
-      this.attackHeld = true;
       a.classList.add('down');
+      if (this.game.duel && this.game.duel.press()) return;
+      this.attackHeld = true;
     });
     const release = () => {
       this.attackHeld = false;
@@ -181,11 +184,32 @@ export class TouchControls {
     a.addEventListener('pointerup', release);
     a.addEventListener('pointercancel', release);
 
-    this.bactaBtn.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      this.audio.unlock();
-      this.game.useBacta();
-    });
+    const bb = this.bactaBtn;
+    if (this.game.duel) {
+      // no bacta in the duel: this button is the guard (hold)
+      bb.innerHTML = `<img src="${iconURL('shien')}" alt=""><span class="lv">막기</span>`;
+      bb.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        this.audio.unlock();
+        bb.setPointerCapture(e.pointerId);
+        bb.classList.add('down');
+        const g = this.game;
+        g.player.blocking = true;
+        g.player.blockT = g.time;
+      });
+      const off = () => {
+        bb.classList.remove('down');
+        this.game.player.blocking = false;
+      };
+      bb.addEventListener('pointerup', off);
+      bb.addEventListener('pointercancel', off);
+    } else {
+      bb.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        this.audio.unlock();
+        this.game.useBacta();
+      });
+    }
 
     for (const b of this.skillBtns) {
       const slot = +b.dataset.slot;
@@ -314,8 +338,19 @@ export class TouchControls {
       } else p.stopSteer();
     }
 
+    // the attack button becomes "talk" next to a friendly NPC
+    const npc = !this.nearestEnemy(7) ? g.nearestNpc(3) : null;
+    if (!!npc !== this.talkMode) {
+      this.talkMode = !!npc;
+      this.attackBtn.innerHTML = `<img src="${iconURL(npc ? 'talk' : 'attack')}" alt=""><span>${npc ? '대화' : '공격'}</span>`;
+    }
+
     // hold-to-attack
-    if (this.attackHeld && !p.dead && (!p.action || p.moving)) {
+    if (this.attackHeld && npc && !p.dead) {
+      this.attackHeld = false;
+      this.attackBtn.classList.remove('down');
+      p.commandTalk(npc);
+    } else if (this.attackHeld && !p.dead && (!p.action || p.moving)) {
       const t = this.nearestEnemy(7);
       if (t) p.basicAttack(t);
       else if (!p.action || p.moving) {
@@ -359,7 +394,7 @@ export class TouchControls {
       b.classList.toggle('nofp', !!id && p.force < cost);
       b.children[2].textContent = id ? p.skillLevel(id) : '';
     }
-    this.bactaBtn.lastChild.textContent = p.bacta;
+    if (!g.duel) this.bactaBtn.lastChild.textContent = p.bacta;
     this.menuBtns.skills.classList.toggle('glow', p.skillPoints > 0);
     this.menuBtns.character.classList.toggle('glow', p.attrPoints > 0);
   }

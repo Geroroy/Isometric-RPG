@@ -4,7 +4,8 @@ import '@fontsource/rajdhani/latin-500.css';
 import '@fontsource/rajdhani/latin-600.css';
 import '@fontsource/rajdhani/latin-700.css';
 import './style.css';
-import { bakeAssets } from './gfx/assets.js';
+import { bakeAssets, bakeDuelAssets } from './gfx/assets.js';
+import { DuelHUD } from './ui/duelHud.js';
 import { Game } from './game/game.js';
 import { Renderer } from './gfx/renderer.js';
 import { Portrait } from './gfx/portrait.js';
@@ -15,21 +16,53 @@ import { TouchControls, isTouchDevice } from './ui/touch.js';
 import { Fullscreen } from './ui/fullscreen.js';
 import { ZoomControl } from './ui/zoom.js';
 import { PortraitPhoto } from './ui/portraitPhoto.js';
+import { DialogueUI } from './ui/dialogue.js';
+import { startDialogue } from './game/dialogue.js';
 
 const loading = document.getElementById('loading');
 const bar = document.querySelector('#loading .bar div');
 const label = document.querySelector('#loading .label');
 
+const MODE = new URLSearchParams(location.search).get('mode') === 'duel' ? 'duel' : 'campaign';
+
+const DUEL_HELP = `
+  <div class="help-kicker">MOVIE DUEL · EPISODE II</div>
+  <h1 class="help-title">지오노시스의 결투</h1>
+  <div class="help-sub">두쿠 백작의 비밀 격납고 · 아나킨 vs 두쿠</div>
+  <p class="help-intro">오비완이 쓰러졌다. 탈출하려는 <b>두쿠 백작</b>을 막아설 수 있는 건 이제 아나킨뿐이다. 마카시의 달인을 상대로, 영화와는 다른 결말을 써 보십시오.</p>
+  <div class="help-grid desktop-only">
+    <div><kbd>좌클릭</kbd>공격 (두쿠를 클릭) · 이동</div>
+    <div><kbd>우클릭</kbd>누르고 있는 동안 막기</div>
+    <div><kbd>1</kbd>~<kbd>6</kbd>스킬 (포스 푸시 · 투척 등)</div>
+    <div><kbd>칼날 겨루기</kbd>좌클릭 / Space 연타</div>
+  </div>
+  <div class="help-grid touch-only">
+    <div><kbd>막기</kbd>누르고 있는 동안 막기</div>
+    <div><kbd>공격</kbd>두쿠 공격 · 칼날 겨루기 때 연타</div>
+    <div><kbd>스킬</kbd>탭하면 두쿠에게 사용</div>
+  </div>
+  <p class="help-tip">공격이 닿기 직전에 막으면 <b>완벽한 흘리기</b>: 두쿠가 비틀거립니다. 막을 때마다 평정이 줄고, 평정이 바닥나면 자세가 무너집니다. 두쿠도 마찬가지입니다.</p>
+  <div class="help-actions">
+    <button id="startBtn" type="button">결투 시작</button>
+    <a id="modeLink" class="mode-link" href="./"><span>CAMPAIGN</span>← 크리스토프시스 캠페인으로</a>
+  </div>`;
+
 async function boot() {
-  const assets = await bakeAssets((k, text) => {
+  if (MODE === 'duel') {
+    document.querySelector('#help .help-box').innerHTML = DUEL_HELP;
+    document.body.classList.add('duel');
+  }
+  const onProgress = (k, text) => {
     bar.style.width = Math.round(k * 100) + '%';
     label.textContent = text;
-  });
-  label.textContent = '크리스토프시스 외곽 지형 생성 중…';
+  };
+  const assets = await bakeAssets(onProgress);
+  if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress)).sprites);
+  label.textContent = MODE === 'duel' ? '지오노시스 격납고 준비 중…' : '크리스토프시스 외곽 지형 생성 중…';
   await new Promise((r) => setTimeout(r, 20));
 
   const audio = new Audio();
-  const game = new Game(assets, audio);
+  const game = new Game(assets, audio, MODE);
   const canvas = document.getElementById('world');
   const overlay = document.getElementById('overlay');
   const renderer = new Renderer(game, assets, canvas, overlay);
@@ -37,7 +70,10 @@ async function boot() {
   const photo = new PortraitPhoto(portrait);
   await photo.init();
   const hud = new HUD(game, renderer, portrait, audio, photo);
+  const dialogue = new DialogueUI(game, audio, startDialogue);
   const input = new Input(game, renderer, hud, audio, canvas);
+  input.dialogue = dialogue;
+  const duelHud = game.duel ? new DuelHUD(game) : null;
   const touch = new TouchControls(game, renderer, hud, input, audio);
   const fullscreen = new Fullscreen();
   input.onFullscreen = () => fullscreen.toggle();
@@ -70,12 +106,14 @@ async function boot() {
     if (touch.enabled) fullscreen.enter();
     audio.play('ignite');
     // let a user sound bank finish loading so the opening line can be voiced
-    Promise.race([audio.bankReady, new Promise((r) => setTimeout(r, 1500))]).then(() => game.say('intro'));
+    if (game.duel) game.duel.start();
+    else Promise.race([audio.bankReady, new Promise((r) => setTimeout(r, 1500))]).then(() => game.say('intro'));
   };
 
   window.__game = game; // handy for debugging in the console
   window.__renderer = renderer;
   window.__hud = hud;
+  window.__dialogue = dialogue;
   let last = performance.now();
   const loop = (now) => {
     const dt = Math.min(0.05, (now - last) / 1000);
@@ -83,10 +121,12 @@ async function boot() {
     input.update(dt);
     touch.update(dt);
     // menus pause the action (the map does not)
-    const paused = !help.classList.contains('hidden') || hud.open.tree || hud.open.char || hud.open.settings;
+    const paused = !help.classList.contains('hidden') || hud.open.tree || hud.open.char || hud.open.settings || dialogue.isOpen;
     if (!paused) game.update(dt);
     renderer.render(dt);
     hud.update(dt);
+    dialogue.update(dt);
+    if (duelHud) duelHud.update(dt);
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);

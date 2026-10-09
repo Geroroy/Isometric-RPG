@@ -1,22 +1,16 @@
 // Developer page: bakes sprites and dumps every frame for visual inspection.
 import { Baker } from './gfx/baker.js';
-import * as M from './gfx/models/characters.js';
-import * as A from './gfx/models/anims.js';
+import { CHARACTERS, DUEL_CHARACTERS } from './gfx/assets.js';
 
 const params = new URLSearchParams(location.search);
 const which = params.get('m') || 'anakin';
 const scale = +(params.get('s') || 3);
 const dirsShown = (params.get('dirs') || '0,2,4,6,8,10,12,14').split(',').map(Number);
-const specs = {
-  anakin: () => ({ model: M.buildAnakin(), dirs: 16, frame: [160, 150, 80, 115], anims: A.ANAKIN_ANIMS, markers: ['saberBase', 'saberTip'] }),
-  clone: () => ({ model: M.buildClone(), dirs: 8, frame: [120, 110, 60, 90], anims: A.CLONE_ANIMS, markers: ['muzzle'] }),
-  rex: () => ({ model: M.buildClone({ rex: true }), dirs: 8, frame: [120, 110, 60, 90], anims: A.REX_ANIMS, markers: ['muzzle'] }),
-  b1: () => ({ model: M.buildB1(), dirs: 8, frame: [120, 110, 60, 90], anims: A.B1_ANIMS, markers: ['muzzle'] }),
-  b2: () => ({ model: M.buildB2(), dirs: 8, frame: [130, 120, 65, 100], anims: A.B2_ANIMS, markers: ['muzzleR'] }),
-  r2: () => ({ model: M.buildR2(), dirs: 8, frame: [60, 60, 30, 45], anims: A.R2_ANIMS, markers: [] }),
-};
+const specs = { ...CHARACTERS, ...DUEL_CHARACTERS };
 const baker = new Baker();
 const spec = specs[which]();
+if (params.has('ss')) spec.ss = +params.get('ss');
+if (params.has('noblades')) spec.markers = [];
 const gen = baker.bakeAnimated(spec);
 let r;
 const t0 = performance.now();
@@ -26,8 +20,10 @@ const out = document.getElementById('out');
 const info = document.createElement('div');
 info.textContent = `${which} baked in ${(performance.now() - t0).toFixed(0)}ms`;
 out.appendChild(info);
+const only = params.get('only')?.split(',');
 for (const [name, anim] of Object.entries(res.anims)) {
-  const cw = 80, ch = 80;
+  if (only && !only.includes(name)) continue;
+  const cw = 90, ch = 90;
   const c = document.createElement('canvas');
   c.width = cw * anim.frames;
   c.height = ch * dirsShown.length;
@@ -45,10 +41,17 @@ for (const [name, anim] of Object.entries(res.anims)) {
       g.strokeStyle = '#ff0'; g.beginPath(); g.moveTo(ax, ay);
       g.lineTo(ax + (Math.cos(ang) - Math.sin(ang)) * 14, ay + (Math.cos(ang) + Math.sin(ang)) * 7); g.stroke();
       g.drawImage(fr.page, fr.sx, fr.sy, fr.w, fr.h, ax - fr.ox, ay - fr.oy, fr.w, fr.h);
-      for (const m of Object.values(fr.markers)) { g.fillStyle = '#0ff'; g.fillRect(ax + m[0], ay + m[1], 1, 1); }
-      if (fr.markers.saberTip) {
-        g.fillStyle = '#f0f';
-        g.fillRect(ax + fr.markers.saberTip[0], ay + fr.markers.saberTip[1], 1, 1);
+      // visible blade stretches (what the renderer will glow)
+      for (const k of ['saber', 'saber2']) {
+        const b = fr.markers[k + 'Base'], t = fr.markers[k + 'Tip'];
+        if (!b || !t || !fr.blades) continue;
+        g.strokeStyle = params.has('glow') ? 'rgba(255,0,255,0.8)' : 'rgba(0,0,0,0)';
+        for (const [s0, s1] of fr.blades[k] || []) {
+          g.beginPath();
+          g.moveTo(ax + b[0] + (t[0] - b[0]) * s0, ay + b[1] + (t[1] - b[1]) * s0);
+          g.lineTo(ax + b[0] + (t[0] - b[0]) * s1, ay + b[1] + (t[1] - b[1]) * s1);
+          g.stroke();
+        }
       }
     }
   });

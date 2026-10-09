@@ -1994,3 +1994,422 @@ body.overlay-open .touch-ui {
     animation: none;
   }
 }
+
+/* ------------------------------------------------------------------ dialogue */
+.objectives li.ob-quest i {
+  border-color: var(--gold);
+}
+.objectives li.ob-quest.ready {
+  color: var(--gold);
+}
+.dialogue {
+  position: fixed;
+  left: 50%;
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  width: min(720px, calc(100vw - 32px));
+  padding: 16px 20px 14px;
+  background: linear-gradient(180deg, rgba(7, 10, 15, 0.6), var(--glass-strong));
+  border-top: 1px solid var(--line-strong);
+  clip-path: var(--cut);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 30;
+}
+.dialogue.hidden {
+  display: none;
+}
+.dl-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.dl-name {
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--gold);
+}
+.dl-title {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.dl-cr {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-tech);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--gold);
+}
+.dl-cr img {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+}
+.dl-text {
+  min-height: 3.2em;
+  margin: 8px 0 10px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: #fff;
+  cursor: pointer;
+}
+.dl-choices {
+  display: grid;
+  gap: 4px;
+  opacity: 0.35;
+  transition: opacity 0.2s;
+}
+.dl-choices.show {
+  opacity: 1;
+}
+.dl-choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px;
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.04);
+  border: 0;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+}
+.dl-choice:hover,
+.dl-choice:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+  border-left-color: var(--gold);
+  outline: none;
+}
+.dl-choice kbd {
+  flex: none;
+  min-width: 20px;
+  font-family: var(--font-tech);
+  font-weight: 700;
+  color: var(--ink-dim);
+}
+.dl-choice.quest {
+  color: var(--gold);
+}
+.dl-choice.dim {
+  color: var(--ink-faint);
+}
+body.talking .abilities,
+body.talking .hud-status,
+body.talking .touch-ui,
+body.talking .subtitle {
+  visibility: hidden;
+}
+body.touch .dialogue {
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+}
+body.touch .dl-text {
+  font-size: 15px;
+  min-height: 2.6em;
+}
+body.touch .dl-choice {
+  min-height: 40px;
+}
+
+/* ------------------------------------------------------------------ title mode link */
+.help-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 22px;
+}
+.mode-link {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 2px;
+  font-size: 14px;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line-strong);
+}
+.mode-link span {
+  font-family: var(--font-tech);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: #ff7a6a;
+}
+.mode-link:hover {
+  border-bottom-color: #ff7a6a;
+}
+
+/* ------------------------------------------------------------------ movie duel */
+body.duel .radar,
+body.duel .objectives,
+body.duel .stims,
+body.duel .xp-line,
+body.duel .dark-meter,
+body.duel .ab-menu [data-open='tree'],
+body.duel .ab-menu [data-open='char'],
+body.duel .ab-menu [data-open='map'],
+body.duel .t-menu .t-mbtn:not(:last-child) {
+  display: none;
+}
+.boss-bar {
+  display: none;
+}
+body.duel .boss-bar {
+  display: block;
+  position: fixed;
+  top: calc(18px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, 60vw);
+  text-align: center;
+  pointer-events: none !important;
+}
+body.duel .target-info {
+  display: none;
+}
+.bb-name {
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 4px #000;
+}
+.bb-name span {
+  margin-left: 8px;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.bb-hp {
+  position: relative;
+  height: 8px;
+  margin-top: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  transform: skewX(-20deg);
+}
+.bb-hp i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+}
+.bb-chip {
+  background: #f2e2d2;
+}
+.bb-fill {
+  background: linear-gradient(90deg, #a5201b, #e2483d);
+}
+.bb-hp b {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.7);
+}
+.bb-comp {
+  height: 3px;
+  margin: 4px auto 0;
+  width: 70%;
+  background: rgba(0, 0, 0, 0.5);
+}
+.bb-comp i {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+  transition: width 0.15s;
+}
+.bb-comp.broken i {
+  background: #ff7a5a;
+}
+.ps-comp {
+  display: none;
+}
+body.duel .ps-comp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--gold);
+}
+.ps-comp div {
+  flex: 1;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.5);
+}
+.ps-comp i {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+  transition: width 0.15s;
+}
+.ps-comp.low i {
+  background: #ff7a5a;
+}
+.lock-meter {
+  position: fixed;
+  left: 50%;
+  top: 28%;
+  transform: translateX(-50%);
+  width: min(380px, 70vw);
+  text-align: center;
+  pointer-events: none !important;
+  text-shadow: 0 1px 4px #000;
+}
+.lock-meter.hidden {
+  display: none;
+}
+.lm-label {
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.1em;
+}
+.lm-bar {
+  position: relative;
+  height: 10px;
+  margin: 8px 0 6px;
+  background: linear-gradient(90deg, rgba(226, 72, 61, 0.7), rgba(226, 72, 61, 0.7) 50%, rgba(92, 200, 255, 0.3) 50%);
+  transform: skewX(-20deg);
+}
+.lm-bar i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--force);
+  box-shadow: 0 0 12px var(--force);
+}
+.lm-hint {
+  font-size: 13px;
+  color: var(--gold);
+  animation: lmPulse 0.5s infinite alternate;
+}
+@keyframes lmPulse {
+  to {
+    opacity: 0.5;
+  }
+}
+.letterbox i {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: #000;
+  transition: height 0.5s;
+  pointer-events: none;
+  z-index: 20;
+}
+.letterbox i:first-child {
+  top: 0;
+}
+.letterbox i:last-child {
+  bottom: 0;
+}
+body.cine .letterbox i {
+  height: 9vh;
+}
+body.cine .abilities,
+body.cine .touch-ui {
+  opacity: 0;
+  pointer-events: none;
+}
+body.cine .subtitle {
+  bottom: calc(9vh + 18px);
+}
+.duel-result {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px max(24px, 8vw);
+  background: linear-gradient(90deg, rgba(3, 5, 8, 0.94), rgba(3, 5, 8, 0.7) 60%, rgba(3, 5, 8, 0.35));
+  backdrop-filter: blur(3px);
+}
+.duel-result.hidden {
+  display: none;
+}
+.dr-kicker {
+  font-family: var(--font-tech);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: #ff7a6a;
+}
+.dr-title {
+  margin: 4px 0 8px;
+  font-size: 44px;
+  font-weight: 800;
+}
+.dr-epi {
+  max-width: 560px;
+  margin: 0 0 18px;
+  line-height: 1.6;
+  color: var(--ink-dim);
+}
+.dr-rank {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.dr-rank span {
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+.dr-rank b {
+  font-family: var(--font-tech);
+  font-size: 64px;
+  line-height: 1;
+  color: var(--gold);
+}
+.dr-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 200px));
+  gap: 6px 24px;
+  margin-bottom: 22px;
+}
+.dr-stats div {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding: 4px 0;
+  font-size: 14px;
+}
+.dr-stats b {
+  font-family: var(--font-tech);
+  font-size: 16px;
+}
+.dr-actions {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.dr-actions button {
+  padding: 11px 30px;
+  font: inherit;
+  font-weight: 600;
+  color: #06121a;
+  background: #f3f5f7;
+  border: 0;
+  clip-path: var(--cut);
+  cursor: pointer;
+}
+.dr-actions a {
+  color: var(--ink);
+}
+body.touch.duel .boss-bar {
+  left: 310px;
+  right: 230px;
+  width: auto;
+  transform: none;
+}
+body.touch .bb-name span {
+  display: none;
+}

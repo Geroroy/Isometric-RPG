@@ -77,3 +77,14 @@ export function marker(name, x = 0, y = 0, z = 0) {
   o.position.set(x, y, z);
   return o;
 }
+
+/** Open cylinder sector (skirts, tabards, curved plates). theta 0 = +Z, π/2 = +X. */
+export function sector(rTop, rBot, h, t0, t1, material, x = 0, y = 0, z = 0, seg = 6) {
+  const geo = new THREE.CylinderGeometry(rTop, rBot, h, seg, 1, true, t0, t1 - t0);
+  return place(new THREE.Mesh(geo, material), x, y, z);
+}
+
+/** Two-sided variant of `mat` for thin cloth. */
+export function cloth(color) {
+  return mat(color, { side: THREE.DoubleSide });
+}

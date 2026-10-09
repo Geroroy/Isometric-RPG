@@ -31,7 +31,7 @@ export const SKILLS = {
       p.startMelee(target, [
         { anim: 'attack1', speed: 1.7, mult: m },
         { anim: 'attack2', speed: 1.8, mult: m },
-        { anim: 'attack1', speed: 1.7, mult: m * 1.2 },
+        { anim: 'attack3', speed: 1.7, mult: m * 1.2 },
       ]);
       return true;
     },
@@ -64,7 +64,7 @@ export const SKILLS = {
       const stun = this.stun(l);
       p.startMelee(target, [
         {
-          anim: 'attack2', speed: 1.1, mult: m, stun,
+          anim: 'attack3', speed: 1.1, mult: m, stun,
           onHit: (t) => {
             game.fx.shockwave(t.x, t.y, 1.8, '#9fd0ff', 0.35);
             game.fx.shake(4);

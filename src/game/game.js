@@ -6,14 +6,19 @@ import { Player, Soldier, R2Unit } from './units.js';
 import { SKILLS } from './skills.js';
 import { dist, rand, chance, angleDiff } from '../core/math.js';
 import { LINES } from './lines.js';
+import { NPC, NPC_DEFS, TALK_RANGE } from './npc.js';
+import { QuestLog } from './quests.js';
+import { BASE_POS, Arena, ARENA } from '../world/worldgen.js';
+import { Duel } from './duel.js';
 
 const ELITE_NAMES = ['OOM 지휘관 드로이드', '전투 드로이드 분대장', '전술 사령 드로이드 T-7', '돌격 지휘 드로이드'];
 
 export class Game {
-  constructor(assets, audio) {
+  constructor(assets, audio, mode = 'campaign') {
     this.assets = assets;
     this.audio = audio;
-    this.world = new World(501);
+    this.mode = mode;
+    this.world = mode === 'duel' ? new Arena(77) : new World(501);
     this.pathfinder = new PathFinder(this.world);
     this.fx = new Effects();
     this.units = [];
@@ -34,11 +39,55 @@ export class Game {
     this.player = new Player(this, sp.x, sp.y);
     this.units.push(this.player);
     this.audio.listener = this.player;
+    this.quests = new QuestLog(this);
+    this.talkingTo = null;
+    if (mode === 'duel') {
+      // Obi-Wan lies wounded by the wall, as in the film
+      const ob = new NPC(this, 'obiwan', ARENA.x - 4.5, ARENA.y - 4.5);
+      ob.restAnim = 'down';
+      ob.npc = false;
+      this.units.push(ob);
+      this.duel = new Duel(this);
+      this.updateActive();
+      return;
+    }
     for (const gd of this.world.guards) {
       this.units.push(new Soldier(this, 'guard', gd.x, gd.y, { facing: gd.facing }));
     }
     for (const camp of this.world.camps) this.spawnCamp(camp);
+    // the small camp just west of the base is the tutorial target
+    const tut = this.world.camps.filter((c) => !c.boss).sort((a, b) => dist(a.x, a.y, BASE_POS.x, BASE_POS.y) - dist(b.x, b.y, BASE_POS.x, BASE_POS.y))[0];
+    if (tut) tut.tutorial = true;
+    for (const [id, d] of Object.entries(NPC_DEFS)) {
+      const f = this.pathfinder.nearestFree(Math.floor(BASE_POS.x + d.pos[0]), Math.floor(BASE_POS.y + d.pos[1]), 4);
+      this.units.push(new NPC(this, id, f[0] + 0.5, f[1] + 0.5));
+    }
     this.updateActive();
+  }
+
+  nearestNpc(range = TALK_RANGE) {
+    const p = this.player;
+    let best = null;
+    let bd = range;
+    for (const u of this.activeUnits) {
+      if (!u.npc) continue;
+      const d = dist(u.x, u.y, p.x, p.y);
+      if (d < bd) {
+        bd = d;
+        best = u;
+      }
+    }
+    return best;
+  }
+
+  talkTo(npc) {
+    if (this.player.dead) return;
+    this.talkingTo = npc;
+    this.emit('dialogue', npc);
+  }
+
+  endTalk() {
+    this.talkingTo = null;
   }
 
   on(evt, fn) {
@@ -172,6 +221,10 @@ export class Game {
 
   damage(src, tgt, amount, opts = {}) {
     if (!tgt || tgt.dead || amount <= 0) return 0;
+    if (this.duel) {
+      amount = this.duel.filter(src, tgt, amount, opts);
+      if (amount <= 0) return 0;
+    }
     const p = this.player;
     let crit = false;
     if (tgt === p && (opts.type === 'blaster' || opts.type === 'melee') && chance(p.dodgeChance())) {
@@ -248,11 +301,14 @@ export class Game {
       this.emit('death');
       return;
     }
+    if (u.kind === 'dooku') return;
     if (u.team === 'cis') {
       p.kills++;
       this.streak = this.time - (this.lastKillT ?? -99) < 4 ? (this.streak || 0) + 1 : 1;
       this.lastKillT = this.time;
       if (this.streak === 4) this.chatter('streak', 0.9);
+      p.credits += u.elite ? 40 : u.kind === 'b2' ? 8 : 3;
+      this.quests.onKill(u);
       if (dist(u.x, u.y, p.x, p.y) < 40) p.gainXp(u.xp);
       this.fx.debris(u.x, u.y, u.kind === 'b2' ? 10 : 6, u.kind === 'b2' ? '#56606b' : '#b39f74');
       this.fx.smoke(u.x, u.y, 0.8, 3);
@@ -342,8 +398,14 @@ export class Game {
   }
 
   update(dt) {
+    if (this.slowT > 0) {
+      // brief slow motion after a perfect parry
+      this.slowT -= dt;
+      dt *= 0.35;
+    }
     this.time += dt;
     const p = this.player;
+    if (this.duel) this.duel.update(dt);
     this.updateActive();
     for (const u of this.activeUnits) u.update(dt);
 
@@ -364,8 +426,8 @@ export class Game {
           const push = (min - d) * 0.5;
           const nx = dx / d;
           const ny = dy / d;
-          const wa = a === p ? 0.3 : 1;
-          const wb = b === p ? 0.3 : 1;
+          const wa = a.anchored ? 0 : a === p ? 0.3 : 1;
+          const wb = b.anchored ? 0 : b === p ? 0.3 : 1;
           a.move(-nx * push * wa, -ny * push * wa);
           b.move(nx * push * wb, ny * push * wb);
         }
@@ -420,6 +482,7 @@ export class Game {
         if (!c.cleared && c.alive.every((u) => u.dead)) {
           c.cleared = true;
           c.respawnAt = this.time + 150;
+          this.quests.onCampCleared(c);
           if (dist(c.x, c.y, p.x, p.y) < 30) {
             this.say('campClear');
             const bonus = Math.round(20 * c.level * c.level);
@@ -552,6 +615,7 @@ export class Game {
         p.gainXp(v);
         this.fx.text(p.x, p.y, `홀로크론의 지혜 +${v} XP`, '#9fdcff', 1.1, 2.4);
         this.say('holocron');
+        this.quests.onHolocron();
       }
     }
     this.pickups = this.pickups.filter((k) => !k.taken && k.t < 90);
