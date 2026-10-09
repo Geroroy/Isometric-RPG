@@ -106,10 +106,13 @@ export class Game {
     // the small camp just west of the base is the tutorial target
     const tut = this.world.camps.filter((c) => !c.boss).sort((a, b) => dist(a.x, a.y, BASE_POS.x, BASE_POS.y) - dist(b.x, b.y, BASE_POS.x, BASE_POS.y))[0];
     if (tut) tut.tutorial = true;
-    // Anakin's starfighter, parked inside the base
-    const f = this.pathfinder.nearestFree(Math.floor(BASE_POS.x + 9), Math.floor(BASE_POS.y - 8), 6);
-    this.units.push(this.makeFighter(f[0] + 0.5, f[1] + 0.5, Math.PI * 0.75));
-    this.world.landing = { x: f[0] - 1.5, y: f[1] + 2 };
+    // Anakin's starfighter: its own clear spot east of the plaza, away from
+    // the gunship's pad, nose towards the east gate; he steps out on a free
+    // tile beside it
+    const f = this.pathfinder.nearestFree(Math.floor(BASE_POS.x + 9), Math.floor(BASE_POS.y + 1), 4);
+    this.units.push(this.makeFighter(f[0] + 0.5, f[1] + 0.5, -Math.PI / 4));
+    const land = this.pathfinder.nearestFree(f[0] - 3, f[1] + 2, 4);
+    this.world.landing = { x: land[0] + 0.5, y: land[1] + 0.5 };
   }
 
   populateHub() {

@@ -1118,37 +1118,79 @@ function trashPile(rng) {
   return g;
 }
 
+/** A flat polygon (points [x, z], nose +X) extruded `thick` upwards from `y`, with chamfered edges. */
+function slab(points, thick, material, y = 0, bevel = 0.03) {
+  const shape = new THREE.Shape(points.map(([x, z]) => new THREE.Vector2(x, -z)));
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: thick, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 1 });
+  geo.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(geo, material);
+  m.position.y = y;
+  return m;
+}
+
+/** A side profile (points [x, y]) extruded `w` wide across the centre line. */
+function ridge(points, w, material) {
+  const shape = new THREE.Shape(points.map(([x, y]) => new THREE.Vector2(x, y)));
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: w, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 1 });
+  geo.translate(0, 0, -w / 2);
+  return new THREE.Mesh(geo, material);
+}
+
 export function buildFighter() {
-  // Anakin's starfighter (an original design): a short cylindrical cockpit
-  // pod with a split, forward-reaching nose, two engine booms carried on
-  // swept pylons, a tail fin between them; ivory with deep blue trim.
-  // Nose +X.
+  // Anakin's Delta-7B Jedi starfighter (The Clone Wars): a flat arrowhead
+  // wedge, weathered grey with his yellow paint — the nose, the spine and
+  // broad patches over the wings — a raised spine ridge running back to the
+  // dark oval canopy, R2-D2's dome set into the hull in front of it on the
+  // port side, a laser pod under each wing and the Republic crest on the
+  // port wing. Nose +X, port −Z.
   const g = new THREE.Group();
-  const W = mat(0xe4e0d4);
-  const B = mat(0x2c4f8f);
-  const D = mat(0x34373c);
-  const cy = 0.75;
-  g.add(cylX(0.42, 0.36, 1.8, W, -0.9, cy, 0, 10)); // pod
-  g.add(scl(sph(0.4, mat(0x1d2a38, { transparent: true, opacity: 0.85 }), 0.35, cy + 0.22, 0, 10, 6), 1.6, 0.7, 0.85)); // canopy
-  for (const z of [-0.2, 0.2]) {
-    const prong = cylX(0.1, 0.03, 1.5, W, 0.85, cy - 0.12, z, 6); // split nose
-    g.add(prong);
-    g.add(cylX(0.11, 0.11, 0.25, B, 0.85, cy - 0.12, z, 6));
-  }
-  g.add(cylX(0.44, 0.44, 0.12, B, -0.4, cy, 0, 10)); // trim ring
+  const grey = mat(0x8a8e92);
+  const greyD = mat(0x5e6266);
+  const yel = mat(0xd9a81c);
+  const yelD = mat(0xb08416);
+  const dark = mat(0x2e3135);
+  const glass = mat(0x15191f, { tex: 'none' });
+  const H = 0.42; // hull underside above the ground
+  // the main wedge, with the stepped side wings below its edges
+  g.add(slab([[2.7, 0], [-1.7, 1.55], [-2.05, 1.25], [-1.95, 0], [-2.05, -1.25], [-1.7, -1.55]], 0.14, grey, H));
+  g.add(slab([[2.45, 0], [-1.6, 1.05], [-1.9, 0.55], [-1.9, -0.55], [-1.6, -1.05]], 0.12, greyD, H + 0.15)); // upper deck
+  // yellow paint: the nose, a stripe down each flank, patches on the wings
+  g.add(slab([[2.75, 0], [1.75, 0.38], [1.55, 0], [1.75, -0.38]], 0.02, yel, H + 0.15, 0.01));
   for (const z of [-1, 1]) {
-    const pylon = box(1.1, 0.08, 0.9, W, -0.6, cy, 0.55 * z);
-    pylon.rotation.y = 0.5 * z;
-    g.add(pylon);
-    g.add(cylX(0.22, 0.2, 2.2, W, -1.7, cy, 1.05 * z, 10)); // boom
-    g.add(cylX(0.23, 0.23, 0.25, B, -0.2, cy, 1.05 * z, 10));
-    g.add(cylX(0.18, 0.24, 0.3, D, -2.0, cy, 1.05 * z, 10)); // nozzle
-    g.add(rot(cyl(0.16, 0.16, 0.03, glow(0x9fd0ff), -2.02, cy, 1.05 * z, 10), 0, 0, Math.PI / 2)); // engine glow
+    g.add(slab([[1.2, 0.55 * z], [-1.55, 1.5 * z], [-1.75, 1.32 * z], [0.95, 0.42 * z]].map(([x, zz]) => [x, zz]), 0.02, yel, H + 0.15, 0.01));
+    g.add(slab([[-0.2, 0.7 * z], [-1.1, 1.2 * z], [-1.5, 0.92 * z], [-0.6, 0.62 * z]], 0.02, yelD, H + 0.28, 0.01));
   }
-  const fin = box(0.8, 0.7, 0.06, B, -1.2, cy + 0.45, 0);
-  fin.rotation.z = -0.35;
-  g.add(fin);
-  for (const [x, z] of [[0.6, 0], [-1.4, 0.9], [-1.4, -0.9]]) g.add(cyl(0.04, 0.04, cy - 0.15, D, x, (cy - 0.15) / 2, z, 4)); // landing legs
+  // the spine ridge: yellow, rising from the nose to the cockpit
+  const spine = ridge([[2.4, H + 0.27], [-0.35, H + 0.27], [-0.35, H + 0.55], [0.4, H + 0.5]], 0.2, yel);
+  g.add(spine);
+  // cockpit: a raised collar and the dark oval canopy at the back
+  g.add(slab([[-0.3, 0], [-0.75, 0.42], [-1.75, 0.42], [-1.95, 0], [-1.75, -0.42], [-0.75, -0.42]], 0.16, yelD, H + 0.27));
+  g.add(scl(sph(0.5, glass, -1.15, H + 0.45, 0, 14, 8), 1.45, 0.48, 0.72));
+  g.add(scl(sph(0.5, mat(0x2a3440, { tex: 'none' }), -1.0, H + 0.5, 0, 12, 6), 0.9, 0.36, 0.5)); // a glint of the canopy's front pane
+  // R2-D2 in his socket, port side, ahead of the canopy
+  const r2 = new THREE.Group();
+  r2.add(cyl(0.2, 0.2, 0.08, mat(0xdfe4ea, { tex: 'none' }), 0, 0, 0, 12));
+  const dome = sph(0.2, mat(0xe2e7ee, { tex: 'none' }), 0, 0.04, 0, 12, 6);
+  dome.scale.y = 0.8;
+  r2.add(dome);
+  r2.add(box(0.1, 0.08, 0.05, mat(0x2a5aa8, { tex: 'none' }), 0.12, 0.12, 0)); // blue panel
+  r2.add(sph(0.035, mat(0x101418, { tex: 'none' }), 0.17, 0.15, -0.05, 6, 4)); // eye
+  r2.position.set(0.0, H + 0.4, -0.42);
+  g.add(r2);
+  // laser pods under the wings
+  for (const z of [-1, 1]) {
+    g.add(cylX(0.13, 0.15, 1.5, dark, -1.2, H - 0.06, 0.95 * z, 10));
+    g.add(cylX(0.06, 0.03, 0.45, greyD, 0.3, H - 0.06, 0.95 * z, 6)); // cannon
+    g.add(cylX(0.16, 0.16, 0.12, yelD, -1.25, H - 0.06, 0.95 * z, 10));
+  }
+  // engine glow at the stern
+  for (const z of [-0.32, 0.32]) g.add(box(0.04, 0.12, 0.34, glow(0xa8d8ff), -1.98, H + 0.18, z));
+  // the Republic crest on the port wing
+  const c = crest(0.42, mat(0xe8e2d0), true);
+  c.position.set(-0.75, H + 0.32, -1.0);
+  g.add(c);
+  // landing legs
+  for (const [x, z] of [[1.3, 0], [-1.3, 0.85], [-1.3, -0.85]]) g.add(cyl(0.04, 0.05, H, dark, x, H / 2, z, 5));
   return g;
 }
 

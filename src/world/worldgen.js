@@ -317,8 +317,8 @@ export class World {
     this.addProp('tent', bx - 1, by + 8);
     this.addProp('sensorTower', bx + 11, by - 11);
     this.addProp('sensorTower', bx - 11, by + 11);
-    for (const [dx, dy] of [[-4, -3], [3, 2], [-4, 3], [3, -11], [-11, -9], [11, 3]]) this.addProp('lamp', bx + dx, by + dy);
-    for (const [dx, dy] of [[-4, -10], [-3, -10], [-5, 9.5], [-6, 9.5], [10, -1], [10, 0], [2, 11]]) this.addProp('crate', bx + dx + 0.5, by + dy + 0.5);
+    for (const [dx, dy] of [[-4, -3], [3, 2], [-4, 3], [3, -11], [-11, -9], [12, 5.5]]) this.addProp('lamp', bx + dx, by + dy);
+    for (const [dx, dy] of [[-4, -10], [-3, -10], [-5, 9.5], [-6, 9.5], [8, -11], [9, -11], [2, 11]]) this.addProp('crate', bx + dx + 0.5, by + dy + 0.5);
     // Perimeter barricades with gates on each side.
     for (let i = -12; i <= 12; i += 2) {
       if (Math.abs(i) <= 2) continue;
