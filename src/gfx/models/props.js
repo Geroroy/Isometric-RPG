@@ -905,6 +905,196 @@ function holocron() {
 // Registry. `block` is a collision radius in tiles (0 = walkable), `rect` a
 // rectangular footprint [w, h] in tiles; `light` = [r, g, b, radiusPx, heightZ].
 
+// ----------------------------------------------------------------------------
+// The city hub (original designs). Upper level: pale stone, brass trim, white
+// light, greenery in planters. Lower level: grimy duracrete, pipes, small
+// barred windows, hand-made awnings, neon in pink / cyan / amber.
+
+const STONE = 0xd8d2c4;
+const STONE_D = 0xa9a294;
+const BRASS = 0xb89a5a;
+const GRIME = 0x4a4642;
+const GRIME_D = 0x34302d;
+const RUST = 0x6e4630;
+const NEON = [0xff4fa8, 0x4fe6ff, 0xffb347, 0x9d7bff];
+
+function spire(rng) {
+  // a slim residential tower stepping back as it rises, window bands lit
+  const g = new THREE.Group();
+  const h = rng.range(5.5, 8);
+  const lit = glow(rng.pick([0xfff1c8, 0xffe2a8, 0xdff2ff]));
+  let w = rng.range(1.1, 1.4);
+  let y = 0;
+  const steps = 3;
+  for (let i = 0; i < steps; i++) {
+    const sh = h / steps;
+    g.add(box(w, sh, w, mat(i % 2 ? STONE : STONE_D), 0, y + sh / 2, 0));
+    for (let k = 0.35; k < sh - 0.2; k += 0.5) {
+      g.add(box(w + 0.02, 0.08, w * 0.7, lit, 0, y + k, 0));
+      g.add(box(w * 0.7, 0.08, w + 0.02, lit, 0, y + k, 0));
+    }
+    g.add(box(w + 0.12, 0.08, w + 0.12, mat(BRASS), 0, y + sh, 0));
+    y += sh;
+    w *= 0.78;
+  }
+  g.add(cyl(0.02, 0.05, 1.2, mat(BRASS), 0, y + 0.6, 0, 5));
+  g.add(sph(0.06, glow(0xff6060), 0, y + 1.22, 0, 5, 4));
+  return g;
+}
+
+function planter(rng) {
+  const g = new THREE.Group();
+  g.add(cyl(0.55, 0.45, 0.5, mat(STONE), 0, 0.25, 0, 10));
+  g.add(cyl(0.58, 0.58, 0.06, mat(BRASS), 0, 0.5, 0, 10));
+  g.add(cyl(0.5, 0.5, 0.05, mat(0x3b2d22, { tex: 'rock' }), 0, 0.5, 0, 10));
+  g.add(cyl(0.05, 0.07, 0.9, mat(0x5a4130), 0, 0.95, 0, 5));
+  const leaf = mat(rng.pick([0x5f8a4a, 0x6f9a52, 0x4f7a50]), { tex: 'cloth' });
+  for (let i = 0; i < 4; i++) g.add(sph(rng.range(0.28, 0.38), leaf, rng.range(-0.2, 0.2), 1.35 + rng.range(0, 0.25), rng.range(-0.2, 0.2), 7, 5));
+  return g;
+}
+
+function railing() {
+  // the edge of the upper level: posts, a brass rail and a glass panel
+  const g = new THREE.Group();
+  for (const x of [-0.95, 0, 0.95]) g.add(cyl(0.04, 0.04, 0.9, mat(BRASS), x, 0.45, 0, 5));
+  g.add(box(2.0, 0.06, 0.08, mat(BRASS), 0, 0.92, 0));
+  g.add(box(1.9, 0.6, 0.03, mat(0x9fc8d8, { transparent: true, opacity: 0.35 }), 0, 0.5, 0));
+  return g;
+}
+
+function plazaLamp() {
+  const g = new THREE.Group();
+  g.add(cyl(0.05, 0.09, 2.6, mat(BRASS), 0, 1.3, 0, 6));
+  g.add(cyl(0.26, 0.12, 0.3, mat(STONE_D), 0, 2.7, 0, 8));
+  g.add(sph(0.18, glow(0xfff0c8), 0, 2.62, 0, 8, 5));
+  g.add(cyl(0.22, 0.28, 0.12, mat(STONE), 0, 0.06, 0, 8));
+  return g;
+}
+
+function turbolift() {
+  // a glass lift booth on a stone base; the light marks the doors
+  const g = new THREE.Group();
+  g.add(box(1.6, 0.15, 1.6, mat(STONE_D), 0, 0.075, 0));
+  for (const [x, z] of [[0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]]) g.add(box(0.12, 2.6, 0.12, mat(BRASS), x, 1.4, z));
+  g.add(box(1.5, 2.4, 1.5, mat(0x8fc0d6, { transparent: true, opacity: 0.3 }), 0, 1.35, 0));
+  g.add(box(1.7, 0.25, 1.7, mat(STONE), 0, 2.75, 0));
+  g.add(box(1.72, 0.06, 1.72, glow(0x9fe8ff), 0, 2.6, 0));
+  g.add(box(0.06, 2.1, 0.8, glow(0x9fe8ff), 0.78, 1.15, 0));
+  return g;
+}
+
+function slumBlock(rng) {
+  // a stack of cramped dwellings: grimy walls, pipes, small lit windows,
+  // an air unit, laundry lines and a hand-lettered sign
+  const g = new THREE.Group();
+  const h = rng.range(3.2, 4.6);
+  g.add(box(3.8, h, 3.8, mat(rng.pick([GRIME, 0x55504a, 0x4c4a4e]), { tex: 'rock' }), 0, h / 2, 0));
+  g.add(box(3.9, 0.15, 3.9, mat(GRIME_D), 0, h, 0));
+  const win = [glow(0xffc47a), glow(0x9fd8ff), mat(0x1c1a19)];
+  for (let y = 0.9; y < h - 0.4; y += 1.0) {
+    for (let k = -1.2; k <= 1.2; k += 0.8) {
+      const w = rng.pick(win);
+      g.add(box(0.32, 0.4, 0.04, w, k, y, 1.92));
+      g.add(box(0.04, 0.4, 0.32, rng.pick(win), 1.92, y, k));
+      g.add(box(0.36, 0.05, 0.08, mat(RUST), k, y - 0.24, 1.95));
+    }
+  }
+  for (const z of [-1.5, 0.6]) g.add(cyl(0.07, 0.07, h, mat(RUST), 1.98, h / 2, z, 5));
+  g.add(cylX(0.07, 0.07, 3.6, mat(RUST), -1.8, h - 0.5, 1.98, 5));
+  g.add(box(0.7, 0.5, 0.5, mat(0x6b6f72), 1.2, h + 0.3, -1.0));
+  g.add(cyl(0.18, 0.18, 0.06, mat(0x2a2c2e), 1.2, h + 0.57, -1.0, 8));
+  // a sign over the door
+  const c = rng.pick(NEON);
+  g.add(box(1.2, 0.35, 0.06, mat(0x161414), 0.2, 2.2, 1.96));
+  g.add(box(1.0, 0.18, 0.02, glow(c), 0.2, 2.2, 2.0));
+  g.add(box(0.8, 1.5, 0.05, mat(0x221f1d), -0.9, 0.75, 1.93)); // door
+  // laundry
+  for (let i = 0; i < 3; i++) g.add(box(0.25, 0.35, 0.02, cloth(rng.pick([0x9a3b3b, 0x3b6a9a, 0xb0a070, 0x7a7a7a])), -1.4 + i * 0.4, h - 1.2, 2.02));
+  return g;
+}
+
+function stall(rng) {
+  // a street vendor's stall: counter, crates of goods, a patched awning
+  const g = new THREE.Group();
+  g.add(box(1.6, 0.8, 0.7, mat(RUST), 0, 0.4, 0));
+  g.add(box(1.7, 0.06, 0.8, mat(0x8a7a62), 0, 0.82, 0));
+  const goods = [0xd8a040, 0x9a4b38, 0x5f8a4a, 0x4f6fa0, 0xc8c0a8];
+  for (let i = 0; i < 5; i++) g.add(box(0.22, 0.16, 0.22, mat(rng.pick(goods)), -0.6 + i * 0.3, 0.93, rng.range(-0.15, 0.15)));
+  for (const x of [-0.78, 0.78]) g.add(cyl(0.03, 0.03, 1.9, mat(0x5a5048), x, 0.95, -0.38, 4));
+  const aw = box(1.9, 0.05, 1.1, cloth(rng.pick([0xa0503a, 0x3a7a8a, 0xb08a3a, 0x6a4a8a])), 0, 1.9, 0.05);
+  aw.rotation.x = 0.3;
+  g.add(aw);
+  g.add(box(0.5, 0.2, 0.03, glow(rng.pick(NEON)), 0, 1.6, -0.36));
+  return g;
+}
+
+function neonSign(rng) {
+  // a pole with a glowing sign panel
+  const g = new THREE.Group();
+  const c = rng.pick(NEON);
+  g.add(cyl(0.05, 0.06, 2.8, mat(GRIME_D), 0, 1.4, 0, 5));
+  g.add(box(0.12, 1.0, 0.7, mat(0x141212), 0, 2.4, 0));
+  g.add(box(0.14, 0.85, 0.08, glow(c), 0, 2.4, 0.22));
+  g.add(box(0.14, 0.85, 0.08, glow(c), 0, 2.4, -0.22));
+  g.add(box(0.14, 0.08, 0.5, glow(c), 0, 2.85, 0));
+  g.add(box(0.14, 0.08, 0.5, glow(c), 0, 1.95, 0));
+  return g;
+}
+
+function ventStack(rng) {
+  const g = new THREE.Group();
+  g.add(box(0.9, 0.5, 0.9, mat(GRIME_D), 0, 0.25, 0));
+  g.add(cyl(0.25, 0.3, rng.range(1.4, 2.2), mat(RUST), 0.1, 1.0, 0.1, 8));
+  g.add(cyl(0.15, 0.18, 1.0, mat(0x5a5652), -0.25, 0.9, -0.2, 6));
+  g.add(cyl(0.3, 0.3, 0.08, mat(GRIME), 0.1, 1.9, 0.1, 8));
+  return g;
+}
+
+function trashPile(rng) {
+  const g = new THREE.Group();
+  for (let i = 0; i < 6; i++) {
+    const m = box(rng.range(0.2, 0.45), rng.range(0.1, 0.3), rng.range(0.2, 0.45), mat(rng.pick([0x4a4642, 0x6e4630, 0x5a5a4a, 0x3a3e44, 0x7a6a50])), rng.range(-0.5, 0.5), 0.1, rng.range(-0.5, 0.5));
+    m.rotation.y = rng.range(0, 3);
+    g.add(m);
+  }
+  g.add(cyl(0.22, 0.22, 0.5, mat(0x3f5a4a), 0.3, 0.25, -0.3, 8));
+  return g;
+}
+
+export function buildFighter() {
+  // Anakin's starfighter (an original design): a short cylindrical cockpit
+  // pod with a split, forward-reaching nose, two engine booms carried on
+  // swept pylons, a tail fin between them; ivory with deep blue trim.
+  // Nose +X.
+  const g = new THREE.Group();
+  const W = mat(0xe4e0d4);
+  const B = mat(0x2c4f8f);
+  const D = mat(0x34373c);
+  const cy = 0.75;
+  g.add(cylX(0.42, 0.36, 1.8, W, -0.9, cy, 0, 10)); // pod
+  g.add(scl(sph(0.4, mat(0x1d2a38, { transparent: true, opacity: 0.85 }), 0.35, cy + 0.22, 0, 10, 6), 1.6, 0.7, 0.85)); // canopy
+  for (const z of [-0.2, 0.2]) {
+    const prong = cylX(0.1, 0.03, 1.5, W, 0.85, cy - 0.12, z, 6); // split nose
+    g.add(prong);
+    g.add(cylX(0.11, 0.11, 0.25, B, 0.85, cy - 0.12, z, 6));
+  }
+  g.add(cylX(0.44, 0.44, 0.12, B, -0.4, cy, 0, 10)); // trim ring
+  for (const z of [-1, 1]) {
+    const pylon = box(1.1, 0.08, 0.9, W, -0.6, cy, 0.55 * z);
+    pylon.rotation.y = 0.5 * z;
+    g.add(pylon);
+    g.add(cylX(0.22, 0.2, 2.2, W, -1.7, cy, 1.05 * z, 10)); // boom
+    g.add(cylX(0.23, 0.23, 0.25, B, -0.2, cy, 1.05 * z, 10));
+    g.add(cylX(0.18, 0.24, 0.3, D, -2.0, cy, 1.05 * z, 10)); // nozzle
+    g.add(rot(cyl(0.16, 0.16, 0.03, glow(0x9fd0ff), -2.02, cy, 1.05 * z, 10), 0, 0, Math.PI / 2)); // engine glow
+  }
+  const fin = box(0.8, 0.7, 0.06, B, -1.2, cy + 0.45, 0);
+  fin.rotation.z = -0.35;
+  g.add(fin);
+  for (const [x, z] of [[0.6, 0], [-1.4, 0.9], [-1.4, -0.9]]) g.add(cyl(0.04, 0.04, cy - 0.15, D, x, (cy - 0.15) / 2, z, 4)); // landing legs
+  return g;
+}
+
 export const PROPS = {
   rock: { build: rock, variants: 8, block: 0.5 },
   boulder: { build: boulder, variants: 5, block: 1.2 },
@@ -945,6 +1135,16 @@ export const PROPS = {
   bacta: { build: bacta, variants: 1, block: 0, outline: true },
   forceShard: { build: forceShard, variants: 1, block: 0 },
   holocron: { build: holocron, variants: 1, block: 0 },
+  spire: { build: spire, variants: 5, rect: [2, 2], light: [255, 236, 200, 90, 3] },
+  planter: { build: planter, variants: 3, block: 0.5 },
+  railing: { build: railing, variants: 1, angles: [0, Math.PI / 2], rectByAngle: [[2, 1], [1, 2]] },
+  plazaLamp: { build: plazaLamp, variants: 1, block: 0.3, light: [255, 238, 205, 170, 2.6] },
+  turbolift: { build: turbolift, variants: 1, block: 0, light: [150, 230, 255, 70, 2] },
+  slumBlock: { build: slumBlock, variants: 4, rect: [4, 4], light: [255, 190, 120, 40, 1.5] },
+  stall: { build: stall, variants: 4, block: 0.6, light: [255, 170, 110, 46, 1.6] },
+  neonSign: { build: neonSign, variants: 4, block: 0.3 },
+  ventStack: { build: ventStack, variants: 2, block: 0.5 },
+  trashPile: { build: trashPile, variants: 3, block: 0, flat: true },
 };
 
 export function buildPropVariants(name) {

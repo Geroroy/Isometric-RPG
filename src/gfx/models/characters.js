@@ -999,3 +999,104 @@ export function buildMaster() {
   j.head.add(braid);
   return rig;
 }
+
+// ----------------------------------------------------------------------------
+// City hub citizens (original designs). One builder, several kinds of people:
+//   noble   — upper level: ankle-length coat, tall collar, sash, a crested
+//             headpiece; jewel colours with gold
+//   aide    — upper level: fitted tunic, short shoulder cape, neat hair
+//   worker  — lower level: stained overalls, cap, tool belt
+//   drifter — lower level: a patched hooded poncho over rags
+//   vendor  — lower level: apron over a tunic, a wrapped head scarf
+//   officer — city security: dark blue uniform, visored helmet, baton
+//   alien   — an original species: grey-violet skin, a long ridged cranium,
+//             large dark eyes, plain robes
+
+const CIT_SKIN = [0xe2b28c, 0xc89070, 0x9a6a4a, 0x6e4a34, 0xf0c8a8];
+
+export function buildCitizen({ kind = 'worker', palette = 0 } = {}) {
+  const tall = kind === 'noble' || kind === 'alien';
+  const rig = new Rig(tall ? { thigh: 0.48, shin: 0.48, hip: 0.98 } : kind === 'drifter' ? { spine: 0.2 } : {});
+  const j = rig.j;
+  const d = rig.dims;
+  const P = {
+    noble: [[0x2f6f6a, 0xd9b45a, 0xe8e0d0], [0x6a2a4a, 0xd9b45a, 0xf0e6d8], [0xe6e0d2, 0x2f4f8f, 0xc8a050]],
+    aide: [[0x3a4a6a, 0xc8ccd4, 0x2a2f3a], [0x5a5a52, 0xd8d0b8, 0x2f2a26]],
+    worker: [[0x5a6a72, 0x8a6a3a, 0x3a3632], [0x7a5a3a, 0x4a4a4a, 0x3a3632]],
+    drifter: [[0x6a5e4e, 0x4e463c, 0x3a342e], [0x5a5048, 0x6e3e30, 0x3a342e]],
+    vendor: [[0x8a4a3a, 0xd8c8a8, 0x4a3a2e], [0x3a6a6a, 0xd0c090, 0x4a3a2e]],
+    officer: [[0x22304a, 0x9aa4b4, 0x161a22]],
+    alien: [[0x7a6a8a, 0x5a4e64, 0x3a3440]],
+  }[kind];
+  const [c1, c2, c3] = P[palette % P.length];
+  const skin = mat(kind === 'alien' ? 0x9a8aa8 : CIT_SKIN[(palette * 3 + kind.length) % CIT_SKIN.length], { tex: 'none' });
+  const A = cloth(c1);
+  const B = cloth(c2);
+  const boot = mat(c3);
+  const hair = mat([0x2a1c14, 0x6e4a2c, 0xb8b0a0, 0x1a1412][(palette + kind.length) % 4], { tex: 'cloth' });
+  for (const side of ['L', 'R']) {
+    j['hip' + side].add(cyl(0.075, 0.06, d.thigh, kind === 'worker' ? A : mat(c3, { tex: 'cloth' }), 0, -d.thigh / 2, 0, 8));
+    j['kn' + side].add(cyl(0.06, 0.052, d.shin, boot, 0, -d.shin / 2, 0, 8));
+    j['an' + side].add(box(0.21, 0.07, 0.09, boot, 0.05, -0.03, 0));
+    const sleeve = kind === 'officer' || kind === 'worker' ? A : kind === 'noble' ? A : B;
+    j['sh' + side].add(cyl(0.056, 0.05, d.uarm, sleeve, 0, -d.uarm / 2, 0, 8));
+    j['el' + side].add(cyl(0.05, kind === 'noble' || kind === 'alien' ? 0.075 : 0.045, d.farm, sleeve, 0, -d.farm / 2, 0, 8));
+    j['ha' + side].add(scl(sph(0.04, kind === 'officer' ? mat(0x161a22) : skin, 0, -0.045, 0, 6, 4), 0.9, 1.15, 0.8));
+  }
+  j.pelvis.add(cyl(0.14, 0.15, 0.17, A, 0, -0.03, 0, 8));
+  j.spine.add(scl(cyl(0.135, 0.145, 0.26, A, 0, 0.12, 0, 8), 0.78, 1, 1));
+  j.chest.add(scl(cyl(0.155, 0.14, 0.29, A, 0, 0.14, 0, 8), 0.74, 1, 1));
+  j.neck.add(cyl(0.038, 0.044, 0.08, skin, 0, 0.03, 0, 7));
+  const head = j.head;
+  if (kind === 'alien') {
+    head.add(scl(sph(0.09, skin, 0.0, 0.14, 0, 10, 8), 0.95, 1.7, 0.85)); // long cranium
+    for (const y of [0.18, 0.24, 0.3]) head.add(scl(sph(0.03, mat(0x7a6a8a, { tex: 'none' }), -0.05, y, 0, 5, 3), 1, 0.6, 2.4)); // ridges
+    for (const zs of [1, -1]) head.add(scl(sph(0.026, mat(0x111014, { tex: 'none' }), 0.07, 0.12, 0.035 * zs, 6, 4), 0.6, 1.2, 1));
+  } else {
+    head.add(scl(sph(0.09, skin, 0.01, 0.1, 0, 10, 8), 0.96, 1.14, 0.86));
+    head.add(box(0.016, 0.022, 0.016, skin, 0.088, 0.088, 0));
+    if (kind !== 'officer' && kind !== 'drifter') head.add(scl(sph(0.096, hair, -0.02, 0.14, 0, 9, 6), 1.03, 0.8, 1.03));
+  }
+  switch (kind) {
+    case 'noble': {
+      addSkirt(rig, { outer: A, inner: B, len: 0.86, innerLen: 0.8, gap: 0.12, rBot: 0.3 });
+      j.chest.add(cyl(0.11, 0.16, 0.22, B, -0.02, 0.36, 0, 10)); // tall collar
+      j.spine.add(scl(cyl(0.15, 0.15, 0.06, mat(c2), 0, 0.02, 0, 10), 0.8, 1, 1)); // sash
+      head.add(cyl(0.05, 0.1, 0.16, mat(c2), -0.01, 0.26, 0, 8)); // crested headpiece
+      head.add(scl(sph(0.06, mat(c2), -0.02, 0.36, 0, 8, 5), 0.5, 1.4, 1.6));
+      break;
+    }
+    case 'aide':
+      j.chest.add(scl(cyl(0.18, 0.24, 0.3, B, -0.03, 0.1, 0, 10), 0.85, 1, 1.05)); // shoulder cape
+      j.pelvis.add(scl(cyl(0.155, 0.155, 0.05, mat(c3), 0, 0.06, 0, 10), 0.85, 1, 1.05));
+      break;
+    case 'worker':
+      j.pelvis.add(scl(cyl(0.16, 0.16, 0.07, mat(c2), 0, 0.04, 0, 10), 0.85, 1, 1.05)); // tool belt
+      j.pelvis.add(box(0.06, 0.12, 0.06, mat(0x8a8a8a), 0.06, -0.02, 0.14));
+      head.add(cyl(0.1, 0.1, 0.06, B, -0.01, 0.2, 0, 10)); // cap
+      head.add(box(0.12, 0.02, 0.16, B, 0.08, 0.17, 0));
+      break;
+    case 'drifter':
+      addSkirt(rig, { outer: A, len: 0.5, gap: 0.4, rTop: 0.2, rBot: 0.3 });
+      j.chest.add(scl(cyl(0.2, 0.26, 0.34, A, -0.02, 0.1, 0, 9), 0.9, 1, 1.1)); // poncho
+      head.add(scl(sph(0.115, B, -0.02, 0.12, 0, 9, 7), 1.0, 1.08, 1.0)); // hood
+      break;
+    case 'vendor':
+      j.spine.add(box(0.03, 0.42, 0.22, mat(c2, { tex: 'cloth' }), 0.11, -0.05, 0)); // apron
+      j.pelvis.add(box(0.03, 0.3, 0.24, mat(c2, { tex: 'cloth' }), 0.13, -0.15, 0));
+      head.add(scl(sph(0.1, B, -0.02, 0.16, 0, 9, 6), 1.05, 0.75, 1.05)); // head scarf
+      head.add(scl(sph(0.05, B, -0.1, 0.12, 0, 6, 4), 1, 1, 1.2));
+      break;
+    case 'officer':
+      j.pelvis.add(scl(cyl(0.16, 0.16, 0.06, mat(0x161a22), 0, 0.05, 0, 10), 0.85, 1, 1.05));
+      j.pelvis.add(cyl(0.02, 0.02, 0.36, mat(0x111111), 0.02, -0.1, 0.17, 5)); // baton
+      for (const zs of [1, -1]) j.chest.add(box(0.14, 0.05, 0.14, mat(c2), 0, 0.28, 0.12 * zs)); // epaulettes
+      head.add(scl(sph(0.105, mat(c1), -0.01, 0.13, 0, 10, 7), 1.02, 1.0, 0.98)); // helmet
+      head.add(scl(box(0.03, 0.05, 0.15, glow(0x7fd8ff), 0.09, 0.11, 0), 1, 1, 1)); // visor
+      break;
+    case 'alien':
+      addSkirt(rig, { outer: A, inner: B, len: 0.8, innerLen: 0.72, gap: 0.2 });
+      break;
+  }
+  return rig;
+}

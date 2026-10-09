@@ -8,8 +8,10 @@ import { dist, rand, chance, angleDiff } from '../core/math.js';
 import { LINES } from './lines.js';
 import { NPC, NPC_DEFS, TALK_RANGE } from './npc.js';
 import { QuestLog } from './quests.js';
-import { BASE_POS, Arena, ARENA, MustafarArena } from '../world/worldgen.js';
+import { BASE_POS, Arena, ARENA, MustafarArena, CityHub, CITY } from '../world/worldgen.js';
+import { Citizen, CROWD } from './citizens.js';
 import { Duel } from './duel.js';
+import { Cinema } from './cinema.js';
 import { MustafarDuel } from './duelMustafar.js';
 
 const ELITE_NAMES = ['OOM 지휘관 드로이드', '전투 드로이드 분대장', '전술 사령 드로이드 T-7', '돌격 지휘 드로이드'];
@@ -19,7 +21,9 @@ export class Game {
     this.assets = assets;
     this.audio = audio;
     this.mode = mode;
-    this.world = mode !== 'duel' ? new World(501) : duel === 'mustafar' ? new MustafarArena(66) : new Arena(77);
+    // the campaign has two places: the city hub (where it starts) and
+    // Christophsis, reached by starfighter; each keeps its own state
+    this.world = mode !== 'duel' ? new CityHub(9) : duel === 'mustafar' ? new MustafarArena(66) : new Arena(77);
     this.pathfinder = new PathFinder(this.world);
     this.fx = new Effects();
     this.units = [];
@@ -58,6 +62,43 @@ export class Game {
       this.updateActive();
       return;
     }
+    this.places = {};
+    this.place = 'hub';
+    const hub = this.savePlace('hub');
+    this.units = [];
+    this.loadPlace({ id: 'christophsis', world: new World(501), units: [] });
+    this.populateChristophsis();
+    this.savePlace('christophsis');
+    this.loadPlace(hub);
+    this.populateHub();
+    this.updateActive();
+  }
+
+  /** Stash the current place's state. */
+  savePlace(id = this.place) {
+    const pl = (this.places[id] ||= { id });
+    Object.assign(pl, { world: this.world, pathfinder: this.pathfinder, units: this.units, pickups: this.pickups });
+    return pl;
+  }
+
+  loadPlace(pl) {
+    this.places[pl.id] = pl;
+    this.place = pl.id;
+    this.world = pl.world;
+    this.pathfinder = pl.pathfinder ||= new PathFinder(pl.world);
+    this.units = pl.units;
+    this.pickups = pl.pickups || [];
+    this.bolts = [];
+    this.throws = [];
+    this.strikes = [];
+  }
+
+  /** The Christophsis world (camps, the droid war), wherever Anakin is. */
+  get front() {
+    return this.places.christophsis ? this.places.christophsis.world : this.world;
+  }
+
+  populateChristophsis() {
     for (const gd of this.world.guards) {
       this.units.push(new Soldier(this, 'guard', gd.x, gd.y, { facing: gd.facing }));
     }
@@ -65,11 +106,151 @@ export class Game {
     // the small camp just west of the base is the tutorial target
     const tut = this.world.camps.filter((c) => !c.boss).sort((a, b) => dist(a.x, a.y, BASE_POS.x, BASE_POS.y) - dist(b.x, b.y, BASE_POS.x, BASE_POS.y))[0];
     if (tut) tut.tutorial = true;
-    for (const [id, d] of Object.entries(NPC_DEFS)) {
-      const f = this.pathfinder.nearestFree(Math.floor(BASE_POS.x + d.pos[0]), Math.floor(BASE_POS.y + d.pos[1]), 4);
-      this.units.push(new NPC(this, id, f[0] + 0.5, f[1] + 0.5));
+    // Anakin's starfighter, parked inside the base
+    const f = this.pathfinder.nearestFree(Math.floor(BASE_POS.x + 9), Math.floor(BASE_POS.y - 8), 6);
+    this.units.push(this.makeFighter(f[0] + 0.5, f[1] + 0.5, Math.PI * 0.75));
+    this.world.landing = { x: f[0] - 1.5, y: f[1] + 2 };
+  }
+
+  populateHub() {
+    const w = this.world;
+    for (const [id, d] of Object.entries(NPC_DEFS)) if (d.hub) this.units.push(new NPC(this, id, d.hub[0], d.hub[1]));
+    this.units.push(this.makeFighter(CITY.pad.x, CITY.pad.y, Math.PI));
+    w.landing = { x: CITY.pad.x - 3.5, y: CITY.pad.y + 1.5 };
+    for (const c of CROWD) {
+      for (let k = 0; k < c.n; k++) {
+        const pts = w.walk[c.level];
+        const at = pts[Math.floor(Math.random() * pts.length)];
+        const u = new Citizen(this, c, at.x + (Math.random() - 0.5), at.y + (Math.random() - 0.5));
+        this.units.push(u);
+      }
     }
+    // vendors at the market stalls, drifters against the walls
+    for (const u of this.units) {
+      if (!(u instanceof Citizen) || !u.anchored) continue;
+      const kind = u.def2.stay ? 'stall' : 'slumBlock';
+      const props = w.props.filter((pr) => pr.type === kind);
+      const pr = props[Math.floor(Math.random() * props.length)];
+      if (!pr) continue;
+      const spot = kind === 'stall' ? { x: pr.x - 0.2, y: pr.y - 0.9 } : { x: pr.x + (Math.random() - 0.5) * 3, y: pr.y + 2.4 };
+      const f = this.pathfinder.nearestFree(Math.floor(spot.x), Math.floor(spot.y), 3);
+      if (!f) continue;
+      u.x = f[0] + 0.5;
+      u.y = f[1] + 0.5;
+      u.facing = kind === 'stall' ? -Math.PI / 2 : Math.PI / 2 + (Math.random() - 0.5);
+    }
+  }
+
+  /** Turbolifts between the hub's levels: step in, fade, step out. */
+  updateLifts(dt) {
+    const p = this.player;
+    const lifts = this.world.lifts;
+    if (this.lift) {
+      this.lift.t -= dt;
+      if (this.lift.t <= 0 && !this.lift.moved) {
+        this.lift.moved = true;
+        p.x = this.lift.to.x;
+        p.y = this.lift.to.y;
+        p.path = null;
+        p.action = null;
+        this.emit('fade', 0, 0.45);
+        this.emit('place', this.lift.label);
+        this.lift.t = 1.2; // a moment before the doors work again
+      } else if (this.lift.t <= 0) this.lift = null;
+      return;
+    }
+    if (!lifts || this.cinema || p.dead) return;
+    for (const L of lifts) {
+      if (dist(p.x, p.y, L.x, L.y) > 0.75) continue;
+      this.lift = { to: L.to, label: L.label.includes('언더') ? '코러산트 · 언더시티' : '코러산트 · 상층 플라자', t: 0.35 };
+      this.emit('fade', 1, 0.3);
+      this.audio.play('click');
+      break;
+    }
+  }
+
+  /**
+   * Fly the starfighter to another place: Anakin boards, it lifts off and
+   * leaves, a black cut with the destination card, then it sets down there
+   * and he climbs out.
+   */
+  fly(dest) {
+    if (this.cinema || !this.places[dest]) return;
+    const p = this.player;
+    const from = this.units.find((u) => u.npcId === 'fighter');
+    const names = { hub: '코러산트 · 제다이 착륙장', christophsis: '크리스토프시스 외곽 · 공화국 전진 기지' };
+    this.say(dest === 'hub' ? 'flyHub' : 'flyFront');
+    let to = null;
+    const cues = [
+      { t: 0, do: (c) => ((from.scripted = from.airborne = true), p.setAnim('run'), c.move(p, from.x, from.y, 0.7)), cam: { follow: from, x: from.x, y: from.y, dur: 0.6 } },
+      { t: 0.7, do: () => ((p.hidden = true), this.audio.play('ignite')) },
+      { t: 1.0, do: (c) => (c.onFrame = (k) => (from.z = Math.min(6, from.z + k * 2.6))) },
+      { t: 2.2, do: (c) => c.move(from, from.x + Math.cos(from.facing) * 9, from.y + Math.sin(from.facing) * 9, 1.4) },
+      { t: 2.6, fade: 1, fadeDur: 0.6 },
+      {
+        t: 3.3,
+        do: (c) => {
+          c.onFrame = null;
+          const home = from.post;
+          from.x = home.x; // the ship is back on its pad for next time
+          from.y = home.y;
+          from.z = 0;
+          from.scripted = from.airborne = false;
+          const land = this.places[dest].world.landing;
+          this.travel(dest, land);
+          to = this.units.find((u) => u.npcId === 'fighter');
+          p.hidden = true;
+          to.scripted = to.airborne = true;
+          to.z = 5;
+          c.cam = null;
+          this.camFocus = { x: to.x, y: to.y };
+          c.onFrame = (k) => (to.z = Math.max(0, to.z - k * 3.6));
+          this.emit('place', names[dest]);
+        },
+      },
+      { t: 3.6, fade: 0, fadeDur: 0.8 },
+      { t: 5.2, do: (c) => ((c.onFrame = null), (to.z = 0), (to.scripted = to.airborne = false), (p.hidden = false), (p.x = to.x - 2), (p.y = to.y + 1.2), c.move(p, this.world.landing.x, this.world.landing.y, 0.6)) },
+    ];
+    return new Cinema(this, { length: 6.0, cues }).play().then(() => {
+      p.hidden = false;
+      if (to) {
+        to.z = 0;
+        to.scripted = to.airborne = false;
+      }
+      p.setAnim('idle');
+    });
+  }
+
+  makeFighter(x, y, facing) {
+    const f = new NPC(this, 'fighter', x, y);
+    f.facing = f.restFacing = facing;
+    f.restAnim = 'idle';
+    f.anchored = true;
+    return f;
+  }
+
+  /**
+   * Move Anakin to another place: his companions stay behind (summons
+   * expire), the place he leaves keeps its state for his return.
+   */
+  travel(id, pos) {
+    const p = this.player;
+    this.units = this.units.filter((u) => u !== p && u.owner !== p);
+    this.savePlace();
+    this.loadPlace(this.places[id]);
+    this.units.push(p);
+    p.x = pos.x;
+    p.y = pos.y;
+    p.path = null;
+    p.action = null;
+    this.region = '';
+    this.hover = null;
     this.updateActive();
+    this.emit('world', id);
+    if (id === 'christophsis' && !this.arrivedFront) {
+      this.arrivedFront = true;
+      setTimeout(() => this.say('arriveFront'), 3000);
+    }
   }
 
   nearestNpc(range = TALK_RANGE) {
@@ -480,7 +661,7 @@ export class Game {
       if (reg !== this.region) {
         this.region = reg;
         this.emit('region', reg);
-        const rk = /공화국/.test(reg) ? 'regionBase' : /공장/.test(reg) ? 'regionFactory' : /폐허/.test(reg) ? 'regionRuins' : /수정/.test(reg) ? 'regionCrystal' : /격전지/.test(reg) ? 'regionBattle' : null;
+        const rk = /언더시티|녹슨|빛이 드는/.test(reg) ? 'regionLower' : /상층|착륙장/.test(reg) ? 'regionUpper' : /공화국/.test(reg) ? 'regionBase' : /공장/.test(reg) ? 'regionFactory' : /폐허/.test(reg) ? 'regionRuins' : /수정/.test(reg) ? 'regionCrystal' : /격전지/.test(reg) ? 'regionBattle' : null;
         if (rk && this.time > 3) this.chatter(rk, 0.7);
       }
     }
@@ -511,6 +692,7 @@ export class Game {
       }
     }
 
+    this.updateLifts(dt);
     this.updateSaberAuto(dt);
     this.audio.setHum(p.dead || p.saberOut || !p.saberLit ? 0 : p.moving ? 1 : 0.6);
   }

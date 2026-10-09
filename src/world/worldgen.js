@@ -20,6 +20,9 @@ export const BIOME = {
   MUSTAFAR: 8, // the mining facility's metal decks
   LAVA: 9,
   ASH: 10, // black volcanic sand
+  CITY_UP: 11, // the city hub's upper level: polished stone
+  CITY_LOW: 12, // the lower level: grimy duracrete
+  VOID: 13, // the drop between the levels / off the platforms
 };
 
 export const BIOME_NAMES = {
@@ -34,6 +37,9 @@ export const BIOME_NAMES = {
   8: '무스타파 · 채굴 시설',
   9: '무스타파 · 용암 강',
   10: '무스타파 · 검은 모래 언덕',
+  11: '코러산트 · 상층 플라자',
+  12: '코러산트 · 언더시티',
+  13: '코러산트 · 끝없는 낭떠러지',
 };
 
 export const BASE_POS = { x: 150, y: 152 };
@@ -94,7 +100,6 @@ export class World {
     const S = this.seed;
 
     this.pois.push({ ...BASE_POS, r: 17, name: '공화국 전진 기지' });
-    this.pois.push({ ...CANTINA_POS, r: 7.5, name: '모스 아이슬리 칸티나' });
     this.pois.push({ ...FACTORY_POS, r: 16, name: '분리주의 드로이드 공장' });
     for (const rc of RUIN_CENTERS) this.pois.push(rc);
 
@@ -327,8 +332,6 @@ export class World {
       this.guards.push({ x: bx + dx, y: by + dy, facing: f });
     }
     this.spawn = { x: bx + 0.5, y: by + 1.5 };
-    this.clearArea(CANTINA_POS.x, CANTINA_POS.y, 8);
-    this.addProp('cantina', CANTINA_POS.x, CANTINA_POS.y);
   }
 
   buildFactory() {
@@ -512,3 +515,129 @@ export class MustafarArena extends World {
     for (let y = -r.hh + 1; y <= r.hh - 1; y += 2) edge(r.x - r.hw - 0.9, r.y + y, 1);
   }
 }
+
+// ----------------------------------------------------------------------------
+// The city hub (Coruscant, an original layout). Two levels of the same city
+// stacked over a drop with no visible bottom: the bright upper plaza with
+// its stone, brass, planted trees, white light and the Jedi landing pad, and
+// the lower level reached by a turbolift — cramped blocks, a market street
+// under neon, steam vents, rubbish and people living in the half-dark. Air
+// traffic streams through the drop between them.
+
+export const CITY = {
+  up: { x: 98, y: 64, hw: 26, hh: 15 }, // upper plaza (tile half-sizes)
+  pad: { x: 117, y: 62 }, // Jedi landing pad
+  low: { x: 96, y: 113, hw: 32, hh: 18 }, // lower level
+  liftUp: { x: 82, y: 77.5 },
+  liftLow: { x: 82, y: 97.5 },
+  bar: { x: 108, y: 123 }, // the bar ("녹슨 등불")
+  shaft: { x: 96, y: 112 }, // the one place light reaches the street
+};
+
+export class CityHub extends World {
+  generate() {
+    this.rng = new RNG(this.seed);
+    const rng = this.rng;
+    const { up, low, pad, liftUp, liftLow, bar, shaft } = CITY;
+    this.ambient = [96, 100, 128];
+    this.city = true;
+    const inRect = (x, y, r) => Math.abs(x - r.x) <= r.hw && Math.abs(y - r.y) <= r.hh;
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        const i = y * MAP_W + x;
+        const cx = x + 0.5;
+        const cy = y + 0.5;
+        let b = BIOME.VOID;
+        if (inRect(cx, cy, up)) b = BIOME.CITY_UP;
+        else if (inRect(cx, cy, low)) b = BIOME.CITY_LOW;
+        this.biome[i] = b;
+        this.blocked[i] = b === BIOME.VOID ? 2 : 0;
+        this.explored[i] = 1;
+      }
+    }
+    this.pois.push({ ...pad, r: 6, name: '코러산트 · 제다이 착륙장' });
+    this.pois.push({ ...bar, r: 5, name: '코러산트 · 녹슨 등불 바' });
+    this.pois.push({ x: low.x, y: 106.5, r: 9, name: '코러산트 · 언더시티 시장' });
+    this.pois.push({ ...shaft, r: 3.5, name: '코러산트 · 빛이 드는 골목' });
+
+    // --- upper plaza ------------------------------------------------------
+    this.addProp('landingPad', pad.x, pad.y);
+    // skyline: towers along the north edge and out in the drop
+    for (let x = up.x - up.hw + 2; x <= up.x + up.hw - 2; x += 5) this.addProp('spire', x + rng.range(-0.6, 0.6), up.y - up.hh + 1.5);
+    for (const [x, y] of [[66, 48], [70, 62], [130, 50], [134, 70], [60, 76], [138, 84], [76, 40], [120, 38]]) this.addProp('spire', x, y, { noBlock: true });
+    // a ring of planters and lamps round the plaza's centre
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2;
+      this.addProp(k % 2 ? 'plazaLamp' : 'planter', 94 + Math.cos(a) * 6, 66 + Math.sin(a) * 4.5);
+    }
+    for (const [x, y] of [[80, 56], [86, 72], [104, 72], [108, 54], [76, 68]]) this.addProp('planter', x, y);
+    for (const [x, y] of [[100, 58], [88, 60], [110, 70], [122, 56], [122, 68], [78, 62]]) this.addProp('plazaLamp', x, y);
+    // the railing along the edge over the drop (south side)
+    for (let x = up.x - up.hw + 1; x <= up.x + up.hw - 1; x += 2) if (Math.abs(x - liftUp.x) > 1.5) this.addProp('railing', x, up.y + up.hh + 0.2, { angleIdx: 0 });
+    this.addProp('turbolift', liftUp.x, liftUp.y);
+
+    // --- lower level ------------------------------------------------------
+    // blocks of dwellings with streets between them; the market street runs
+    // east–west through the middle
+    const blocks = [];
+    for (const bx of [70, 84, 100, 116]) for (const by of [100, 117, 126]) blocks.push([bx, by]);
+    for (const [bx, by] of blocks) {
+      if (Math.abs(bx - shaft.x) < 6 && Math.abs(by - shaft.y) < 7) continue; // the square under the light
+      if (bx === 84 && by === 100) continue; // the lift's landing
+      this.addProp('slumBlock', bx, by);
+    }
+    this.addProp('turbolift', liftLow.x, liftLow.y);
+    // market street: stalls both sides, neon over them
+    for (let x = low.x - low.hw + 3; x <= low.x + low.hw - 3; x += 4.5) {
+      this.addProp('stall', x, 104.2);
+      if (rng.chance(0.7)) this.addProp('stall', x + 2, 110.6);
+      if (rng.chance(0.6)) this.addProp('neonSign', x + 1.2, 103.6);
+    }
+    for (const [x, y] of [[64.5, 112], [127, 108], [92, 121], [124, 121], [76, 129], [112, 96.5]]) this.addProp('ventStack', x, y);
+    for (let k = 0; k < 14; k++) this.addProp('trashPile', rng.range(low.x - low.hw + 1, low.x + low.hw - 1), rng.pick([108.5, 112.5, 121.5, 130, 96.5]), { noBlock: true });
+    // the bar: a block with two signs and a warm doorway
+    this.addProp('neonSign', bar.x - 2.6, bar.y - 2.6, { variant: 0 });
+    this.addProp('neonSign', bar.x + 2.6, bar.y - 2.6, { variant: 2 });
+    // light: warm windows and neon pockets; one cold shaft from above
+    const neon = [[255, 80, 170], [80, 230, 255], [255, 180, 70], [160, 120, 255]];
+    for (let k = 0; k < 26; k++) {
+      const [r, g, b] = rng.pick(neon);
+      this.lights.push({ x: rng.range(low.x - low.hw + 2, low.x + low.hw - 2), y: rng.pick([104, 108.5, 112, 121.5, 96.5, 130]), z: 2.2, r, g, b, rad: rng.range(70, 120), flicker: rng.chance(0.3) ? 0.2 : 0.04 });
+    }
+    this.lights.push({ x: shaft.x, y: shaft.y, z: 6, r: 200, g: 225, b: 255, rad: 150, flicker: 0.01 });
+    this.lights.push({ x: bar.x, y: bar.y - 3, z: 1.5, r: 255, g: 170, b: 90, rad: 120, flicker: 0.05 });
+    // the upper plaza is lit like day
+    for (let x = up.x - up.hw + 4; x <= up.x + up.hw - 4; x += 9) for (const y of [up.y - 7, up.y + 6]) this.lights.push({ x, y, z: 6, r: 255, g: 246, b: 228, rad: 300, flicker: 0 });
+
+    // walkable spots for the crowd, per level
+    this.walk = { up: [], low: [] };
+    for (let y = 0; y < MAP_H; y += 2) {
+      for (let x = 0; x < MAP_W; x += 2) {
+        if (this.blocked[y * MAP_W + x]) continue;
+        const b = this.biome[y * MAP_W + x];
+        if (b === BIOME.CITY_UP && dist(x, y, pad.x, pad.y) > 5) this.walk.up.push({ x: x + 0.5, y: y + 0.5 });
+        else if (b === BIOME.CITY_LOW) this.walk.low.push({ x: x + 0.5, y: y + 0.5 });
+      }
+    }
+    // turbolifts between the levels
+    this.lifts = [
+      { x: liftUp.x, y: liftUp.y + 1.4, to: { x: liftLow.x, y: liftLow.y + 1.6 }, label: '언더시티로 내려간다' },
+      { x: liftLow.x, y: liftLow.y + 1.4, to: { x: liftUp.x, y: liftUp.y - 1.6 }, label: '상층 플라자로 올라간다' },
+    ];
+    // air traffic through the drop: lanes of moving lights (x0, y0) → (x1, y1) at height z
+    this.traffic = [];
+    for (let k = 0; k < 7; k++) {
+      const y = rng.range(82, 93);
+      const dir = k % 2 ? 1 : -1;
+      this.traffic.push({ x0: dir > 0 ? 50 : 146, y0: y, x1: dir > 0 ? 146 : 50, y1: y + rng.range(-3, 3), z: rng.range(1, 6), speed: rng.range(5, 11), gap: rng.range(6, 14) });
+    }
+    for (let k = 0; k < 4; k++) {
+      const x = rng.pick([60, 66, 132, 138]);
+      this.traffic.push({ x0: x, y0: 30, x1: x + rng.range(-4, 4), y1: 150, z: rng.range(3, 8), speed: rng.range(6, 10), gap: rng.range(8, 16) });
+    }
+    this.spawn = { x: pad.x - 5, y: pad.y + 1.5 };
+    this.roadSegs = [];
+    this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
+  }
+}
+

@@ -1,17 +1,20 @@
-// Friendly NPCs at the Republic forward base. They stand at their posts,
-// turn towards Anakin when he comes close and face him while talking.
+// Friendly NPCs of the city hub: the Jedi and the 501st by the landing pad
+// on the upper plaza, the band at the lower level's bar. They stand at their
+// posts, turn towards Anakin when he comes close and face him while talking.
 import { Unit } from './units.js';
 import { angleDiff, dist } from '../core/math.js';
 
-// pos is relative to the base centre
+// hub: tile position in the city hub (see CITY in worldgen.js)
 export const NPC_DEFS = {
-  obiwan: { name: '오비완 케노비', title: '제다이 마스터 · 7군단 장군', sprite: 'obiwan', pos: [1.5, -4.5] },
-  rex: { name: '렉스 대위', title: '501군단 클론 대위', sprite: 'rex', pos: [-5, 2.5] },
-  ahsoka: { name: '아소카 타노', title: '제다이 파다완', sprite: 'ahsoka', pos: [4.5, 4.5] },
-  quartermaster: { name: "보급관 '체인'", title: '501군단 보급 하사관', sprite: 'quartermaster', pos: [-5.5, -8] },
-  r2: { name: 'R2-D2', title: '아스트로멕 드로이드', sprite: 'r2', pos: [4, -1.5] },
-  // at the cantina door north of the base (see CANTINA_POS)
-  figrin: { name: "피그린 단", title: '모달 노드 · 클루 혼 연주자', sprite: 'bith', pos: [2.8, -19.2] },
+  obiwan: { name: '오비완 케노비', title: '제다이 마스터 · 7군단 장군', sprite: 'obiwan', hub: [112.5, 57.5] },
+  rex: { name: '렉스 대위', title: '501군단 클론 대위', sprite: 'rex', hub: [108.5, 61] },
+  ahsoka: { name: '아소카 타노', title: '제다이 파다완', sprite: 'ahsoka', hub: [110.5, 66.5] },
+  quartermaster: { name: "보급관 '체인'", title: '501군단 보급 하사관', sprite: 'quartermaster', hub: [106, 56.5] },
+  r2: { name: 'R2-D2', title: '아스트로멕 드로이드', sprite: 'r2', hub: [115, 65.5] },
+  // outside the lower level's bar
+  figrin: { name: "피그린 단", title: '모달 노드 · 클루 혼 연주자', sprite: 'bith', hub: [108, 121.8] },
+  // Anakin's starfighter (placed by Game: the hub's pad and the Christophsis base)
+  fighter: { name: '제다이 스타파이터', title: '아나킨의 전용기 · 출격', sprite: 'fighter' },
 };
 
 export const TALK_RANGE = 2.2;

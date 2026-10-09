@@ -66,7 +66,7 @@ async function boot() {
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
   if (look && !assets.sprites[look.sprite]) assets.sprites[look.sprite] = await bakeSkin(look.sprite, (k) => onProgress(k, '외형 준비 중…'));
-  label.textContent = MODE === 'duel' ? DUEL_TITLES[DUEL][3] : '크리스토프시스 외곽 지형 생성 중…';
+  label.textContent = MODE === 'duel' ? DUEL_TITLES[DUEL][3] : '코러산트 · 크리스토프시스 생성 중…';
   await new Promise((r) => setTimeout(r, 20));
 
   const audio = new Audio();
@@ -82,6 +82,11 @@ async function boot() {
     else if (who === ANAKIN && !(game.cinema && game.cinema.track)) speech.anakin(text); // a film track carries its own voices
   });
   game.on('reply', (text) => speech.anakin(text));
+  // the city hub ⇄ Christophsis: new ground, props and map
+  game.on('world', () => {
+    renderer.setWorld();
+    hud.onWorld();
+  });
   if (look) game.player.sprite = look.sprite;
   const canvas = document.getElementById('world');
   const overlay = document.getElementById('overlay');

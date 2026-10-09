@@ -766,12 +766,14 @@ export class HUD {
   updateObjectives() {
     const g = this.game;
     const p = g.player;
-    const camps = g.world.camps.filter((c) => !c.boss);
-    const boss = g.world.camps.find((c) => c.boss);
+    const front = g.front;
+    const camps = front.camps.filter((c) => !c.boss);
+    const boss = front.camps.find((c) => c.boss);
+    const away = g.world !== front; // in the city hub: no arrow, a pointer to the starfighter
     const cleared = camps.filter((c) => c.cleared).length;
     let near = null;
     let nd = Infinity;
-    for (const c of g.world.camps) {
+    for (const c of away ? [] : front.camps) {
       if (c.cleared) continue;
       const d = dist(p.x, p.y, c.x, c.y);
       if (d < nd) {
@@ -794,10 +796,17 @@ export class HUD {
     this.objectives.innerHTML = `<div class="ob-h">목표</div><ul>
       <li class="${cleared === camps.length ? 'done' : ''}"><i></i>드로이드 거점 소탕 <b>${cleared} / ${camps.length}</b></li>
       <li class="${boss && boss.cleared ? 'done' : ''}"><i></i>북쪽의 드로이드 공장 파괴</li>
-      ${quests}${arrow}</ul>`;
+      ${quests}${arrow}${away ? '<li class="ob-near"><i></i>제다이 착륙장의 스타파이터로 크리스토프시스 출격</li>' : ''}</ul>`;
   }
 
   // ================================================================== map drawing
+
+  /** Anakin changed place: rebuild the map images. */
+  onWorld() {
+    this.mapImg = this.renderer.terrain.minimapImage();
+    this.mapData = null;
+    this.updateFog();
+  }
 
   updateFog() {
     const w = this.game.world;

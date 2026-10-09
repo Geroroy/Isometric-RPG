@@ -3,7 +3,7 @@
 import { Baker } from './baker.js';
 import * as M from './models/characters.js';
 import * as A from './models/anims.js';
-import { PROPS, buildPropVariants, buildLaat } from './models/props.js';
+import { PROPS, buildPropVariants, buildLaat, buildFighter } from './models/props.js';
 import { RNG } from '../core/math.js';
 import { loadBundle, saveBundle } from './assetCache.js';
 
@@ -22,7 +22,23 @@ export const CHARACTERS = {
   ahsoka: () => ({ model: M.buildAhsoka(), dirs: 8, frame: [120, 110, 60, 90], anims: A.AHSOKA_ANIMS, markers: [], ss: 2 }),
   quartermaster: () => ({ model: M.buildClone({ marks: 0xd99a2b }), dirs: 8, frame: [120, 110, 60, 90], anims: A.NPC_CLONE_ANIMS, markers: [] }),
   bith: () => ({ model: M.buildBith(), dirs: 8, frame: [120, 110, 60, 90], anims: A.BITH_ANIMS, markers: [], ss: 2 }),
+  // city hub crowd (original designs)
+  citNoble: () => citizen('noble', 0, A.NOBLE_ANIMS),
+  citNoble2: () => citizen('noble', 1, A.NOBLE_ANIMS),
+  citAide: () => citizen('aide', 0, A.CITIZEN_ANIMS),
+  citWorker: () => citizen('worker', 0, A.CITIZEN_ANIMS),
+  citWorker2: () => citizen('worker', 1, A.CITIZEN_ANIMS),
+  citDrifter: () => citizen('drifter', 0, A.DRIFTER_ANIMS),
+  citVendor: () => citizen('vendor', 0, A.CITIZEN_ANIMS),
+  citOfficer: () => citizen('officer', 0, A.CITIZEN_ANIMS),
+  citAlien: () => citizen('alien', 0, A.CITIZEN_ANIMS),
+  // Anakin's starfighter: a unit so it can take off and land
+  fighter: () => ({ model: { root: buildFighter(), applyPose() {} }, dirs: 8, frame: [240, 170, 120, 120], anims: { idle: { frames: 1, fps: 1, loop: true, pose: () => ({}) } }, markers: [], ss: 2 }),
 };
+
+function citizen(kind, palette, anims) {
+  return { model: M.buildCitizen({ kind, palette }), dirs: 8, frame: [120, 120, 60, 100], anims, markers: [] };
+}
 
 /** Baked only when that Movie Duel starts. */
 export const DUELS = {

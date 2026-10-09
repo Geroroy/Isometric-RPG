@@ -122,8 +122,8 @@ export class Effects {
     this.shake(5 * size);
   }
 
-  text(x, y, str, color = '#fff', scale = 1, z = 1.9) {
-    this.texts.push({ x: x + rand(-0.2, 0.2), y, z, str, color, scale, t: 0, life: 1.0 });
+  text(x, y, str, color = '#fff', scale = 1, z = 1.9, life = 1.0) {
+    this.texts.push({ x: x + rand(-0.2, 0.2), y, z, str, color, scale, t: 0, life });
   }
 
   // -------------------------------------------------------------------------- drawing

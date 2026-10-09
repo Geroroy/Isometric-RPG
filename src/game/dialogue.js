@@ -128,7 +128,7 @@ function ahsoka(g) {
 
 function obiwan(g) {
   const p = g.player;
-  const camps = g.world.camps.filter((c) => !c.boss);
+  const camps = g.front.camps.filter((c) => !c.boss);
   const cleared = camps.filter((c) => c.cleared).length;
   const root = () => ({
     text: p.darkness >= 60 ? '아나킨. 분노가 느껴지는구나. 그 길 끝에 무엇이 있는지 우리는 알고 있지.' : '아나킨. 이번에도 계획은 \'즉흥\'인가?',
@@ -236,7 +236,23 @@ function figrin(g) {
   };
 }
 
-const TREES = { rex, ahsoka, obiwan, quartermaster, r2, figrin };
+// Anakin's starfighter: R2 has the coordinates ready
+function fighter(g) {
+  const atHub = g.place === 'hub';
+  const camps = g.front.camps.filter((c) => !c.boss);
+  const left = camps.filter((c) => !c.cleared).length;
+  return {
+    text: atHub
+      ? `(조종석 옆 화면에 항법 좌표가 떠 있다) 크리스토프시스 외곽 — 공화국 전진 기지. 남은 드로이드 거점 ${left}곳.`
+      : '(엔진이 아직 따뜻하다) 코러산트 — 제다이 착륙장. 보고와 보급, 정비는 그쪽에서.',
+    choices: [
+      { text: atHub ? '[출격] 크리스토프시스로' : '[귀환] 코러산트로', go: () => (g.fly(atHub ? 'christophsis' : 'hub'), null) },
+      bye('(조금 더 머문다)'),
+    ],
+  };
+}
+
+const TREES = { rex, ahsoka, obiwan, quartermaster, r2, figrin, fighter };
 
 export function startDialogue(g, npc) {
   return TREES[npc.npcId](g);

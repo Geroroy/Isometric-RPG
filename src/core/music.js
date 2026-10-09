@@ -203,7 +203,7 @@ export class Music {
       const boss = g.activeUnits.some((u) => u.elite && !u.dead && u.target === p && dist(u.x, u.y, p.x, p.y) < 14);
       return boss || /공장/.test(g.region || '') ? 'boss' : 'combat';
     }
-    return /공화국|칸티나/.test(g.region || '') ? 'base' : 'explore';
+    return /공화국|칸티나|코러산트/.test(g.region || '') ? 'base' : 'explore';
   }
 
   // ------------------------------------------------------------------ jukebox

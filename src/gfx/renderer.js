@@ -24,7 +24,7 @@ export class Renderer {
     this.octx = overlay.getContext('2d');
     this.light = document.createElement('canvas');
     this.lctx = this.light.getContext('2d');
-    this.terrain = new Terrain(game.world);
+    this.terrain = game.world.terrain ||= new Terrain(game.world);
     this.cam = { x: 0, y: 0 };
     this.drift = { x: 0, y: 0 };
     this.clickMarks = [];
@@ -35,6 +35,13 @@ export class Renderer {
     this.hd = false;
     this.D = 1;
     this.shadow = softShadow();
+    this.applyMode();
+  }
+
+  /** Another place (the city hub ⇄ Christophsis): new ground, props, map. */
+  setWorld() {
+    const w = this.game.world;
+    this.terrain = w.terrain ||= new Terrain(w); // each place keeps its built ground
     this.applyMode();
   }
 
@@ -131,10 +138,10 @@ export class Renderer {
     let best = null;
     let bestDepth = -Infinity;
     for (const u of this.game.activeUnits) {
-      if (u.dead || !filter(u)) continue;
+      if (u.dead || u.hidden || !filter(u)) continue;
       const s = worldToScreen(u.x, u.y, u.z);
-      const hw = u.kind === 'b2' ? 13 : 10;
-      const hh = u.kind === 'b2' ? 56 : u.kind === 'r2' ? 26 : 50;
+      const hw = u.kind === 'b2' ? 13 : u.kind === 'fighter' ? 44 : 10;
+      const hh = u.kind === 'b2' ? 56 : u.kind === 'r2' ? 26 : u.kind === 'fighter' ? 40 : 50;
       if (ix >= s.x - hw && ix <= s.x + hw && iy >= s.y - hh && iy <= s.y + 6) {
         const d = u.x + u.y;
         if (d > bestDepth) {
@@ -206,9 +213,9 @@ export class Renderer {
     };
     ctx.fillStyle = 'rgba(0,0,0,0.32)';
     for (const u of g.activeUnits) {
-      if (u.dead) continue;
+      if (u.dead || u.hidden) continue;
       const s = worldToScreen(u.x, u.y);
-      const r = u.kind === 'b2' ? 11 : u.kind === 'r2' ? 7 : 9;
+      const r = u.kind === 'b2' ? 11 : u.kind === 'r2' ? 7 : u.kind === 'fighter' ? 30 : 9;
       shadow(s.x, s.y, r / (1 + u.z * 0.4));
     }
     for (const pk of g.pickups) {
@@ -217,7 +224,7 @@ export class Renderer {
     }
 
     // --- depth-sorted standing objects
-    for (const u of g.activeUnits) if (!u.dead) standing.push({ depth: u.x + u.y, unit: u });
+    for (const u of g.activeUnits) if (!u.dead && !u.hidden) standing.push({ depth: u.x + u.y, unit: u });
     for (const pk of g.pickups) standing.push({ depth: pk.x + pk.y, pickup: pk });
     standing.sort((a, b) => a.depth - b.depth);
     const pDepth = p.x + p.y;
@@ -242,7 +249,7 @@ export class Renderer {
       }
     }
     // Player silhouette through occluders.
-    if (!p.dead) {
+    if (!p.dead && !p.hidden) {
       ctx.globalAlpha = 0.28;
       this.drawFrame(p.frame(), ps.x, ps.y);
       ctx.globalAlpha = 1;
@@ -259,6 +266,7 @@ export class Renderer {
     this.drawBolts(ctx, cam);
     this.drawThrows(ctx, cam);
     g.fx.drawAdd(ctx, cam);
+    this.drawTraffic(ctx, cam);
     ctx.globalCompositeOperation = 'source-over';
 
     // --- aircraft (above everything)
@@ -386,7 +394,7 @@ export class Renderer {
       spot(L.x, L.y, L.z, L.r, L.g, L.b, L.rad * fl, 0.55);
     }
     for (const u of g.activeUnits) {
-      if (!u.saberColor || u.dead || u.saberOut || u.saberLit === false) continue;
+      if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) continue;
       const [r, gg, b] = u.saberColor;
       spot(u.x, u.y, 1.2 + u.z, Math.min(255, r * 1.4), Math.min(255, gg * 1.25), b, 70, 0.55 + (u.deflectFlash > 0 ? 0.4 : 0));
     }
@@ -414,7 +422,7 @@ export class Renderer {
         for (const t of tr) t.t += dt;
         while (tr.length && tr[0].t > 0.09) tr.shift();
       }
-      if (!u.saberColor || u.dead || u.saberOut || u.saberLit === false) continue;
+      if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) continue;
       const f = u.frame();
       const s = worldToScreen(u.x, u.y, u.z);
       const swinging = u.anim.startsWith('attack') || u.anim === 'leap' || u.anim === 'parry';
@@ -470,6 +478,26 @@ export class Renderer {
     ctx.lineWidth = 1.4;
     ctx.stroke();
     ctx.lineCap = 'butt';
+  }
+
+  /** The city's air traffic: streams of speeder lights along lanes through the drop. */
+  drawTraffic(ctx, cam) {
+    const lanes = this.game.world.traffic;
+    if (!lanes) return;
+    const t = this.time;
+    for (const L of lanes) {
+      const len = Math.hypot(L.x1 - L.x0, L.y1 - L.y0);
+      const ux = (L.x1 - L.x0) / len;
+      const uy = (L.y1 - L.y0) / len;
+      for (let d = (t * L.speed) % L.gap; d < len; d += L.gap) {
+        const x = L.x0 + ux * d;
+        const y = L.y0 + uy * d;
+        const a = worldToScreen(x, y, L.z);
+        if (a.x < cam.x - 20 || a.y < cam.y - 20 || a.x > cam.x + this.w + 20 || a.y > cam.y + this.h + 20) continue;
+        const b = worldToScreen(x - ux * 0.9, y - uy * 0.9, L.z);
+        this.glowLine(ctx, b.x - cam.x, b.y - cam.y, a.x - cam.x, a.y - cam.y, [255, 120, 90], 0.7, 'rgba(255,240,220,0.95)');
+      }
+    }
   }
 
   drawBolts(ctx, cam) {

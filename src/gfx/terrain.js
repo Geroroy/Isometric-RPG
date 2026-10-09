@@ -23,6 +23,9 @@ const PAL = {
   [BIOME.MUSTAFAR]: [88, 84, 82],
   [BIOME.LAVA]: [70, 30, 18],
   [BIOME.ASH]: [52, 46, 44],
+  [BIOME.CITY_UP]: [186, 180, 166],
+  [BIOME.CITY_LOW]: [70, 66, 62],
+  [BIOME.VOID]: [10, 12, 22],
 };
 const ROAD = [128, 108, 84];
 const EDGE = [62, 57, 54];
@@ -41,16 +44,26 @@ export class Terrain {
     this.K = new Float32Array(n); // crystal weight (sparkles)
     this.Bs = new Float32Array(n); // base weight (hazard pattern)
     this.L = new Float32Array(n); // lava weight
+    this.V = new Float32Array(n); // the city's drop (dark, far lights)
+    this.U = new Float32Array(n); // city upper level (inlaid stone)
     for (let y = 0; y < world.h; y++) {
       for (let x = 0; x < world.w; x++) {
         const i = y * world.w + x;
         const b = world.biome[i];
-        let c = world.blocked[i] === 2 && b !== BIOME.LAVA && b !== BIOME.ASH ? EDGE : PAL[b];
+        let c = world.blocked[i] === 2 && b !== BIOME.LAVA && b !== BIOME.ASH && b !== BIOME.VOID ? EDGE : PAL[b];
         const v = (valueNoise(x / 3.5, y / 3.5, 7) - 0.5) * 22 + (hash2(x, y, 3) - 0.5) * 8;
         this.R[i] = c[0] + v;
         this.G[i] = c[1] + v;
         this.B[i] = c[2] + v * 0.9;
-        this.P[i] = b === BIOME.RUIN || b === BIOME.BASE || b === BIOME.HANGAR || b === BIOME.MUSTAFAR ? 1 : 0;
+        this.P[i] = b === BIOME.RUIN || b === BIOME.BASE || b === BIOME.HANGAR || b === BIOME.MUSTAFAR || b === BIOME.CITY_UP || b === BIOME.CITY_LOW ? 1 : 0;
+        this.V[i] = b === BIOME.VOID ? 1 : 0;
+        this.U[i] = b === BIOME.CITY_UP ? 1 : 0;
+        if (b === BIOME.VOID) {
+          // no grain in the drop
+          this.R[i] = c[0];
+          this.G[i] = c[1];
+          this.B[i] = c[2];
+        }
         this.L[i] = b === BIOME.LAVA ? 1 : 0;
         this.Bs[i] = b === BIOME.BASE ? 1 : 0;
         this.K[i] = b === BIOME.CRYSTAL ? 1 : 0;
@@ -130,6 +143,8 @@ export class Terrain {
         const cry = this.sample(this.K, u, v);
         const base = this.sample(this.Bs, u, v);
         const lava = this.sample(this.L, u, v);
+        const drop = this.sample(this.V, u, v);
+        const upper = this.sample(this.U, u, v);
         const grain = hd ? hash2(Math.floor(sx * S), Math.floor(sy * S), 99) : hash2(sx, sy, 99);
         const blot = valueNoise(fx * 1.7, fy * 1.7, 13) - 0.5;
         // blotchy mid-frequency variation
@@ -191,6 +206,41 @@ export class Terrain {
           r += (255 - r) * hot;
           g += (150 * hot + 60 * hot * hot - g) * hot;
           b += (30 - b) * hot;
+        }
+        // upper city: polished stone with brass inlay lines every 4 tiles
+        if (upper > 0.5) {
+          const ix = (((fx / 4) % 1) + 1) % 1;
+          const iy = (((fy / 4) % 1) + 1) % 1;
+          if (ix < 0.02 || iy < 0.02) {
+            r += (196 - r) * 0.55;
+            g += (164 - g) * 0.55;
+            b += (96 - b) * 0.55;
+          }
+          r += 6;
+          g += 6;
+          b += 6;
+        }
+        // the drop: near black, the far-below city as scattered warm and cold
+        // lights, a faint haze at the platform edges
+        if (drop > 0.02) {
+          const k = clamp(drop, 0, 1);
+          const haze = (1 - k) * 40;
+          r = r * (1 - k) + (10 + haze) * k;
+          g = g * (1 - k) + (12 + haze) * k;
+          b = b * (1 - k) + (24 + haze * 1.2) * k;
+          if (k > 0.9) {
+            const spark = hash2(Math.floor(fx * 6), Math.floor(fy * 6), 77);
+            if (spark > 0.985) {
+              const warm = hash2(Math.floor(fx * 6), Math.floor(fy * 6), 78) > 0.4;
+              r = warm ? 230 : 140;
+              g = warm ? 170 : 190;
+              b = warm ? 90 : 255;
+            } else if (spark > 0.97) {
+              r += 30;
+              g += 26;
+              b += 30;
+            }
+          }
         }
         // crystal sparkle
         if (cry > 0.5 && grain > 0.994 && blot > 0) {

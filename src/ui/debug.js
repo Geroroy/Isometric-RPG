@@ -3,7 +3,7 @@
 // they are turned off or the page is reloaded.
 import { SKILLS, isActive } from '../game/skills.js';
 import { CARDS } from '../game/perks.js';
-import { BASE_POS, CANTINA_POS, FACTORY_POS } from '../world/worldgen.js';
+import { BASE_POS, FACTORY_POS, CITY } from '../world/worldgen.js';
 import { dist } from '../core/math.js';
 
 export class DebugUI {
@@ -53,8 +53,9 @@ export class DebugUI {
       </section>
       <section class="dbg-card"><h4>월드</h4>
         ${btn('reveal', '지도 전체 공개')}
-        ${btn('tp:base', '공화국 기지로 이동')}
-        ${btn('tp:cantina', '칸티나로 이동')}
+        ${btn('tp:hub', '코러산트 착륙장으로 이동')}
+        ${btn('tp:cantina', '언더시티 바로 이동')}
+        ${btn('tp:base', '크리스토프시스 기지로 이동')}
         ${btn('tp:camp', '가장 가까운 거점으로 이동')}
         ${btn('tp:factory', '드로이드 공장으로 이동')}
       </section>`;
@@ -142,9 +143,13 @@ export class DebugUI {
   teleport(where) {
     const g = this.game;
     const p = g.player;
+    // the city hub or the Christophsis front
+    const place = where === 'hub' || where === 'cantina' ? 'hub' : 'christophsis';
+    if (g.places && g.place !== place) g.travel(place, g.places[place].world.landing);
     let t;
-    if (where === 'base') t = { x: BASE_POS.x + 0.5, y: BASE_POS.y + 1.5 };
-    else if (where === 'cantina') t = { x: CANTINA_POS.x + 0.5, y: CANTINA_POS.y + 6 };
+    if (where === 'hub') t = { x: CITY.pad.x - 4, y: CITY.pad.y + 1.5 };
+    else if (where === 'base') t = { x: BASE_POS.x + 0.5, y: BASE_POS.y + 1.5 };
+    else if (where === 'cantina') t = { x: CITY.bar.x, y: CITY.bar.y - 0.5 };
     else if (where === 'factory') t = { x: FACTORY_POS.x + 14, y: FACTORY_POS.y + 2 };
     else {
       const camps = g.world.camps.filter((c) => !c.cleared && !c.boss).sort((a, b) => dist(a.x, a.y, p.x, p.y) - dist(b.x, b.y, p.x, p.y));

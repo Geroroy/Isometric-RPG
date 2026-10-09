@@ -16,6 +16,8 @@ export const UNIT_DEFS = {
   dooku: { name: '두쿠 백작', sprite: 'dooku', team: 'cis', hp: 900, radius: 0.36, knockRes: 0.35 },
   obiwan3: { name: '오비완 케노비', sprite: 'obiwan3', team: 'cis', hp: 950, radius: 0.36, knockRes: 0.4 },
   padme: { name: '파드메 아미달라', sprite: 'padme', team: 'rep', hp: 100, radius: 0.3, knockRes: 0 },
+  citizen: { name: '시민', sprite: 'citWorker', team: 'civ', hp: 100, radius: 0.28, knockRes: 0.6 },
+  fighter: { name: '제다이 스타파이터', sprite: 'fighter', team: 'rep', hp: 100, radius: 1.2, knockRes: 0 },
   master: { name: '마스터 세렌 베일', sprite: 'master', team: 'rep', hp: 100, radius: 0.32, knockRes: 0 },
 };
 

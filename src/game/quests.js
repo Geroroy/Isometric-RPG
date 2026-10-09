@@ -100,7 +100,7 @@ export class QuestLog {
   }
 
   firstCamp() {
-    return this.game.world.camps.find((c) => c.tutorial);
+    return this.game.front.camps.find((c) => c.tutorial);
   }
 
   progress(id) {

@@ -802,3 +802,11 @@ export const MASTER_ANIMS = {
   walk: { frames: 8, fps: 10, loop: true, pose: (t) => pose(MASTER_REST, legCycle(t, 0.45, 0.8)) },
   absorb: { frames: 4, fps: 8, loop: true, pose: (t) => pose(MASTER_REST, { spine: [0, 0, -0.1], hipL: [0, 0, 0.3], knL: [0, 0, -0.2], hipR: [0, 0, -0.25], shR: [-0.05, 0, 1.55], elR: [0, 0, 0.1 + sin(t * TAU) * 0.05], haR: [0, 0, -1.0] }) },
 };
+
+// City hub citizens: the shared NPC set, plus sitting against a wall for the
+// lower level's drifters and a hands-behind-the-back stance for the nobles.
+const SIT = { fk: 1, pelvisY: -0.5, spine: [0, 0, -0.25], head: [0, 0, 0.2], hipL: [0, 0, 1.45], knL: [0, 0, -1.6], hipR: [0, 0, 1.3], knR: [0, 0, -1.3], shL: [0.2, 0, 0.5], elL: [0, 0, 1.2], shR: [-0.2, 0, 0.5], elR: [0, 0, 1.2] };
+export const CITIZEN_ANIMS = npcSet();
+export const NOBLE_ANIMS = npcSet({ rest: { shR: [-0.25, 0, -0.35], elR: [0, 0, 0.9], shL: [0.25, 0, -0.35], elL: [0, 0, 0.9], spine: [0, 0, 0.05], head: [0, 0, -0.08] } });
+export const DRIFTER_ANIMS = { ...npcSet({ rest: { spine: [0, 0, -0.2], head: [0, 0, 0.15], shR: [-0.1, 0, 0.2], elR: [0, 0, 0.5], shL: [0.1, 0, 0.2], elL: [0, 0, 0.5] } }), sit: { frames: 4, fps: 3, loop: true, pose: (t) => pose(SIT, { head: [0, sin(t * TAU) * 0.15, 0.2] }) } };
+
