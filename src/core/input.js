@@ -229,6 +229,9 @@ export class Input {
       case 'p':
         hud.toggle('cards');
         break;
+      case 'v':
+        if (!g.duel) hud.toggle('look');
+        break;
       case 'o':
         hud.toggle('settings');
         break;

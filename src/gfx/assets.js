@@ -29,6 +29,12 @@ export const DUEL_CHARACTERS = {
   dooku: () => ({ model: M.buildDooku(), dirs: 16, frame: [180, 170, 90, 125], anims: A.DOOKU_ANIMS, markers: SABER, ss: 2 }),
 };
 
+/** Anakin's alternative appearances (sprite name `anakin_<id>`), baked when equipped. */
+export const SKINS = {
+  anakin_tunic: () => ({ model: M.buildAnakin({ outfit: 'tunic' }), dirs: 16, frame: [170, 160, 85, 120], anims: A.ANAKIN_ANIMS, markers: SABER, ss: 2 }),
+  anakin_robe: () => ({ model: M.buildAnakin({ outfit: 'robe' }), dirs: 16, frame: [170, 160, 85, 120], anims: A.ANAKIN_ANIMS, markers: SABER, ss: 2 }),
+};
+
 const nextFrame = () => new Promise((r) => setTimeout(r, 0));
 
 function progress(onProgress, total) {
@@ -111,4 +117,16 @@ export async function bakeDuelAssets(onProgress) {
   saveBundle('duel', assets);
   baker.dispose();
   return assets;
+}
+
+/** Sprites for one of Anakin's appearances; cached on the device like the rest. */
+export async function bakeSkin(name, onProgress) {
+  const cached = await loadBundle(name);
+  if (cached) return cached.sprites[name];
+  const baker = new Baker();
+  const specs = { [name]: SKINS[name]() };
+  const sprites = await bakeCharacters(baker, specs, progress(onProgress, frameCost(specs)));
+  saveBundle(name, { sprites });
+  baker.dispose();
+  return sprites[name];
 }

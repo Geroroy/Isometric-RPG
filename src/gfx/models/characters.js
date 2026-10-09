@@ -1,4 +1,5 @@
-// Character models: Anakin Skywalker (Clone Wars armor), clone troopers of the
+// Character models: Anakin Skywalker (Clone Wars armor; Episode III tunic and
+// robe appearances), clone troopers of the
 // 501st, Captain Rex, B1 / B2 battle droids and R2-D2.
 import * as THREE from 'three';
 import { Rig } from './rig.js';
@@ -83,8 +84,8 @@ function skirtPanel(parent, rTop, rBot, h, t0, t1, material, y = 0.06) {
   return pivot;
 }
 
-/** Long cloth skirt split in four panels that follow the thighs. */
-export function addSkirt(rig, { outer, inner, len = 0.62, innerLen = 0.5, gap = 0.32, rTop = 0.165, rBot = 0.27 }) {
+/** Long cloth skirt split in four panels that follow the thighs (`follow` scales how much). */
+export function addSkirt(rig, { outer, inner, len = 0.62, innerLen = 0.5, gap = 0.32, rTop = 0.165, rBot = 0.27, follow = 1 }) {
   const j = rig.j;
   const F = Math.PI / 2; // front (+X)
   const panels = [];
@@ -102,10 +103,10 @@ export function addSkirt(rig, { outer, inner, len = 0.62, innerLen = 0.5, gap = 
   ];
   for (const [a, b, side] of op) panels.push({ g: skirtPanel(j.pelvis, rTop, rBot, len, a, b, outer), side });
   rig.hooks.push((r) => {
-    const hl = r.j.hipL.rotation.z;
-    const hr = r.j.hipR.rotation.z;
-    const sl = r.j.hipL.rotation.x;
-    const sr = r.j.hipR.rotation.x;
+    const hl = r.j.hipL.rotation.z * follow;
+    const hr = r.j.hipR.rotation.z * follow;
+    const sl = r.j.hipL.rotation.x * follow;
+    const sr = r.j.hipR.rotation.x * follow;
     for (const { g, side } of panels) {
       if (side === 'L') g.rotation.set(Math.max(0, sl) * 0.6, 0, Math.max(0, hl) * 0.85);
       else if (side === 'R') g.rotation.set(Math.min(0, sr) * 0.6, 0, Math.max(0, hr) * 0.85);
@@ -115,7 +116,8 @@ export function addSkirt(rig, { outer, inner, len = 0.62, innerLen = 0.5, gap = 
   });
 }
 
-export function buildAnakin({ dual = false } = {}) {
+export function buildAnakin({ dual = false, outfit = 'armor' } = {}) {
+  if (outfit !== 'armor') return armAnakin(buildAnakinEp3(outfit === 'robe'), dual, 0.2);
   const K = ANAKIN_COL;
   const rig = new Rig({ shW: 0.2, uarm: 0.29, farm: 0.27, chest: 0.31 });
   const j = rig.j;
@@ -196,11 +198,15 @@ export function buildAnakin({ dual = false } = {}) {
     j.head.add(scl(sph(0.04, hd, -0.05, 0.02, 0.06 * zs, 6, 4), 1, 1.3, 1)); // tips
   }
 
-  // the hilt clipped to the belt while the blade is off
+  return armAnakin(rig, dual, 0.19);
+}
+
+/** Belt hilt (shown while the blade is off) and the IK-held saber(s). */
+function armAnakin(rig, dual, beltZ) {
   const belt = group(cylX(0.022, 0.022, 0.26, mat(0xc9ccd2), -0.13, 0, 0, 6), cylX(0.024, 0.024, 0.1, mat(0x1b1b1f), -0.05, 0, 0, 6));
   belt.rotation.z = -1.35;
-  belt.position.set(0.02, 0.0, 0.19);
-  j.pelvis.add(belt);
+  belt.position.set(0.02, 0.0, beltZ);
+  rig.j.pelvis.add(belt);
   rig.beltHilt = belt;
   const saber = buildSaber(1.0);
   if (dual) {
@@ -208,6 +214,158 @@ export function buildAnakin({ dual = false } = {}) {
     rig.enableSaberIK(saber, saber2);
   } else rig.enableSaberIK(saber);
   return rig;
+}
+
+// ----------------------------------------------------------------------------
+// Anakin, Episode III (Revenge of the Sith), after the film costume: high dark
+// undershirt collar, coarse brown tunic wrapped in a V, near-black leather
+// tabards over the shoulders running down front and back to below the belt,
+// wide brown obi under a reddish leather belt with a pouch on his right hip,
+// bell sleeves, a long black glove over the mechanical right hand, dark brown
+// trousers and tall boots. The robe variant adds the dark brown hooded Jedi
+// cloak: open front, wide sleeves, ankle-length, the hood lying on the back.
+
+const EP3 = {
+  skin: 0xdcaa88,
+  tunic: 0x7a5440,
+  tunicDark: 0x5a3c2d,
+  under: 0x3e2620,
+  leather: 0x4a4b50,
+  obi: 0x664434,
+  belt: 0x8c4a32,
+  pouch: 0x7a4430,
+  black: 0x17171a,
+  pants: 0x4a342a,
+  boot: 0x352a24,
+  strap: 0x58463a,
+  glove: 0x1f1a18,
+  robe: 0x5a3426,
+  robeDark: 0x3a2018,
+};
+
+function buildAnakinEp3(robe) {
+  const K = EP3;
+  const rig = new Rig({ shW: 0.2, uarm: 0.29, farm: 0.27, chest: 0.31 });
+  const j = rig.j;
+  const d = rig.dims;
+  const F = Math.PI / 2; // sector angle of the front (+X)
+  const skin = mat(K.skin, { tex: 'none' });
+  const tunic = cloth(K.tunic);
+  const tunicDark = cloth(K.tunicDark);
+  const leather = mat(K.leather, { tex: 'none', side: THREE.DoubleSide });
+  const black = mat(K.black, { tex: 'none' });
+
+  // Legs: dark brown trousers, tall boots with two straps below the knee.
+  for (const side of ['L', 'R']) {
+    j['hip' + side].add(cyl(0.084, 0.066, d.thigh, mat(K.pants, { tex: 'cloth' }), 0, -d.thigh / 2, 0, 8));
+    const kn = j['kn' + side];
+    kn.add(cyl(0.07, 0.058, d.shin, mat(K.boot, { tex: 'none' }), 0, -d.shin / 2 + 0.01, 0, 8));
+    kn.add(cyl(0.078, 0.072, 0.07, mat(K.boot, { tex: 'none' }), 0, -0.03, 0, 8)); // boot top
+    for (const y of [-0.15, -0.3]) kn.add(cyl(0.068, 0.066, 0.022, mat(K.strap, { tex: 'none' }), 0, y, 0, 8));
+    j['an' + side].add(box(0.24, 0.085, 0.105, mat(K.boot, { tex: 'none' }), 0.055, -0.035, 0));
+    j['an' + side].add(box(0.26, 0.03, 0.115, mat(0x141210), 0.055, -0.08, 0)); // sole
+  }
+
+  // Waist: wide obi, belt with buckle, pouch (his right) and clip (his left).
+  j.pelvis.add(cyl(0.15, 0.16, 0.18, tunic, 0, -0.03, 0, 8));
+  j.pelvis.add(scl(cyl(0.172, 0.176, 0.14, cloth(K.obi), 0, 0.09, 0, 10), 0.85, 1, 1.05));
+  j.pelvis.add(scl(cyl(0.181, 0.181, 0.045, mat(K.belt, { tex: 'none' }), 0, 0.075, 0, 10), 0.85, 1, 1.05));
+  j.pelvis.add(box(0.022, 0.05, 0.075, black, 0.158, 0.075, 0));
+  j.pelvis.add(box(0.075, 0.095, 0.05, mat(K.pouch, { tex: 'none' }), 0.105, 0.05, 0.15));
+  j.pelvis.add(box(0.04, 0.06, 0.03, black, 0.11, 0.065, -0.15));
+  // tunic skirt: leather tabard panels in front of the longer brown tunic
+  addSkirt(rig, { outer: leather, inner: tunic, len: 0.5, innerLen: 0.56, gap: 0.42, follow: robe ? 0.4 : 1 });
+
+  // Torso: brown tunic, V wrap over the dark undershirt, leather tabards.
+  j.spine.add(scl(cyl(0.15, 0.155, 0.27, tunic, 0, 0.12, 0, 8), 0.78, 1, 1));
+  j.chest.add(scl(cyl(0.175, 0.155, 0.31, tunic, 0, 0.15, 0, 8), 0.74, 1, 1));
+  j.chest.add(box(0.012, 0.13, 0.07, cloth(K.under), 0.128, 0.27, 0)); // undershirt in the V
+  j.chest.add(rot(box(0.016, 0.24, 0.05, tunicDark, 0.13, 0.23, -0.028), -0.34, 0, 0)); // wrap lapels
+  j.chest.add(rot(box(0.016, 0.24, 0.05, tunicDark, 0.134, 0.23, 0.028), 0.34, 0, 0));
+  for (const [t0, t1] of [[F + 0.32, F + 0.98], [F - 0.98, F - 0.32], [F + Math.PI - 0.8, F + Math.PI + 0.8]]) {
+    j.chest.add(scl(sector(0.188, 0.166, 0.31, t0, t1, leather, 0, 0.15, 0, 4), 0.78, 1, 1));
+    j.spine.add(scl(sector(0.162, 0.166, 0.27, t0, t1, leather, 0, 0.12, 0, 4), 0.8, 1, 1));
+  }
+  for (const zs of [1, -1]) j.chest.add(box(0.25, 0.034, 0.11, leather, -0.005, 0.312, 0.115 * zs)); // over the shoulders
+  j.chest.add(cyl(0.072, 0.088, 0.05, tunicDark, 0, 0.33, 0, 8)); // tunic collar
+  j.chest.add(cyl(0.056, 0.064, 0.07, cloth(K.under), 0, 0.36, 0, 8)); // high undershirt collar
+
+  // Arms: bell sleeves; long black glove on the right (mechanical) hand.
+  for (const side of ['L', 'R']) {
+    const sh = j['sh' + side];
+    const el = j['el' + side];
+    sh.add(scl(sph(0.078, tunic, 0, 0.0, 0, 8, 5), 1.05, 0.8, 1.05));
+    sh.add(cyl(0.064, 0.068, d.uarm, tunic, 0, -d.uarm / 2, 0, 8));
+    el.add(cyl(0.068, 0.1, d.farm * 0.9, tunic, 0, -d.farm * 0.45, 0, 9));
+    el.add(cyl(0.094, 0.094, 0.008, mat(0x140d0a, { tex: 'none' }), 0, -d.farm * 0.9 + 0.006, 0, 9)); // sleeve opening
+    if (side === 'R') {
+      el.add(cyl(0.046, 0.04, d.farm, mat(K.glove, { tex: 'none' }), 0, -d.farm / 2, 0, 8));
+      j.haR.add(scl(sph(0.05, mat(K.glove, { tex: 'none' }), 0.0, -0.045, 0, 7, 5), 0.9, 1.15, 0.8));
+    } else {
+      el.add(cyl(0.036, 0.034, 0.08, skin, 0, -d.farm + 0.03, 0, 7)); // bare wrist
+      j.haL.add(scl(sph(0.047, skin, 0.0, -0.045, 0, 7, 5), 0.9, 1.15, 0.8));
+    }
+  }
+
+  if (robe) {
+    const rm = cloth(K.robe);
+    const rd = cloth(K.robeDark);
+    // cloak body, open at the front so the tunic shows
+    j.chest.add(scl(sector(0.205, 0.198, 0.33, F + 0.6, F + 2 * Math.PI - 0.6, rm, 0, 0.15, 0, 10), 0.84, 1, 1.02));
+    j.spine.add(scl(sector(0.2, 0.214, 0.28, F + 0.55, F + 2 * Math.PI - 0.55, rm, 0, 0.12, 0, 10), 0.84, 1, 1.02));
+    for (const zs of [1, -1]) j.chest.add(scl(sph(0.1, rm, -0.01, 0.3, 0.13 * zs, 8, 5), 1.15, 0.5, 0.9)); // shoulders
+    // hood lying folded on the back, cowl round the neck
+    j.chest.add(scl(sector(0.11, 0.135, 0.07, F + 0.9, F + 2 * Math.PI - 0.9, rm, 0, 0.34, 0, 10), 0.95, 1, 1.05));
+    j.chest.add(scl(sph(0.12, rd, -0.165, 0.27, 0, 9, 6), 0.42, 0.95, 1.05));
+    j.chest.add(scl(sph(0.1, rm, -0.17, 0.3, 0, 9, 6), 0.45, 0.85, 1.0));
+    // long skirt to the ankles, open in front
+    addSkirt(rig, { outer: rm, len: 0.86, gap: 0.75, rTop: 0.2, rBot: 0.4, follow: 0.4 });
+    // wide sleeves over the tunic sleeves
+    for (const side of ['L', 'R']) {
+      j['sh' + side].add(cyl(0.08, 0.09, d.uarm, rm, 0, -d.uarm / 2, 0, 9));
+      j['el' + side].add(cyl(0.092, 0.15, d.farm * 0.95, rm, 0, -d.farm * 0.47, 0, 10));
+      j['el' + side].add(cyl(0.142, 0.142, 0.008, mat(0x110906, { tex: 'none' }), 0, -d.farm * 0.94 + 0.006, 0, 10));
+    }
+  }
+
+  // Head: face with the scar over the right eye, then the film's hair.
+  j.neck.add(cyl(0.042, 0.048, 0.08, skin, 0, 0.03, 0, 7));
+  j.head.add(scl(sph(0.096, skin, 0.01, 0.1, 0, 10, 8), 0.98, 1.16, 0.88));
+  j.head.add(scl(sph(0.05, skin, 0.05, 0.035, 0, 7, 5), 1.0, 0.8, 1.2)); // jaw
+  j.head.add(box(0.02, 0.028, 0.02, skin, 0.1, 0.09, 0)); // nose
+  const brow = mat(0x3a2418, { tex: 'none' });
+  const eye = mat(0x5d7f86, { tex: 'none' });
+  for (const zs of [1, -1]) {
+    j.head.add(box(0.006, 0.01, 0.022, eye, 0.094, 0.115, 0.033 * zs));
+    j.head.add(box(0.008, 0.008, 0.032, brow, 0.095, 0.133, 0.033 * zs));
+  }
+  j.head.add(rot(box(0.006, 0.05, 0.005, mat(0x8a3a2e, { tex: 'none' }), 0.093, 0.122, 0.052), 0.25, 0, 0)); // scar
+  j.head.add(box(0.006, 0.007, 0.03, mat(0x9b5a4e, { tex: 'none' }), 0.093, 0.05, 0)); // mouth
+  movieHair(j.head);
+  return rig;
+}
+
+/**
+ * Revenge of the Sith hair: fuller and longer than the Clone Wars cut — parted
+ * in the middle, curtains framing the face, wavy volume over the ears down to
+ * the jaw, and the back falling to the collar with the ends flicking out.
+ * Lighter streaks keep it readable against the dark costume at sprite size.
+ */
+function movieHair(head) {
+  const hm = mat(0x8c5d34, { tex: 'cloth' });
+  const hl = mat(0xb88752, { tex: 'cloth' });
+  const hd = mat(0x5a3820, { tex: 'cloth' });
+  head.add(scl(sph(0.108, hm, -0.025, 0.15, 0, 10, 7), 1.0, 0.85, 1.08)); // crown, hairline above the forehead
+  head.add(scl(sph(0.105, hm, -0.08, 0.07, 0, 9, 7), 0.85, 1.45, 1.2)); // back, to the collar
+  for (const zs of [1, -1]) {
+    head.add(rot(scl(sph(0.055, hl, 0.012, 0.2, 0.046 * zs, 8, 5), 1.0, 0.6, 1.05), 0, 0, -0.3)); // sweep off the centre parting
+    head.add(scl(sph(0.04, hm, 0.058, 0.13, 0.08 * zs, 7, 5), 0.6, 1.7, 0.6)); // curtain at the temple, outside the eye
+    head.add(scl(sph(0.07, hm, -0.02, 0.085, 0.088 * zs, 8, 6), 1.0, 1.45, 0.7)); // volume over the ear
+    head.add(scl(sph(0.05, hl, -0.01, 0.115, 0.11 * zs, 7, 5), 0.9, 1.2, 0.5)); // lighter streak
+    head.add(scl(sph(0.048, hd, -0.005, 0.0, 0.09 * zs, 7, 5), 1.0, 1.3, 0.75)); // down to the jaw
+    head.add(scl(sph(0.032, hl, -0.01, -0.05, 0.1 * zs, 6, 4), 1.1, 0.8, 0.9)); // flicked-out end
+    head.add(scl(sph(0.04, hl, -0.09, -0.05, 0.06 * zs, 6, 4), 1.0, 0.8, 1.1)); // back ends at the collar
+  }
 }
 
 // ----------------------------------------------------------------------------

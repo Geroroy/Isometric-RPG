@@ -1,7 +1,8 @@
 // Entry point: bake sprites, build the world, then run the game loop.
 import './style.css';
 import { applySkin } from './ui/skin.js';
-import { bakeAssets, bakeDuelAssets } from './gfx/assets.js';
+import { bakeAssets, bakeDuelAssets, bakeSkin } from './gfx/assets.js';
+import { savedLook } from './ui/appearance.js';
 import { DuelHUD } from './ui/duelHud.js';
 import { Game } from './game/game.js';
 import { Renderer } from './gfx/renderer.js';
@@ -48,11 +49,15 @@ async function boot() {
   };
   const assets = await bakeAssets(onProgress);
   if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress)).sprites);
+  // the equipped appearance (the Movie Duel keeps the default look)
+  const look = MODE === 'campaign' ? savedLook() : null;
+  if (look && !assets.sprites[look.sprite]) assets.sprites[look.sprite] = await bakeSkin(look.sprite, (k) => onProgress(k, '외형 준비 중…'));
   label.textContent = MODE === 'duel' ? '지오노시스 격납고 준비 중…' : '크리스토프시스 외곽 지형 생성 중…';
   await new Promise((r) => setTimeout(r, 20));
 
   const audio = new Audio();
   const game = new Game(assets, audio, MODE);
+  if (look) game.player.sprite = look.sprite;
   const canvas = document.getElementById('world');
   const overlay = document.getElementById('overlay');
   const renderer = new Renderer(game, assets, canvas, overlay);
@@ -130,7 +135,7 @@ async function boot() {
     input.update(dt);
     touch.update(dt);
     // menus pause the action (the map does not)
-    const paused = !help.classList.contains('hidden') || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || dialogue.isOpen;
+    const paused = !help.classList.contains('hidden') || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || dialogue.isOpen;
     if (!paused) game.update(dt);
     renderer.render(dt);
     hud.update(dt);

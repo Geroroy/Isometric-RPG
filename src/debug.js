@@ -1,13 +1,13 @@
 // Developer page: bakes sprites and dumps every frame for visual inspection.
 import { Baker } from './gfx/baker.js';
-import { CHARACTERS, DUEL_CHARACTERS } from './gfx/assets.js';
+import { CHARACTERS, DUEL_CHARACTERS, SKINS } from './gfx/assets.js';
 import { PROPS, buildPropVariants } from './gfx/models/props.js';
 
 const params = new URLSearchParams(location.search);
 const which = params.get('m') || 'anakin';
 const scale = +(params.get('s') || 3);
 const dirsShown = (params.get('dirs') || '0,2,4,6,8,10,12,14').split(',').map(Number);
-const specs = { ...CHARACTERS, ...DUEL_CHARACTERS };
+const specs = { ...CHARACTERS, ...DUEL_CHARACTERS, ...SKINS };
 const baker = new Baker();
 // ?p=a,b,c : bake those world props instead of a character
 if (params.has('p')) {

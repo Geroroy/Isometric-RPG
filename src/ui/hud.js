@@ -7,6 +7,7 @@ import { SKILLS, TREES, TIER_LEVELS, canLearn, isActive } from '../game/skills.j
 import { iconURL } from './icons.js';
 import { dist } from '../core/math.js';
 import { StarCardsUI } from './starCards.js';
+import { AppearanceUI } from './appearance.js';
 import { QUESTS } from '../game/quests.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -40,7 +41,7 @@ export class HUD {
     this.sub = null;
     this.hpChip = 1;
     this.tab = 0;
-    this.open = { tree: false, char: false, map: false, settings: false, cards: false };
+    this.open = { tree: false, char: false, map: false, settings: false, cards: false, look: false };
     this.mapImg = renderer.terrain.minimapImage();
     this.fogCanvas = document.createElement('canvas');
     this.fogCanvas.width = game.world.w;
@@ -51,6 +52,7 @@ export class HUD {
     this.buildMap();
     this.buildSettings();
     this.cardsUI = new StarCardsUI(this, game);
+    this.lookUI = new AppearanceUI(this, game, audio);
     this.buildMisc();
     this.updateFog();
     this.refreshPanels();
@@ -213,7 +215,7 @@ export class HUD {
     o.id = id;
     o.innerHTML = `<div class="ov-head"><div class="ov-title">${title}</div>${extraHead}<button class="ov-close" type="button" aria-label="닫기"><kbd>Esc</kbd>닫기</button></div><div class="ov-body"></div>`;
     o.addEventListener('mousedown', (e) => e.stopPropagation());
-    const key = { skilltree: 'tree', charsheet: 'char', mapview: 'map', settings: 'settings', starcards: 'cards' }[id];
+    const key = { skilltree: 'tree', charsheet: 'char', mapview: 'map', settings: 'settings', starcards: 'cards', appearance: 'look' }[id];
     o.querySelector('.ov-close').addEventListener('click', () => this.toggle(key, false));
     this.root.appendChild(o);
     return o;
@@ -364,7 +366,8 @@ export class HUD {
   }
 
   buildInfo() {
-    const o = this.overlay('charsheet', '정보');
+    const o = this.overlay('charsheet', '정보', '<button class="ov-act" type="button" data-look>외형 갤러리 <kbd>V</kbd></button>');
+    $('[data-look]', o).addEventListener('click', () => this.toggle('look', true));
     this.infoBody = $('.ov-body', o);
   }
 
@@ -473,7 +476,7 @@ export class HUD {
     const v = force ?? !this.open[which];
     if (v) for (const k of Object.keys(this.open)) if (k !== which && this.open[k]) this.toggle(k, false);
     this.open[which] = v;
-    const ids = { tree: '#skilltree', char: '#charsheet', map: '#mapview', settings: '#settings', cards: '#starcards' };
+    const ids = { tree: '#skilltree', char: '#charsheet', map: '#mapview', settings: '#settings', cards: '#starcards', look: '#appearance' };
     $(ids[which]).classList.toggle('hidden', !v);
     document.body.classList.toggle('overlay-open', Object.values(this.open).some(Boolean));
     if (v) {
@@ -482,7 +485,11 @@ export class HUD {
       if (which === 'map') this.drawMapView();
       if (which === 'settings') this.syncCropInputs();
       if (which === 'cards') this.cardsUI.render();
-    } else this.hideTip();
+      if (which === 'look') this.lookUI.open();
+    } else {
+      this.hideTip();
+      if (which === 'look') this.lookUI.close();
+    }
     this.audio.play('click');
   }
 
