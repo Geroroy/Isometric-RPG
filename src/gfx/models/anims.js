@@ -111,6 +111,22 @@ const OVER_B = pose(GUARD, LUNGE, {
 });
 const OVER_C = pose(OVER_B, { sab: [0.5, 0.82, 0.0, 0, -0.85] });
 
+// Anakin's signature (as in the Coruscant duel with Obi-Wan): from the high
+// guard he lifts the hilt beside his ear and whips the blade one-handed round
+// behind his neck like a halo, out of the wrap into a flat cut across the
+// front; then the backhand drops low on the right and rises back up the front
+// into the guard — back and forth, driving forward, the left arm out for
+// balance. (Blade yaw runs on past a full turn so the wrap goes the right way.)
+const SIG_ARM = { two: 0, shL: [0.85, 0, 0.35], elL: [0, 0, 0.35], haL: [0, 0, 0.3] };
+const SIG_WRAP1 = pose(GUARD, SIG_ARM, { spine: [0, -0.25, 0.02], chest: [0, -0.3, 0], head: [0, 0.1, 0], sab: [0.06, 1.72, 0.22, 3.0, 0.25] });
+const SIG_WRAP2 = pose(GUARD, SIG_ARM, { spine: [0, -0.1, 0], chest: [0, -0.15, 0], head: [0, 0, 0], sab: [0.02, 1.66, 0.12, 4.4, 0.05] });
+const SIG_CUT = pose(GUARD, LUNGE, SIG_ARM, { spine: [0, 0.35, -0.12], chest: [0, 0.4, -0.08], head: [0, -0.35, 0.05], sab: [0.36, 1.42, -0.12, 6.0, -0.05] });
+const SIG_CUT_END = pose(SIG_CUT, { spine: [0, -0.3, -0.12], chest: [0, -0.35, -0.08], head: [0, 0.2, 0.05], sab: [0.42, 1.3, 0.18, 7.2, -0.2] });
+const SIG_LOW = pose(GUARD, LUNGE, SIG_ARM, { spine: [0, -0.35, -0.16], chest: [0, -0.3, -0.1], head: [0, 0.2, 0.08], sab: [0.4, 1.0, 0.26, 0.6, -0.9] });
+const SIG_RISE = pose(GUARD, SIG_ARM, { spine: [0, 0.2, -0.08], chest: [0, 0.2, -0.05], head: [0, -0.2, 0.04], sab: [0.45, 1.18, -0.04, -0.4, 0.4] });
+const SIG_WRAP = keyframes([{ t: 0, p: GUARD }, { t: 0.25, p: SIG_WRAP1 }, { t: 0.45, p: SIG_WRAP2 }, { t: 0.72, p: SIG_CUT }, { t: 1, p: SIG_CUT_END }], easeInOut);
+const SIG_BACK = keyframes([{ t: 0, p: pose(SIG_CUT_END, { sab: [0.42, 1.3, 0.18, 1.0, -0.2] }) }, { t: 0.4, p: SIG_LOW }, { t: 0.7, p: SIG_RISE }, { t: 1, p: GUARD }], easeInOut);
+
 const swing = (a, b, c, d = c) =>
   keyframes(
     [
@@ -298,6 +314,8 @@ export const ANAKIN_ANIMS = bake(GUARD, {
   attack1: { frames: 9, fps: 20, loop: false, hit: 5, pose: swing(GUARD, SLASH_A, SLASH_B, SLASH_C) },
   attack2: { frames: 9, fps: 20, loop: false, hit: 5, pose: swing(GUARD, BACK_A, BACK_B, BACK_C) },
   attack3: { frames: 9, fps: 18, loop: false, hit: 5, pose: swing(GUARD, OVER_A, OVER_B, OVER_C) },
+  sigF: { frames: 10, fps: 24, loop: false, hit: 7, pose: SIG_WRAP },
+  sigB: { frames: 7, fps: 24, loop: false, hit: 3, pose: SIG_BACK },
   cast: { frames: 8, fps: 18, loop: false, hit: 4, pose: swing(GUARD, CAST_A, CAST_B) },
   throw: { frames: 8, fps: 20, loop: false, hit: 4, pose: swing(GUARD, THROW_A, THROW_B, pose(THROW_B, { sab: [0.45, 1.36, 0.16, 0, 0.2] })) },
   leap: { frames: 8, fps: 12, loop: false, pose: keyframes([{ t: 0, p: LEAP_CROUCH }, { t: 0.3, p: LEAP_AIR }, { t: 0.7, p: LEAP_AIR }, { t: 1, p: OVER_B }], easeInOut) },
@@ -385,6 +403,8 @@ export const ANAKIN_DUAL_ANIMS = bake(GUARD2, {
   // skills also used while dual-wielding: Obi-Wan's saber stays low in the left hand
   throw: { ...ANAKIN_ANIMS.throw, pose: (t) => pose(ANAKIN_ANIMS.throw.pose(t), { sab2: [0.05, 1.0, -0.33, -2.5, -0.35] }) },
   leap: { ...ANAKIN_ANIMS.leap, pose: (t) => pose(ANAKIN_ANIMS.leap.pose(t), { two: 0, sab2: [0.1, 1.2, -0.35, -2.2, 0.2] }) },
+  sigF: { ...ANAKIN_ANIMS.sigF, pose: (t) => pose(ANAKIN_ANIMS.sigF.pose(t), { two: 0, sab2: [0.1, 1.0, -0.35, -2.4, -0.3] }) },
+  sigB: { ...ANAKIN_ANIMS.sigB, pose: (t) => pose(ANAKIN_ANIMS.sigB.pose(t), { two: 0, sab2: [0.1, 1.0, -0.35, -2.4, -0.3] }) },
   death: ANAKIN_ANIMS.death,
 });
 
@@ -772,4 +792,13 @@ export const PADME_ANIMS = {
   choked: { frames: 6, fps: 9, loop: true, pose: (t) => pose(CHOKED, { head: [0, sin(t * TAU) * 0.15, 0.4], bodyY: 0.06 + sin(t * TAU * 2) * 0.01 }) },
   collapse: { frames: 8, fps: 8, loop: false, pose: keyframes([{ t: 0, p: CHOKED }, { t: 0.4, p: pose(FALLING, { fk: 1, hide: [] }) }, { t: 1, p: PADME_DOWN }], easeInOut) },
   down: { frames: 2, fps: 2, loop: true, pose: () => PADME_DOWN },
+};
+
+// Master Seren Vael: upright, hands folded in her sleeves; raises an open hand
+// to catch Dooku's lightning.
+const MASTER_REST = { shL: [0.1, 0, 0.6], elL: [0, 0, 1.5], shR: [-0.1, 0, 0.6], elR: [0, 0, 1.5], haL: [0, 0, 0.2], haR: [0, 0, 0.2] };
+export const MASTER_ANIMS = {
+  idle: { frames: 6, fps: 5, loop: true, pose: (t) => pose(MASTER_REST, { pelvisY: sin(t * TAU) * 0.005, head: [0, sin(t * TAU) * 0.08, 0] }) },
+  walk: { frames: 8, fps: 10, loop: true, pose: (t) => pose(MASTER_REST, legCycle(t, 0.45, 0.8)) },
+  absorb: { frames: 4, fps: 8, loop: true, pose: (t) => pose(MASTER_REST, { spine: [0, 0, -0.1], hipL: [0, 0, 0.3], knL: [0, 0, -0.2], hipR: [0, 0, -0.25], shR: [-0.05, 0, 1.55], elR: [0, 0, 0.1 + sin(t * TAU) * 0.05], haR: [0, 0, -1.0] }) },
 };

@@ -4,10 +4,18 @@ export class CinemaUI {
   constructor(game) {
     const el = document.createElement('div');
     el.className = 'cinema-ui';
-    el.innerHTML = '<i class="cn-bar top"></i><i class="cn-bar bot"></i><div class="cn-fade"></div><div class="cn-sub"><span></span><p></p></div><button type="button" class="cn-skip"><kbd>Esc</kbd>건너뛰기</button>';
+    el.innerHTML = '<i class="cn-bar top"></i><i class="cn-bar bot"></i><div class="cn-fade"></div><div class="cn-place"></div><div class="cn-sub"><span></span><p></p></div><button type="button" class="cn-skip"><kbd>Esc</kbd>건너뛰기</button>';
     document.body.appendChild(el);
     this.sub = el.querySelector('.cn-sub');
     this.fade = el.querySelector('.cn-fade');
+    this.place = el.querySelector('.cn-place');
+    game.on('place', (text) => {
+      // location card, as a film cuts to a new set
+      this.place.textContent = text;
+      this.place.classList.remove('on');
+      void this.place.offsetWidth;
+      this.place.classList.add('on');
+    });
     el.querySelector('.cn-skip').addEventListener('click', () => game.cinema && game.cinema.skip());
     game.on('cinema', (on) => {
       document.body.classList.toggle('cinema', on);

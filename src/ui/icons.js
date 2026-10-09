@@ -144,6 +144,14 @@ const DRAW = {
     cut(ctx, () => svg(ctx, 'M50 16 L78 25 L77 51 C74 68 62 79 50 86 C38 79 26 68 23 51 L22 25 Z'));
     saber(ctx, 38, 76, 62, 24, 14, 5);
   },
+  signature(ctx) {
+    // forehand / backhand: two opposing swooshes crossing the blade
+    saber(ctx, 50, 94, 50, 10, 22, 6);
+    swoosh(ctx, 50, 50, 40, -2.75, -0.35, 9);
+    swoosh(ctx, 50, 50, 40, 0.39, 2.75, 9);
+    arrowHead(ctx, 50 + Math.cos(-0.35) * 36, 50 + Math.sin(-0.35) * 36, -0.35 + Math.PI / 2, 9);
+    arrowHead(ctx, 50 + Math.cos(2.75) * 36, 50 + Math.sin(2.75) * 36, 2.75 + Math.PI / 2, 9);
+  },
   fury(ctx) {
     svg(ctx, 'M50 96 C22 96 10 74 18 52 C22 62 28 66 32 64 C24 44 34 22 52 6 C48 26 58 34 62 42 C64 34 70 28 72 20 C88 42 92 70 80 84 C72 92 62 96 50 96 Z');
     cut(ctx, () => {

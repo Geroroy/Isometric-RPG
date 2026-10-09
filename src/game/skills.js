@@ -78,6 +78,29 @@ export const SKILLS = {
       return true;
     },
   },
+  signature: {
+    tree: 0, row: 3, col: 0, max: 20, kind: 'active', target: 'enemy', icon: 'signature', prereq: ['djemso'],
+    name: '선택받은 자의 연격', en: "Skywalker's Onslaught",
+    lore: '에피소드 III의 아나킨. 앞뒤로 쉴 새 없이 세이버를 휘두르며 밀어붙여 상대의 방어를 무너뜨린다.',
+    cost: (l) => Math.round(12 + l * 0.6),
+    cd: () => 6,
+    hits: (l) => 6 + Math.floor(l / 5),
+    mult: (l, p) => (0.55 + l * 0.05) * (1 + 0.04 * (p?.skillLevel('djemso') || 0)),
+    lines: (l, s, p) => [
+      [`앞뒤 연속 베기 ${s.hits(l)}회, 타격당 무기 피해의 ${pct(s.mult(l, p) * 100)}`],
+      ['막히면 상대의 평정을 크게 깎음 (결투)'],
+      ['시너지: 젬 소 내려치기 레벨당 +4%'],
+      [`포스 소모 ${s.cost(l)} · 재사용 ${s.cd(l)}초`],
+    ],
+    cast(game, p, l, tx, ty, target) {
+      if (!target) return false;
+      const m = this.mult(l, p);
+      const hits = [];
+      for (let i = 0; i < this.hits(l); i++) hits.push({ anim: i % 2 ? 'sigB' : 'sigF', speed: 1 + i * 0.04, mult: i === this.hits(l) - 1 ? m * 1.6 : m, pressure: 2.2, lunge: 0.35 });
+      p.startMelee(target, hits);
+      return true;
+    },
+  },
   throw: {
     tree: 0, row: 2, col: 1, max: 20, kind: 'active', target: 'point', icon: 'throw', prereq: ['flurry'],
     name: '세이버 투척', en: 'Saber Throw',

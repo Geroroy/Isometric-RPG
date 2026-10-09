@@ -440,6 +440,9 @@ export class Arena extends World {
 
 export const MUSTAFAR = {
   deck: { x: 96, y: 88, hw: 9, hh: 6 }, // landing platform (tile half-sizes)
+  hall: { x: 52, y: 52, hw: 7, hh: 5 }, // the Separatist conference room
+  control: { x: 52, y: 96, hw: 6, hh: 5 }, // the control room, its window open on the lava
+  arm: { x: 140, y: 60, hw: 10, hh: 1.4 }, // the collector arm over the lava falls
   raft: { x: 96, y: 118, hw: 4.5, hh: 3.5 }, // collector platform on the lava river
   bank: { x: 96, y: 131 }, // the high ground
 };
@@ -447,9 +450,12 @@ export const MUSTAFAR = {
 export class MustafarArena extends World {
   generate() {
     this.rng = new RNG(this.seed);
-    const { deck, raft } = MUSTAFAR;
+    const { deck, raft, hall, control, arm } = MUSTAFAR;
     this.ambient = [150, 86, 70];
     this.pois.push({ x: deck.x, y: deck.y, r: 14, name: BIOME_NAMES[BIOME.MUSTAFAR] });
+    this.pois.push({ x: hall.x, y: hall.y, r: 12, name: '무스타파 · 분리주의 회의실' });
+    this.pois.push({ x: control.x, y: control.y, r: 11, name: '무스타파 · 제어실' });
+    this.pois.push({ x: arm.x, y: arm.y, r: 12, name: '무스타파 · 집하기 팔' });
     this.pois.push({ x: raft.x, y: raft.y, r: 9, name: BIOME_NAMES[BIOME.LAVA] });
     const inRect = (x, y, r) => Math.abs(x - r.x) <= r.hw && Math.abs(y - r.y) <= r.hh;
     for (let y = 0; y < MAP_H; y++) {
@@ -460,7 +466,10 @@ export class MustafarArena extends World {
         // the bank: a black sand slope rising south of the river
         const bankEdge = MUSTAFAR.bank.y - 3 + (fbm(x / 5, 3, 11) - 0.5) * 3;
         let b = BIOME.LAVA;
-        if (inRect(cx, cy, deck) || inRect(cx, cy, raft)) b = BIOME.MUSTAFAR;
+        const inside = (r) => inRect(cx, cy, r);
+        const around = (r) => inRect(cx, cy, { ...r, hw: r.hw + 1.6, hh: r.hh + 1.6 });
+        if ([deck, raft, hall, control, arm].some(inside)) b = BIOME.MUSTAFAR;
+        else if (around(hall) || (around(control) && cx < control.x + control.hw)) b = BIOME.ASH; // the rooms' rock floor; the control room's east side opens on the lava
         else if (cy > bankEdge && Math.abs(cx - MUSTAFAR.bank.x) < 22) b = BIOME.ASH;
         this.biome[i] = b;
         this.blocked[i] = b === BIOME.MUSTAFAR ? 0 : 2; // only the decks are walkable in the fight
@@ -471,6 +480,17 @@ export class MustafarArena extends World {
     for (const [dx, dy] of [[-8, -5], [8, -5], [-8, 5], [8, 5]]) this.addProp('mustafarTower', deck.x + dx, deck.y + dy);
     this.addProp('skiff', deck.x + 1, deck.y - 9.5, { noBlock: true });
     for (const [dx, dy] of [[-4, -4.2], [4, 4.2]]) this.addProp('mustafarTower', raft.x + dx, raft.y + dy);
+    // the conference room: walls, the council's table, the leaders Anakin killed
+    this.walls(hall);
+    this.addProp('confTable', hall.x, hall.y);
+    for (const [dx, dy] of [[-3, -2], [2.5, -2.2], [-1, 2.3], [4.5, 1.5], [-5, 0.5]]) this.addProp('sepBody', hall.x + dx, hall.y + dy, { noBlock: true });
+    // the control room: consoles along the walls, the east side open on the lava (the shield window)
+    this.walls(control);
+    for (const [dx, dy, ai] of [[-4.5, -2, 1], [-4.5, 2, 1], [0, -4.2, 0], [1.5, 4.2, 0]]) this.addProp('mustafarConsole', control.x + dx, control.y + dy, { angleIdx: ai });
+    // the collector arm: a catwalk ending at a collector tower
+    this.addProp('mustafarTower', arm.x + arm.hw + 1.5, arm.y);
+    for (let x = -arm.hw; x <= arm.hw; x += 4) this.lights.push({ x: arm.x + x, y: arm.y, z: 0.2, r: 255, g: 120, b: 40, rad: 140, flicker: 0.15 });
+    for (const r of [hall, control]) this.lights.push({ x: r.x, y: r.y, z: 2.5, r: 255, g: 150, b: 90, rad: 220, flicker: 0.03 });
     // the robes thrown off before the fight (shown by the opening scene)
     this.cloak = this.addProp('cloakPile', deck.x - 2.2, deck.y + 1.6);
     this.robe = this.addProp('robePile', deck.x + 3.4, deck.y - 1.8);
@@ -483,5 +503,12 @@ export class MustafarArena extends World {
     this.spawn = { x: deck.x - 1.5, y: deck.y + 1.5 };
     this.roadSegs = [];
     this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
+  }
+
+  /** The far walls of a room (north and west); the near sides stay open so the fight is visible, as in Fallout. */
+  walls(r) {
+    const edge = (x, y, ai) => this.addProp('mustafarWall', x, y, { angleIdx: ai, noBlock: true });
+    for (let x = -r.hw + 1; x <= r.hw - 1; x += 2) edge(r.x + x, r.y - r.hh - 0.9, 0);
+    for (let y = -r.hh + 1; y <= r.hh - 1; y += 2) edge(r.x - r.hw - 0.9, r.y + y, 1);
   }
 }

@@ -16,6 +16,7 @@ export const UNIT_DEFS = {
   dooku: { name: '두쿠 백작', sprite: 'dooku', team: 'cis', hp: 900, radius: 0.36, knockRes: 0.35 },
   obiwan3: { name: '오비완 케노비', sprite: 'obiwan3', team: 'cis', hp: 950, radius: 0.36, knockRes: 0.4 },
   padme: { name: '파드메 아미달라', sprite: 'padme', team: 'rep', hp: 100, radius: 0.3, knockRes: 0 },
+  master: { name: '마스터 세렌 베일', sprite: 'master', team: 'rep', hp: 100, radius: 0.32, knockRes: 0 },
 };
 
 let NEXT_ID = 1;
@@ -667,6 +668,14 @@ export class Player extends Unit {
     this.startMelee(target, [{ anim: 'attack' + this.combo, speed: 1.15, mult: this.combo === 3 ? 1.15 : 1 }], inPlace);
   }
 
+  /** A short drive forward with a cut (the signature onslaught). */
+  lungeAt(t, d) {
+    if (!d || !t || dist(this.x, this.y, t.x, t.y) < this.radius + t.radius + 0.8) return;
+    const a = Math.atan2(t.y - this.y, t.x - this.x);
+    this.kx += Math.cos(a) * d * 6;
+    this.ky += Math.sin(a) * d * 6;
+  }
+
   startMelee(target, hits, inPlace = false) {
     this.action = { type: 'melee', target, hits, i: 0, phase: 'approach', inPlace };
   }
@@ -814,6 +823,7 @@ export class Player extends Unit {
             act.phase = 'swing';
             act.fired = false;
             this.setAnim(hit.anim, hit.speed * this.attackSpeed(), true);
+            this.lungeAt(t, hit.lunge);
             g.audio.play('swing', this, { heavy: hit.anim === 'attack3', rate: (hit.speed * this.attackSpeed()) / 1.7 });
           }
         } else {
@@ -823,7 +833,7 @@ export class Player extends Unit {
             act.fired = true;
             const reach = this.radius + (t ? t.radius : 0) + 1.5;
             if (t && !t.dead && dist(this.x, this.y, t.x, t.y) <= reach) {
-              g.damage(this, t, this.weaponDamage() * hit.mult, { type: 'saber', stun: hit.stun });
+              g.damage(this, t, this.weaponDamage() * hit.mult, { type: 'saber', stun: hit.stun, pressure: hit.pressure });
               if (hit.onHit) hit.onHit(t);
             }
           }
@@ -833,6 +843,7 @@ export class Player extends Unit {
               const nh = act.hits[act.i];
               act.fired = false;
               this.setAnim(nh.anim, nh.speed * this.attackSpeed(), true);
+              this.lungeAt(t, nh.lunge);
               g.audio.play('swing', this, { heavy: nh.anim === 'attack3', rate: (nh.speed * this.attackSpeed()) / 1.7 });
             } else {
               this.action = null;

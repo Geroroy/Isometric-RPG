@@ -29,6 +29,7 @@ export const DUELS = {
   geonosis: {
     anakinDual: () => ({ model: M.buildAnakin({ dual: true }), dirs: 16, frame: [170, 160, 85, 120], anims: A.ANAKIN_DUAL_ANIMS, markers: SABERS, ss: 2 }),
     dooku: () => ({ model: M.buildDooku(), dirs: 16, frame: [180, 170, 90, 125], anims: A.DOOKU_ANIMS, markers: SABER, ss: 2 }),
+    master: () => ({ model: M.buildMaster(), dirs: 8, frame: [120, 110, 60, 90], anims: A.MASTER_ANIMS, markers: [], ss: 2 }),
   },
   mustafar: {
     anakinHood: () => ({ model: M.buildAnakin({ outfit: 'hood' }), dirs: 8, frame: [170, 160, 85, 120], anims: A.ANAKIN_HOOD_ANIMS, markers: [], ss: 2 }),

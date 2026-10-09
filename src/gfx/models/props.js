@@ -625,6 +625,55 @@ function mustafarTower() {
   return g;
 }
 
+/** Facility wall: black metal panels with a slit of orange light. */
+function mustafarWall() {
+  const g = new THREE.Group();
+  const black = mat(0x26221f);
+  g.add(box(2.0, 2.6, 0.5, black, 0, 1.3, 0));
+  g.add(box(2.04, 0.18, 0.56, mat(0x3a3430), 0, 2.62, 0));
+  g.add(box(1.7, 0.08, 0.06, glow(0xff9040), 0, 1.7, 0.26));
+  for (const x of [-0.7, 0, 0.7]) g.add(box(0.06, 2.3, 0.54, mat(0x34302c), x, 1.25, 0));
+  return g;
+}
+
+/** The Separatist Council's long table in the conference room. */
+function confTable() {
+  const g = new THREE.Group();
+  const dark = mat(0x2a2522);
+  g.add(box(5.2, 0.14, 1.3, dark, 0, 0.78, 0));
+  g.add(box(4.8, 0.7, 0.5, mat(0x1e1a18), 0, 0.38, 0));
+  g.add(box(4.6, 0.02, 0.9, glow(0x7a3018), 0, 0.86, 0)); // dimly lit table top
+  return g;
+}
+
+/** One of the Separatist leaders Anakin killed (robes, Neimoidian hat). */
+function sepBody(rng) {
+  const g = new THREE.Group();
+  const robe = mat([0x4a5a3a, 0x5a3a46, 0x3a4458, 0x6a5a3a][Math.floor(rng.next() * 4)], { tex: 'cloth' });
+  const b = sph(0.5, robe, 0, 0.14, 0, 10, 6);
+  b.scale.set(1.5, 0.28, 0.6);
+  g.add(b);
+  g.add(scl(sph(0.17, mat(0x6f8a6a, { tex: 'none' }), 0.82, 0.14, 0, 8, 6), 1, 0.8, 1)); // grey-green head
+  if (rng.next() < 0.6) {
+    const hat = cone(0.2, 0.34, mat(0x2a2a30), 1.0, 0.15, 0, 8); // mitre lying beside him
+    hat.rotation.z = -1.4;
+    g.add(hat);
+  }
+  g.rotation.y = rng.next() * Math.PI * 2;
+  return g;
+}
+
+/** Control room console bank with glowing screens. */
+function mustafarConsole() {
+  const g = new THREE.Group();
+  g.add(box(1.8, 0.9, 0.8, mat(0x2c2826), 0, 0.45, 0));
+  const top = box(1.8, 0.1, 0.7, mat(0x3a3430), 0, 0.95, 0.05);
+  top.rotation.x = -0.4;
+  g.add(top);
+  for (const x of [-0.55, 0, 0.55]) g.add(box(0.4, 0.04, 0.3, glow([0x7fd0ff, 0xffa040, 0x9fff9f][Math.round(x / 0.55) + 1]), x, 1.0, 0.08));
+  return g;
+}
+
 function robePile(color) {
   return () => {
     const g = new THREE.Group();
@@ -880,6 +929,10 @@ export const PROPS = {
   tent: { build: tent, variants: 1, rect: [3, 3], light: [110, 180, 255, 50, 1] },
   skiff: { build: skiff, variants: 1, angles: [0], rect: [7, 3] },
   mustafarTower: { build: mustafarTower, variants: 1, block: 0.8, light: [255, 140, 60, 70, 4] },
+  mustafarWall: { build: mustafarWall, variants: 1, angles: [0, Math.PI / 2], rectByAngle: [[2, 1], [1, 2]], light: [255, 140, 60, 40, 1.7] },
+  confTable: { build: confTable, variants: 1, angles: [0], rect: [5, 1], light: [255, 150, 80, 60, 1] },
+  sepBody: { build: sepBody, variants: 4, block: 0, flat: true },
+  mustafarConsole: { build: mustafarConsole, variants: 1, angles: [0, Math.PI / 2], rectByAngle: [[2, 1], [1, 2]], light: [120, 200, 255, 40, 1.1] },
   cloakPile: { build: robePile(0x5a3426), variants: 1, block: 0, flat: true },
   robePile: { build: robePile(0x6a4a32), variants: 1, block: 0, flat: true },
   cantina: { build: cantina, variants: 1, angles: [0], rect: [8, 8], light: [255, 170, 100, 90, 1] },

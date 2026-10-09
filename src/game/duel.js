@@ -12,6 +12,7 @@
 import { Unit } from './units.js';
 import { dist, angleDiff, rand } from '../core/math.js';
 import { ARENA } from '../world/worldgen.js';
+import { Cinema } from './cinema.js';
 
 const PERFECT_WINDOW = 0.25;
 
@@ -23,8 +24,8 @@ export function equip(p) {
   p.attr = { str: 45, agi: 42, vit: 44, for: 39 };
   p.attrPoints = 0;
   p.skillPoints = 0;
-  p.skills = { flurry: 4, djemso: 4, push: 4, throw: 3, speed: 3, choke: 2, shien: 5, precog: 3 };
-  p.hotbar = ['flurry', 'djemso', 'push', 'throw', 'speed', 'choke'];
+  p.skills = { flurry: 4, djemso: 4, signature: 4, push: 4, throw: 3, speed: 3, choke: 2, shien: 5, precog: 3 };
+  p.hotbar = ['signature', 'flurry', 'djemso', 'push', 'throw', 'choke'];
   p.bacta = 0;
   p.recalc(true);
 }
@@ -165,11 +166,24 @@ export class Dooku extends Unit {
   }
 }
 
+/** A figure the cutscenes move (Padmé, Master Vael). */
+export class Extra extends Unit {
+  constructor(game, kind, x, y) {
+    super(game, kind, x, y);
+    this.untargetable = true;
+    this.scripted = true;
+  }
+
+  update(dt) {
+    this.baseUpdate(dt);
+  }
+}
+
 // ----------------------------------------------------------------------------
 
 const LINES = {
   intro: [
-    ['dooku', '용감하군, 젊은 제다이. 하지만 어리석어. 진작 배웠어야 할 텐데.'],
+    ['dooku', '혈기만 앞서는군, 젊은 제다이.'],
     ['obiwan', '아나킨, 혼자서는 안 돼! 함께 상대해야—'],
     ['anakin', '아뇨, 지금 끝장을 내겠습니다!'],
   ],
@@ -187,7 +201,7 @@ const LINES = {
   broken: [['dooku', '크윽…!'], ['dooku', '이럴 수가…']],
 };
 
-const SPEAKERS = { anakin: '아나킨', dooku: '두쿠 백작', obiwan: '오비완' };
+const SPEAKERS = { anakin: '아나킨', dooku: '두쿠 백작', obiwan: '오비완', master: '세렌 베일' };
 
 export class Duel {
   constructor(game) {
@@ -210,12 +224,21 @@ export class Duel {
   setup() {
     const g = this.game;
     const p = g.player;
-    p.x = ARENA.x - 2.2;
-    p.y = ARENA.y + 2.2;
-    p.faceTo(ARENA.x, ARENA.y);
-    const dk = (this.foe = new Dooku(g, ARENA.x + 2.2, ARENA.y - 2.2));
+    p.x = ARENA.x - 3.6;
+    p.y = ARENA.y + 3.2;
+    const dk = (this.foe = new Dooku(g, ARENA.x + 2.6, ARENA.y - 2.4));
     dk.faceTo(p.x, p.y);
+    p.faceTo(dk.x, dk.y);
     g.units.push(dk);
+    this.hud = {
+      kicker: 'MOVIE DUEL · EPISODE II',
+      title: '지오노시스의 결투',
+      name: '두쿠 백작',
+      sub: '다스 티라누스 · 마카시',
+      marks: [0.6, 0.25, 0.1],
+      win: '아나킨은 오른팔을 잃었다. 마스터 세렌 베일이 두쿠를 막아섰지만, 백작은 어둠 속으로 빠져나갔다. 전쟁이 시작된다.',
+      lose: '두쿠의 일격에 아나킨은 쓰러졌다. 격납고 입구에 마스터 세렌 베일이 모습을 드러낸다.',
+    };
   }
 
   line(who, key) {
@@ -224,17 +247,37 @@ export class Duel {
     this.game.emit('say', text, key, null, this.speakers[w || who]);
   }
 
-  /** Play a scripted exchange of lines; controls stay locked meanwhile. */
-  async scene(key, extra) {
-    this.locked = this.cine = true;
-    this.game.emit('cine', true);
+  /** Play a scripted exchange of lines as a short cutscene. */
+  scene(key, extra) {
+    this.hold();
+    const cues = [];
+    let t = 0.4;
     for (const [w, text] of this.lines[key]) {
-      this.game.emit('say', text, key, null, this.speakers[w]);
-      await this.wait(Math.min(3.6, 1.4 + text.length * 0.06));
-      if (extra && extra[w]) extra[w]();
+      const d = Math.min(3.6, 1.4 + text.length * 0.06);
+      cues.push({ t, say: [this.speakers[w], text, d] });
+      t += d;
+      if (extra && extra[w]) cues.push({ t: t - 0.2, do: extra[w] });
     }
+    return new Cinema(this.game, { length: t + 0.2, cues }).play().then(() => this.fight());
+  }
+
+  /** Puts both duellists under the cutscene's control. */
+  hold() {
+    const p = this.game.player;
+    this.locked = this.cine = true;
+    p.action = null;
+    p.blocking = false;
+    p.scripted = this.foe.scripted = true;
+    if (!this.lock) for (const u of [p, this.foe]) u.setAnim('idle');
+  }
+
+  /** Back to the fight. */
+  fight() {
+    const g = this.game;
+    for (const u of [g.player, this.foe]) u.scripted = false;
+    g.player.action = null;
+    if (this.foe.state !== 'lock') this.foe.set('circle', 1.2);
     this.locked = this.cine = false;
-    this.game.emit('cine', false);
   }
 
   wait(sec) {
@@ -243,7 +286,147 @@ export class Duel {
 
   start() {
     this.started = true;
-    this.scene('intro');
+    this.intro().then(() => this.fight());
+  }
+
+  // --- the film's opening: Dooku's hangar --------------------------------------
+
+  intro() {
+    const g = this.game;
+    const p = g.player;
+    const dk = this.foe;
+    const A = ARENA;
+    // Obi-Wan stands beside Anakin at first; he ends up wounded by the wall
+    const ob = (this.obiwan = g.units.find((u) => u.npcId === 'obiwan'));
+    const obRest = { x: ob.x, y: ob.y };
+    ob.scripted = true;
+    ob.x = A.x - 2.4;
+    ob.y = A.y + 2.2;
+    ob.faceTo(dk.x, dk.y);
+    ob.setAnim('idle');
+    this.hold();
+    const say = (t, who, text, d) => ({ t, say: [this.speakers[who], text, d] });
+    const cues = [
+      { t: 0, fade: 1, fadeDur: 0 },
+      { t: 0.05, fade: 0, fadeDur: 1.6, cam: { x: A.x - 0.6, y: A.y + 0.6, zoom: 1.3 } },
+      say(1.0, 'obiwan', '서두르지 마라. 둘이서 양쪽으로 몰아붙인다.', 2.4),
+      say(3.3, 'anakin', '기다릴 시간 없어요. 먼저 갑니다!', 1.8),
+      { t: 3.6, do: (c) => (p.setAnim('run', 1.2), c.move(p, A.x + 0.4, A.y - 0.4, 0.9)) },
+      {
+        t: 4.3,
+        do: (c) => {
+          dk.setAnim('cast');
+          c.onFrame = () => g.fx.lightning(dk.x + Math.cos(dk.facing) * 0.5, dk.y + Math.sin(dk.facing) * 0.5, 1.2, p.x, p.y, 1.1);
+          g.audio.play('zap');
+        },
+      },
+      { t: 4.7, do: (c) => (p.setAnim('hurt', 0.6, true), c.move(p, A.x - 7.2, A.y + 5.2, 0.5), g.fx.shake(6)) },
+      { t: 5.3, do: (c) => (c.onFrame = null, p.setAnim('death', 1, true), dk.setAnim('idle'), g.fx.dust(p.x, p.y, 8)) },
+      say(6.4, 'dooku', '혈기만으로는 날 막을 수 없다. 물러서라, 케노비.', 3.0),
+      { t: 6.4, cam: { x: (dk.x + ob.x) / 2, y: (dk.y + ob.y) / 2, dur: 1.2 } },
+      say(9.6, 'obiwan', '그건 겨뤄 봐야 알겠지.', 1.6),
+      // Obi-Wan's duel with Dooku, heard in the dark
+      { t: 10.6, fade: 1, fadeDur: 0.4 },
+      ...[11.1, 11.5, 12.0, 12.4].map((t) => ({ t, do: () => g.audio.play('clash', dk) })),
+      {
+        t: 12.9,
+        do: () => {
+          ob.x = obRest.x;
+          ob.y = obRest.y;
+          ob.setAnim('down');
+          ob.restAnim = 'down';
+          dk.x = obRest.x + 1.3;
+          dk.y = obRest.y + 1.0;
+          dk.faceTo(ob.x, ob.y);
+        },
+        cam: { x: obRest.x + 0.6, y: obRest.y + 1.2 },
+      },
+      { t: 13.0, fade: 0, fadeDur: 0.6 },
+      { t: 14.0, do: () => dk.setAnim('attack3', 0.5, true) },
+      { t: 14.2, do: (c) => (p.setAnim('leap', 1, true), p.faceTo(dk.x, dk.y), c.move(p, dk.x - 0.9, dk.y + 0.9, 0.6)) },
+      {
+        t: 14.8,
+        do: () => {
+          g.fx.sparks((p.x + dk.x) / 2, (p.y + dk.y) / 2, 1.3, '#fff2c8', 16, 3);
+          g.audio.play('lockStart', dk);
+          p.setAnim('lock');
+          dk.setAnim('lock');
+        },
+      },
+      say(15.4, 'dooku', '쓰러진 스승을 지키러 왔나? 갸륵하지만 무모하군.', 3.6),
+      say(19.2, 'anakin', '무모한 건 제 특기라서요.', 2.4),
+      { t: 21.6, do: (c) => (g.audio.play('lockEnd', dk), c.move(dk, dk.x + 1.8, dk.y - 0.8, 0.4)) },
+      { t: 22.1, do: () => (ob.scripted = false) },
+    ];
+    return new Cinema(g, { length: 22.2, cues }).play();
+  }
+
+  // --- the ending: Anakin's arm, then Master Vael ----------------------------
+
+  ending() {
+    const g = this.game;
+    const p = g.player;
+    const dk = this.foe;
+    const A = ARENA;
+    this.lock = null;
+    g.emit('lock', false);
+    this.hold();
+    const master = new Extra(g, 'master', A.x + 9, A.y + 1);
+    master.faceTo(A.x, A.y);
+    master.setAnim('walk');
+    g.units.push(master);
+    g.updateActive();
+    const say = (t, who, text, d) => ({ t, say: [this.speakers[who], text, d] });
+    const cues = [
+      { t: 0, fade: 1, fadeDur: 0.4 },
+      {
+        t: 0.5,
+        do: () => {
+          p.x = A.x - 0.9;
+          p.y = A.y + 0.9;
+          dk.x = A.x + 0.9;
+          dk.y = A.y - 0.9;
+          p.faceTo(dk.x, dk.y);
+          dk.faceTo(p.x, p.y);
+        },
+        cam: { x: A.x, y: A.y, zoom: 1.4 },
+      },
+      { t: 0.6, fade: 0, fadeDur: 0.8 },
+      { t: 1.4, do: () => dk.setAnim('attack1', 1, true) },
+      {
+        t: 1.75,
+        do: () => {
+          g.fx.sparks(p.x, p.y, 1.1, '#ffd0b0', 20, 4);
+          g.fx.shake(9);
+          g.audio.play('hit', p, { crit: true });
+          p.saberLit = false;
+          p.setAnim('death', 0.7, true);
+        },
+      },
+      { t: 1.8, fade: 0.8, fadeDur: 0.05 },
+      { t: 2.0, fade: 0, fadeDur: 1.0 },
+      { t: 3.0, do: (c) => c.move(master, A.x + 5.2, A.y + 0.6, 2.5), cam: { x: A.x + 3, y: A.y + 0.2, dur: 2.5 } },
+      { t: 5.5, do: () => (master.setAnim('idle'), dk.faceTo(master.x, master.y)) },
+      say(5.6, 'dooku', '세렌 베일… 평의회가 직접 나섰나.', 2.2),
+      say(7.8, 'master', '물러나라, 백작. 여기서 끝이다.', 2.2),
+      say(10.2, 'dooku', '끝은 내가 정한다.', 3.0),
+      {
+        t: 13.6,
+        do: (c) => {
+          dk.setAnim('cast');
+          master.setAnim('absorb');
+          g.audio.play('zap');
+          c.onFrame = () => g.fx.lightning(dk.x + Math.cos(dk.facing) * 0.5, dk.y + Math.sin(dk.facing) * 0.5, 1.2, master.x - 0.3, master.y, 0.5);
+        },
+      },
+      { t: 15.4, do: (c) => (c.onFrame = null, dk.setAnim('idle')) },
+      say(15.8, 'master', '분노로 쥔 힘은 오래가지 못한다.', 2.6),
+      { t: 18.6, fade: 1, fadeDur: 1.4 },
+    ];
+    new Cinema(g, { length: 20.2, cues }).play().then(() => {
+      this.over = false; // finish() reports
+      this.finish(true);
+    });
   }
 
   // --- combat resolution ---------------------------------------------------
@@ -311,8 +494,14 @@ export class Duel {
     }
   }
 
-  /** Damage dealt by anyone in the duel passes through here. */
+  /** The foe never falls to a blow: the film's ending decides the duel. */
   filter(src, tgt, amount, opts) {
+    const a = this.filterHit(src, tgt, amount, opts);
+    return tgt === this.foe ? Math.min(a, Math.max(0, this.foe.hp - 1)) : a;
+  }
+
+  /** Damage dealt by anyone in the duel passes through here. */
+  filterHit(src, tgt, amount, opts) {
     const g = this.game;
     const dk = this.foe;
     if (tgt === g.player) {
@@ -343,7 +532,7 @@ export class Duel {
     if (dk.state !== 'cast' && Math.random() < blockChance) {
       dk.set('parry', 0.5);
       dk.setAnim('parry', 1, true);
-      dk.composure -= Math.min(22, amount * 0.6);
+      dk.composure -= Math.min(22, amount * 0.6) * (opts.pressure || 1); // the signature onslaught wears the guard down
       dk.clashFlash = 0.15;
       g.fx.sparks(dk.x, dk.y, 1.2, '#ffd8c8', 7, 2.5);
       g.audio.play('clash', dk);
@@ -467,14 +656,18 @@ export class Duel {
     else if (p.dead && !this.over) this.finish(false);
   }
 
-  /** Phase changes by the foe's remaining health `k`. */
+  /** Phase changes by the foe's remaining health `k` (the film's beats). */
   phases(k) {
+    if (this.game.cinema) return; // one scene at a time
     if (this.phase === 1 && k <= 0.6) {
       this.phase = 2;
       this.toPhase2();
     } else if (this.phase === 2 && k <= 0.25) {
       this.phase = 3;
       this.scene('phase3').then(() => this.startLock(true));
+    } else if (this.phase === 3 && k <= 0.1 && !this.over && !this.lock) {
+      this.over = true;
+      this.ending();
     }
   }
 

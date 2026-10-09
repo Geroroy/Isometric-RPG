@@ -3,7 +3,7 @@
 // 501st, Captain Rex, B1 / B2 battle droids and R2-D2.
 import * as THREE from 'three';
 import { Rig } from './rig.js';
-import { mat, glow, box, cyl, cylX, sph, group, at, rot, scl, marker, sector, cloth } from './parts.js';
+import { mat, glow, box, cyl, cylX, sph, cone, group, at, rot, scl, marker, sector, cloth } from './parts.js';
 
 // --- Palette ----------------------------------------------------------------
 const C = {
@@ -928,9 +928,9 @@ export function buildPadme() {
   const j = rig.j;
   const d = rig.dims;
   const skin = mat(0xebc3a6, { tex: 'none' });
-  const coat = cloth(0xe2d6c0);
-  const coatDark = cloth(0xc7b89c);
-  const pants = 0xd8ccb4;
+  const coat = cloth(0x86644a); // brown travelling coat over a cream suit
+  const coatDark = cloth(0x5e4432);
+  const pants = 0xd6cbb4;
   const boot = 0x6a4a34;
   const hair = mat(0x3e2418, { tex: 'cloth' });
   for (const side of ['L', 'R']) {
@@ -956,5 +956,46 @@ export function buildPadme() {
   j.head.add(scl(sph(0.094, hair, -0.02, 0.135, 0, 10, 7), 1.03, 0.82, 1.04)); // hair, parted and smoothed back
   j.head.add(scl(sph(0.06, hair, -0.1, 0.06, 0, 8, 6), 0.9, 0.85, 1.1)); // low knot at the back
   for (const zs of [1, -1]) j.head.add(scl(sph(0.035, hair, 0.0, 0.08, 0.075 * zs, 6, 4), 1, 1.3, 0.6));
+  return rig;
+}
+
+// ----------------------------------------------------------------------------
+// Master Seren Vael (an original character for the Geonosis ending): a tall,
+// older Jedi Master — silver hair braided into a crown, slate-grey tunic under
+// a long charcoal robe with the hood down, an ochre sash and dark boots.
+
+export function buildMaster() {
+  const rig = new Rig({ shW: 0.18, hipW: 0.09 });
+  const j = rig.j;
+  const d = rig.dims;
+  const skin = mat(0xd9a888, { tex: 'none' });
+  const tunic = cloth(0x5a6068);
+  const robe = cloth(0x2e2c2e);
+  const sash = cloth(0xa87a34);
+  const boot = 0x1f1a17;
+  const hair = mat(0xcfd0d4, { tex: 'cloth' });
+  for (const side of ['L', 'R']) {
+    j['hip' + side].add(cyl(0.07, 0.056, d.thigh, tunic, 0, -d.thigh / 2, 0, 8));
+    j['kn' + side].add(cyl(0.058, 0.05, d.shin, mat(boot), 0, -d.shin / 2, 0, 8));
+    j['an' + side].add(box(0.21, 0.07, 0.09, mat(boot), 0.05, -0.03, 0));
+    j['sh' + side].add(cyl(0.058, 0.07, d.uarm, robe, 0, -d.uarm / 2, 0, 8));
+    j['el' + side].add(cyl(0.07, 0.085, d.farm, robe, 0, -d.farm / 2, 0, 8)); // wide sleeves
+    j['ha' + side].add(scl(sph(0.04, skin, 0, -0.045, 0, 6, 4), 0.9, 1.15, 0.8));
+  }
+  j.pelvis.add(cyl(0.14, 0.15, 0.17, tunic, 0, -0.03, 0, 8));
+  j.pelvis.add(scl(cyl(0.16, 0.16, 0.08, sash, 0, 0.06, 0, 10), 0.85, 1, 1.05));
+  addSkirt(rig, { outer: robe, inner: tunic, len: 0.62, innerLen: 0.5, gap: 0.3 });
+  j.spine.add(scl(cyl(0.135, 0.145, 0.26, tunic, 0, 0.12, 0, 8), 0.78, 1, 1));
+  j.chest.add(scl(cyl(0.16, 0.14, 0.3, tunic, 0, 0.14, 0, 8), 0.74, 1, 1));
+  for (const zs of [1, -1]) j.chest.add(box(0.2, 0.32, 0.05, robe, 0.0, 0.14, 0.11 * zs)); // robe fronts
+  j.chest.add(scl(cyl(0.12, 0.17, 0.1, robe, -0.03, 0.3, 0, 10), 0.9, 1, 1.15)); // hood lying on the shoulders
+  j.neck.add(cyl(0.04, 0.045, 0.08, skin, 0, 0.03, 0, 7));
+  j.head.add(scl(sph(0.09, skin, 0.01, 0.1, 0, 10, 8), 0.95, 1.16, 0.86));
+  j.head.add(box(0.018, 0.024, 0.016, skin, 0.086, 0.09, 0)); // nose
+  j.head.add(scl(sph(0.098, hair, -0.02, 0.14, 0, 10, 7), 1.03, 0.8, 1.04)); // hair swept back
+  const braid = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.02, 5, 14), hair); // braided crown
+  braid.rotation.x = Math.PI / 2;
+  braid.position.set(-0.02, 0.19, 0);
+  j.head.add(braid);
   return rig;
 }
