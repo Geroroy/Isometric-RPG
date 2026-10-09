@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clone Wars: Chosen One</title>
+  </head>
+  <body>
+    <canvas id="world"></canvas>
+    <canvas id="overlay"></canvas>
+    <div id="hud">
+      <div id="console"></div>
+    </div>
+
+    <div id="help" data-pause="1">
+      <div class="help-box">
+        <div class="help-title">STAR WARS · CLONE WARS</div>
+        <div class="help-sub">선택받은 자 — 크리스토프시스 외곽</div>
+        <p class="help-intro">
+          분리주의 연합의 드로이드 군대가 크리스토프시스 외곽을 점령했습니다. 제다이 기사이자 501군단의 장군,
+          <b>아나킨 스카이워커</b>가 되어 공화국 전진 기지에서 출발해 드로이드 거점을 소탕하고, 북쪽의 드로이드 공장을 파괴하십시오.
+        </p>
+        <div class="help-grid">
+          <div><kbd>좌클릭</kbd> 이동 / 공격 (누르고 있으면 계속)</div>
+          <div><kbd>Shift</kbd>+<kbd>좌클릭</kbd> 제자리 공격</div>
+          <div><kbd>우클릭</kbd> 지정된 스킬 시전 (R 표시 슬롯)</div>
+          <div><kbd>1</kbd>~<kbd>6</kbd> 커서 위치에 스킬 시전</div>
+          <div><kbd>Q</kbd> 박타 주사기 사용</div>
+          <div><kbd>K</kbd> 스킬 트리 · <kbd>C</kbd> 캐릭터</div>
+          <div><kbd>Tab</kbd> 자동 지도 · <kbd>M</kbd> 음소거</div>
+          <div><kbd>F1</kbd> 도움말 · <kbd>F9</kbd> 개발자: +5 레벨</div>
+        </div>
+        <p class="help-tip">
+          쉬엔 반사로 블래스터 볼트를 튕겨내고, 초상화를 클릭해 아나킨과 대화해 보세요. 어둠의 기술을 쓰면 어둠 게이지가 오릅니다 — 강해지지만, 대가가 있습니다.
+        </p>
+        <button id="startBtn">광선검 점화</button>
+      </div>
+    </div>
+
+    <div id="loading">
+      <div class="load-box">
+        <div class="load-title">CLONE WARS</div>
+        <div class="load-sub">선택받은 자</div>
+        <div class="bar"><div></div></div>
+        <div class="label">3D 모델 준비 중…</div>
+        <div class="load-note">3D 모델을 실시간으로 아이소메트릭 스프라이트로 사전 렌더링하고 있습니다</div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
