@@ -56,12 +56,18 @@ export class Baker {
 
     this.scene = new THREE.Scene();
     this.scene.add(new THREE.HemisphereLight(0xdfe4ef, 0x3a2e24, 0.95));
-    const key = new THREE.DirectionalLight(0xffe6c8, 3.1);
+    const key = (this.key = new THREE.DirectionalLight(0xffe6c8, 3.1));
     key.position.set(-1.5, 5, 4.5);
     this.scene.add(key);
+    this.scene.add(key.target);
     const rim = new THREE.DirectionalLight(0x8fb4ff, 0.9);
     rim.position.set(-4, 2.5, -3);
     this.scene.add(rim);
+    this.hemi = this.scene.children[0];
+    // fine rendering's soft fill from the front right (no shadows)
+    this.fill = new THREE.DirectionalLight(0xeef2ff, 0);
+    this.fill.position.set(4, 2, 3);
+    this.scene.add(this.fill);
 
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
     const D = 50;
@@ -79,6 +85,111 @@ export class Baker {
     this.scene.add(this.holder);
     this.tmpV = new THREE.Vector3();
     this.size = [0, 0];
+  }
+
+  /**
+   * Fine rendering (the detailed look): the key light casts soft shadows
+   * (self-shadowing: an arm on the chest, a ledge on the wall below it) and
+   * a screen-space pass darkens creases and contact points (ambient
+   * occlusion) and catches the light on raised edges, from the depth
+   * buffer — what made pre-rendered sprites read as solid, detailed objects.
+   */
+  setFine(on) {
+    this.fine = !!on;
+    const r = this.renderer;
+    r.shadowMap.enabled = this.fine;
+    r.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.key.castShadow = this.fine;
+    // fine: the key light from the upper left, so shadows fall across the
+    // faces the camera sees and reveal their form; a soft fill keeps the
+    // shadowed side readable
+    this.keyDir = this.fine ? [-3.4, 5, 1.2] : [-1.5, 5, 4.5];
+    this.key.position.set(...this.keyDir);
+    this.key.intensity = this.fine ? 3.5 : 3.1;
+    this.fill.intensity = this.fine ? 1.15 : 0;
+    this.hemi.intensity = 0.95;
+    if (this.fine && !this.key.shadow.map) {
+      this.key.shadow.mapSize.set(2048, 2048);
+      this.key.shadow.bias = -0.0004;
+      this.key.shadow.normalBias = 0.02;
+      this.key.shadow.radius = 3;
+    }
+  }
+
+  /** Every mesh casts and takes shadows (glowing parts only take light). */
+  shadows(root) {
+    if (!this.fine) return;
+    root.traverse((m) => {
+      if (!m.isMesh) return;
+      m.castShadow = !m.material.isMeshBasicMaterial;
+      m.receiveShadow = true;
+    });
+  }
+
+  /** The shadow camera covers the current frame. */
+  fitShadow() {
+    const cam = this.camera;
+    const S = Math.max(cam.right - cam.left, cam.top - cam.bottom) * 0.75 + 1;
+    const sc = this.key.shadow.camera;
+    sc.left = sc.bottom = -S;
+    sc.right = sc.top = S;
+    sc.near = 1;
+    sc.far = 120;
+    sc.updateProjectionMatrix();
+    this.key.position.set(...this.keyDir).normalize().multiplyScalar(50);
+    this.key.target.position.set(0, 0, 0);
+  }
+
+  /** Render targets and the occlusion / edge pass for one tile size. */
+  finePass(tw, th) {
+    let f = this.fineRT;
+    if (!f || f.w !== tw || f.h !== th) {
+      if (f) f.rt.dispose();
+      const rt = new THREE.WebGLRenderTarget(tw, th, { type: THREE.HalfFloatType, depthTexture: new THREE.DepthTexture(tw, th, THREE.UnsignedIntType) });
+      if (!this.quad) {
+        const mat = new THREE.ShaderMaterial({
+          uniforms: { tColor: { value: null }, tDepth: { value: null }, texel: { value: new THREE.Vector2() }, span: { value: 1 }, rad: { value: 8 }, unit: { value: 1 } },
+          vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+          fragmentShader: `
+            uniform sampler2D tColor; uniform sampler2D tDepth; uniform vec2 texel; uniform float span; uniform float rad; uniform float unit;
+            varying vec2 vUv;
+            float D(vec2 uv){ return texture2D(tDepth, uv).x * span; } // ortho: linear depth in world units
+            void main(){
+              vec4 c = texture2D(tColor, vUv);
+              if (c.a <= 0.0) { gl_FragColor = vec4(0.0); return; }
+              float d = D(vUv);
+              // ambient occlusion: nearby surfaces in front of this one
+              float ao = 0.0;
+              float spin = fract(sin(dot(vUv, vec2(12.9898, 78.233))) * 43758.5453) * 6.283;
+              for (int i = 0; i < 16; i++) {
+                float fi = float(i);
+                float a = fi * 2.39996 + spin;
+                float r = rad * (0.15 + 0.85 * fract(fi * 0.618034));
+                vec2 o = vec2(cos(a), sin(a)) * r * texel;
+                if (texture2D(tColor, vUv + o).a <= 0.0) continue;
+                float dz = d - D(vUv + o);
+                ao += smoothstep(0.012 * unit, 0.1 * unit, dz) * (1.0 - smoothstep(0.7 * unit, 1.3 * unit, dz));
+              }
+              ao /= 16.0;
+              // creases and edges: depth curvature over a couple of pixels
+              vec2 e = texel * 1.5;
+              float avg = (D(vUv + vec2(e.x, 0.0)) + D(vUv - vec2(e.x, 0.0)) + D(vUv + vec2(0.0, e.y)) + D(vUv - vec2(0.0, e.y))) * 0.25;
+              float cav = clamp((d - avg) / (0.02 * unit), -1.0, 1.0);
+              vec3 col = c.rgb * (1.0 - min(ao * 1.1, 0.75)) * (1.0 - max(cav, 0.0) * 0.45);
+              col += c.rgb * max(-cav, 0.0) * 0.35 + max(-cav, 0.0) * 0.02;
+              gl_FragColor = linearToOutputTexel(vec4(col, c.a));
+            }`,
+          depthTest: false,
+          depthWrite: false,
+          transparent: false,
+        });
+        this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
+        this.quadScene = new THREE.Scene();
+        this.quadScene.add(this.quad);
+      }
+      f = this.fineRT = { rt, w: tw, h: th };
+    }
+    return f.rt;
   }
 
   dispose() {
@@ -122,10 +233,37 @@ export class Baker {
     const x = (i % cols) * tw;
     const y = (rows - 1 - Math.floor(i / cols)) * th; // GL viewport origin is bottom-left
     const r = this.renderer;
+    if (!this.fine) {
+      r.setScissorTest(true);
+      r.setViewport(x, y, tw, th);
+      r.setScissor(x, y, tw, th);
+      r.render(this.scene, this.camera);
+      return;
+    }
+    // fine: the tile into a target with depth, then the occlusion pass onto the canvas
+    this.fitShadow();
+    const rt = this.finePass(tw, th);
+    r.setRenderTarget(rt);
+    r.setScissorTest(false);
+    r.setViewport(0, 0, tw, th);
+    r.setClearColor(0x000000, 0);
+    r.clear();
+    r.render(this.scene, this.camera);
+    r.setRenderTarget(null);
+    const u = this.quad.material.uniforms;
+    u.tColor.value = rt.texture;
+    u.tDepth.value = rt.depthTexture;
+    u.texel.value.set(1 / tw, 1 / th);
+    u.span.value = this.camera.far - this.camera.near;
+    const px = PX_PER_UNIT * this.R * ss; // pixels per world unit in this tile
+    u.unit.value = 1;
+    u.rad.value = 0.32 * px;
     r.setScissorTest(true);
     r.setViewport(x, y, tw, th);
     r.setScissor(x, y, tw, th);
-    r.render(this.scene, this.camera);
+    r.autoClear = false;
+    r.render(this.quadScene, this.camera);
+    r.autoClear = true;
   }
 
   /** Read the whole batch canvas back once; returns per-tile fw×fh buffers. */
@@ -293,6 +431,7 @@ export class Baker {
     const { model, dirs } = spec;
     const [fw, fh, ax, ay] = spec.frame;
     detail(model.root);
+    this.shadows(model.root);
     this.holder.add(model.root);
     // all directions of one animation frame render into one canvas and are
     // read back together (one GPU sync per pose instead of one per sprite)
@@ -348,6 +487,7 @@ export class Baker {
   bakeStatic(object, { angles = [0], margin = 4, outline = true, posterize, hd = false } = {}) {
     const R = hd ? 2 : 1;
     detail(object);
+    this.shadows(object);
     this.holder.add(object);
     const frames = [];
     for (const ang of angles) {

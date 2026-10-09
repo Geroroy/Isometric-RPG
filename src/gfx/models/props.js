@@ -1070,6 +1070,146 @@ function slumBlock(rng) {
   return g;
 }
 
+/**
+ * An underworld shop block, after the Coruscant concept art: two storeys of
+ * grimy panelled walls, a lit storefront with a door and a ribbed shutter,
+ * bay windows with louvres upstairs, a belt course with lights under it,
+ * neon (a vertical blade on the corner, tubes over the shop, a round sign),
+ * conduits and pipes on the walls, and the roof crowded with a round tech
+ * housing, vents, fans and aerials. Front +Z, side +X (the faces the camera
+ * sees). About 5 × 3.6 tiles.
+ */
+function underBlock(rng) {
+  const g = new THREE.Group();
+  const W = 5.0, D = 3.6, H1 = 1.9, H2 = 1.7;
+  const wall = mat(rng.pick([0x6e6862, 0x66646a, 0x72685c]), { tex: 'rock' });
+  const wallD = mat(0x58534e, { tex: 'rock' });
+  const trim = mat(0x2a2827);
+  const steel = mat(0x5c5f63);
+  const rust = mat(RUST);
+  const warm = glow(rng.pick([0xffc27a, 0xffd49a, 0xffb56a]));
+  const n1 = rng.pick(NEON), n2 = rng.pick(NEON.filter((c) => c !== n1)), n3 = rng.pick(NEON);
+  const fz = D / 2, fx = W / 2; // front and side faces
+  // the shell: a plinth, two storeys, the belt course between them
+  g.add(box(W + 0.1, 0.12, D + 0.1, trim, 0, 0.06, 0));
+  g.add(box(W, H1, D, wall, 0, H1 / 2 + 0.12, 0));
+  g.add(box(W - 0.2, H2, D - 0.2, wallD, 0, 0.12 + H1 + H2 / 2 + 0.18, 0));
+  const belt = 0.12 + H1;
+  g.add(box(W + 0.24, 0.18, D + 0.24, trim, 0, belt + 0.09, 0));
+  g.add(box(W + 0.3, 0.05, D + 0.3, steel, 0, belt + 0.2, 0));
+  for (let x = -fx + 0.4; x < fx; x += 0.75) g.add(box(0.16, 0.03, 0.06, warm, x, belt - 0.02, fz + 0.1)); // lights under the ledge
+  // wall panels: slightly proud plates with seams, bolts at the corners
+  for (let x = -fx + 0.45; x < fx - 0.2; x += 0.9) {
+    for (const y of [0.55, 1.45]) {
+      if (x > -1.6 && x < 0.9 && y < 1.6) continue; // the storefront
+      g.add(box(0.82, 0.8, 0.04, wallD, x, y + 0.12, fz + 0.02));
+      for (const [bx, by] of [[-0.36, -0.34], [0.36, -0.34], [-0.36, 0.34], [0.36, 0.34]]) g.add(box(0.035, 0.035, 0.03, steel, x + bx, y + 0.12 + by, fz + 0.05));
+    }
+  }
+  for (let z = -fz + 0.45; z < fz - 0.2; z += 0.9) for (const y of [0.55, 1.45]) if (z < 0.3) g.add(box(0.04, 0.8, 0.82, wallD, fx + 0.02, y + 0.12, z));
+  // the storefront: a deep frame, a warm window with mullions, the door
+  g.add(box(2.7, 1.6, 0.14, trim, -0.35, 0.95, fz + 0.06));
+  g.add(box(1.5, 1.0, 0.04, warm, -0.85, 1.05, fz + 0.1));
+  for (const x of [-1.35, -0.85, -0.35]) g.add(box(0.04, 1.0, 0.06, trim, x, 1.05, fz + 0.12));
+  g.add(box(1.5, 0.05, 0.06, trim, -0.85, 1.25, fz + 0.12));
+  g.add(box(1.6, 0.24, 0.3, steel, -0.85, 0.42, fz + 0.2)); // the counter
+  for (let i = 0; i < 4; i++) g.add(box(0.14, 0.12, 0.14, mat(rng.pick([0xd8a040, 0x9a4b38, 0x5f8a4a, 0x4f6fa0])), -1.4 + i * 0.36, 0.6, fz + 0.22));
+  g.add(box(0.6, 1.3, 0.05, mat(0x1d1b1a), 0.45, 0.8, fz + 0.1)); // door
+  g.add(box(0.66, 0.04, 0.06, glow(n2), 0.45, 1.48, fz + 0.12)); // light over it
+  g.add(box(0.04, 1.3, 0.06, glow(n2), 0.12, 0.8, fz + 0.12));
+  // a ribbed roll-up shutter, half down, on the right
+  g.add(box(1.1, 1.45, 0.08, trim, 1.65, 0.87, fz + 0.05));
+  for (let y = 0.5; y < 1.55; y += 0.09) g.add(box(1.0, 0.05, 0.05, mat(0x6a6660), 1.65, y, fz + 0.1));
+  g.add(box(1.0, 0.36, 0.04, glow(0xffb070), 1.65, 0.3, fz + 0.06)); // light spilling under it
+  // a striped awning over the shop
+  const aw = box(2.9, 0.05, 0.75, cloth(rng.pick([0x8a3a32, 0x2f6a7a, 0x8a6a2a])), -0.35, 1.86, fz + 0.38);
+  aw.rotation.x = 0.32;
+  g.add(aw);
+  for (let x = -1.7; x <= 1.0; x += 0.45) {
+    const st = box(0.2, 0.052, 0.76, cloth(0xd8d0c0), x, 1.865, fz + 0.38);
+    st.rotation.x = 0.32;
+    g.add(st);
+  }
+  // neon tubes over the awning: a framed sign with glyph bars
+  g.add(box(1.9, 0.42, 0.08, mat(0x141213), -0.35, 2.32 + 0.05, fz + 0.16));
+  for (const [w, h, x, y] of [[1.8, 0.03, 0, 0.19], [1.8, 0.03, 0, -0.19], [0.03, 0.38, -0.9, 0], [0.03, 0.38, 0.9, 0]]) g.add(box(w, h, 0.03, glow(n1), -0.35 + x, 2.37 + y, fz + 0.21));
+  for (let i = 0; i < 6; i++) {
+    const gw = rng.range(0.08, 0.2);
+    g.add(box(gw, rng.range(0.12, 0.24), 0.03, glow(n1), -1.05 + i * 0.28, 2.37, fz + 0.21));
+  }
+  // upstairs: four window bays between pilasters, louvres, amber light
+  const y2 = belt + 0.2 + H2 / 2;
+  for (let i = 0; i < 4; i++) {
+    const x = -fx + 0.75 + i * 1.17;
+    g.add(box(0.85, 0.75, 0.06, trim, x, y2 + 0.05, fz - 0.06));
+    g.add(box(0.72, 0.6, 0.03, rng.chance(0.75) ? warm : mat(0x16181b), x, y2 + 0.05, fz - 0.03));
+    for (let k = 0; k < 4; k++) g.add(box(0.74, 0.03, 0.05, trim, x, y2 - 0.18 + k * 0.15, fz));
+    g.add(box(0.9, 0.06, 0.16, steel, x, y2 - 0.37, fz + 0.02)); // sill
+  }
+  for (let i = 0; i < 5; i++) g.add(box(0.14, H2, 0.1, wall, -fx + 0.17 + i * 1.17, y2 + 0.05, fz)); // pilasters
+  // a balcony with a railing on the side, a ladder down
+  g.add(box(0.7, 0.06, 1.6, steel, fx + 0.35, belt + 0.25, -0.5));
+  for (let z = -1.25; z <= 0.3; z += 0.25) g.add(box(0.03, 0.45, 0.03, steel, fx + 0.68, belt + 0.5, z));
+  g.add(box(0.03, 0.03, 1.6, steel, fx + 0.68, belt + 0.72, -0.5));
+  g.add(box(0.06, belt + 0.25, 0.06, steel, fx + 0.6, (belt + 0.25) / 2, 0.25));
+  for (let y = 0.3; y < belt; y += 0.25) g.add(box(0.03, 0.03, 0.3, steel, fx + 0.6, y, 0.1));
+  for (const z of [-1.0, 0.0]) {
+    g.add(box(0.04, 0.6, 0.55, warm, fx - 0.08, y2 + 0.05, z));
+    g.add(box(0.06, 0.66, 0.06, trim, fx - 0.06, y2 + 0.05, z + 0.3));
+  }
+  // conduits and pipes up the walls
+  for (const x of [-fx + 0.08, fx - 0.3]) g.add(cyl(0.05, 0.05, H1 + H2 + 0.3, rust, x, (H1 + H2) / 2 + 0.2, fz + 0.1, 6));
+  g.add(cylX(0.04, 0.04, W - 0.2, steel, -fx + 0.1, belt + 0.38, fz + 0.06, 6));
+  g.add(cyl(0.07, 0.07, H1 + H2, steel, fx + 0.1, (H1 + H2) / 2 + 0.2, 1.4, 6));
+  for (let y = 0.4; y < H1 + H2; y += 0.6) g.add(box(0.12, 0.04, 0.12, trim, fx + 0.1, y, 1.4));
+  g.add(box(0.5, 0.36, 0.3, mat(0x606468), fx + 0.17, 1.1, 0.9)); // a junction box
+  g.add(box(0.08, 0.08, 0.02, glow(0x9fff9f), fx + 0.33, 1.2, 0.95));
+  // the vertical neon blade on the corner, framed, with glyphs
+  const by = 1.2 + H1 * 0.5;
+  g.add(box(0.12, 1.9, 0.5, mat(0x161415), fx + 0.12, by + 0.4, fz - 0.35));
+  for (const [h, y] of [[0.03, 0.92], [0.03, -0.92]]) g.add(box(0.03, h, 0.46, glow(n3), fx + 0.19, by + 0.4 + y, fz - 0.35));
+  for (const z of [-0.22, 0.22]) g.add(box(0.03, 1.84, 0.03, glow(n3), fx + 0.19, by + 0.4, fz - 0.35 + z));
+  for (let i = 0; i < 5; i++) g.add(box(0.03, rng.range(0.14, 0.24), rng.range(0.14, 0.3), glow(n3), fx + 0.19, by + 1.1 - i * 0.34, fz - 0.35));
+  g.add(cylX(0.03, 0.03, 0.25, steel, fx, by + 1.3, fz - 0.35, 5)); // brackets
+  g.add(cylX(0.03, 0.03, 0.25, steel, fx, by - 0.5, fz - 0.35, 5));
+  // a round sign on the side wall
+  const rs = cylX(0.32, 0.32, 0.06, mat(0x161415), fx + 0.02, 1.05, -1.05, 16);
+  g.add(rs);
+  g.add(rot(new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.025, 6, 20), glow(n2)), 0, Math.PI / 2, 0));
+  g.children[g.children.length - 1].position.set(fx + 0.1, 1.05, -1.05);
+  g.add(box(0.03, 0.2, 0.14, glow(n2), fx + 0.1, 1.05, -1.05));
+  // the roof: a parapet, pipes, the round tech housing, vents, fans, aerials
+  const roof = belt + 0.2 + H2 + 0.18;
+  g.add(box(W - 0.1, 0.22, 0.12, trim, 0, roof + 0.11, fz - 0.16));
+  g.add(box(0.12, 0.22, D - 0.3, trim, fx - 0.16, roof + 0.11, 0));
+  g.add(box(W - 0.3, 0.06, D - 0.4, mat(0x2e2c2b), 0, roof + 0.03, 0));
+  g.add(cylX(0.1, 0.1, W - 0.8, rust, -fx + 0.4, roof + 0.25, -0.9, 8));
+  g.add(cylX(0.07, 0.07, W - 1.2, steel, -fx + 0.6, roof + 0.2, -0.55, 8));
+  g.add(cyl(0.07, 0.07, 0.5, rust, -fx + 0.5, roof + 0.2, -0.9, 6));
+  // the round housing (stacked rings, a lit band, a cap)
+  const hx = -1.3, hz = -0.3;
+  g.add(cyl(0.85, 0.95, 0.35, steel, hx, roof + 0.2, hz, 20));
+  g.add(cyl(0.8, 0.8, 0.12, glow(0xfff0c8), hx, roof + 0.43, hz, 20));
+  g.add(cyl(0.9, 0.8, 0.12, trim, hx, roof + 0.55, hz, 20));
+  g.add(cyl(0.45, 0.85, 0.28, steel, hx, roof + 0.75, hz, 20));
+  g.add(cyl(0.12, 0.12, 0.3, trim, hx, roof + 1.0, hz, 8));
+  // vents and fan units with grilles
+  for (const [x, z] of [[0.6, 0.6], [1.5, -0.6]]) {
+    g.add(box(0.7, 0.32, 0.7, mat(0x5a5d61), x, roof + 0.2, z));
+    g.add(cyl(0.26, 0.26, 0.03, mat(0x1d1f21), x, roof + 0.37, z, 14));
+    for (let k = -2; k <= 2; k++) g.add(box(0.5, 0.02, 0.03, steel, x, roof + 0.385, z + k * 0.09));
+  }
+  g.add(box(0.4, 0.5, 0.35, rust, 0.4, roof + 0.3, -1.0));
+  // aerials with warning lights
+  for (const [x, z, h] of [[1.9, 1.1, 1.2], [-0.2, -1.2, 0.8]]) {
+    g.add(cyl(0.02, 0.03, h, steel, x, roof + h / 2, z, 5));
+    g.add(sph(0.05, glow(0xff4030), x, roof + h, z, 6, 4));
+  }
+  // grime: dark streaks below the windows and the ledge
+  for (let i = 0; i < 6; i++) g.add(box(rng.range(0.05, 0.12), rng.range(0.3, 0.7), 0.01, mat(0x2b2826, { tex: 'none' }), rng.range(-fx + 0.3, fx - 0.3), belt - 0.35, fz + 0.03));
+  return g;
+}
+
 function stall(rng) {
   // a street vendor's stall: counter, crates of goods, a patched awning
   const g = new THREE.Group();
@@ -1244,6 +1384,7 @@ export const PROPS = {
   plazaLamp: { build: plazaLamp, variants: 1, block: 0.3, light: [255, 238, 205, 170, 2.6] },
   turbolift: { build: turbolift, variants: 1, block: 0, light: [150, 230, 255, 70, 2] },
   slumBlock: { build: slumBlock, variants: 4, rect: [4, 4], light: [255, 190, 120, 40, 1.5] },
+  underBlock: { build: underBlock, variants: 3, rect: [5, 4], light: [255, 190, 120, 60, 1.6] },
   stall: { build: stall, variants: 4, block: 0.6, light: [255, 170, 110, 46, 1.6] },
   neonSign: { build: neonSign, variants: 4, block: 0.3 },
   ventStack: { build: ventStack, variants: 2, block: 0.5 },
