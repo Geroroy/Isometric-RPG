@@ -307,6 +307,7 @@ export class World {
    */
   addSheetProp(name, x, y, opts = {}) {
     const def = SHEET_PROPS[name];
+    if (!cityFootprint(name)) return null; // its sprite did not load: leave it out
     const p = { type: 'sheet', sheet: name, x, y, flat: !!def.flat, phase: this.rng.next() * 10, neon: { until: 0, phase: this.rng.next() * 7 } };
     const fp = cityFootprint(name);
     if (fp && !opts.noBlock && !def.flat) {
@@ -679,13 +680,15 @@ export class CityHub extends World {
     this.addProp('turbolift', liftLow.x, liftLow.y);
     // the cantina ("녹슨 등불"): its door opens south onto a small square
     this.addSheetProp('cantina', bar.x, bar.y);
-    // market street: stalls along both sides
-    let si = 0;
-    for (let x = low.x - low.hw + 3; x <= low.x + low.hw - 3; x += 3.6) {
-      if (Math.abs(x - liftLow.x) < 2.5 || Math.abs(x - shaft.x) < 3) continue;
-      this.addSheetProp('stall' + (si++ % 3), x, 104.6);
-      if (rng.chance(0.55)) this.addSheetProp('stall' + (si++ % 3), x + 1.6, 110.8);
-    }
+    // the market street, after real street food: a noodle yatai, hot dog carts,
+    // container kiosks, a two-stack container shop, a grill trike, a round drinks
+    // kiosk, a food truck — never the same twice in a row, at uneven spacing,
+    // the north side serving the street, the south side mixed (`_r`: turned to
+    // serve along it), tables and stools between them
+    const north = [[67.6, 'yatai'], [71.4, 'cartHotdog'], [75.6, 'containerKiosk'], [87.6, 'stackShop'], [92.2, 'grillTrike'], [101.0, 'roundKiosk'], [105.2, 'containerKiosk2'], [110.4, 'foodTruck'], [115.0, 'yatai'], [118.6, 'cartHotdog'], [123.4, 'stackShop']];
+    const south = [[68.6, 'tableSet'], [72.6, 'grillTrike_r'], [76.0, 'cartHotdog_r'], [88.0, 'tableSet'], [92.6, 'roundKiosk'], [100.4, 'yatai_r'], [103.4, 'tableSet'], [109.6, 'containerKiosk_r'], [116.4, 'foodTruck_r'], [123.0, 'tableSet']];
+    for (const [x, name] of north) this.addSheetProp(name, x, 104.4 + rng.range(-0.25, 0.15));
+    for (const [x, name] of south) this.addSheetProp(name, x, 110.6 + rng.range(-0.15, 0.25));
     // holo billboards at the street corners
     for (const [x, y] of [[86.5, 107.6], [113.5, 107.4], [73, 114], [96, 121.5]]) this.addSheetProp('billboard', x, y);
     // the factory gate at the west end (workers come and go), a cluster of junk by it

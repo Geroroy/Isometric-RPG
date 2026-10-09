@@ -1,5 +1,6 @@
 """
-Build and render every Coruscant undercity asset into the game's layered
+Build and render every Coruscant undercity asset (an `_r` name: the same
+model turned 90°, so what faced game +y faces game +x) into the game's layered
 building sprites (body / neon / reflect + JSON), one image pixel per game
 pixel, into public/sprites/city.
 
@@ -37,15 +38,34 @@ ASSETS = {
     'droidParts': (64, 32, 44, '{"rate": 0.6, "dur": [0.05, 0.4], "level": 0}'),
     'trashBin': (64, 32, 50, None),
     'junctionBox': (96, 44, 76, '{"rate": 2.5, "dur": [0.1, 0.5], "level": 0}'),
+    # street food, after real carts, kiosks and container shops; `_r`: turned 90°
+    'cartHotdog': (128, 64, 100, None),
+    'cartHotdog_r': (128, 64, 100, None),
+    'grillTrike': (128, 64, 100, '{"rate": 0.4, "dur": [0.1, 0.3], "level": 0.6, "hum": 0.15, "speed": 3}'),
+    'grillTrike_r': (128, 64, 100, '{"rate": 0.4, "dur": [0.1, 0.3], "level": 0.6, "hum": 0.15, "speed": 3}'),
+    'roundKiosk': (128, 64, 104, None),
+    'tableSet': (128, 64, 96, None),
+    'yatai': (144, 72, 110, None),
+    'yatai_r': (144, 72, 110, None),
+    'containerKiosk': (192, 96, 128, None),
+    'containerKiosk_r': (192, 96, 128, None),
+    'containerKiosk2': (192, 96, 128, None),
+    'foodTruck': (176, 88, 128, None),
+    'foodTruck_r': (176, 88, 128, None),
+    'stackShop': (224, 112, 170, None),
 }
 
 only = sys.argv[1:]
 names = [n for n in ASSETS if not only or n in only]
-subprocess.run([PY, os.path.join(HERE, 'build_city_assets.py'), GLB, *names], check=True)
+models = sorted({n[:-2] if n.endswith('_r') else n for n in names})
+subprocess.run([PY, os.path.join(HERE, 'build_city_assets.py'), GLB, *models], check=True)
 for n in names:
     win, ax, ay, neon = ASSETS[n]
-    args = [PY, os.path.join(HERE, 'render_building.py'), os.path.join(GLB, n + '.glb'), OUT,
-            '--window', str(win), '--anchor', f'{ax},{ay}', '--render', str(min(1200, win * 3)), '--samples', '32', '--light', '2.4']
+    turned = n.endswith('_r')
+    args = [PY, os.path.join(HERE, 'render_building.py'), os.path.join(GLB, (n[:-2] if turned else n) + '.glb'), OUT, '--name', n,
+            '--window', str(win), '--anchor', f'{ax},{ay}', '--render', str(min(1200, int(win * 2.5))), '--samples', '24', '--light', '2.4']
+    if turned:
+        args += ['--rotate', '90']
     if neon:
         args += ['--neon', neon]
     subprocess.run(args, check=True, stdout=subprocess.DEVNULL)

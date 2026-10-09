@@ -8,6 +8,8 @@ Render a building .glb into the game's three-layer building sprite.
   --render 1024      render resolution (square)
   --sizes N          output sizes (default: the window, one image pixel per
                      game pixel); one set of files each
+  --rotate 0         turn the model this many degrees about the vertical first
+                     (90: what faced game +y faces game +x)
   --light 1.0        brightness of the key / rim / fill lights and the sky
   --neon JSON        the neon's flicker settings in the JSON (default: a slow
                      hum with rare dropouts), e.g. '{"rate": 2, "level": 0}'
@@ -83,6 +85,7 @@ WINDOW = float(opt.get('window', 260))
 SIZES = [int(x) for x in opt.get('sizes', str(int(WINDOW))).split(',')]
 NEON_OPT = json.loads(opt.get('neon', '{}'))
 LIGHT = float(opt.get('light', 1.0))
+ROTATE = math.radians(float(opt.get('rotate', 0)))
 AX, AY = [float(x) for x in opt.get('anchor', '130,210').split(',')]
 SAMPLES = int(opt.get('samples', 48))
 GLOW = float(opt.get('neon-glow', 6))
@@ -92,6 +95,12 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
 bpy.ops.import_scene.gltf(filepath=GLB)
 model = [o for o in scene.objects if o.type == 'MESH']
+if ROTATE:
+    from mathutils import Matrix
+    turn = Matrix.Rotation(ROTATE, 4, 'Z')
+    for o in [o for o in scene.objects if o.parent is None]:
+        o.matrix_world = turn @ o.matrix_world
+    bpy.context.view_layer.update()
 
 # ----------------------------------------------------------------------------
 # Neon: find the glowing materials, prepare an on / off switch for each

@@ -10,6 +10,7 @@
 import { Citizen } from './citizens.js';
 import { dist, rand, chance } from '../core/math.js';
 import LIFE from '../data/cityLife.json';
+import { SHEET_PROPS } from '../world/cityProps.js';
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const levelOf = (y) => (y > 90 ? 'low' : 'up');
@@ -26,14 +27,16 @@ export class CityLife {
   populate() {
     const g = this.game;
     const w = g.world;
-    const stalls = w.props.filter((p) => p.sheet && p.sheet.startsWith('stall'));
+    // vendors stand at the carts and kiosks that have a vendor's spot
+    const stalls = w.props.filter((p) => p.sheet && SHEET_PROPS[p.sheet].vendor).sort(() => Math.random() - 0.5);
     let si = 0;
     for (const def of LIFE.residents) {
       for (let k = 0; k < def.n; k++) {
         const u = new Citizen(g, def, 0, 0);
         if (def.kind === 'vendor') {
           const st = stalls[si++ % Math.max(1, stalls.length)];
-          if (st) u.stall = u.pickPoint({ at: [st.x, st.y + 1.0], r: 0 });
+          const v = st && SHEET_PROPS[st.sheet].vendor;
+          if (st) u.stall = u.pickPoint({ at: [st.x + v[0], st.y + v[1]], r: 0 });
         }
         const step = def.routine[u.step];
         const at = u.resolve(step.go);

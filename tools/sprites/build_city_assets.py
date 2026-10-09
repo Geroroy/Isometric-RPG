@@ -726,6 +726,338 @@ def junction_box(s, rng):
     s.plate(s.mat('hazard', 0xffffff, 'hazard', 0.6), [G(0.26, -0.3, 0.5), G(0.26, 0.3, 0.5), G(0.26, 0.3, 0.2), G(0.26, -0.3, 0.2)], 0.01)
 
 
+# ----------------------------------------------------------------------------
+# Street food: after real carts, kiosks and container shops — each a different
+# silhouette, all serving towards game +y (the render can turn them 90°)
+
+
+def stools(s, rng, pts, color=None):
+    """Plastic stools: a round seat on four splayed legs."""
+    cols = [0xc23a2e, 0x2f7fb8, 0xd8b23a, 0x3a9a5a]
+    for (x, y) in pts:
+        m = s.mat(f'stool{color or 0}', color or cols[rng.integers(0, 4)], None, 0.5)
+        s.cyl(m, 0.16, 0.05, G(x, y, 0.42), segs=12)
+        for k in range(4):
+            a = k * math.pi / 2 + 0.785
+            s.tube(m, [G(x + math.cos(a) * 0.08, y + math.sin(a) * 0.08, 0.42), G(x + math.cos(a) * 0.15, y + math.sin(a) * 0.15, 0.0)], 0.018, segs=4)
+
+
+def string_lights(s, a, b, n, sag=0.12):
+    a, b = Vector(a), Vector(b)
+    s.cable(s.mat('cable', 0x121214, None, 0.6), a, b, sag, 0.008)
+    for k in range(n):
+        t = (k + 0.5) / n
+        p = a.lerp(b, t) - Vector((0, 0, sag * 4 * t * (1 - t) + 0.04))
+        s.sphere(s.mat('lit_bulb', [0xffd88a, 0xffb35a, 0xfff0c0][k % 3], emit=5), 0.035, tuple(p), segs=8)
+
+
+def menu_board(s, x, y, z, w, h, face='y', color=0xffe6b0):
+    """A lit glyph menu board (no readable letters)."""
+    m = s.mat('lit_menu', color, 'board', 0.5)
+    m2 = s.mat('menuFrame', 0x1c1c20, 'metal', 0.4, 0.5)
+    if face == 'y':
+        s.box(m2, (w + 0.06, 0.04, h + 0.06), G(x, y - 0.01, z - 0.03), bevel=0.005)
+        s.plate(s.mat('lit_menuPanel', color, emit=1.6), [G(x - w / 2, y + 0.03, z + h), G(x + w / 2, y + 0.03, z + h), G(x + w / 2, y + 0.03, z), G(x - w / 2, y + 0.03, z)], 0.01)
+        s.plate(m, [G(x - w / 2 + 0.02, y + 0.045, z + h - 0.02), G(x + w / 2 - 0.02, y + 0.045, z + h - 0.02), G(x + w / 2 - 0.02, y + 0.045, z + 0.02), G(x - w / 2 + 0.02, y + 0.045, z + 0.02)], 0.005)
+
+
+def cart_hotdog(s, rng):
+    steel = s.mat('steel', 0xb9bdc2, 'metal', 0.28, 0.85)
+    red = s.mat('cartRed', 0xb3312a, 'panel', 0.45, 0.2)
+    dark = s.mat('darkMetal', 0x2a2b2e, 'metal', 0.5, 0.5)
+    # the body: steel box on a red skirt, two big wheels at the back, legs at the front
+    s.box(red, (1.5, 0.72, 0.55), G(0, 0, 0.22), bevel=0.02)
+    s.box(steel, (1.56, 0.78, 0.22), G(0, 0, 0.77), bevel=0.02)
+    for sy in (-0.42, 0.42):
+        s.cyl(s.mat('tyre', 0x161616, None, 0.8), 0.28, 0.07, G(-0.5, sy, 0.28 - 0.0), axis='Y', segs=20)
+        s.cyl(steel, 0.12, 0.08, G(-0.5, sy, 0.28), axis='Y', segs=12)
+    for sy in (-0.3, 0.3):
+        s.cyl(dark, 0.025, 0.24, G(0.65, sy, 0.0), segs=6)
+    s.tube(steel, [G(-0.78, -0.3, 0.95), G(-1.05, -0.3, 1.0), G(-1.05, 0.3, 1.0), G(-0.78, 0.3, 0.95)], 0.025)  # push handle
+    # the top: three steam pans with lids, condiment bottles, a cutting board
+    for k, x in enumerate((-0.45, 0.0, 0.45)):
+        s.box(s.mat('pan', 0x202022, None, 0.3), (0.36, 0.5, 0.02), G(x, 0.0, 0.99), bevel=0)
+        if k != 1:
+            s.box(steel, (0.36, 0.5, 0.04), G(x, 0.0, 1.0), tilt=((0, 1, 0), 0.2 if k else -0.2), bevel=0.01)
+    s.box(s.mat('sausages', 0xa0522d, None, 0.5), (0.3, 0.42, 0.03), G(0.0, 0.0, 1.0), bevel=0.01)
+    for k, c in enumerate((0xd02020, 0xe8c020, 0x2a8a3a)):
+        s.cyl(s.mat(f'bottle{k}', c, None, 0.3), 0.035, 0.18, G(0.62, -0.25 + k * 0.1, 0.99), segs=8)
+    # the gas canister below, a napkin box, a small sign
+    s.cyl(s.mat('gas', 0x3a6a9a, 'metal', 0.5, 0.3), 0.12, 0.42, G(0.3, -0.48, 0.0), segs=12)
+    menu_board(s, 0.0, 0.37, 0.35, 0.8, 0.32)
+    # the round umbrella: a pole and a canopy of alternating panels
+    s.cyl(dark, 0.025, 1.4, G(0.05, 0.0, 1.0), segs=6)
+    cols = [s.mat('umbA', [0xc8322a, 0x2e6fb0, 0xd8a32e][rng.integers(0, 3)], 'canvas', 0.85), s.mat('umbB', 0xe8e2d0, 'canvas', 0.85)]
+    c = Vector(G(0.05, 0.0, 2.38))
+    for k in range(12):
+        a0, a1 = k * TAU / 12, (k + 1) * TAU / 12
+        bm = bmesh.new()
+        v = [bm.verts.new(c + Vector((0, 0, 0.32))), bm.verts.new(c + Vector((math.cos(a0) * 1.05, math.sin(a0) * 1.05, -0.02))), bm.verts.new(c + Vector((math.cos(a1) * 1.05, math.sin(a1) * 1.05, -0.02)))]
+        bm.faces.new(v)
+        s.obj(bm, cols[k % 2])
+    # a hanging lamp under the umbrella
+    s.sphere(s.mat('lit_lamp', 0xffd090, emit=5), 0.06, G(0.05, 0.25, 2.2), segs=10)
+
+
+def corrugated(s, mat, x0, x1, y, z0, z1, pitch=0.12, depth=0.03, face='y'):
+    """A corrugated steel wall: ribs along its height."""
+    n = int((x1 - x0) / pitch)
+    for k in range(n):
+        x = x0 + (k + 0.5) * pitch
+        if face == 'y':
+            s.box(mat, (pitch * 0.55, depth, z1 - z0), G(x, y + depth / 2, z0), bevel=0.004)
+        else:
+            s.box(mat, (depth, pitch * 0.55, z1 - z0), G(y + depth / 2, x, z0), bevel=0.004)
+
+
+def container_body(s, rng, L, W, H, color, z0=0.0, opening=None):
+    """A shipping container (half scale): frame, corrugated walls, end doors with
+    locking bars; `opening` (x0, x1, za, zb) cuts the +y wall for a counter."""
+    paint = s.mat(f'cont{color:x}', color, 'panel', 0.6, 0.35)
+    frame = s.mat(f'contFrame{color:x}', [max(0, (color >> 16) - 30), max(0, ((color >> 8) & 255) - 30), max(0, (color & 255) - 30)][0] * 65536 + [max(0, ((color >> 8) & 255) - 30)][0] * 256 + max(0, (color & 255) - 30), 'metal', 0.55, 0.4)
+    dark = s.mat('darkMetal', 0x2a2b2e, 'metal', 0.5, 0.5)
+    # the shell (back, ends, roof, floor), slightly inset so the ribs stand proud
+    s.box(paint, (L - 0.08, W - 0.08, H - 0.08), G(0, 0, z0 + 0.04), bevel=0.01, uvscale=0.8) if not opening else None
+    if opening:
+        ox0, ox1, za, zb = opening
+        s.box(paint, (L - 0.08, W - 0.12, H - 0.08), G(0, -0.02, z0 + 0.04), bevel=0.01, uvscale=0.8)  # behind the opening
+        s.box(s.mat('lit_inside', 0xffc27a, emit=1.4), (ox1 - ox0, 0.05, zb - za), G((ox0 + ox1) / 2, W / 2 - 0.08, z0 + za), bevel=0)
+        # the +y wall in pieces round the opening
+        corrugated(s, paint, -L / 2, ox0, W / 2 - 0.06, z0 + 0.04, z0 + H - 0.04)
+        corrugated(s, paint, ox1, L / 2, W / 2 - 0.06, z0 + 0.04, z0 + H - 0.04)
+        corrugated(s, paint, ox0, ox1, W / 2 - 0.06, z0 + 0.04, z0 + za)
+        corrugated(s, paint, ox0, ox1, W / 2 - 0.06, z0 + zb, z0 + H - 0.04)
+    else:
+        corrugated(s, paint, -L / 2, L / 2, W / 2 - 0.06, z0 + 0.04, z0 + H - 0.04)
+    corrugated(s, paint, -W / 2, W / 2, L / 2 - 0.06, z0 + 0.04, z0 + H - 0.04, face='x')
+    # the corner posts and rails
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            s.box(frame, (0.08, 0.08, H), G(sx * (L / 2 - 0.04), sy * (W / 2 - 0.04), z0), bevel=0.005)
+    for z in (z0, z0 + H - 0.07):
+        s.box(frame, (L, 0.07, 0.07), G(0, W / 2 - 0.035, z), bevel=0.005)
+        s.box(frame, (0.07, W, 0.07), G(L / 2 - 0.035, 0, z), bevel=0.005)
+    # the end doors' locking bars and the stencilled glyph markings
+    for k in range(4):
+        y = -W / 2 + (k + 0.5) * W / 4
+        s.cyl(dark, 0.018, H - 0.2, G(L / 2 + 0.01, y, z0 + 0.1), segs=6)
+    s.plate(s.mat('stencil', 0xe8e2d0, 'board', 0.7), [G(-L / 2 + 0.2, W / 2 + 0.005, z0 + H - 0.15), G(-L / 2 + 0.75, W / 2 + 0.005, z0 + H - 0.15), G(-L / 2 + 0.75, W / 2 + 0.005, z0 + H - 0.4), G(-L / 2 + 0.2, W / 2 + 0.005, z0 + H - 0.4)], 0.003)
+    # rust running down from the roof
+    return paint
+
+
+def container_kiosk(s, rng):
+    color = [0xa4522a, 0x2f6e6a][rng.integers(0, 2)]
+    L, W, H = 3.0, 1.25, 1.35
+    paint = container_body(s, rng, L, W, H, color, opening=(-1.1, 0.9, 0.62, 1.15))
+    dark = s.mat('darkMetal', 0x2a2b2e, 'metal', 0.5, 0.5)
+    # the counter shelf and the flap propped up as an awning on two struts
+    s.box(s.mat('counterTop', 0x8a7a64, 'crate', 0.6), (2.1, 0.32, 0.05), G(-0.1, W / 2 + 0.12, 0.6), bevel=0.01)
+    flap = [G(-1.15, W / 2, 1.2), G(0.95, W / 2, 1.2), G(0.95, W / 2 + 0.7, 1.55), G(-1.15, W / 2 + 0.7, 1.55)]
+    s.plate(paint, flap, 0.04, 1.0)
+    for x in (-1.0, 0.8):
+        s.tube(dark, [G(x, W / 2 + 0.02, 0.85), G(x, W / 2 + 0.66, 1.52)], 0.018, segs=5)
+    string_lights(s, G(-1.15, W / 2 + 0.7, 1.5), G(0.95, W / 2 + 0.7, 1.5), 9, 0.08)
+    # inside: shelves with jars, a pot steaming, a menu board on the end
+    for k in range(6):
+        s.cyl(s.mat(f'jar{k % 3}', [0xd8a040, 0x9a3a2a, 0x6a8a3a][k % 3], None, 0.3), 0.05, 0.14, G(-0.9 + k * 0.32, W / 2 - 0.22, 0.95), segs=8)
+    s.cyl(s.mat('steel', 0xb9bdc2, 'metal', 0.28, 0.85), 0.16, 0.22, G(0.5, W / 2 - 0.25, 0.65), segs=14)
+    menu_board(s, 1.25, W / 2 - 0.04, 0.55, 0.42, 0.5)
+    # the roof: an AC unit, a crate, a cable down
+    s.box(s.mat('acUnit', 0x8a8a84, 'metal', 0.5, 0.3), (0.6, 0.45, 0.35), G(-0.8, -0.2, H), bevel=0.02)
+    s.box(s.mat('crate', 0x6a5a44, 'crate', 0.7), (0.45, 0.45, 0.35), G(0.7, -0.1, H), rot=0.3, bevel=0.02)
+    stools(s, rng, [(-0.8, W / 2 + 0.7), (-0.1, W / 2 + 0.75), (0.6, W / 2 + 0.7)])
+
+
+def food_truck(s, rng):
+    paint = s.mat('truck', [0xd9c27a, 0x6aa0a8][rng.integers(0, 2)], 'panel', 0.45, 0.3)
+    stripe = s.mat('stripe', 0xb3312a, None, 0.4)
+    dark = s.mat('darkMetal', 0x2a2b2e, 'metal', 0.5, 0.5)
+    glass = s.mat('glassDark', 0x141a20, None, 0.12)
+    z = 0.42  # hovering on its pads
+    # the box (kitchen) and the cab at +x with a slanted windscreen
+    s.box(paint, (2.1, 1.3, 1.6), G(-0.45, 0, z), bevel=0.06, uvscale=0.8)
+    s.box(stripe, (2.12, 1.32, 0.14), G(-0.45, 0, z + 0.25), bevel=0.01)
+    bm = bmesh.new()
+    pts = [(0.6, z), (1.5, z), (1.5, z + 0.75), (1.15, z + 1.25), (0.6, z + 1.25)]
+    for sy in (-0.62, 0.62):
+        pass
+    prof = [bm.verts.new(G(x, -0.62, zz)) for x, zz in pts] + [bm.verts.new(G(x, 0.62, zz)) for x, zz in pts]
+    n = len(pts)
+    bm.faces.new(prof[:n])
+    bm.faces.new(list(reversed(prof[n:])))
+    for k in range(n):
+        k2 = (k + 1) % n
+        bm.faces.new((prof[k], prof[k2], prof[n + k2], prof[n + k]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    s.obj(bm, paint, bevel=0.03)
+    s.plate(glass, [G(1.17, -0.55, z + 1.2), G(1.17, 0.55, z + 1.2), G(1.48, 0.55, z + 0.78), G(1.48, -0.55, z + 0.78)], 0.01)
+    s.plate(glass, [G(0.7, 0.625, z + 1.15), G(1.1, 0.625, z + 1.15), G(1.1, 0.625, z + 0.8), G(0.7, 0.625, z + 0.8)], 0.01)
+    s.sphere(s.mat('neonHead', 0xfff2c8, emit=8), 0.06, G(1.51, 0.4, z + 0.45))
+    s.sphere(s.mat('neonHead', 0xfff2c8, emit=8), 0.06, G(1.51, -0.4, z + 0.45))
+    # the serving window with its awning and a lit kitchen behind
+    s.box(s.mat('lit_kitchen', 0xffd29a, emit=1.6), (1.3, 0.04, 0.55), G(-0.5, 0.66, z + 0.8), bevel=0)
+    s.box(s.mat('steel', 0xb9bdc2, 'metal', 0.28, 0.85), (1.4, 0.25, 0.04), G(-0.5, 0.75, z + 0.78), bevel=0.01)
+    s.plate(s.mat('awning', 0xb3312a, 'canvas', 0.85), [G(-1.25, 0.66, z + 1.45), G(0.25, 0.66, z + 1.45), G(0.25, 1.35, z + 1.2), G(-1.25, 1.35, z + 1.2)], 0.02, 1.2)
+    menu_board(s, -1.2, 0.66, z + 0.25, 0.4, 0.45, color=0xbfe8ff)
+    # the roof sign: a neon glyph outline
+    sg = s.mat('neonMagenta', 0xff3fd0, emit=8)
+    s.box(s.mat('signBack', 0x16161a, None, 0.4), (1.2, 0.05, 0.4), G(-0.45, 0.1, z + 1.62), bevel=0.01)
+    s.tube(sg, [G(-0.95, 0.14, z + 1.7), G(-0.75, 0.14, z + 1.92), G(-0.55, 0.14, z + 1.7), G(-0.35, 0.14, z + 1.92), G(-0.15, 0.14, z + 1.7), G(0.05, 0.14, z + 1.92)], 0.018)
+    # hover pads, their glow and the exhaust
+    for x in (-1.1, 0.9):
+        s.cyl(dark, 0.32, 0.12, G(x, 0, z - 0.14), segs=16)
+        s.ring(s.mat('neonRepulsor', 0x2a78e0, emit=3), G(x, 0, 0.06), 0.3, 0.014, (0, 0, 1), segs=20)
+    s.cyl(dark, 0.05, 0.3, G(-1.55, -0.45, z + 0.1), axis='X', segs=8)
+    stools(s, rng, [(-0.9, 1.6), (-0.2, 1.65)])
+
+
+def yatai(s, rng):
+    wood = s.mat('wood', 0x6b4a2e, 'crate', 0.75)
+    woodDark = s.mat('woodDark', 0x3e2a1a, 'crate', 0.8)
+    # the cart: a wooden counter box on two wheels
+    s.box(wood, (1.8, 0.8, 0.85), G(0, 0, 0.12), bevel=0.02, uvscale=1.5)
+    s.box(woodDark, (1.95, 0.95, 0.06), G(0, 0.04, 0.97), bevel=0.01)
+    for sx in (-0.7, 0.7):
+        s.cyl(s.mat('tyre', 0x161616, None, 0.8), 0.22, 0.06, G(sx, -0.45, 0.22), axis='Y', segs=16)
+    # posts and the gabled roof
+    for x in (-0.85, 0.85):
+        for y in (-0.32, 0.32):
+            s.box(woodDark, (0.07, 0.07, 1.35), G(x, y, 0.97), bevel=0.005)
+    roof = s.mat('roof', 0x4a3a2e, 'panel', 0.7, 0.2)
+    s.plate(roof, [G(-1.05, 0.0, 2.55), G(1.05, 0.0, 2.55), G(1.05, 0.62, 2.25), G(-1.05, 0.62, 2.25)], 0.03)
+    s.plate(roof, [G(1.05, 0.0, 2.55), G(-1.05, 0.0, 2.55), G(-1.05, -0.62, 2.25), G(1.05, -0.62, 2.25)], 0.03)
+    s.box(woodDark, (2.15, 0.08, 0.08), G(0, 0, 2.5), bevel=0.005)
+    # noren: cloth panels hanging under the front eave, a glyph on each
+    noren = s.mat('noren', [0x2a3a6a, 0x8a2a24][rng.integers(0, 2)], 'canvas', 0.9)
+    for k in range(5):
+        x = -0.8 + k * 0.4
+        s.plate(noren, [G(x - 0.18, 0.6, 2.25), G(x + 0.18, 0.6, 2.25), G(x + 0.18, 0.6, 1.85), G(x - 0.18, 0.6, 1.85)], 0.01)
+        s.box(s.mat('glyphWhite', 0xe8e2d0, None, 0.8), (0.08, 0.012, 0.16), G(x, 0.615, 1.95), rot=0.3 * (k % 2), bevel=0)
+    # red paper lanterns at the corners
+    for x in (-0.95, 0.95):
+        s.cable(s.mat('cable', 0x121214, None, 0.6), G(x, 0.55, 2.27), G(x, 0.551, 2.05), 0.0, 0.006)
+        s.sphere(s.mat('lit_lantern_red', 0xff4a2a, emit=4.5), 0.13, G(x, 0.55, 1.92), (1, 1, 1.35), segs=12)
+    # the pot steaming, bowls, a ladle; a bench and stools
+    s.cyl(s.mat('steel', 0xb9bdc2, 'metal', 0.28, 0.85), 0.22, 0.28, G(-0.45, 0.05, 1.0), segs=16)
+    for k in range(4):
+        s.cyl(s.mat('bowl', 0xe8e2d0, None, 0.3), 0.08, 0.04, G(0.3 + (k % 2) * 0.18, 0.1, 1.0 + (k // 2) * 0.04), segs=10, r2=0.05)
+    s.box(wood, (1.6, 0.3, 0.08), G(0, 1.0, 0.42), bevel=0.01)
+    for x in (-0.65, 0.65):
+        s.box(woodDark, (0.08, 0.26, 0.42), G(x, 1.0, 0.0), bevel=0.005)
+    stools(s, rng, [(-0.9, 1.6), (0.9, 1.55)])
+
+
+def grill_trike(s, rng):
+    dark = s.mat('darkMetal', 0x2a2b2e, 'metal', 0.5, 0.5)
+    frame = s.mat('trikeFrame', [0x3a7a4a, 0x2a5a8a][rng.integers(0, 2)], 'metal', 0.45, 0.4)
+    tyre = s.mat('tyre', 0x161616, None, 0.8)
+    # the rider's half: one wheel, a seat, handlebars at +x
+    s.cyl(tyre, 0.26, 0.06, G(0.9, 0, 0.26 - 0.0), axis='Y', segs=18)
+    s.tube(frame, [G(0.9, 0, 0.26), G(0.75, 0, 0.85), G(0.45, 0, 0.6), G(0.15, 0, 0.55)], 0.03)
+    s.box(s.mat('seat', 0x3a2a20, None, 0.8), (0.25, 0.16, 0.06), G(0.48, 0, 0.82), bevel=0.02)
+    s.tube(frame, [G(0.8, -0.22, 1.0), G(0.75, 0, 0.95), G(0.8, 0.22, 1.0)], 0.02)
+    # the cart half: two wheels under the grill box
+    for sy in (-0.42, 0.42):
+        s.cyl(tyre, 0.24, 0.06, G(-0.45, sy, 0.24), axis='Y', segs=18)
+    s.box(frame, (1.0, 0.8, 0.5), G(-0.45, 0, 0.32), bevel=0.02)
+    s.box(dark, (0.9, 0.6, 0.18), G(-0.45, 0, 0.82), bevel=0.01)
+    s.box(s.mat('neonCoals', 0xff6a1e, emit=4), (0.8, 0.5, 0.02), G(-0.45, 0, 0.99), bevel=0)  # glowing coals
+    for k in range(9):  # skewers across the grill
+        s.cyl(s.mat('skewer', 0x8a4a2a, None, 0.6), 0.02, 0.6, G(-0.82 + k * 0.09, -0.3, 1.03), axis='Y', segs=5)
+    # the chimney hood and a small tarp on poles
+    s.cyl(dark, 0.06, 0.9, G(-0.95, -0.28, 1.0), segs=8)
+    s.cyl(dark, 0.12, 0.08, G(-0.95, -0.28, 1.9), segs=8)
+    for x in (-0.9, 0.0):
+        s.cyl(dark, 0.02, 1.2, G(x, 0.38, 0.82), segs=5)
+    s.plate(s.mat('tarp', [0xd8a32e, 0x2e6fb0][rng.integers(0, 2)], 'canvas', 0.85), [G(-1.05, 0.38, 2.02), G(0.15, 0.38, 2.02), G(0.15, -0.3, 2.12), G(-1.05, -0.3, 2.12)], 0.02)
+    # a cooler box and a stack of plates
+    s.box(s.mat('cooler', 0x3a8ab0, None, 0.4), (0.5, 0.35, 0.35), G(-1.25, 0.5, 0), bevel=0.04)
+    s.cyl(s.mat('bowl', 0xe8e2d0, None, 0.3), 0.1, 0.08, G(0.0, 0.25, 0.82), segs=10)
+
+
+def stack_shop(s, rng):
+    # two containers stacked crosswise, a shop in the lower one
+    lower = [0x2f6e6a, 0x8a3a2a][rng.integers(0, 2)]
+    upper = [0xa4822a, 0x4a5a6a][rng.integers(0, 2)]
+    paint = container_body(s, rng, 3.2, 1.6, 1.5, lower, opening=(-1.4, 1.0, 0.0, 1.25))
+    # the roll-up shutter, half open, over a lit shop full of shelves
+    shutter = s.mat('shutter', 0x6a6a66, 'panel', 0.6, 0.6)
+    for k in range(6):
+        s.box(shutter, (2.4, 0.03, 0.04), G(-0.2, 0.8, 1.05 + k * 0.035), bevel=0)
+    for k in range(3):
+        s.box(s.mat('shelf', 0x5a4a3a, 'crate', 0.7), (2.2, 0.3, 0.03), G(-0.2, 0.55, 0.35 + k * 0.3), bevel=0)
+        for j in range(8):
+            s.box(s.mat(f'goods{(j + k) % 4}', [0xc23a2e, 0x2f7fb8, 0xd8b23a, 0x6a9a3a][(j + k) % 4], None, 0.5), (0.14, 0.12, 0.16), G(-1.2 + j * 0.28, 0.55, 0.38 + k * 0.3), rot=rng.uniform(-0.2, 0.2), bevel=0.01)
+    # the upper container across it, a window and laundry
+    container_body(s, rng, 2.6, 1.3, 1.25, upper, z0=1.5)
+    s.box(s.mat('lit_win_up', 0x9fe8ff, emit=1.8), (0.6, 0.05, 0.4), G(0.3, 0.66, 1.95), bevel=0)
+    s.cable(s.mat('cable', 0x121214, None, 0.6), G(-1.2, 0.7, 2.6), G(1.0, 0.75, 2.6), 0.2, 0.01)
+    for k in range(3):
+        s.box(s.mat(f'cloth{k}', [0xa04040, 0xd0d0c8, 0x3a6a8a][k], 'canvas', 0.9), (0.3, 0.02, 0.4), G(-0.7 + k * 0.6, 0.72, 2.05 - 0.15 * (k == 1)), bevel=0)
+    # a ladder up the end, a vertical neon sign at the corner, an awning tarp
+    dark = s.mat('darkMetal', 0x2a2b2e, 'metal', 0.5, 0.5)
+    for y in (-0.3, 0.0):
+        s.cyl(dark, 0.02, 2.7, G(1.65, y, 0), segs=5)
+    for z in np.arange(0.2, 2.7, 0.28):
+        s.tube(dark, [G(1.65, -0.3, z), G(1.65, 0.0, z)], 0.012, segs=4)
+    s.box(s.mat('signBack', 0x16161a, None, 0.4), (0.12, 0.35, 1.3), G(1.55, 0.85, 1.4), bevel=0.01)
+    nm = s.mat('neonCyan', 0x4fe6ff, emit=8)
+    for k in range(4):
+        s.box(nm, (0.03, 0.22, 0.05), G(1.62, 0.85, 1.55 + k * 0.28), rot=0.2 * (k % 2), bevel=0)
+    s.plate(s.mat('tarp2', 0x2e6fb0, 'canvas', 0.85), [G(-1.5, 0.8, 1.45), G(1.1, 0.8, 1.45), G(1.1, 1.5, 1.2), G(-1.5, 1.5, 1.2)], 0.02, 1.2)
+    s.box(s.mat('crate', 0x6a5a44, 'crate', 0.7), (0.5, 0.5, 0.45), G(1.2, 1.3, 0), rot=0.2, bevel=0.02)
+    stools(s, rng, [(-1.0, 1.6), (0.2, 1.7)])
+
+
+def round_kiosk(s, rng):
+    body = s.mat('kiosk', [0xd9c27a, 0x9a3a4a, 0x3a6a8a][rng.integers(0, 3)], 'panel', 0.5, 0.3)
+    dark = s.mat('darkMetal', 0x2a2b2e, 'metal', 0.5, 0.5)
+    s.cyl(body, 0.85, 0.75, G(0, 0, 0), segs=28)
+    s.cyl(s.mat('counterTop', 0x8a7a64, 'crate', 0.6), 0.95, 0.05, G(0, 0, 0.75), segs=28)
+    s.cyl(s.mat('lit_kioskIn', 0xffd29a, emit=1.5), 0.72, 0.6, G(0, 0, 0.8), segs=28)  # the lit inside behind the glass ring
+    for k in range(8):  # window mullions
+        a = k * TAU / 8
+        s.box(dark, (0.04, 0.04, 0.6), G(math.cos(a) * 0.76, math.sin(a) * 0.76, 0.8), bevel=0)
+    s.cyl(body, 0.85, 0.35, G(0, 0, 1.4), segs=28)
+    s.ring(s.mat('neonGreen', 0x6dff8a, emit=7), G(0, 0, 1.6), 0.865, 0.02, (0, 0, 1), segs=40)
+    # the domed roof and a sign on top
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=28, v_segments=10, radius=1.0)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z < -0.01], context='VERTS')
+    bmesh.ops.transform(bm, matrix=Matrix.LocRotScale(Vector(G(0, 0, 1.75)), None, Vector((0.95, 0.95, 0.4))), verts=bm.verts)
+    s.obj(bm, s.mat('dome', 0x5a5f68, 'panel', 0.4, 0.6), smooth=True)
+    s.cyl(dark, 0.03, 0.5, G(0, 0, 2.1), segs=6)
+    s.box(s.mat('signBack', 0x16161a, None, 0.4), (0.05, 0.7, 0.3), G(0, 0, 2.5), rot=math.pi / 4, bevel=0.01)
+    s.box(s.mat('neonPink', 0xff4fa8, emit=8), (0.03, 0.55, 0.04), G(0.04, 0.04, 2.62), rot=math.pi / 4, bevel=0)
+    # cups on the counter, a drinks cooler, stools
+    for k in range(5):
+        a = 0.6 + k * 0.35
+        s.cyl(s.mat(f'cup{k % 2}', [0xe8e2d0, 0xff8a2a][k % 2], None, 0.4), 0.04, 0.1, G(math.cos(a) * 0.86, math.sin(a) * 0.86, 0.8), segs=8)
+    stools(s, rng, [(0.3, 1.25), (1.1, 0.7)])
+
+
+def table_set(s, rng):
+    tbl = s.mat('table', [0xe8e2d0, 0x3a8ab0][rng.integers(0, 2)], None, 0.45)
+    dark = s.mat('darkMetal', 0x2a2b2e, 'metal', 0.5, 0.5)
+    for (x, y) in ((-0.6, -0.3), (0.7, 0.4)):
+        s.box(tbl, (0.7, 0.7, 0.04), G(x, y, 0.7), bevel=0.01)
+        for dx in (-0.3, 0.3):
+            for dy in (-0.3, 0.3):
+                s.cyl(dark, 0.018, 0.7, G(x + dx, y + dy, 0), segs=5)
+        s.cyl(s.mat('bowl', 0xe8e2d0, None, 0.3), 0.08, 0.05, G(x + 0.1, y, 0.74), segs=10, r2=0.05)
+    stools(s, rng, [(-1.15, -0.3), (-0.6, 0.3), (-0.05, -0.55), (0.15, 0.4), (0.7, 1.0), (1.25, 0.4)])
+    # an umbrella over one table
+    s.cyl(dark, 0.02, 1.55, G(0.7, 0.4, 0.74), segs=6)
+    cols = [s.mat('umbA', 0x2e6fb0, 'canvas', 0.85), s.mat('umbB', 0xe8e2d0, 'canvas', 0.85)]
+    c = Vector(G(0.7, 0.4, 2.25))
+    for k in range(10):
+        a0, a1 = k * TAU / 10, (k + 1) * TAU / 10
+        bm = bmesh.new()
+        bm.faces.new([bm.verts.new(c + Vector((0, 0, 0.25))), bm.verts.new(c + Vector((math.cos(a0) * 0.9, math.sin(a0) * 0.9, -0.02))), bm.verts.new(c + Vector((math.cos(a1) * 0.9, math.sin(a1) * 0.9, -0.02)))])
+        s.obj(bm, cols[k % 2])
+
+
 ASSETS = {
     'cantina': lambda s, r: cantina(s, r),
     'tenement0': lambda s, r: tenement(s, r, 0),
@@ -735,6 +1067,15 @@ ASSETS = {
     'stall1': lambda s, r: stall(s, r, 1),
     'stall2': lambda s, r: stall(s, r, 2),
     'billboard': lambda s, r: billboard(s, r),
+    'cartHotdog': lambda s, r: cart_hotdog(s, r),
+    'containerKiosk': lambda s, r: container_kiosk(s, r),
+    'containerKiosk2': lambda s, r: container_kiosk(s, np.random.default_rng(7)),
+    'foodTruck': lambda s, r: food_truck(s, r),
+    'yatai': lambda s, r: yatai(s, r),
+    'grillTrike': lambda s, r: grill_trike(s, r),
+    'stackShop': lambda s, r: stack_shop(s, r),
+    'roundKiosk': lambda s, r: round_kiosk(s, r),
+    'tableSet': lambda s, r: table_set(s, r),
     'speeder0': lambda s, r: speeder(s, r, 0),
     'speeder1': lambda s, r: speeder(s, r, 1),
     'crates': lambda s, r: crates(s, r),

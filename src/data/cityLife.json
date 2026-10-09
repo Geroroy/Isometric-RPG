@@ -20,7 +20,7 @@
       "routine": [{ "go": "factoryGate", "stay": [25, 45], "do": "work" }, { "go": "marketStreet", "stay": [8, 16], "do": "browse" }, { "go": "cantinaSquare", "stay": [25, 45], "do": "chat" }, { "go": "@home", "stay": [12, 25], "do": "idle" }] },
     { "sprite": "citWorker2", "name": "하층 노동자", "n": 4, "level": "low", "speed": 1.9, "kind": "worker",
       "routine": [{ "go": "cantinaSquare", "stay": [20, 35], "do": "chat" }, { "go": "factoryGate", "stay": [30, 50], "do": "work" }, { "go": "shaftLight", "stay": [8, 14], "do": "idle" }, { "go": "@home", "stay": [10, 20], "do": "idle" }] },
-    { "sprite": "citVendor", "name": "노점상", "n": 8, "level": "low", "speed": 1.4, "kind": "vendor",
+    { "sprite": "citVendor", "name": "노점상", "n": 12, "level": "low", "speed": 1.4, "kind": "vendor",
       "routine": [{ "go": "@stall", "stay": [90, 180], "do": "sell" }, { "go": "shaftLight", "stay": [8, 14], "do": "idle" }] },
     { "sprite": "citDrifter", "name": "떠돌이", "n": 6, "level": "low", "speed": 1.1, "kind": "drifter",
       "routine": [{ "go": "alleys", "stay": [30, 60], "do": "sit" }, { "go": "shaftLight", "stay": [15, 30], "do": "idle" }, { "go": "cantinaSquare", "stay": [15, 30], "do": "idle" }] },

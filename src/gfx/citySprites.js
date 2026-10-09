@@ -12,9 +12,20 @@ export const CITY_SPRITES = {
   tenement0: 'tenement0_500.json',
   tenement1: 'tenement1_500.json',
   tenement2: 'tenement2_500.json',
-  stall0: 'stall0_128.json',
-  stall1: 'stall1_128.json',
-  stall2: 'stall2_128.json',
+  cartHotdog: 'cartHotdog_128.json',
+  cartHotdog_r: 'cartHotdog_r_128.json',
+  grillTrike: 'grillTrike_128.json',
+  grillTrike_r: 'grillTrike_r_128.json',
+  roundKiosk: 'roundKiosk_128.json',
+  tableSet: 'tableSet_128.json',
+  yatai: 'yatai_144.json',
+  yatai_r: 'yatai_r_144.json',
+  containerKiosk: 'containerKiosk_192.json',
+  containerKiosk_r: 'containerKiosk_r_192.json',
+  containerKiosk2: 'containerKiosk2_192.json',
+  foodTruck: 'foodTruck_176.json',
+  foodTruck_r: 'foodTruck_r_176.json',
+  stackShop: 'stackShop_224.json',
   billboard: 'billboard_160.json',
   speeder0: 'speeder0_96.json',
   speeder1: 'speeder1_96.json',
@@ -54,7 +65,11 @@ export async function loadCitySprites(onProgress) {
   const names = Object.keys(CITY_SPRITES);
   for (let i = 0; i < names.length; i++) {
     onProgress(i / names.length, `코러산트 언더시티: ${names[i]}`);
-    out[names[i]] = await loadOne(base, CITY_SPRITES[names[i]]);
+    try {
+      out[names[i]] = await loadOne(base, CITY_SPRITES[names[i]]);
+    } catch (e) {
+      console.warn(e.message); // that prop is left out of the map
+    }
   }
   const img = await loadImg(base + FLOOR_TEXTURE);
   const c = document.createElement('canvas');
