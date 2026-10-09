@@ -407,7 +407,7 @@ export class Arena extends World {
       const a = (i / 8) * Math.PI * 2 + 0.2;
       const px = cx + Math.cos(a) * (r - 1.2);
       const py = cy + Math.sin(a) * (r - 1.2);
-      this.addProp('ruinPillar', px, py);
+      this.addProp('geoPillar', px, py);
       this.lights.push({ x: px, y: py, z: 2.6, r: 80, g: 255, b: 120, rad: 120, flicker: 0.05 });
     }
     this.addProp('sepCrate', cx - 7.5, cy + 4.5);

@@ -1,6 +1,7 @@
 // Developer page: bakes sprites and dumps every frame for visual inspection.
 import { Baker } from './gfx/baker.js';
 import { CHARACTERS, DUEL_CHARACTERS } from './gfx/assets.js';
+import { PROPS, buildPropVariants } from './gfx/models/props.js';
 
 const params = new URLSearchParams(location.search);
 const which = params.get('m') || 'anakin';
@@ -8,6 +9,34 @@ const scale = +(params.get('s') || 3);
 const dirsShown = (params.get('dirs') || '0,2,4,6,8,10,12,14').split(',').map(Number);
 const specs = { ...CHARACTERS, ...DUEL_CHARACTERS };
 const baker = new Baker();
+// ?p=a,b,c : bake those world props instead of a character
+if (params.has('p')) {
+  const out = document.getElementById('out');
+  for (const name of params.get('p').split(',')) {
+    const def = PROPS[name];
+    const angles = params.has('turn') ? [0, 1, 2, 3].map((i) => (-i * Math.PI) / 4) : def.angles || [0];
+    const frames = buildPropVariants(name).flatMap((m) => baker.bakeStatic(m, { angles }));
+    const W = frames.reduce((a, f) => a + f.w + 16, 16);
+    const H = Math.max(...frames.map((f) => f.h)) + 24;
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    c.style.width = W * scale + 'px';
+    const g = c.getContext('2d');
+    g.fillStyle = '#6a6458';
+    g.fillRect(0, 0, W, H);
+    let x = 16;
+    for (const f of frames) {
+      g.drawImage(f.page, f.sx, f.sy, f.w, f.h, x, H - 12 - f.h, f.w, f.h);
+      x += f.w + 16;
+    }
+    const label = document.createElement('div');
+    label.textContent = name;
+    out.append(label, c);
+  }
+  window.__done = true;
+  throw new Error('props only'); // stop here
+}
 const spec = specs[which]();
 if (params.has('ss')) spec.ss = +params.get('ss');
 if (params.has('noblades')) spec.markers = [];
