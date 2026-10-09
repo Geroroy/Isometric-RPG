@@ -198,14 +198,28 @@ export function buildAnakin({ dual = false, outfit = 'armor' } = {}) {
     j.head.add(scl(sph(0.04, hd, -0.05, 0.02, 0.06 * zs, 6, 4), 1, 1.3, 1)); // tips
   }
 
-  return armAnakin(rig, dual, 0.19);
+  return armAnakin(rig, dual, 0.19, true);
 }
 
-/** Belt hilt (shown while the blade is off) and the IK-held saber(s). */
-function armAnakin(rig, dual, beltZ) {
-  const belt = group(cylX(0.022, 0.022, 0.26, mat(0xc9ccd2), -0.13, 0, 0, 6), cylX(0.024, 0.024, 0.1, mat(0x1b1b1f), -0.05, 0, 0, 6));
-  belt.rotation.z = -1.35;
-  belt.position.set(0.02, 0.0, beltZ);
+/**
+ * Belt hilt (shown while the blade is off) and the IK-held saber(s).
+ * `front`: the Clone Wars look — the hilt hangs straight down from a clip on
+ * the front of the belt, just to his left of the buckle, emitter down;
+ * otherwise it rides on his right hip, tilted back.
+ */
+function armAnakin(rig, dual, beltZ, front = false) {
+  const silver = mat(0xc9ccd2);
+  const belt = group(cylX(0.022, 0.022, 0.26, silver, -0.13, 0, 0, 6), cylX(0.024, 0.024, 0.1, mat(0x1b1b1f), -0.05, 0, 0, 6));
+  if (front) {
+    for (const x of [-0.08, -0.05, -0.02, 0.01]) belt.add(cylX(0.026, 0.026, 0.012, mat(0x1b1b1f), x, 0, 0, 6)); // grip ridges
+    belt.add(cylX(0.024, 0.03, 0.05, silver, 0.08, 0, 0, 6)); // the emitter shroud
+    belt.add(box(0.03, 0.02, 0.02, mat(0x2a2a2e), -0.13, 0, 0)); // the belt clip
+    belt.rotation.z = -Math.PI / 2; // +X (the emitter) points down
+    belt.position.set(0.195, -0.07, -0.05); // in front of the tabard
+  } else {
+    belt.rotation.z = -1.35;
+    belt.position.set(0.02, 0.0, beltZ);
+  }
   rig.j.pelvis.add(belt);
   rig.beltHilt = belt;
   const saber = buildSaber(1.0);

@@ -675,11 +675,14 @@ hilt(saber_ax, 'hilt_')
 blade = lathe('blade', M['blade'], saber_ax, lambda t: 0.022 - 0.004 * t, 0.26, 1.26, segs=10, cap_top=True)
 empty('saberBase', saber, (0.14, 0, 0))
 empty('saberTip', saber, (1.13, 0, 0))
-belt_hilt = empty('beltHilt', pel, G(0.02, 0.0, 0.19))
-belt_hilt.rotation_quaternion = Quaternion(Vector((0, 1, 0)), 1.35)  # the game's rotation.z = -1.35
+# with the blade off the hilt hangs straight down from a clip on the front of
+# the belt, just to his left of the buckle, emitter down (as on the figure)
+belt_hilt = empty('beltHilt', pel, G(0.195, -0.07, -0.05))
+belt_hilt.rotation_quaternion = Quaternion(Vector((0, 1, 0)), math.pi / 2)  # the hilt's +X (emitter) points down
 bh = empty('beltHiltAxis', belt_hilt, (-0.13, 0, 0))
 bh.rotation_quaternion = Quaternion(Vector((0, 1, 0)), math.pi / 2)
 hilt(bh, 'belt_')
+cube('beltClip', M['black'], belt_hilt, (0.03, 0.04, 0.03), (-0.14, 0, 0), bevel=0.004)
 
 # ----------------------------------------------------------------------------
 # Animations: one action per game animation, keyed on every joint node, the
