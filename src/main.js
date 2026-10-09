@@ -8,6 +8,7 @@ import { Portrait } from './gfx/portrait.js';
 import { HUD } from './ui/hud.js';
 import { Input } from './core/input.js';
 import { Audio } from './core/audio.js';
+import { TouchControls, isTouchDevice } from './ui/touch.js';
 
 const loading = document.getElementById('loading');
 const bar = document.querySelector('#loading .bar div');
@@ -29,12 +30,16 @@ async function boot() {
   const portrait = new Portrait();
   const hud = new HUD(game, renderer, portrait, audio);
   const input = new Input(game, renderer, hud, audio, canvas);
+  const touch = new TouchControls(game, renderer, hud, input, audio);
 
   const measure = () => {
     renderer.resize();
-    renderer.consoleH = document.getElementById('console').offsetHeight;
+    // on phones the HUD floats over the world instead of a bottom console
+    renderer.consoleH = touch.enabled ? 0 : document.getElementById('console').offsetHeight;
   };
   window.addEventListener('resize', measure);
+  if (isTouchDevice()) touch.enable();
+  window.addEventListener('touchstart', () => touch.enable(), { once: true, passive: true });
   measure();
 
   // warm up visible terrain chunks before revealing the game
@@ -48,6 +53,15 @@ async function boot() {
     e.stopPropagation();
     help.classList.add('hidden');
     audio.unlock();
+    if (touch.enabled) {
+      // best effort: fullscreen + landscape lock (ignored where unsupported)
+      const de = document.documentElement;
+      if (de.requestFullscreen && !document.fullscreenElement) {
+        de.requestFullscreen({ navigationUI: 'hide' })
+          .then(() => screen.orientation?.lock?.('landscape'))
+          .catch(() => {});
+      }
+    }
     audio.play('ignite');
     game.say('intro');
   };
@@ -60,6 +74,7 @@ async function boot() {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     input.update(dt);
+    touch.update(dt);
     if (help.classList.contains('hidden') || !help.dataset.pause) game.update(dt);
     renderer.render(dt);
     hud.update(dt);
@@ -67,6 +82,11 @@ async function boot() {
   };
   requestAnimationFrame(loop);
   window.__ready = true;
+}
+
+// Offline cache / installable app (only on a real web host, never in dev).
+if (import.meta.env.PROD && 'serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
 boot().catch((err) => {

@@ -495,7 +495,6 @@ body.targeting #world {
 
 #skilltree {
   left: 50%;
-  transform: translateX(-50%);
 }
 .trees {
   display: flex;
@@ -690,7 +689,7 @@ body.targeting #world {
   background: rgba(8, 10, 12, 0.96);
   border: 1px solid #5d656e;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8);
-  pointer-events: none;
+  pointer-events: none !important;
   z-index: 50;
 }
 .tt-name {
@@ -953,4 +952,432 @@ kbd {
   margin-top: 6px;
   font-size: 10px;
   color: #5f6b76;
+}
+
+/* ============================================================ touch / phone */
+/* The bottom console is replaced by a floating HUD: portrait + orbs top-left,
+   status top-center, minimap + menu top-right, joystick left, actions right. */
+body:not(.touch) .touch-only,
+body.touch .desktop-only {
+  display: none !important;
+}
+body.touch,
+body.touch #world,
+body.touch #hud {
+  touch-action: none;
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+}
+.panel {
+  z-index: 20;
+}
+#skilltree {
+  transform: translateX(-50%) scale(var(--fit, 1));
+  transform-origin: top center;
+}
+#charsheet {
+  transform: scale(var(--fit, 1));
+  transform-origin: top left;
+}
+body.touch .panel {
+  top: calc(6px + env(safe-area-inset-top, 0px));
+}
+body.touch #charsheet {
+  left: calc(6px + env(safe-area-inset-left, 0px));
+}
+body.touch .close {
+  padding: 4px 12px;
+  font-size: 18px;
+}
+
+body.touch #console {
+  position: fixed;
+  inset: 0;
+  height: auto;
+  padding: 0;
+  display: block;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  pointer-events: none;
+}
+body.touch #console::before {
+  display: none;
+}
+body.touch #console > * {
+  position: fixed;
+  pointer-events: auto;
+}
+body.touch .c-portrait {
+  top: calc(6px + env(safe-area-inset-top, 0px));
+  left: calc(6px + env(safe-area-inset-left, 0px));
+  width: auto;
+  padding: 3px;
+}
+body.touch .portrait-frame {
+  width: 108px;
+  height: 91px;
+  border-width: 2px;
+}
+body.touch #portrait {
+  width: 102px;
+  height: 85px;
+}
+body.touch .portrait-name {
+  font-size: 8px;
+  letter-spacing: 1px;
+  left: 4px;
+  bottom: 1px;
+}
+body.touch .c-orb {
+  left: calc(122px + env(safe-area-inset-left, 0px));
+  width: 50px;
+  padding: 4px 2px 2px;
+  gap: 1px;
+}
+body.touch .c-orb:has(.hp) {
+  top: calc(6px + env(safe-area-inset-top, 0px));
+}
+body.touch .c-orb:has(.force) {
+  top: calc(62px + env(safe-area-inset-top, 0px));
+}
+body.touch .c-orb::before,
+body.touch .c-orb::after,
+body.touch .c-portrait::before,
+body.touch .c-portrait::after {
+  display: none;
+}
+body.touch .orb {
+  width: 38px;
+  height: 38px;
+  border-width: 2px;
+}
+body.touch .orb-label {
+  font-size: 8px;
+}
+body.touch .c-center {
+  top: calc(6px + env(safe-area-inset-top, 0px));
+  left: calc(178px + env(safe-area-inset-left, 0px));
+  right: calc(204px + env(safe-area-inset-right, 0px));
+  min-width: 0;
+  padding: 5px 8px;
+  gap: 3px;
+  background: rgba(16, 18, 21, 0.78);
+}
+body.touch .unit-name,
+body.touch .unit-rank {
+  display: none;
+}
+body.touch .unit-head {
+  position: absolute;
+  right: 8px;
+  top: 2px;
+}
+body.touch .unit-lvl {
+  font-size: 10px;
+}
+body.touch .xpbar {
+  height: 7px;
+  margin-right: 38px;
+}
+body.touch .xpbar span {
+  display: none;
+}
+body.touch .unit-body {
+  grid-template-columns: 1fr;
+  font-size: 10px;
+  gap: 2px;
+}
+body.touch .buffs {
+  min-height: 0;
+}
+body.touch .subtitle {
+  min-height: 0;
+  font-size: 11px;
+  padding: 2px 6px;
+}
+body.touch .c-left {
+  top: calc(6px + env(safe-area-inset-top, 0px));
+  right: calc(6px + env(safe-area-inset-right, 0px));
+  width: auto;
+  padding: 5px;
+}
+body.touch .mini-wrap,
+body.touch #minimap {
+  width: 90px;
+  height: 90px;
+  margin: 0;
+}
+body.touch .c-cmd,
+body.touch .nameplate {
+  display: none;
+}
+body.touch .death {
+  inset: 0;
+}
+body.touch .banner {
+  top: 34%;
+}
+body.touch .banner span {
+  font-size: 22px;
+}
+
+.touch-ui {
+  display: none;
+}
+body.touch .touch-ui {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none !important;
+}
+.joy-zone {
+  position: absolute;
+  left: 0;
+  top: 128px;
+  bottom: 0;
+  width: 45%;
+  pointer-events: auto;
+  touch-action: none;
+}
+.joy {
+  position: fixed;
+  width: 112px;
+  height: 112px;
+  margin: -56px 0 0 -56px;
+  border-radius: 50%;
+  border: 2px solid rgba(160, 220, 255, 0.45);
+  background: radial-gradient(rgba(60, 120, 200, 0.2), rgba(10, 20, 40, 0.3));
+  pointer-events: none;
+}
+.joy-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin: -24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #cfe8ff, #3a6fb8);
+  box-shadow: 0 0 12px rgba(90, 170, 255, 0.6);
+}
+.t-cluster {
+  position: absolute;
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  width: 0;
+  height: 0;
+}
+.t-btn {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #07080a;
+  border: 2px solid #0a0b0c;
+  box-shadow: 0 0 0 1px #8e959d, 0 4px 10px rgba(0, 0, 0, 0.6);
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.t-btn img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.t-btn .cd {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.t-btn .lv {
+  position: absolute;
+  right: 9px;
+  bottom: 5px;
+  font-size: 10px;
+  color: #fff;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000;
+  pointer-events: none;
+}
+.t-btn.down {
+  transform: scale(0.92);
+  filter: brightness(1.3);
+}
+.t-btn.empty {
+  opacity: 0.45;
+  border-style: dashed;
+}
+.t-btn.nofp img {
+  filter: grayscale(0.6) brightness(0.6) sepia(1) hue-rotate(-50deg) saturate(3);
+}
+/* cluster origin = bottom-right corner; the attack button sits there and the
+   skills fan out on two arcs around it */
+.t-attack {
+  right: 0;
+  bottom: 0;
+  width: 84px;
+  height: 84px;
+  box-shadow: 0 0 0 2px #c9a24a, 0 4px 14px rgba(0, 0, 0, 0.7);
+}
+.t-attack span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  text-align: center;
+  font-size: 11px;
+  color: #ffe080;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+}
+.t-skill.s0 { right: 107px; bottom: 15px; }
+.t-skill.s1 { right: 80px; bottom: 80px; }
+.t-skill.s2 { right: 15px; bottom: 107px; }
+.t-skill.s3 { right: 171px; bottom: 42px; }
+.t-skill.s4 { right: 127px; bottom: 127px; }
+.t-skill.s5 { right: 42px; bottom: 171px; }
+.t-bacta {
+  right: 234px;
+  bottom: 4px;
+  width: 44px;
+  height: 44px;
+}
+.t-menu {
+  position: absolute;
+  top: calc(6px + env(safe-area-inset-top, 0px));
+  right: calc(110px + env(safe-area-inset-right, 0px));
+  display: grid;
+  grid-template-columns: repeat(2, 44px);
+  gap: 4px;
+}
+.t-mbtn {
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  background: linear-gradient(180deg, #2e3237, #1b1e22);
+  border: 2px solid #0b0c0e;
+  box-shadow: inset 0 0 0 1px #5c636b;
+  border-radius: 3px;
+  pointer-events: auto;
+  touch-action: none;
+}
+.t-mbtn img {
+  width: 22px;
+  height: 22px;
+  image-rendering: pixelated;
+}
+.t-mbtn b {
+  font-size: 17px;
+  line-height: 22px;
+  color: #cfe8ff;
+}
+.t-mbtn span {
+  font-size: 8px;
+  color: #c9d3dc;
+}
+.t-mbtn.glow {
+  animation: glowbtn 0.8s infinite alternate;
+}
+
+/* skill tree on phones: tap to select, then learn / assign to a button */
+.slot-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 14px 12px;
+  font-size: 12px;
+}
+.slot-row .sel-name {
+  min-width: 180px;
+}
+.slot-row button {
+  font-family: var(--font);
+  min-width: 36px;
+  height: 32px;
+  color: #fff;
+  background: linear-gradient(180deg, #3a4048, #1b1e22);
+  border: 1px solid #0a0b0c;
+  box-shadow: 0 0 0 1px #6c737b;
+}
+.slot-row .sel-learn {
+  padding: 0 14px;
+  background: linear-gradient(180deg, #4a7a3a, #22401a);
+  box-shadow: 0 0 0 1px #8fd07a;
+}
+.slot-row .sel-learn:disabled {
+  opacity: 0.4;
+}
+.skill.sel {
+  box-shadow: 0 0 0 2px #fff, 0 0 12px #fff;
+}
+
+body.touch #help {
+  overflow: auto;
+  align-items: flex-start;
+  padding: 8px;
+}
+body.touch .help-box {
+  padding: 14px 16px;
+}
+body.touch .help-title {
+  font-size: 20px;
+}
+body.touch .help-intro,
+body.touch .help-tip {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+#rotate {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: #050507;
+  color: #dfe6ee;
+  font-size: 16px;
+}
+#rotate b {
+  color: var(--amber);
+}
+.rotate-icon {
+  width: 46px;
+  height: 80px;
+  border: 3px solid #7fc4ff;
+  border-radius: 8px;
+  animation: rot 1.6s ease-in-out infinite;
+}
+@keyframes rot {
+  0%,
+  20% {
+    transform: rotate(0deg);
+  }
+  60%,
+  100% {
+    transform: rotate(-90deg);
+  }
+}
+@media (orientation: portrait) {
+  body.touch #rotate {
+    display: flex;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rotate-icon {
+    animation: none;
+    transform: rotate(-90deg);
+  }
 }

@@ -230,7 +230,7 @@ export class Input {
         if (!p.action) this.attackInPlace();
       } else if (this.holdT > 0.12) {
         const m = g.mouseWorld;
-        if (!p.action || p.action.type === 'move') p.commandMove(m.x, m.y);
+        if (!p.action || p.moving) p.commandMove(m.x, m.y);
       }
     }
     if (this.rmb && !p.busy) {

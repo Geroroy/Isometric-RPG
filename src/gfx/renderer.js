@@ -46,17 +46,20 @@ export class Renderer {
   resize() {
     const W = window.innerWidth;
     const H = window.innerHeight;
-    this.scale = Math.max(2, Math.min(4, Math.round(H / 460)));
-    this.w = Math.ceil(W / this.scale);
-    this.h = Math.ceil(H / this.scale);
+    const dpr = window.devicePixelRatio || 1;
+    this.dpr = dpr;
+    // Integer upscale in *device* pixels keeps the pixels crisp on high-DPI
+    // phones; `scale` is then CSS px per game pixel (may be fractional).
+    const devScale = Math.max(2, Math.min(6, Math.round((H * dpr) / 450)));
+    this.scale = devScale / dpr;
+    this.w = Math.ceil((W * dpr) / devScale);
+    this.h = Math.ceil((H * dpr) / devScale);
     this.canvas.width = this.w;
     this.canvas.height = this.h;
     this.canvas.style.width = this.w * this.scale + 'px';
     this.canvas.style.height = this.h * this.scale + 'px';
     this.light.width = this.w;
     this.light.height = this.h;
-    const dpr = window.devicePixelRatio || 1;
-    this.dpr = dpr;
     this.overlay.width = Math.round(W * dpr);
     this.overlay.height = Math.round(H * dpr);
     this.overlay.style.width = W + 'px';
@@ -263,6 +266,21 @@ export class Renderer {
       ell(m.x, m.y, 10 * (1 - k * 0.7), m.color, 1 - k);
     }
     this.clickMarks = this.clickMarks.filter((m) => m.t < 0.45);
+    // touch skill aiming: line from Anakin to the target ring
+    if (this.aim) {
+      const a = worldToScreen(p.x, p.y);
+      const b = worldToScreen(this.aim.x, this.aim.y);
+      ctx.save();
+      ctx.strokeStyle = this.aim.color || '#7fd0ff';
+      ctx.globalAlpha = 0.8;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(a.x - cam.x, a.y - cam.y);
+      ctx.lineTo(b.x - cam.x, b.y - cam.y);
+      ctx.stroke();
+      ctx.restore();
+      ell(this.aim.x, this.aim.y, (this.aim.r || 1) * 28, this.aim.color || '#7fd0ff', 0.9);
+    }
     for (const st of g.strikes) {
       if (st.t > 2.6) continue;
       ell(st.tx, st.ty, 3.5 * 28 * (0.9 + Math.sin(this.time * 12) * 0.05), '#ff4040', 0.8, true);

@@ -2,8 +2,17 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Clone Wars: Chosen One</title>
+    <meta name="description" content="스타워즈 클론 전쟁 아이소메트릭 핵 앤 슬래시 RPG — 아나킨 스카이워커" />
+    <meta name="theme-color" content="#050507" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Clone Wars" />
   </head>
   <body>
     <canvas id="world"></canvas>
@@ -20,7 +29,7 @@
           분리주의 연합의 드로이드 군대가 크리스토프시스 외곽을 점령했습니다. 제다이 기사이자 501군단의 장군,
           <b>아나킨 스카이워커</b>가 되어 공화국 전진 기지에서 출발해 드로이드 거점을 소탕하고, 북쪽의 드로이드 공장을 파괴하십시오.
         </p>
-        <div class="help-grid">
+        <div class="help-grid desktop-only">
           <div><kbd>좌클릭</kbd> 이동 / 공격 (누르고 있으면 계속)</div>
           <div><kbd>Shift</kbd>+<kbd>좌클릭</kbd> 제자리 공격</div>
           <div><kbd>우클릭</kbd> 지정된 스킬 시전 (R 표시 슬롯)</div>
@@ -30,11 +39,24 @@
           <div><kbd>Tab</kbd> 자동 지도 · <kbd>M</kbd> 음소거</div>
           <div><kbd>F1</kbd> 도움말 · <kbd>F9</kbd> 개발자: +5 레벨</div>
         </div>
+        <div class="help-grid touch-only">
+          <div><kbd>왼쪽 화면 드래그</kbd> 가상 스틱으로 이동</div>
+          <div><kbd>공격</kbd> 누르고 있으면 가까운 드로이드 공격</div>
+          <div><kbd>스킬 탭</kbd> 가까운 적에게 자동 조준</div>
+          <div><kbd>스킬 드래그</kbd> 원하는 방향으로 조준 후 손 떼면 시전</div>
+          <div><kbd>화면 탭</kbd> 그곳으로 이동 / 적 탭 = 공격</div>
+          <div><kbd>스킬</kbd> 트리 · <kbd>캐릭터</kbd> · <kbd>⌖</kbd> 지도 (오른쪽 위)</div>
+        </div>
         <p class="help-tip">
           쉬엔 반사로 블래스터 볼트를 튕겨내고, 초상화를 클릭해 아나킨과 대화해 보세요. 어둠의 기술을 쓰면 어둠 게이지가 오릅니다 — 강해지지만, 대가가 있습니다.
         </p>
         <button id="startBtn">광선검 점화</button>
       </div>
+    </div>
+
+    <div id="rotate">
+      <div class="rotate-icon"></div>
+      <div>휴대폰을 <b>가로</b>로 돌려 주세요</div>
     </div>
 
     <div id="loading">

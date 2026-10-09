@@ -1,0 +1,18 @@
+{
+  "name": "Clone Wars: 선택받은 자",
+  "short_name": "Clone Wars",
+  "description": "스타워즈 클론 전쟁 아이소메트릭 핵 앤 슬래시 RPG — 아나킨 스카이워커",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#050507",
+  "theme_color": "#050507",
+  "categories": ["games"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -564,8 +564,13 @@ export class Player extends Unit {
   }
 
   // --- actions -----------------------------------------------------------------
+  /** Walking (click-to-move or joystick steering) can be interrupted freely. */
+  get moving() {
+    return !!this.action && (this.action.type === 'move' || this.action.type === 'steer');
+  }
+
   get busy() {
-    return !!this.action && this.action.type !== 'move';
+    return !!this.action && !this.moving;
   }
 
   canAct() {
@@ -574,7 +579,7 @@ export class Player extends Unit {
 
   commandMove(x, y) {
     if (!this.canAct() || this.saberOut) return;
-    if (this.action && this.action.type !== 'move' && this.action.type !== 'melee') return;
+    if (this.action && !this.moving && this.action.type !== 'melee') return;
     if (this.action && this.action.type === 'melee' && this.action.phase === 'swing') {
       this.queued = { type: 'move', x, y };
       return;
@@ -588,9 +593,20 @@ export class Player extends Unit {
     this.path = null;
   }
 
+  /** Joystick movement: walk in a world-space direction with wall sliding. */
+  steer(dx, dy) {
+    if (!this.canAct() || this.saberOut) return;
+    if (this.action && !this.moving) return;
+    this.action = { type: 'steer', dx, dy };
+  }
+
+  stopSteer() {
+    if (this.action && this.action.type === 'steer') this.action = null;
+  }
+
   basicAttack(target, inPlace = false) {
     if (!this.canAct() || this.saberOut) return;
-    if (this.action && this.action.type !== 'move') {
+    if (this.action && !this.moving) {
       if (this.action.type === 'melee' && this.action.phase === 'swing') this.queued = { type: 'attack', target };
       return;
     }
@@ -627,7 +643,7 @@ export class Player extends Unit {
     const s = SKILLS[id];
     const l = this.skillLevel(id);
     if (!l || !isActive(id) || this.saberOut) return false;
-    if (this.action && !['move', 'melee'].includes(this.action.type)) return false;
+    if (this.action && !this.moving && this.action.type !== 'melee') return false;
     if (this.action && this.action.type === 'melee' && this.action.phase === 'swing') return false;
     if ((this.cooldowns[id] || 0) > 0) return false;
     const cost = s.cost ? s.cost(l) : 0;
@@ -689,6 +705,13 @@ export class Player extends Unit {
           this.action = null;
           this.setAnim('idle');
         }
+        break;
+      }
+      case 'steer': {
+        const sp = this.moveSpeed();
+        this.facing = Math.atan2(act.dy, act.dx);
+        this.move(act.dx * sp * dt, act.dy * sp * dt);
+        this.setAnim('run', sp / 4.6);
         break;
       }
       case 'melee': {

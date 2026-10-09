@@ -360,7 +360,7 @@ export class Game {
     this.fx.update(dt);
 
     // Force Speed afterimages.
-    if (p.buffs.speed && p.action && (p.action.type === 'move' || p.anim === 'run')) {
+    if (p.buffs.speed && (p.moving || p.anim === 'run')) {
       this.ghostT = (this.ghostT || 0) - dt;
       if (this.ghostT <= 0) {
         this.ghostT = 0.06;
@@ -407,7 +407,7 @@ export class Game {
       }
     }
 
-    this.audio.setHum(p.dead || p.saberOut ? 0 : p.action && p.action.type === 'move' ? 1 : 0.6);
+    this.audio.setHum(p.dead || p.saberOut ? 0 : p.moving ? 1 : 0.6);
   }
 
   updateBolts(dt) {

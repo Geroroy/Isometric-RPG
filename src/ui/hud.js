@@ -41,6 +41,10 @@ export class HUD {
     this.fogCanvas.height = game.world.h;
     this.updateFog();
 
+    window.addEventListener('resize', () => {
+      this.fitPanel($('#skilltree'));
+      this.fitPanel($('#charsheet'));
+    });
     game.on('say', (text) => this.say(text));
     game.on('region', (name) => this.banner(name));
     game.on('hurt', () => portrait.hurt());
@@ -165,9 +169,36 @@ export class HUD {
     tree.id = 'skilltree';
     tree.innerHTML = `<div class="panel-title">스킬 트리 <span class="sub">— 남은 스킬 포인트: <b id="spLeft">0</b></span><div class="close">✕</div></div>
       <div class="trees"></div>
-      <div class="panel-hint">좌클릭: 포인트 투자 · 스킬 위에서 <b>1~6</b>: 단축키 지정 · 우클릭: <b>마우스 우버튼</b> 스킬로 지정</div>`;
+      <div class="panel-hint desktop-only">좌클릭: 포인트 투자 · 스킬 위에서 <b>1~6</b>: 단축키 지정 · 우클릭: <b>마우스 우버튼</b> 스킬로 지정</div>
+      <div class="slot-row touch-only"><span class="sel-name">스킬을 탭해 선택하세요</span><button class="sel-learn">투자</button><span class="dim">버튼 슬롯</span>${[1, 2, 3, 4, 5, 6].map((n) => `<button class="sel-slot" data-slot="${n - 1}">${n}</button>`).join('')}</div>`;
     this.root.appendChild(tree);
     $('.close', tree).onclick = () => this.toggle('tree', false);
+    $('.sel-learn', tree).addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const p = this.game.player;
+      if (this.selSkill && canLearn(p, this.selSkill)) {
+        p.learn(this.selSkill);
+        this.audio.play('levelup');
+        this.refreshPanels();
+        this.selectSkill(this.selSkill);
+      } else this.audio.play('deny');
+    });
+    tree.querySelectorAll('.sel-slot').forEach((b) =>
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const p = this.game.player;
+        const id = this.selSkill;
+        if (!id || !p.skillLevel(id) || !isActive(id)) return this.audio.play('deny');
+        const i = +b.dataset.slot;
+        const prev = p.hotbar.indexOf(id);
+        if (prev >= 0) p.hotbar[prev] = p.hotbar[i];
+        p.hotbar[i] = id;
+        this.audio.play('click');
+        this.selectSkill(id);
+      }),
+    );
     const trees = $('.trees', tree);
     this.treeCells = {};
     TREES.forEach((t, ti) => {
@@ -203,12 +234,18 @@ export class HUD {
         cell.addEventListener('mousedown', (e) => {
           e.stopPropagation();
           const p = this.game.player;
+          // touch: first tap selects (shows details), second tap learns
+          if (e.button === 0 && document.body.classList.contains('touch') && this.selSkill !== s.id) {
+            this.selectSkill(s.id);
+            return;
+          }
           if (e.button === 0) {
             if (canLearn(p, s.id)) {
               p.learn(s.id);
               this.audio.play('levelup');
               this.refreshPanels();
-              this.showSkillTip(s.id, cell);
+              if (this.selSkill === s.id) this.selectSkill(s.id);
+              else this.showSkillTip(s.id, cell);
             } else this.audio.play('deny');
           } else if (e.button === 2 && p.skillLevel(s.id) && isActive(s.id)) {
             let i = p.hotbar.indexOf(s.id);
@@ -262,13 +299,37 @@ export class HUD {
     this.refreshPanels();
   }
 
+  selectSkill(id) {
+    this.selSkill = id;
+    for (const [k, c] of Object.entries(this.treeCells)) c.classList.toggle('sel', k === id);
+    const p = this.game.player;
+    const s = SKILLS[id];
+    const slot = p.hotbar.indexOf(id);
+    $('#skilltree .sel-name').innerHTML = `<b>${s.name}</b> Lv ${p.skillLevel(id)}${slot >= 0 ? ` · 슬롯 ${slot + 1}` : ''}`;
+    $('#skilltree .sel-learn').disabled = !canLearn(p, id);
+    this.showSkillTip(id, this.treeCells[id]);
+  }
+
+  /** Scale a panel down so it always fits the screen (phones). */
+  fitPanel(elm) {
+    if (!elm || elm.classList.contains('hidden')) return;
+    const w = elm.offsetWidth;
+    const h = elm.offsetHeight;
+    const top = parseFloat(getComputedStyle(elm).top) || 0;
+    const s = Math.min(1, (window.innerWidth - 12) / w, (window.innerHeight - top - 8) / h);
+    elm.style.setProperty('--fit', s.toFixed(3));
+  }
+
   toggle(which, force) {
     const v = force ?? !this.open[which];
     this.open[which] = v;
     const map = { tree: '#skilltree', char: '#charsheet' };
     if (which === 'map') this.automap.classList.toggle('hidden', !v);
     else $(map[which]).classList.toggle('hidden', !v);
-    if (v) this.refreshPanels();
+    if (v) {
+      this.refreshPanels();
+      if (which !== 'map') this.fitPanel($(map[which]));
+    }
     if (!v) this.hideTip();
     this.audio.play('click');
   }
