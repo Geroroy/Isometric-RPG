@@ -44,6 +44,17 @@ tools/sprites/render_anakin.sh cycles --dirs 16
 
 모델 검토용: `model_views.py`(정면·측면·후면·3/4, 애니메이션 한 프레임), `preview.py`(한 프레임의 모든 방향).
 
+애니메이션 검토용: `pose_preview.mjs` + `pose_preview.py` — 렌더 없이 게임의 포즈 코드에서 바로 관절과 블레이드를 뽑아
+막대 인형으로 그립니다(측면·정면·아이소 3행, 프레임별 열, 타격 프레임은 빨간 테두리). 1초 안에 나오므로 포즈를 고칠 때 씁니다.
+
+```
+node tools/sprites/pose_preview.mjs anakin attack1,sigF > /tmp/poses.json
+.bvenv/bin/python tools/sprites/pose_preview.py /tmp/poses.json /tmp/poses.png
+```
+
+아나킨의 애니메이션(`src/gfx/models/anakinAnims.js`)은 에피소드 3 무스타파 결투와 시그니처 무브 영상을 바탕으로
+만들었습니다. 포즈는 발 위치·골반 높이·몸통·검 손잡이로 적고, 다리는 프레임마다 IK로 풀어 발이 땅에 붙은 채 몸이 밀고 들어갑니다.
+
 ## 코러산트 언더시티 (게임에 들어감)
 
 ```bash
