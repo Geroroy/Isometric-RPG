@@ -1,12 +1,9 @@
 // Appearance gallery after Star Wars Battlefront II's hero appearances: the
-// outfits on the left with their rarity, the live 3D model on a monitor in
-// the middle (drag to turn, wheel to zoom, pose buttons), and a paper card
-// with the era, description and what the look includes. Equipping bakes that
-// outfit's sprites once; after that they load from the device cache.
-import * as THREE from 'three';
-import { buildAnakin } from '../gfx/models/characters.js';
-import { ANAKIN_ANIMS } from '../gfx/models/anims.js';
-import { detail } from '../gfx/models/parts.js';
+// outfits on the left with their rarity, the outfit's sprite collection in the
+// middle (every animation in eight directions, all playing, blades glowing as
+// in game) and a datapad card with the era, description and what the look
+// includes. An outfit's sprites are baked the first time it is shown, then
+// cached on the device, so equipping it is instant.
 import { bakeSkin } from '../gfx/assets.js';
 
 const KEY = 'cw.look';
@@ -60,13 +57,28 @@ export function savedLook() {
   return LOOKS.find((l) => l.id === id) || LOOKS[0];
 }
 
-const POSES = [
+// sprite-sheet rows: animation key and its label
+const ROWS = [
   ['idle', '대기'],
-  ['idleOff', '검 끔'],
+  ['idleOff', '대기 · 검 끔'],
   ['run', '이동'],
-  ['attack', '공격'],
+  ['runOff', '이동 · 검 끔'],
+  ['attack1', '공격 1'],
+  ['attack2', '공격 2'],
+  ['attack3', '공격 3'],
+  ['cast', '포스'],
+  ['throw', '세이버 투척'],
+  ['leap', '도약'],
+  ['block', '막기'],
+  ['parry', '흘리기'],
+  ['hurt', '피격'],
+  ['death', '쓰러짐'],
 ];
-const ATTACKS = ['attack1', 'attack2', 'attack3'];
+const COLS = 8; // directions shown
+const CELL_W = 64; // game pixels per cell
+const CELL_H = 96;
+const FOOT_Y = 84; // feet sit here inside a cell
+const BLADE = [60, 130, 255]; // the player's blade colour
 
 export class AppearanceUI {
   constructor(hud, game, audio) {
@@ -74,29 +86,17 @@ export class AppearanceUI {
     this.game = game;
     this.audio = audio;
     this.sel = savedLook().id;
-    this.pose = 'idle';
-    this.yaw = -0.5;
-    this.view = 2.5; // world units shown vertically
-    this.models = {};
+    this.baking = {}; // sprite name -> bake promise
+    this.progress = 0;
     this.el = hud.overlay('appearance', '외형', '<div class="ov-sub">아나킨 스카이워커 · 히어로 외형</div>');
     const body = this.el.querySelector('.ov-body');
     body.innerHTML = `<div class="ap-list"></div>
-      <div class="ap-stage monitor"><canvas class="ap-view"></canvas>
-        <div class="ap-poses">${POSES.map(([k, l]) => `<button type="button" data-pose="${k}">${l}</button>`).join('')}<button type="button" data-face>얼굴</button></div>
-        <div class="ap-hint">드래그: 회전 · 휠: 확대</div></div>
+      <div class="ap-stage monitor"><div class="ap-sheet"></div><div class="ap-wait"><span></span><i><b></b></i></div></div>
       <div class="ap-detail"></div>`;
     this.list = body.querySelector('.ap-list');
     this.detailEl = body.querySelector('.ap-detail');
-    this.canvas = body.querySelector('.ap-view');
-    body.querySelector('.ap-poses').addEventListener('click', (e) => {
-      const b = e.target.closest('button');
-      if (!b) return;
-      if (b.dataset.face !== undefined) this.view = this.view > 1 ? 0.62 : 2.5;
-      else this.pose = b.dataset.pose;
-      this.t0 = performance.now();
-      this.audio.play('click');
-      this.renderButtons();
-    });
+    this.sheet = body.querySelector('.ap-sheet');
+    this.wait = body.querySelector('.ap-wait');
     this.list.addEventListener('click', (e) => {
       const b = e.target.closest('[data-look]');
       if (b) this.select(b.dataset.look);
@@ -104,26 +104,6 @@ export class AppearanceUI {
     this.detailEl.addEventListener('click', (e) => {
       if (e.target.closest('.ap-equip')) this.equip(this.sel);
     });
-    // turn the model by dragging, zoom with the wheel
-    let drag = null;
-    this.canvas.addEventListener('pointerdown', (e) => {
-      drag = { x: e.clientX, yaw: this.yaw };
-      this.canvas.setPointerCapture(e.pointerId);
-    });
-    this.canvas.addEventListener('pointermove', (e) => {
-      if (drag) this.yaw = drag.yaw + (e.clientX - drag.x) * 0.012;
-    });
-    const end = () => {
-      drag = null;
-      this.idleT = performance.now();
-    };
-    this.canvas.addEventListener('pointerup', end);
-    this.canvas.addEventListener('pointercancel', end);
-    this.canvas.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      this.view = Math.max(0.5, Math.min(2.8, this.view * (e.deltaY > 0 ? 1.12 : 0.89)));
-    });
-    this.dragging = () => !!drag;
   }
 
   get equipped() {
@@ -132,23 +112,25 @@ export class AppearanceUI {
 
   open() {
     this.render();
-    this.startPreview();
+    this.showSheet();
+    const loop = (now) => {
+      this.raf = requestAnimationFrame(loop);
+      this.drawSheet(now / 1000);
+    };
+    cancelAnimationFrame(this.raf);
+    this.raf = requestAnimationFrame(loop);
   }
 
   close() {
     cancelAnimationFrame(this.raf);
     this.raf = 0;
-    if (this.r) {
-      this.r.dispose();
-      this.r.forceContextLoss();
-      this.r = null;
-    }
   }
 
   select(id) {
     this.sel = id;
     this.audio.play('click');
     this.render();
+    this.showSheet();
   }
 
   render() {
@@ -160,36 +142,88 @@ export class AppearanceUI {
     }).join('');
     const l = LOOKS.find((x) => x.id === this.sel);
     const r = RARITY[l.rarity];
-    const busy = this.baking === l.id;
+    const ready = !!this.game.assets.sprites[l.sprite];
     this.detailEl.innerHTML = `<div class="ap-rarity" style="--rc:${r.color}">${r.label} 외형</div>
       <h3>${l.name}</h3><div class="ap-era">${l.era}</div>
       <p>${l.desc}</p>
       <div class="ap-sub">포함</div><ul>${l.feats.map((f) => `<li>${f}</li>`).join('')}</ul>
       <div class="ap-src">${l.source}</div>
-      <button type="button" class="ap-equip"${l.id === eq || busy ? ' disabled' : ''}>${l.id === eq ? '장착 중' : busy ? '<span class="ap-bar"><i></i></span>준비 중…' : '장착'}</button>`;
-    this.renderButtons();
+      <button type="button" class="ap-equip"${l.id === eq || !ready ? ' disabled' : ''}>${l.id === eq ? '장착 중' : ready ? '장착' : '스프라이트 준비 중…'}</button>`;
   }
 
-  renderButtons() {
-    this.el.querySelectorAll('[data-pose]').forEach((b) => b.classList.toggle('on', b.dataset.pose === this.pose));
-    const f = this.el.querySelector('[data-face]');
-    if (f) f.classList.toggle('on', this.view < 1);
+  /** The look's sprites, baking (once, then cached) if needed. */
+  sprites(look) {
+    const all = this.game.assets.sprites;
+    if (all[look.sprite]) return Promise.resolve(all[look.sprite]);
+    this.baking[look.sprite] ||= bakeSkin(look.sprite, (k) => {
+      if (this.sel === look.id) this.progress = k;
+    }).then((set) => {
+      all[look.sprite] = set;
+      return set;
+    });
+    return this.baking[look.sprite];
+  }
+
+  /** Build the sheet rows for the selected look (after its sprites exist). */
+  async showSheet() {
+    const look = LOOKS.find((x) => x.id === this.sel);
+    this.set = null;
+    this.sheet.innerHTML = '';
+    this.progress = 0;
+    this.wait.classList.toggle('on', !this.game.assets.sprites[look.sprite]);
+    const set = await this.sprites(look);
+    if (this.sel !== look.id) return; // another look was picked meanwhile
+    this.wait.classList.remove('on');
+    this.set = set;
+    this.rows = ROWS.filter(([k]) => set.anims[k]).map(([k, label]) => {
+      const row = document.createElement('div');
+      row.className = 'ap-row';
+      row.innerHTML = `<span>${label}</span><canvas width="${COLS * CELL_W}" height="${CELL_H}"></canvas>`;
+      this.sheet.appendChild(row);
+      const c = row.querySelector('canvas');
+      return { key: k, ctx: c.getContext('2d') };
+    });
+    this.render();
+  }
+
+  drawSheet(t) {
+    if (!this.set) {
+      const b = this.wait.querySelector('b');
+      b.style.width = Math.round(this.progress * 100) + '%';
+      this.wait.querySelector('span').textContent = `스프라이트 렌더링 중… ${Math.round(this.progress * 100)}%`;
+      return;
+    }
+    const set = this.set;
+    const glow = this.hud.renderer.glowLine.bind(this.hud.renderer);
+    for (const { key, ctx } of this.rows) {
+      const a = set.anims[key];
+      // one-shot animations replay after a short hold on the last frame
+      const n = a.loop ? a.frames : a.frames + Math.round(a.fps * 0.6);
+      const f = Math.min(a.frames - 1, Math.floor(t * a.fps) % n);
+      ctx.clearRect(0, 0, COLS * CELL_W, CELL_H);
+      for (let c = 0; c < COLS; c++) {
+        const fr = a.data[(c * set.dirs) / COLS][f];
+        const x = c * CELL_W + CELL_W / 2;
+        ctx.drawImage(fr.page, fr.sx, fr.sy, fr.w, fr.h, Math.round(x - fr.ox), Math.round(FOOT_Y - fr.oy), fr.w, fr.h);
+        if (key.endsWith('Off') || key === 'death') continue;
+        for (const k of ['saber', 'saber2']) {
+          const b = fr.markers[k + 'Base'];
+          const e = fr.markers[k + 'Tip'];
+          if (!b || !e) continue;
+          for (const [s0, s1] of fr.blades ? fr.blades[k] : [[0, 1]]) {
+            if (s1 - s0 < 0.02) continue;
+            const bx = x + b[0], by = FOOT_Y + b[1], tx = x + e[0], ty = FOOT_Y + e[1];
+            glow(ctx, bx + (tx - bx) * s0, by + (ty - by) * s0, bx + (tx - bx) * s1, by + (ty - by) * s1, BLADE);
+          }
+        }
+      }
+    }
   }
 
   async equip(id) {
     const look = LOOKS.find((l) => l.id === id);
-    const sprites = this.game.assets.sprites;
-    if (!sprites[look.sprite]) {
-      this.baking = id;
-      this.render();
-      sprites[look.sprite] = await bakeSkin(look.sprite, (k) => {
-        const bar = this.detailEl.querySelector('.ap-bar i');
-        if (bar) bar.style.width = Math.round(k * 100) + '%';
-      });
-      this.baking = null;
-    }
-    const p = this.game.player;
-    p.sprite = look.sprite;
+    await this.sprites(look);
+    this.game.player.sprite = look.sprite;
     try {
       localStorage.setItem(KEY, id);
     } catch {
@@ -197,88 +231,5 @@ export class AppearanceUI {
     }
     this.audio.play('ignite');
     this.render();
-  }
-
-  // ---------------------------------------------------------------- 3D preview
-
-  startPreview() {
-    if (!this.r) {
-      this.r = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: false, alpha: true });
-      this.r.setPixelRatio(1);
-      this.r.outputColorSpace = THREE.SRGBColorSpace;
-      this.r.setClearColor(0x000000, 0);
-      const s = (this.scene = new THREE.Scene());
-      s.add(new THREE.HemisphereLight(0xdfe4ef, 0x3a2e24, 0.95));
-      const key = new THREE.DirectionalLight(0xffe6c8, 3.1);
-      key.position.set(4.5, 5, 1.5);
-      s.add(key);
-      const rim = new THREE.DirectionalLight(0x8fb4ff, 1.1);
-      rim.position.set(-3, 2.5, -4);
-      s.add(rim);
-      this.cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 50);
-      const el = 0.2; // a low, showcase angle
-      this.cam.position.set(Math.cos(el) * 10, 1 + Math.sin(el) * 10, 0);
-      this.cam.lookAt(0, 1, 0);
-      this.holder = new THREE.Group();
-      s.add(this.holder);
-    }
-    this.t0 = this.idleT = performance.now();
-    const loop = (now) => {
-      this.raf = requestAnimationFrame(loop);
-      this.frame(now);
-    };
-    cancelAnimationFrame(this.raf);
-    this.raf = requestAnimationFrame(loop);
-  }
-
-  model(id) {
-    if (!this.models[id]) {
-      const rig = buildAnakin({ outfit: id });
-      detail(rig.root);
-      this.models[id] = rig;
-    }
-    return this.models[id];
-  }
-
-  frame(now) {
-    const c = this.canvas;
-    // chunky pixels: render at half the displayed size
-    const w = Math.max(64, Math.round(c.clientWidth / 2));
-    const h = Math.max(64, Math.round(c.clientHeight / 2));
-    if (c.width !== w || c.height !== h) this.r.setSize(w, h, false);
-    const rig = this.model(this.sel);
-    if (this.holder.children[0] !== rig.root) {
-      this.holder.clear();
-      this.holder.add(rig.root);
-    }
-    // pose: loop the chosen animation (attacks chain 1-2-3)
-    const t = (now - this.t0) / 1000;
-    let a;
-    let k;
-    if (this.pose === 'attack') {
-      const i = Math.floor(t / 0.9) % 3;
-      a = ANAKIN_ANIMS[ATTACKS[i]];
-      k = Math.min(1, ((t % 0.9) * a.fps) / a.frames);
-    } else {
-      a = ANAKIN_ANIMS[this.pose];
-      k = ((t * a.fps) / a.frames) % 1;
-    }
-    rig.applyPose(a.pose(k));
-    if (!this.dragging() && now - this.idleT > 2500) this.yaw += 0.006;
-    rig.root.rotation.y = this.yaw;
-    // frame the body, or the head when zoomed in
-    rig.root.updateMatrixWorld(true);
-    const head = rig.j.head.getWorldPosition(this.v || (this.v = new THREE.Vector3()));
-    const cy = this.view < 1 ? head.y + 0.1 : 1.06 + (2.5 - this.view) * 0.25;
-    const half = this.view / 2;
-    const cam = this.cam;
-    cam.top = half;
-    cam.bottom = -half;
-    cam.left = (-half * w) / h;
-    cam.right = (half * w) / h;
-    cam.position.y = cy + Math.sin(0.2) * 10;
-    cam.lookAt(0, cy, 0);
-    cam.updateProjectionMatrix();
-    this.r.render(this.scene, cam);
   }
 }

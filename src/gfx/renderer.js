@@ -22,6 +22,7 @@ export class Renderer {
     this.lctx = this.light.getContext('2d');
     this.terrain = new Terrain(game.world);
     this.cam = { x: 0, y: 0 };
+    this.drift = { x: 0, y: 0 };
     this.clickMarks = [];
     this.consoleH = 0;
     this.time = 0;
@@ -132,8 +133,9 @@ export class Renderer {
     const ps = worldToScreen(p.x, p.y, p.z * 0.4);
     const viewH = H - this.consoleH / this.scale;
     const sh = g.fx.shakeAmt;
-    this.cam.x = Math.round(ps.x - W / 2 + (sh ? (Math.random() - 0.5) * sh : 0));
-    this.cam.y = Math.round(ps.y - viewH * (this.touchMode ? 0.6 : 0.55) + (sh ? (Math.random() - 0.5) * sh : 0));
+    const dr = this.drift; // slow title-screen camera move, in game pixels
+    this.cam.x = Math.round(ps.x - W / 2 + dr.x + (sh ? (Math.random() - 0.5) * sh : 0));
+    this.cam.y = Math.round(ps.y - viewH * (this.touchMode ? 0.6 : 0.55) + dr.y + (sh ? (Math.random() - 0.5) * sh : 0));
     const cam = this.cam;
 
     ctx.fillStyle = '#07070a';

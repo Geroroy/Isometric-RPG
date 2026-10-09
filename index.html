@@ -20,21 +20,16 @@
     <div id="hud"></div>
 
     <div id="help" data-pause="1">
-      <div class="title-art" aria-hidden="true"></div>
-      <div class="help-box">
-        <div class="help-kicker">STAR WARS · THE CLONE WARS</div>
-        <h1 class="help-title">선택받은 자</h1>
-        <div class="help-sub">크리스토프시스 외곽 · 아나킨 스카이워커</div>
-        <nav class="title-menu">
-          <button id="startBtn" class="tm-btn" type="button"><i></i><span>캠페인 시작</span></button>
-          <a id="modeLink" class="tm-btn" href="#duel"><i></i><span>무비 듀얼</span></a>
-          <button id="controlsBtn" class="tm-btn" type="button"><i></i><span>조작법</span></button>
-        </nav>
-        <p class="help-intro">
-          분리주의 연합의 드로이드 군대가 크리스토프시스 외곽을 점령했습니다. 501군단의 장군 <b>아나킨 스카이워커</b>가 되어
-          공화국 전진 기지에서 출발해 드로이드 거점을 소탕하고, 북서쪽의 드로이드 공장을 파괴하십시오.
-        </p>
-      </div>
+      <nav class="title-menu" aria-label="메인 메뉴">
+        <button id="startBtn" class="tm-item sel" type="button"><span>캠페인 시작</span></button>
+        <a id="modeLink" class="tm-item" href="#duel"><span>무비 듀얼</span><small>지오노시스의 결투</small></a>
+        <button id="controlsBtn" class="tm-item" type="button"><span>조작법</span></button>
+      </nav>
+      <footer class="title-foot">
+        <img class="title-crest" alt="" />
+        <p class="title-legal">CLONE WARS: CHOSEN ONE — 선택받은 자 · 크리스토프시스 외곽<br />비상업 팬 프로젝트. STAR WARS © &amp; ™ LUCASFILM LTD. 모든 권리는 각 권리자에게 있습니다.</p>
+      </footer>
+      <div class="title-hint desktop-only"><kbd><svg viewBox="0 0 16 12" width="16" height="12" aria-hidden="true"><path d="M13 1v5H4M6.5 3.5 4 6l2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></kbd>선택</div>
       <section id="controls" class="controls hidden" aria-label="조작법">
         <div class="ct-head"><span>조작법</span><button type="button" class="ct-close"><i></i>닫기</button></div>
         <div class="ct-body">

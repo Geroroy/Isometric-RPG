@@ -1611,64 +1611,7 @@ body.touch .radar-region {
   box-shadow: 0 0 24px rgba(92, 200, 255, 0.6);
 }
 
-/* ============================================================ title / help + loading */
-#help {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  padding: 24px max(24px, 7vw);
-  overflow: auto;
-  background: linear-gradient(90deg, rgba(3, 5, 8, 0.95) 0%, rgba(3, 5, 8, 0.8) 45%, rgba(3, 5, 8, 0.2) 100%);
-}
-.help-box {
-  max-width: 600px;
-}
-.help-kicker,
-.load-kicker {
-  font-family: var(--font-tech);
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.5em;
-  color: var(--gold);
-}
-.help-title {
-  margin: 6px 0 2px;
-  font-size: clamp(40px, 7vw, 72px);
-  font-weight: 200;
-  letter-spacing: 0.04em;
-  line-height: 1.05;
-}
-.help-sub {
-  color: var(--ink-dim);
-  font-size: 15px;
-}
-.help-intro {
-  margin: 20px 0;
-  font-size: 15px;
-  line-height: 1.7;
-  color: #d5dde4;
-  max-width: 56ch;
-}
-.help-intro b {
-  color: #fff;
-  font-weight: 600;
-}
-.help-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 22px;
-  margin-bottom: 18px;
-  font-size: 13px;
-  color: var(--ink-dim);
-}
-.help-tip {
-  margin: 0 0 24px;
-  font-size: 13px;
-  color: var(--ink-dim);
-  max-width: 56ch;
-}
+/* ============================================================ loading */
 #loading {
   position: fixed;
   inset: 0;
@@ -1687,11 +1630,16 @@ body.touch .radar-region {
   width: min(640px, 92vw);
   text-align: center;
 }
+.load-kicker {
+  font: 500 12px Jost, sans-serif;
+  letter-spacing: 0.42em;
+  color: rgba(243, 238, 230, 0.6);
+}
 .load-title {
   margin: 8px 0 28px;
-  font-size: 40px;
-  font-weight: 200;
-  letter-spacing: 0.1em;
+  font: 300 34px 'Pretendard Variable', Pretendard, sans-serif;
+  letter-spacing: 0.12em;
+  color: #f3eee6;
 }
 .saber-load {
   display: flex;
@@ -1832,17 +1780,6 @@ body.touch .info-level b {
 }
 body.touch .death-title {
   font-size: 36px;
-}
-body.touch #help {
-  align-items: flex-start;
-  padding: 14px 18px;
-}
-body.touch .help-intro {
-  margin: 10px 0;
-  font-size: 13px;
-}
-body.touch .help-title {
-  font-size: 34px;
 }
 
 .touch-ui {
@@ -2185,33 +2122,7 @@ body.touch .dl-choice {
   min-height: 40px;
 }
 
-/* ------------------------------------------------------------------ title mode link */
-.help-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px 22px;
-}
-.mode-link {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px 2px;
-  font-size: 14px;
-  color: var(--ink);
-  text-decoration: none;
-  border-bottom: 1px solid var(--line-strong);
-}
-.mode-link span {
-  font-family: var(--font-tech);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.28em;
-  color: #ff7a6a;
-}
-.mode-link:hover {
-  border-bottom-color: #ff7a6a;
-}
+
 
 /* ------------------------------------------------------------------ movie duel */
 body.duel .cn-radar,
@@ -2721,8 +2632,7 @@ kbd {
 .ov-close,
 .ct-close,
 .ov-act,
-.ap-equip,
-.ap-poses button {
+.ap-equip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2748,8 +2658,7 @@ kbd {
 .ov-close:hover,
 .ct-close:hover,
 .ov-act:hover,
-.ap-equip:hover,
-.ap-poses button:hover {
+.ap-equip:hover {
   color: #fff3b0;
 }
 .sd-learn:disabled,
@@ -2987,92 +2896,12 @@ kbd {
   color: #e2482a;
   text-shadow: 2px 2px 0 #000;
 }
+
 .death-kicker,
 .death-sub {
   color: #b9c4cc;
 }
 
-/* title screen: cockpit keys over the Anakin illustration ----------------- */
-#help {
-  align-items: center;
-  background: #07090c;
-}
-.title-art {
-  position: absolute;
-  inset: 0 0 0 38%;
-  background-size: cover;
-  background-position: 40% 25%;
-  filter: contrast(1.05) brightness(0.85);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 30%);
-  mask-image: linear-gradient(90deg, transparent, #000 30%);
-}
-.help-box {
-  position: relative;
-  max-width: 460px;
-}
-.help-kicker,
-.load-kicker {
-  font-family: var(--font-tech);
-  font-weight: 700;
-  letter-spacing: 0.24em;
-  color: #b9c4cc;
-}
-.help-title,
-.load-title {
-  font-family: var(--font-ui);
-  font-weight: 700;
-  color: var(--title);
-  letter-spacing: 0.06em;
-  text-shadow: 3px 3px 0 #000;
-}
-.help-sub {
-  color: #a7b3bc;
-}
-.title-menu {
-  display: grid;
-  gap: 10px;
-  margin: 22px 0 18px;
-  width: 300px;
-}
-.tm-btn {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 9px 16px 9px 12px;
-  font-family: var(--font-ui);
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: 0.08em;
-  text-decoration: none;
-  color: var(--gold);
-  text-shadow: 2px 2px 0 #000;
-  background: var(--tex-hull), #5b6066;
-  border: 3px solid #14171a;
-  border-radius: 4px;
-  box-shadow: inset 2px 2px 0 rgba(235, 245, 255, 0.2), inset -2px -2px 0 rgba(0, 0, 0, 0.55), 0 3px 6px rgba(0, 0, 0, 0.6);
-  cursor: pointer;
-}
-.tm-btn i {
-  flex: none;
-  width: 22px;
-  height: 11px;
-  border-radius: 1px;
-  background: linear-gradient(#ff9a80, var(--red) 55%, #6a0d08);
-  box-shadow: 0 0 0 2px #0a0c0e, 0 0 0 3px #7c838a;
-}
-.tm-btn:hover {
-  color: #fff3b0;
-}
-.tm-btn:hover i {
-  box-shadow: 0 0 0 2px #0a0c0e, 0 0 0 3px #7c838a, 0 0 12px #ff4a2a;
-}
-.help-intro {
-  color: #b9c4cc;
-  text-shadow: 1px 1px 0 #000;
-}
-.help-intro b {
-  color: var(--gold);
-}
 /* the controls guide: a green screen in a metal frame */
 .controls {
   position: absolute;
@@ -3523,49 +3352,58 @@ body.duel .ov-act[data-look] {
 .ap-stage {
   position: relative;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
   border-radius: 8px;
   background:
     radial-gradient(ellipse at 50% 85%, rgba(var(--ink-rgb), 0.14), transparent 60%),
     var(--tex-holo),
     #071019;
 }
-.ap-view {
+.ap-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px 14px;
+}
+.ap-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  align-items: center;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.12);
+}
+.ap-row span {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.ap-row canvas {
   display: block;
   width: 100%;
-  height: 100%;
   image-rendering: pixelated;
-  filter: saturate(0.9) contrast(1.1);
-  cursor: grab;
-  touch-action: none;
 }
-.ap-view:active {
-  cursor: grabbing;
-}
-.ap-poses {
+.ap-wait {
   position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 12px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink);
 }
-.ap-poses button {
-  padding: 5px 10px;
-  font-size: 12px;
+.ap-wait.on {
+  display: flex;
 }
-.ap-poses button.on {
-  border-color: var(--gold);
+.ap-wait i {
+  width: 220px;
+  height: 4px;
+  background: rgba(var(--ink-rgb), 0.15);
 }
-.ap-hint {
-  position: absolute;
-  top: 10px;
-  right: 14px;
-  font-size: 11px;
-  color: var(--ink-dim);
-  pointer-events: none;
+.ap-wait b {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--ink);
 }
 .ap-detail {
   --ink: #dcefff;
@@ -3628,17 +3466,6 @@ body.duel .ov-act[data-look] {
   opacity: 0.75;
   cursor: default;
 }
-.ap-bar {
-  width: 80px;
-  height: 6px;
-  background: #111;
-}
-.ap-bar i {
-  display: block;
-  width: 0;
-  height: 100%;
-  background: var(--gold);
-}
 @media (max-width: 1000px), (max-height: 520px) {
   #appearance .ov-body {
     grid-template-columns: 150px 1fr minmax(200px, 260px);
@@ -3651,14 +3478,6 @@ body.duel .ov-act[data-look] {
   .ap-item b {
     font-size: 13px;
   }
-  .ap-poses {
-    gap: 4px;
-    bottom: 6px;
-  }
-  .ap-poses button {
-    padding: 3px 6px;
-    font-size: 11px;
-  }
   .ap-detail h3 {
     margin-top: 6px;
     font-size: 17px;
@@ -3669,9 +3488,11 @@ body.duel .ov-act[data-look] {
     margin-top: 8px;
     padding: 7px;
   }
-  .ap-item small,
-  .ap-hint {
+  .ap-item small {
     display: none;
+  }
+  .ap-row {
+    grid-template-columns: 60px 1fr;
   }
   .ap-detail {
     padding: 10px;
@@ -3689,4 +3510,173 @@ body.duel .ov-act[data-look] {
   48% { opacity: 0.82; }
   49% { opacity: 1; }
   82% { opacity: 0.93; }
+}
+
+/* ============================================================ title screen */
+/* After Jedi: Survivor's main menu: the live game world behind a warm
+   golden-hour grade, a quiet text menu in the lower left (the selected item
+   larger, with a dot-dash marker and a hairline), fine print, a key hint. */
+#help {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow: hidden;
+  font-family: Jost, 'Pretendard Variable', Pretendard, sans-serif;
+  color: #f3eee6;
+  background:
+    radial-gradient(ellipse 70% 55% at 72% 0%, rgba(255, 196, 120, 0.42), rgba(255, 140, 70, 0.14) 45%, transparent 75%),
+    linear-gradient(180deg, rgba(255, 150, 80, 0.2), rgba(255, 120, 60, 0.05) 35%, transparent 60%),
+    linear-gradient(15deg, rgba(4, 5, 8, 0.9) 0%, rgba(4, 5, 8, 0.5) 30%, transparent 62%),
+    radial-gradient(ellipse at 62% 38%, transparent 45%, rgba(0, 0, 0, 0.5) 100%);
+}
+#world {
+  transition: filter 1.2s ease;
+}
+body.title #world {
+  filter: sepia(0.38) saturate(0.85) brightness(0.9) contrast(1.06);
+}
+body.title #hud,
+body.title #overlay,
+body.title .hud-btn,
+body.title .touch-ui {
+  visibility: hidden;
+}
+.title-menu {
+  position: absolute;
+  left: max(28px, 5.5vw);
+  bottom: max(140px, 23vh);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.title-menu::before {
+  /* faint rings behind the menu */
+  content: '';
+  position: absolute;
+  left: -330px;
+  top: 50%;
+  width: 560px;
+  height: 560px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  outline: 1px solid rgba(255, 255, 255, 0.04);
+  outline-offset: 70px;
+  pointer-events: none;
+}
+.tm-item {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0 4px 34px;
+  font: 500 15px/1.3 Jost, 'Pretendard Variable', Pretendard, sans-serif;
+  letter-spacing: 0.06em;
+  color: rgba(243, 238, 230, 0.75);
+  text-decoration: none;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  transition: font-size 0.18s ease, color 0.18s, margin 0.18s;
+}
+.tm-item small {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(243, 238, 230, 0.5);
+}
+.tm-item.sel {
+  margin: 4px 0 16px;
+  font-size: 27px;
+  font-weight: 600;
+  color: #fff;
+}
+.tm-item.sel small {
+  font-size: 13px;
+}
+.tm-item.sel::before {
+  /* dot-dash marker */
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  width: 20px;
+  height: 4px;
+  margin-top: -2px;
+  background:
+    radial-gradient(circle, #fff 1.5px, transparent 2px) 0 50% / 4px 4px no-repeat,
+    linear-gradient(#fff, #fff) 8px 50% / 12px 2px no-repeat;
+}
+.tm-item.sel::after {
+  /* hairline from the screen edge, with a warm dot */
+  content: '';
+  position: absolute;
+  left: calc(-1 * max(28px, 5.5vw));
+  bottom: -10px;
+  width: max(380px, 31vw);
+  height: 5px;
+  background:
+    radial-gradient(circle, #ffd9a6 0 2px, transparent 2.5px) calc(max(28px, 5.5vw) + 44px) 50% / 5px 5px no-repeat,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.16) 70%, transparent) 0 50% / 100% 1px no-repeat;
+  pointer-events: none;
+}
+.tm-item:focus-visible {
+  outline: none;
+}
+.title-foot {
+  position: absolute;
+  left: max(28px, 5.5vw);
+  bottom: max(26px, 5vh);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.title-crest {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  opacity: 0.7;
+}
+.title-legal {
+  margin: 0;
+  font: 400 10px/1.4 Jost, 'Pretendard Variable', Pretendard, sans-serif;
+  letter-spacing: 0.05em;
+  color: rgba(243, 238, 230, 0.5);
+}
+.title-hint {
+  position: absolute;
+  right: max(28px, 4vw);
+  bottom: max(26px, 5vh);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 16px 5px 5px;
+  font: 500 13px Jost, 'Pretendard Variable', Pretendard, sans-serif;
+  letter-spacing: 0.14em;
+  color: #ebe6de;
+  background: rgba(10, 12, 16, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+}
+.title-hint kbd {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  height: 22px;
+  font: 600 14px Jost, sans-serif;
+  color: #1a1c20;
+  background: #ebe6de;
+  border: 0;
+  border-radius: 4px;
+}
+body.touch .title-menu {
+  bottom: 74px;
+}
+body.touch .tm-item.sel {
+  margin-bottom: 12px;
+  font-size: 21px;
+}
+body.touch .title-legal {
+  font-size: 9px;
 }

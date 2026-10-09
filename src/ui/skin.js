@@ -7,6 +7,10 @@ import g11 from 'galmuri/dist/Galmuri11.woff2?url';
 import g11b from 'galmuri/dist/Galmuri11-Bold.woff2?url';
 import g9 from 'galmuri/dist/Galmuri9.woff2?url';
 import '@fontsource/michroma/400.css';
+// the title screen uses a clean cinematic sans instead of the pixel font
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+import '@fontsource/jost/400.css';
+import '@fontsource/jost/500.css';
 
 function rng(seed) {
   return () => ((seed = (seed * 16807) % 2147483647) / 2147483647);

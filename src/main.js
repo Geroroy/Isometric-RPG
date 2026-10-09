@@ -3,6 +3,7 @@ import './style.css';
 import { applySkin } from './ui/skin.js';
 import { bakeAssets, bakeDuelAssets, bakeSkin } from './gfx/assets.js';
 import { savedLook } from './ui/appearance.js';
+import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
 import { Game } from './game/game.js';
 import { Renderer } from './gfx/renderer.js';
@@ -26,21 +27,17 @@ const label = document.querySelector('#loading .label');
 const MODE = location.hash === '#duel' ? 'duel' : 'campaign';
 window.addEventListener('hashchange', () => location.reload());
 
-const DUEL_HELP = `
-  <div class="help-kicker">MOVIE DUEL · EPISODE II</div>
-  <h1 class="help-title">지오노시스의 결투</h1>
-  <div class="help-sub">두쿠 백작의 비밀 격납고 · 아나킨 vs 두쿠</div>
-  <nav class="title-menu">
-    <button id="startBtn" class="tm-btn" type="button"><i></i><span>결투 시작</span></button>
-    <a id="modeLink" class="tm-btn" href="#campaign"><i></i><span>캠페인으로</span></a>
-    <button id="controlsBtn" class="tm-btn" type="button"><i></i><span>조작법</span></button>
-  </nav>
-  <p class="help-intro">오비완이 쓰러졌다. 탈출하려는 <b>두쿠 백작</b>을 막아설 수 있는 건 이제 아나킨뿐이다. 우클릭(폰: 막기)으로 막고, 공격이 닿기 직전에 막으면 완벽한 흘리기. 영화와는 다른 결말을 써 보십시오.</p>`;
+const DUEL_MENU = `
+  <button id="startBtn" class="tm-item sel" type="button"><span>결투 시작</span></button>
+  <a id="modeLink" class="tm-item" href="#campaign"><span>캠페인으로</span><small>크리스토프시스 외곽</small></a>
+  <button id="controlsBtn" class="tm-item" type="button"><span>조작법</span></button>`;
+const DUEL_LEGAL = 'MOVIE DUEL · EPISODE II — 지오노시스의 결투 · 두쿠 백작의 비밀 격납고<br />비상업 팬 프로젝트. STAR WARS © &amp; ™ LUCASFILM LTD. 모든 권리는 각 권리자에게 있습니다.';
 
 async function boot() {
-  document.querySelector('.title-art').style.backgroundImage = 'url(portrait/anakin.jpg)';
+  document.querySelector('.title-crest').src = iconURL('command');
   if (MODE === 'duel') {
-    document.querySelector('#help .help-box').innerHTML = DUEL_HELP;
+    document.querySelector('.title-menu').innerHTML = DUEL_MENU;
+    document.querySelector('.title-legal').innerHTML = DUEL_LEGAL;
     document.body.classList.add('duel');
   }
   const onProgress = (k, text) => {
@@ -107,6 +104,32 @@ async function boot() {
   const controls = document.getElementById('controls');
   document.getElementById('controlsBtn').onclick = () => controls.classList.remove('hidden');
   controls.querySelector('.ct-close').onclick = () => controls.classList.add('hidden');
+  // main menu after Jedi: Survivor: one item is selected at a time (hover,
+  // arrow keys or W/S), Enter / Space activates it
+  const items = [...document.querySelectorAll('.tm-item')];
+  let sel = 0;
+  const select = (i) => {
+    sel = (i + items.length) % items.length;
+    items.forEach((b, k) => b.classList.toggle('sel', k === sel));
+  };
+  items.forEach((b, i) => {
+    b.addEventListener('pointerenter', () => select(i));
+    b.addEventListener('focus', () => select(i));
+  });
+  window.addEventListener(
+    'keydown',
+    (e) => {
+      if (help.classList.contains('hidden') || !controls.classList.contains('hidden')) return;
+      const k = e.key.toLowerCase();
+      if (k === 'arrowup' || k === 'w') select(sel - 1);
+      else if (k === 'arrowdown' || k === 's') select(sel + 1);
+      else if (k === 'enter' || k === ' ') items[sel].click();
+      else return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    },
+    true,
+  );
   let started = false;
   startBtn.onclick = (e) => {
     e.stopPropagation();
@@ -129,13 +152,27 @@ async function boot() {
   window.__hud = hud;
   window.__dialogue = dialogue;
   let last = performance.now();
+  let titleT = 0;
   const loop = (now) => {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     input.update(dt);
     touch.update(dt);
+    // the title screen sits over the live world: hide the HUD, drift the camera
+    const onTitle = !help.classList.contains('hidden');
+    if (onTitle !== document.body.classList.contains('title')) {
+      document.body.classList.toggle('title', onTitle);
+      if (!onTitle) zoom.restore(); // back to the player's own zoom
+    }
+    if (onTitle && renderer.zoom !== 0.6) renderer.setZoom(0.6); // a wider, cinematic shot
+    titleT += dt;
+    const dr = renderer.drift;
+    const tx = onTitle ? Math.sin(titleT * 0.05) * 150 : 0;
+    const ty = onTitle ? Math.sin(titleT * 0.037) * 50 - 30 : 0;
+    dr.x += (tx - dr.x) * Math.min(1, dt * (onTitle ? 1 : 3));
+    dr.y += (ty - dr.y) * Math.min(1, dt * (onTitle ? 1 : 3));
     // menus pause the action (the map does not)
-    const paused = !help.classList.contains('hidden') || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || dialogue.isOpen;
+    const paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || dialogue.isOpen;
     if (!paused) game.update(dt);
     renderer.render(dt);
     hud.update(dt);
