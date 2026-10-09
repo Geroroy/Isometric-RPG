@@ -54,7 +54,8 @@ export class Renderer {
    */
   computeDevScale() {
     const H = window.innerHeight * (window.devicePixelRatio || 1);
-    const baseH = this.touchMode ? 240 : 450;
+    // touch: ~240 rows on a phone (S25 Ultra), up to the PC view on tablets
+    const baseH = this.touchMode ? Math.max(240, Math.min(450, window.innerHeight * 0.58)) : 450;
     return Math.max(1, Math.min(14, Math.round(H / (baseH / this.zoom))));
   }
 

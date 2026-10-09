@@ -23,6 +23,11 @@ export function isTouchDevice() {
   return window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 }
 
+/** A mouse or trackpad is connected (e.g. a tablet with a Bluetooth mouse). */
+export function hasMouse() {
+  return window.matchMedia('(any-pointer: fine)').matches;
+}
+
 export class TouchControls {
   constructor(game, renderer, hud, input, audio) {
     this.game = game;
@@ -42,6 +47,18 @@ export class TouchControls {
     this.enabled = true;
     document.body.classList.add('touch');
     this.renderer.touchMode = true;
+    if (this.onEnable) this.onEnable();
+    window.dispatchEvent(new Event('resize'));
+  }
+
+  /** Back to mouse & keyboard (PC HUD), e.g. when a tablet's mouse is used. */
+  disable() {
+    if (!this.enabled) return;
+    this.enabled = false;
+    this.cancelJoystick();
+    this.attackHeld = false;
+    document.body.classList.remove('touch');
+    this.renderer.touchMode = false;
     if (this.onEnable) this.onEnable();
     window.dispatchEvent(new Event('resize'));
   }
@@ -109,6 +126,7 @@ export class TouchControls {
   bindJoystick() {
     const z = this.zone;
     z.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse') return; // the mouse switches to PC controls
       e.preventDefault();
       this.audio.unlock();
       if (this.joy) return;

@@ -12,7 +12,7 @@ import { Portrait } from './gfx/portrait.js';
 import { HUD } from './ui/hud.js';
 import { Input } from './core/input.js';
 import { Audio } from './core/audio.js';
-import { TouchControls, isTouchDevice } from './ui/touch.js';
+import { TouchControls, isTouchDevice, hasMouse } from './ui/touch.js';
 import { Fullscreen } from './ui/fullscreen.js';
 import { ZoomControl } from './ui/zoom.js';
 import { PortraitPhoto } from './ui/portraitPhoto.js';
@@ -88,9 +88,18 @@ async function boot() {
     renderer.consoleH = 0; // the HUD floats over the world
   };
   window.addEventListener('resize', measure);
-  if (isTouchDevice()) touch.enable();
+  // Controls follow the device actually used: a tablet with a Bluetooth mouse
+  // plays like a PC, touching the screen switches back to the touch UI.
+  if (isTouchDevice() && !hasMouse()) touch.enable();
   else zoom.restore();
-  window.addEventListener('touchstart', () => touch.enable(), { once: true, passive: true });
+  window.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (e.pointerType === 'mouse') touch.disable();
+      else if (e.pointerType === 'touch') touch.enable();
+    },
+    { capture: true, passive: true },
+  );
   measure();
 
   // warm up visible terrain chunks before revealing the game
@@ -104,8 +113,8 @@ async function boot() {
     e.stopPropagation();
     help.classList.add('hidden');
     audio.unlock();
-    // phones go fullscreen (and landscape) right away; on PC use the button or F
-    if (touch.enabled) fullscreen.enter();
+    // phones and tablets go fullscreen right away; on PC use the button or F
+    if (isTouchDevice()) fullscreen.enter();
     audio.play('ignite');
     // let a user sound bank finish loading so the opening line can be voiced
     if (game.duel) game.duel.start();
