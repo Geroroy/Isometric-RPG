@@ -1,23 +1,31 @@
 """
 Render a .glb character into isometric sprite sheets for the game.
 
-  python render_sprites.py model.glb out_dir [options]          (bpy module)
-  blender -b -P render_sprites.py -- model.glb out_dir [options]
+  python render_sprites.py model.glb out_dir [options]          (bpy module, no window)
+  blender -b -P render_sprites.py -- model.glb out_dir [options]  (Blender in background)
 
   --name NAME          output file prefix (default: the .glb's name)
+  --engine eevee       eevee (fast, default) or cycles (path traced, slow)
   --dirs 8             facing directions (game convention: direction i faces
                        i·360/dirs degrees, turning like the game's units)
-  --render 512         render resolution (square, transparent PNG)
+  --mirror 1           render only the directions that are not a mirror image
+                       of another (5 of 8) and make the rest by flipping
+                       those left–right; 0 renders every direction
+  --render 256         render resolution (square, transparent PNG)
   --sizes 128          output frame sizes; each is a downscale of the render
                        (one sheet + JSON per size; the game draws 128, where
                        one sheet pixel is one game pixel)
+  --shadow-render 128  render resolution of the shadow pass
   --window 128         game pixels the frame covers (1 game px = 1 px at 128)
   --anchor 64,96       where the model's feet are inside the frame (game px)
   --anims a,b          only these animations (default: every one in the .glb)
   --frames N           only the first N frames of each animation (previews)
   --only-dirs 0,2      only these directions (previews)
-  --samples 24         Cycles samples for the character (denoised)
-  --shadow-samples 12  Cycles samples for the shadow pass
+  --samples N          EEVEE: anti-aliasing samples (default 16);
+                       Cycles: samples, denoised (default 24)
+  --shadow-samples N   samples for the shadow pass (EEVEE 8, Cycles 12)
+  --bloom 1            EEVEE: a soft bloom on the brightest highlights (compositor glare)
+  --eevee-raytrace 1   EEVEE: screen-space ray tracing for the fast-GI AO (0: horizon scan only, faster)
   --meta FILE.json     timing per animation (fps, loop, hit frame) — e.g. the
                        export_rig_anims.mjs output; default 10 fps, looping
   --hide blade         objects whose name starts with these are not rendered
@@ -29,13 +37,23 @@ diagonal — the projection the game's tiles use (28.28 px per unit, 2:1). The
 model turns under it for each direction; the lights stay fixed to the
 camera: a soft key light from the upper left that casts shadows, a cool rim
 light from behind on the right, a dim sky for ambient light, plus ambient
-occlusion (an AO term multiplied into every material's colour, and Cycles'
-fast-GI AO for the ambient light), so creases and contacts darken.
+occlusion (an AO term multiplied into every material's colour, and the
+engine's fast-GI AO for the ambient light), so creases and contacts darken.
+
+Mirroring: the camera looks along the screen's vertical, so a model facing
+angle a looks, mirrored left–right, like one facing 90° − a. With 8
+directions, 1 (towards the camera) and 5 (away) are their own mirror images,
+and 2, 6, 7 are 0, 4, 3 flipped. Only the character is flipped (an
+asymmetric model swaps sides there — the saber hand, the pauldron); its
+shadow is always rendered for the real direction, so it falls away from
+the key light like every other.
 
 Each frame is rendered twice: the character alone (transparent background),
-then its shadow alone on an invisible shadow-catcher ground — so the game
-can draw shadows under everything else. Both are downscaled with Lanczos
-(premultiplied alpha), trimmed, and packed into sheet pages:
+then its shadow alone — Cycles: on an invisible shadow-catcher ground;
+EEVEE (no shadow catcher): a white floor lit only by the key light with the
+character invisible to the camera but casting its shadow, the shadow's
+alpha being how much darker the floor is there. Both are downscaled with
+Lanczos (premultiplied alpha), trimmed, and packed into sheet pages:
 
   NAME_SIZE.png / NAME_SIZE_shadow.png (+ _1, _2… pages if needed)
   NAME_SIZE.json:
@@ -50,6 +68,9 @@ can draw shadows under everything else. Both are downscaled with Lanczos
 
 Animation: every glTF animation of the .glb (an action with a slot per
 node) is played frame by frame; frames are the action's whole keyframes.
+
+The run prints how long the setup (import, shader compilation), the
+character renders and the shadow renders took.
 """
 import json
 import math
@@ -58,11 +79,13 @@ import sys
 import tempfile
 import time
 
-import bpy  # noqa: I001 (bpy first: it makes mathutils / bpy_extras importable)
-import numpy as np
-from bpy_extras.object_utils import world_to_camera_view
-from mathutils import Vector
-from PIL import Image
+T_START = time.time()
+
+import bpy  # noqa: I001,E402 (bpy first: it makes mathutils / bpy_extras importable)
+import numpy as np  # noqa: E402
+from bpy_extras.object_utils import world_to_camera_view  # noqa: E402
+from mathutils import Vector  # noqa: E402
+from PIL import Image, ImageOps  # noqa: E402
 
 ELEV = math.radians(30)
 
@@ -85,15 +108,21 @@ argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
 pos, opt = parse(argv)
 GLB, OUT = pos[0], pos[1]
 NAME = opt.get('name', os.path.splitext(os.path.basename(GLB))[0])
+ENGINE = opt.get('engine', 'eevee')
+EEVEE = ENGINE == 'eevee'
 DIRS = int(opt.get('dirs', 8))
-RES = int(opt.get('render', 512))
+MIRROR = opt.get('mirror', '1') == '1'
+RES = int(opt.get('render', 256))
+SH_RES = int(opt.get('shadow-render', 128))
 SIZES = [int(x) for x in opt.get('sizes', '128').split(',')]
 WINDOW = float(opt.get('window', 128))
 AX, AY = [float(x) for x in opt.get('anchor', '64,96').split(',')]
 ONLY = opt.get('anims', '').split(',') if opt.get('anims') else None
 MAXF = int(opt['frames']) if 'frames' in opt else None
-SAMPLES = int(opt.get('samples', 24))
-SH_SAMPLES = int(opt.get('shadow-samples', 12))
+SAMPLES = int(opt.get('samples', 16 if EEVEE else 24))
+SH_SAMPLES = int(opt.get('shadow-samples', 8 if EEVEE else 12))
+BLOOM = opt.get('bloom', '1') == '1' and EEVEE
+EEVEE_RT = opt.get('eevee-raytrace', '1') == '1'
 HIDE = opt.get('hide', 'blade').split(',')
 META = json.load(open(opt['meta']))['anims'] if 'meta' in opt else {}
 ONLY_DIRS = [int(x) for x in opt['only-dirs'].split(',')] if 'only-dirs' in opt else None
@@ -102,6 +131,16 @@ os.makedirs(OUT, exist_ok=True)
 # the game's projection: PX_PER_UNIT = HALF_W / √½ (src/core/iso.js, HALF_W = 20 → 28.28 px per unit)
 HALF_W = 20
 PX_PER_UNIT = HALF_W / math.sqrt(0.5)
+
+
+def mirror_of(d):
+    """The direction whose left–right mirror image direction d is (facing 90° − a)."""
+    return (DIRS // 4 - d) % DIRS
+
+
+# directions rendered; the others are mirrored from these
+WANTED = ONLY_DIRS if ONLY_DIRS is not None else list(range(DIRS))
+RENDERED = [d for d in range(DIRS) if (not MIRROR or d <= mirror_of(d)) and (d in WANTED or mirror_of(d) in WANTED)]
 
 # ----------------------------------------------------------------------------
 # Scene: the model on a turntable
@@ -163,9 +202,9 @@ def sun(name, direction_from, strength, color, angle):
 
 
 # key: upper left, a little in front — casts the soft shadows
-sun('key', -right * 0.9 + up * 1.35 + toward * 0.55, 4.2, (1.0, 0.95, 0.88), 6)
+key = sun('key', -right * 0.9 + up * 1.35 + toward * 0.55, 4.2, (1.0, 0.95, 0.88), 6)
 # rim: behind, on the right — a cool edge on the silhouette
-sun('rim', right * 0.7 + up * 0.55 - toward * 1.0, 3.0, (0.72, 0.84, 1.0), 3)
+rim = sun('rim', right * 0.7 + up * 0.55 - toward * 1.0, 3.0, (0.72, 0.84, 1.0), 3)
 # fill: a weak front light so the shadowed side keeps its detail
 fill = sun('fill', right * 0.6 + up * 0.3 + toward * 1.0, 0.7, (0.85, 0.9, 1.0), 20)
 fill.data.use_shadow = False
@@ -173,19 +212,38 @@ fill.data.use_shadow = False
 world = bpy.data.worlds.new('sky')
 scene.world = world
 world.use_nodes = True
-world.node_tree.nodes['Background'].inputs['Color'].default_value = (0.36, 0.38, 0.44, 1)
-world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.55
+sky = world.node_tree.nodes['Background']
+sky.inputs['Color'].default_value = (0.36, 0.38, 0.44, 1)
+sky.inputs['Strength'].default_value = 0.55
 world.light_settings.distance = 0.35  # ambient-occlusion distance (fast GI)
 
-scene.render.engine = 'CYCLES'
-scene.cycles.device = 'CPU'
-scene.cycles.use_denoising = True
-scene.cycles.max_bounces = 4
-scene.cycles.use_fast_gi = True
-scene.cycles.fast_gi_method = 'REPLACE'
-scene.cycles.ao_bounces_render = 1
-world.light_settings.ao_factor = 1.0
-scene.render.use_persistent_data = False  # it would keep the shadow catcher between passes
+if EEVEE:
+    # EEVEE: anti-aliasing samples, soft sun shadows, screen-space AO for the
+    # ambient light (fast GI in AO mode) on top of the materials' AO nodes
+    scene.render.engine = 'BLENDER_EEVEE'
+    ee = scene.eevee
+    ee.taa_render_samples = SAMPLES
+    ee.use_shadows = True
+    ee.shadow_ray_count = 2
+    ee.shadow_step_count = 6
+    ee.use_raytracing = EEVEE_RT
+    ee.ray_tracing_method = 'SCREEN'
+    ee.use_fast_gi = True
+    ee.fast_gi_method = 'AMBIENT_OCCLUSION_ONLY'
+    ee.fast_gi_distance = 0.35
+    for li in (key, rim):
+        if hasattr(li.data, 'use_shadow_jitter'):
+            li.data.use_shadow_jitter = True  # soft penumbras from the sun's angle
+else:
+    scene.render.engine = 'CYCLES'
+    scene.cycles.device = 'CPU'
+    scene.cycles.use_denoising = True
+    scene.cycles.max_bounces = 4
+    scene.cycles.use_fast_gi = True
+    scene.cycles.fast_gi_method = 'REPLACE'
+    scene.cycles.ao_bounces_render = 1
+    world.light_settings.ao_factor = 1.0
+    scene.render.use_persistent_data = False  # it would keep the shadow catcher between passes
 
 # ambient occlusion in every material: base colour × AO (creases and contacts)
 for m in bpy.data.materials:
@@ -210,12 +268,38 @@ for m in bpy.data.materials:
     nt.links.new(ao.outputs['AO'], mix.inputs[7])
     nt.links.new(mix.outputs[2], src)
 
-# the ground: a shadow catcher, used only for the shadow pass
+# bloom (EEVEE has none built in any more): the compositor's glare, bloom type,
+# on what is brighter than white — highlights on metal, anything glowing
+if BLOOM:
+    ng = bpy.data.node_groups.new('bloom', 'CompositorNodeTree')
+    ng.interface.new_socket('Image', in_out='OUTPUT', socket_type='NodeSocketColor')
+    rl = ng.nodes.new('CompositorNodeRLayers')
+    gl = ng.nodes.new('CompositorNodeGlare')
+    gl.inputs['Type'].default_value = 'Bloom'
+    gl.inputs['Threshold'].default_value = 0.9
+    gl.inputs['Strength'].default_value = 0.35
+    gl.inputs['Size'].default_value = 0.4
+    go = ng.nodes.new('NodeGroupOutput')
+    ng.links.new(rl.outputs['Image'], gl.inputs['Image'])
+    ng.links.new(gl.outputs['Image'], go.inputs['Image'])
+    scene.compositing_node_group = ng
+    scene.render.use_compositing = True
+
+# the ground for the shadow pass
 bpy.ops.mesh.primitive_plane_add(size=40)
 ground = bpy.context.object
 ground.name = 'ground'
-ground.is_shadow_catcher = True
 ground.hide_render = True
+if EEVEE:
+    gm = bpy.data.materials.new('shadowFloor')
+    gm.use_nodes = True
+    gb = gm.node_tree.nodes['Principled BSDF']
+    gb.inputs['Base Color'].default_value = (1, 1, 1, 1)
+    gb.inputs['Roughness'].default_value = 1.0
+    gb.inputs['Specular IOR Level'].default_value = 0.0
+    ground.data.materials.append(gm)
+else:
+    ground.is_shadow_catcher = True
 
 # ----------------------------------------------------------------------------
 # Animations
@@ -288,27 +372,58 @@ def blade_segments(base, tip, deps):
 # Render
 
 tmp = tempfile.mkdtemp()
+meshes = [o for o in model_objs if o.type == 'MESH' and o.name not in blade_like]
 
 
-def render(path, samples):
-    scene.cycles.samples = samples
+def render(path, samples, res):
+    if EEVEE:
+        scene.eevee.taa_render_samples = samples
+    else:
+        scene.cycles.samples = samples
+    scene.render.resolution_x = scene.render.resolution_y = res
     scene.render.filepath = path
     bpy.ops.render.render(write_still=True)
     return Image.open(path).convert('RGBA')
 
 
 def shadow_mode(on):
+    """The shadow pass: the ground shows, the character only casts its shadow."""
     ground.hide_render = not on
-    for o in model_objs:
-        if o.type == 'MESH' and o.name not in blade_like:
-            o.visible_camera = not on  # still casts its shadow
+    for o in meshes:
+        o.visible_camera = not on  # still casts its shadow
+    if EEVEE:
+        # only the key light on a white floor; no sky, no bloom
+        rim.hide_render = fill.hide_render = on
+        sky.inputs['Strength'].default_value = 0.0 if on else 0.55
+        scene.render.film_transparent = not on
+        scene.render.use_compositing = BLOOM and not on
 
 
-frames = []  # (anim, f, dir, char_img, shadow_img, markers, blades)
+def shadow_alpha(img):
+    """EEVEE's shadow pass -> a black shadow with alpha: how much darker than the lit floor."""
+    lum = np.asarray(img.convert('L')).astype(np.float32)
+    lit = max(1.0, float(np.percentile(lum, 99.5)))
+    a = np.clip(1 - lum / lit, 0, 1)
+    a[a < 0.03] = 0
+    return (a * 255).astype(np.uint8)
+
+
+def flip_markers(mk):
+    """Mirror marker positions (game px from the feet) left–right about the anchor."""
+    off = WINDOW - 2 * AX
+    return {k: [round(off - v[0], 2), v[1]] for k, v in mk.items()}
+
+
+frames = []  # (anim, f, dir, char_img, shadow_alpha (at SH_RES), markers, blades, flipped)
 acts = actions()
-total = sum(min(int(a.frame_range[1]) + 1, MAXF or 1e9) for a in acts) * (len(ONLY_DIRS) if ONLY_DIRS else DIRS)
+nframes = sum(min(int(round(a.frame_range[1])) + 1, MAXF or 10 ** 9) for a in acts)
+n_char = nframes * len(RENDERED)
+n_shadow = nframes * len(WANTED)
+t_setup = time.time() - T_START
+t_char = t_shadow = 0.0
 done = 0
 t0 = time.time()
+first = None
 meta = {}
 for act in acts:
     play(act)
@@ -318,30 +433,54 @@ for act in acts:
     meta[act.name] = n
     for f in range(n):
         scene.frame_set(f)
+        chars = {}
         for d in range(DIRS):
-            if ONLY_DIRS is not None and d not in ONLY_DIRS:
+            if d not in RENDERED and d not in WANTED:
                 continue
             turn.rotation_euler = (0, 0, -(d * math.tau / DIRS))
             bpy.context.view_layer.update()
             deps = bpy.context.evaluated_depsgraph_get()
-            mk, bl = {}, {}
-            for k in ('saber', 'saber2'):
-                b, t = markers.get(k + 'Base'), markers.get(k + 'Tip')
-                if b and t and visible_scale(b):
-                    wb, wt = b.matrix_world.translation.copy(), t.matrix_world.translation.copy()
-                    mk[k + 'Base'] = to_game(wb)
-                    mk[k + 'Tip'] = to_game(wt)
-                    bl[k] = blade_segments(wb, wt, deps)
-            shadow_mode(False)
-            img = render(os.path.join(tmp, 'c.png'), SAMPLES)
-            shadow_mode(True)
-            sh = render(os.path.join(tmp, 's.png'), SH_SAMPLES)
-            shadow_mode(False)
-            frames.append((act.name, f, d, img, sh, mk, bl))
-            done += 1
-            if done % 8 == 0 or done == total:
-                el = time.time() - t0
-                print(f'[{done}/{total}] {act.name} f{f} — {el:.0f}s, ~{el / done * (total - done):.0f}s left', flush=True)
+            if d in RENDERED:
+                mk, bl = {}, {}
+                for k in ('saber', 'saber2'):
+                    b, t = markers.get(k + 'Base'), markers.get(k + 'Tip')
+                    if b and t and visible_scale(b):
+                        wb, wt = b.matrix_world.translation.copy(), t.matrix_world.translation.copy()
+                        mk[k + 'Base'] = to_game(wb)
+                        mk[k + 'Tip'] = to_game(wt)
+                        bl[k] = blade_segments(wb, wt, deps)
+                ts = time.time()
+                shadow_mode(False)
+                img = render(os.path.join(tmp, 'c.png'), SAMPLES, RES)
+                dt = time.time() - ts
+                if first is None:
+                    first = dt  # includes compiling the shaders
+                t_char += dt
+                chars[d] = (img, mk, bl)
+            if d in WANTED:
+                ts = time.time()
+                shadow_mode(True)
+                sh = render(os.path.join(tmp, 's.png'), SH_SAMPLES, SH_RES)
+                shadow_mode(False)
+                t_shadow += time.time() - ts
+                if EEVEE:
+                    sa = shadow_alpha(sh)
+                else:
+                    sa = np.asarray(sh)[:, :, 3].copy()
+                    sa[sa < 10] = 0  # stray noise of the shadow catcher
+                chars.setdefault(('shadow', d), sa)
+        for d in WANTED:
+            src = d if d in RENDERED else mirror_of(d)
+            img, mk, bl = chars[src]
+            flipped = src != d
+            if flipped:
+                img, mk = ImageOps.mirror(img), flip_markers(mk)
+            frames.append((act.name, f, d, img, chars[('shadow', d)], mk, bl, flipped))
+        done += 1
+        el = time.time() - t0
+        print(f'[{done}/{nframes} frames] {act.name} f{f} — {el:.0f}s, ~{el / done * (nframes - done):.0f}s left', flush=True)
+
+t_render = time.time() - t0
 
 # ----------------------------------------------------------------------------
 # Downscale, trim, pack, write
@@ -402,19 +541,21 @@ for size in SIZES:
     ax, ay = AX / k, AY / k  # the feet, in frame px
     cp, sp = Packer(), Packer()
     anims = {}
-    for (an, f, d, img, sh, mk, bl) in frames:
-        act = next(a for a in acts if a.name == an)
+    for (an, f, d, img, sa, mk, bl, flipped) in frames:
         tm = META.get(an, {})
         A = anims.setdefault(an, {'fps': tm.get('fps', 10), 'loop': tm.get('loop', True), 'hit': tm.get('hit'), 'frames': [[None] * DIRS for _ in range(meta[an])]})
         ci, cx, cy = trimmed(img, size)
-        # the shadow: black with the catcher's alpha
-        sa = np.asarray(sh.resize((size, size), Image.LANCZOS))[:, :, 3]
-        shimg = Image.fromarray(np.dstack([np.zeros_like(sa)] * 3 + [sa]).astype(np.uint8), 'RGBA')
-        si, sx, sy = trimmed(shimg, size) if sa.max() > 2 else (shimg.crop((0, 0, 1, 1)), 0, 0)
+        # a flipped frame's feet sit mirrored in it
+        fx = size - ax if flipped else ax
+        # the shadow: black with the pass's alpha
+        sa_img = Image.fromarray(sa).resize((size, size), Image.LANCZOS)
+        sa_arr = np.asarray(sa_img)
+        shimg = Image.fromarray(np.dstack([np.zeros_like(sa_arr)] * 3 + [sa_arr]).astype(np.uint8), 'RGBA')
+        si, sx, sy = trimmed(shimg, size) if sa_arr.max() > 2 else (shimg.crop((0, 0, 1, 1)), 0, 0)
         p, x, y = cp.add(ci)
         q, x2, y2 = sp.add(si)
         A['frames'][f][d] = {
-            'p': p, 'x': x, 'y': y, 'w': ci.size[0], 'h': ci.size[1], 'ox': round(ax - cx, 2), 'oy': round(ay - cy, 2),
+            'p': p, 'x': x, 'y': y, 'w': ci.size[0], 'h': ci.size[1], 'ox': round(fx - cx, 2), 'oy': round(ay - cy, 2),
             'm': mk, 'b': bl,
             's': {'p': q, 'x': x2, 'y': y2, 'w': si.size[0], 'h': si.size[1], 'ox': round(ax - sx, 2), 'oy': round(ay - sy, 2)},
         }
@@ -426,3 +567,10 @@ for size in SIZES:
     with open(os.path.join(OUT, prefix + '.json'), 'w') as fh:
         json.dump(out, fh, separators=(',', ':'))
     print(f'wrote {prefix}.json: {len(out["pages"])} page(s), {len(frames)} frames')
+
+total = time.time() - T_START
+print(f'TIMING engine={ENGINE} render={RES}px dirs rendered={len(RENDERED)}/{len(WANTED)} frames={nframes} '
+      f'character renders={n_char} shadow renders={n_shadow}')
+print(f'TIMING setup {t_setup:.1f}s, first render {first or 0:.1f}s (shader compile), character {t_char:.1f}s '
+      f'({t_char / max(1, n_char):.2f}s each), shadow {t_shadow:.1f}s ({t_shadow / max(1, n_shadow):.2f}s each), '
+      f'render loop {t_render:.1f}s, total {total:.1f}s')

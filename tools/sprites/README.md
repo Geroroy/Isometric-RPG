@@ -14,16 +14,31 @@ python3 -m venv .bvenv && .bvenv/bin/pip install bpy pillow numpy   # 처음 한
 node tools/sprites/export_rig_anims.mjs anakin > tools/sprites/anakin_anims.json
 # 2) 모델을 만들어 애니메이션과 함께 .glb로 (레퍼런스: 핫토이 1/6 클론 전쟁 아나킨)
 .bvenv/bin/python tools/sprites/build_anakin.py tools/sprites/anakin_anims.json tools/sprites/out/anakin.glb
-# 3) 8방향 렌더 → 시트 + 그림자 시트 + JSON (게임이 읽는 곳: public/sprites)
-.bvenv/bin/python tools/sprites/render_sprites.py tools/sprites/out/anakin.glb public/sprites --meta tools/sprites/anakin_anims.json
+# 3) 8방향 렌더 → 시트 + 그림자 시트 + JSON (게임이 읽는 곳: public/sprites). 창 없이 명령줄에서
+tools/sprites/render_anakin.sh cycles     # GPU 없는 머신(이 저장소의 클라우드 환경)
+tools/sprites/render_anakin.sh eevee      # GPU가 있는 PC
 ```
+
+렌더 속도 (CPU 4코어, GPU 없음 · `idle` 2프레임 × 8방향으로 측정, 전체 146프레임으로 환산):
+
+| 설정 | 2프레임 | 전체 시트 |
+| --- | --- | --- |
+| 이전: Cycles 512px, 8방향 모두 렌더 | 79초 | 약 94분 |
+| EEVEE 256px, 5방향 + 좌우 반전 (Mesa 소프트웨어 EGL) | 177초 (TAA 16) · 20초 (TAA 4, 3방향) | 1~2시간 |
+| **Cycles 256px, 5방향 + 좌우 반전, 그림자 128px** | **13초** | **약 16분** |
+
+EEVEE는 GPU용 엔진이라 GPU가 없으면 OpenGL을 CPU로 흉내 내서(렌더 한 번에 고정 비용 약 2초) Cycles보다 느립니다. GPU가 있는 PC에서는 EEVEE가 가장 빠릅니다.
 
 `build_anakin.py`: 처음부터 다시 만든 모델. 게임 리그의 관절마다 본이 하나씩 있는 아마추어에 옷 전체를 부드러운 가중치로 스키닝해서
 팔꿈치·무릎·허리가 틈 없이 굽고, 타바드와 튜닉 자락은 다리를 따라간다 (가슴판·견갑·벨트·손·머리는 본 하나에 고정).
 본의 기본 방향이 전부 단위 회전이라 게임의 관절 변환이 그대로 포즈 본에 들어간다.
 
 `render_sprites.py`: 직교 카메라 30°(게임과 같은 2:1 투영, 1유닛 = 28.28px), 왼쪽 위 키라이트(그림자) + 뒤쪽 림라이트 + 어두운 하늘 앰비언트 + 앰비언트 오클루전,
-투명 배경 512px 렌더 → Lanczos로 128px 축소, 그림자는 별도 패스(섀도 캐처)로 따로 저장.
+투명 배경 256px 렌더 → Lanczos로 128px 축소, 그림자는 별도 패스로 따로 저장(Cycles: 섀도 캐처, EEVEE: 키라이트만 받는 흰 바닥의 어두워진 정도).
+`--engine eevee`(기본, 블룸은 컴포지터 글레어, AO는 머티리얼 AO + 패스트 GI AO) 또는 `--engine cycles`.
+8방향 중 5방향(0, 1, 3, 4, 5)만 렌더하고 2 · 6 · 7은 0 · 4 · 3을 좌우 반전(`--mirror 0`이면 모두 렌더). 화면 세로축 기준 거울상이라
+비대칭인 부분(광선검 쥔 손, 견갑)은 반전 방향에서 반대쪽에 보입니다. 그림자는 반전하지 않고 8방향 모두 실제로 렌더해서 늘 빛 반대쪽으로 떨어집니다.
+끝에 준비 · 셰이더 컴파일 · 캐릭터 · 그림자 렌더에 걸린 시간을 출력합니다.
 JSON에는 프레임마다 시트 좌표, 발 기준점, 광선검 마커(손잡이·끝)와 몸에 가려지지 않는 칼날 구간, 그림자의 시트 좌표가 들어갑니다.
 옵션은 스크립트 맨 위 설명 참고 (`--anims`, `--frames`, `--only-dirs`로 미리보기). CPU 4코어에서 전체(18개 애니메이션 × 8방향)는 1시간 남짓.
 
