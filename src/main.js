@@ -33,7 +33,7 @@ const DUEL_HELP = `
   <div class="help-sub">두쿠 백작의 비밀 격납고 · 아나킨 vs 두쿠</div>
   <p class="help-intro">오비완이 쓰러졌다. 탈출하려는 <b>두쿠 백작</b>을 막아설 수 있는 건 이제 아나킨뿐이다. 마카시의 달인을 상대로, 영화와는 다른 결말을 써 보십시오.</p>
   <div class="help-grid desktop-only">
-    <div><kbd>좌클릭</kbd>공격 (두쿠를 클릭) · 이동</div>
+    <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>이동 · <kbd>좌클릭</kbd>공격</div>
     <div><kbd>우클릭</kbd>누르고 있는 동안 막기</div>
     <div><kbd>1</kbd>~<kbd>6</kbd>스킬 (포스 푸시 · 투척 등)</div>
     <div><kbd>칼날 겨루기</kbd>좌클릭 / Space 연타</div>

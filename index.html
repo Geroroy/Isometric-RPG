@@ -29,7 +29,7 @@
           <b>아나킨 스카이워커</b>가 되어 공화국 전진 기지에서 출발해 드로이드 거점을 소탕하고, 북쪽의 드로이드 공장을 파괴하십시오.
         </p>
         <div class="help-grid desktop-only">
-          <div><kbd>좌클릭</kbd>이동 · 공격 (누르고 있으면 계속)</div>
+          <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>이동 · <kbd>좌클릭</kbd>이동 · 공격</div>
           <div><kbd>Shift</kbd>+<kbd>좌클릭</kbd>제자리 공격</div>
           <div><kbd>우클릭</kbd>RMB 표시 스킬 사용</div>
           <div><kbd>1</kbd>~<kbd>6</kbd>커서 위치에 스킬 사용</div>
@@ -65,7 +65,32 @@
       <div class="load-box">
         <div class="load-kicker">STAR WARS · THE CLONE WARS</div>
         <div class="load-title">선택받은 자</div>
-        <div class="bar"><div></div></div>
+        <div class="saber-load" aria-hidden="true">
+          <!-- Anakin's hilt (Episode III / The Clone Wars): pommel, ridged black grip,
+               activator box, flared emitter shroud; the blade ignites with progress -->
+          <svg class="hilt" viewBox="0 0 132 26" width="132" height="26">
+            <defs>
+              <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#f4f6f8" /><stop offset=".35" stop-color="#b9bec4" /><stop offset=".55" stop-color="#7d838a" /><stop offset="1" stop-color="#d7dbe0" />
+              </linearGradient>
+              <linearGradient id="black" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#4a4d52" /><stop offset=".5" stop-color="#16181b" /><stop offset="1" stop-color="#2c2f33" />
+              </linearGradient>
+            </defs>
+            <rect x="1" y="7" width="10" height="12" rx="2" fill="url(#chrome)" />
+            <rect x="3" y="5" width="3" height="16" rx="1" fill="url(#chrome)" />
+            <rect x="11" y="6" width="44" height="14" fill="url(#black)" />
+            <g fill="url(#chrome)"><rect x="15" y="6" width="2" height="14" /><rect x="22" y="6" width="2" height="14" /><rect x="29" y="6" width="2" height="14" /><rect x="36" y="6" width="2" height="14" /><rect x="43" y="6" width="2" height="14" /><rect x="50" y="6" width="2" height="14" /></g>
+            <rect x="55" y="5" width="40" height="16" fill="url(#chrome)" />
+            <rect x="63" y="2" width="16" height="6" rx="1" fill="url(#black)" />
+            <circle cx="71" cy="4.5" r="1.6" fill="#d8b04a" />
+            <rect x="85" y="5" width="2" height="16" fill="#5d6268" />
+            <path d="M95 4 L118 1 L131 1 L131 25 L118 25 L95 22 Z" fill="url(#chrome)" />
+            <path d="M101 7 L116 5 L116 21 L101 19 Z" fill="#2a2d31" />
+            <rect x="126" y="3" width="5" height="20" fill="#9aa0a6" />
+          </svg>
+          <div class="bar"><div></div></div>
+        </div>
         <div class="label">3D 모델 준비 중…</div>
       </div>
     </div>

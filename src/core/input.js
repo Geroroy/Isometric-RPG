@@ -3,9 +3,13 @@
 //   Shift + LMB  attack in place
 //   RMB          cast the right-button skill at the cursor (hold to repeat)
 //   1-6          cast hotbar skill at the cursor
-//   E talk · Q bacta · K skill tree · C character · Tab automap · M mute · F1 help
+//   WASD walk · E talk · Q bacta · K skill tree · C character · Tab automap · M mute · F1 help
 import { SKILLS } from '../game/skills.js';
 import { dist } from '../core/math.js';
+import { screenVecToWorldAngle } from '../core/iso.js';
+
+// WASD walks in screen directions (W = up the screen)
+const MOVE_KEYS = { w: [0, -1], a: [-1, 0], s: [0, 1], d: [1, 0] };
 
 export class Input {
   constructor(game, renderer, hud, audio, canvas) {
@@ -20,6 +24,7 @@ export class Input {
     this.shift = false;
     this.holdT = 0;
     this.lmbTarget = null;
+    this.moveKeys = new Set();
 
     canvas.addEventListener('mousedown', (e) => this.down(e));
     window.addEventListener('mouseup', (e) => {
@@ -40,9 +45,11 @@ export class Input {
     window.addEventListener('keydown', (e) => this.key(e));
     window.addEventListener('keyup', (e) => {
       if (e.key === 'Shift') this.shift = false;
+      this.moveKeys.delete(e.key.toLowerCase());
     });
     window.addEventListener('blur', () => {
       this.lmb = this.rmb = this.shift = false;
+      this.moveKeys.clear();
     });
   }
 
@@ -163,6 +170,10 @@ export class Input {
     const p = g.player;
     const hud = this.hud;
     if (e.key === 'Shift') this.shift = true;
+    if (MOVE_KEYS[e.key.toLowerCase()] && !e.ctrlKey && !e.metaKey) {
+      this.moveKeys.add(e.key.toLowerCase());
+      return;
+    }
     if (e.repeat && !/^[1-6]$/.test(e.key)) return;
     this.audio.unlock();
     const k = e.key.toLowerCase();
@@ -207,11 +218,9 @@ export class Input {
       }
       case 'k':
       case 't':
-      case 's':
         hud.toggle('tree');
         break;
       case 'c':
-      case 'a':
         hud.toggle('char');
         break;
       case 'o':
@@ -264,6 +273,21 @@ export class Input {
     const p = g.player;
     this.updateMouse();
     if (p.dead) return;
+    // WASD steering (same as the touch joystick)
+    let mx = 0;
+    let my = 0;
+    for (const k of this.moveKeys) {
+      mx += MOVE_KEYS[k][0];
+      my += MOVE_KEYS[k][1];
+    }
+    if (mx || my) {
+      const a = screenVecToWorldAngle(mx, my);
+      p.steer(Math.cos(a), Math.sin(a));
+      this.keySteer = true;
+    } else if (this.keySteer) {
+      this.keySteer = false;
+      p.stopSteer();
+    }
     // Holding LMB: keep attacking the same target or keep walking to the cursor.
     if (this.lmb) {
       this.holdT += dt;

@@ -1586,7 +1586,7 @@ body.targeting #world {
   pointer-events: none;
 }
 .load-box {
-  width: min(420px, 86vw);
+  width: min(640px, 92vw);
   text-align: center;
 }
 .load-title {
@@ -1595,15 +1595,35 @@ body.targeting #world {
   font-weight: 200;
   letter-spacing: 0.1em;
 }
-#loading .bar {
-  height: 2px;
-  background: rgba(255, 255, 255, 0.1);
+.saber-load {
+  display: flex;
+  align-items: center;
+  width: min(620px, 88vw);
+  margin: 0 auto;
 }
+.saber-load .hilt {
+  flex: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7));
+}
+#loading .bar {
+  flex: 1;
+  height: 10px;
+  margin-left: -1px;
+}
+/* the blade: white-hot core inside a blue glow, rounded tip, slight flicker */
 #loading .bar div {
   height: 100%;
   width: 0;
-  background: var(--force);
-  box-shadow: 0 0 10px var(--force);
+  border-radius: 0 6px 6px 0;
+  background: linear-gradient(180deg, #bfe6ff 0%, #ffffff 35%, #ffffff 65%, #bfe6ff 100%);
+  box-shadow: 0 0 6px 2px #5cb8ff, 0 0 18px 6px rgba(60, 140, 255, 0.75), 0 0 40px 12px rgba(40, 110, 255, 0.35);
+  transition: width 0.25s ease-out;
+  animation: bladeHum 0.11s infinite alternate;
+}
+@keyframes bladeHum {
+  to {
+    opacity: 0.9;
+  }
 }
 #loading .label {
   margin-top: 12px;

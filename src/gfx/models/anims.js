@@ -363,6 +363,9 @@ export const ANAKIN_DUAL_ANIMS = bake(GUARD2, {
   parry: { frames: 6, fps: 20, loop: false, hit: 2, pose: keyframes([{ t: 0, p: BLOCK2 }, { t: 0.35, p: PARRY2 }, { t: 1, p: GUARD2 }], easeInOut) },
   hurt: { frames: 6, fps: 14, loop: false, pose: keyframes([{ t: 0, p: GUARD2 }, { t: 0.3, p: HURT2 }, { t: 1, p: GUARD2 }], easeInOut) },
   lock: { frames: 4, fps: 10, loop: true, pose: (t) => wobble(LOCK2, t, 0.04) },
+  // skills also used while dual-wielding: Obi-Wan's saber stays low in the left hand
+  throw: { ...ANAKIN_ANIMS.throw, pose: (t) => pose(ANAKIN_ANIMS.throw.pose(t), { sab2: [0.05, 1.0, -0.33, -2.5, -0.35] }) },
+  leap: { ...ANAKIN_ANIMS.leap, pose: (t) => pose(ANAKIN_ANIMS.leap.pose(t), { two: 0, sab2: [0.1, 1.2, -0.35, -2.2, 0.2] }) },
   death: ANAKIN_ANIMS.death,
 });
 
