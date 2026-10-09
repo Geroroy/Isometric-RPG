@@ -23,7 +23,9 @@ const loading = document.getElementById('loading');
 const bar = document.querySelector('#loading .bar div');
 const label = document.querySelector('#loading .label');
 
-const MODE = new URLSearchParams(location.search).get('mode') === 'duel' ? 'duel' : 'campaign';
+// '#duel' selects the Movie Duel (a hash works on any host); switching reloads
+const MODE = location.hash === '#duel' ? 'duel' : 'campaign';
+window.addEventListener('hashchange', () => location.reload());
 
 const DUEL_HELP = `
   <div class="help-kicker">MOVIE DUEL · EPISODE II</div>
@@ -44,7 +46,7 @@ const DUEL_HELP = `
   <p class="help-tip">공격이 닿기 직전에 막으면 <b>완벽한 흘리기</b>: 두쿠가 비틀거립니다. 막을 때마다 평정이 줄고, 평정이 바닥나면 자세가 무너집니다. 두쿠도 마찬가지입니다.</p>
   <div class="help-actions">
     <button id="startBtn" type="button">결투 시작</button>
-    <a id="modeLink" class="mode-link" href="./"><span>CAMPAIGN</span>← 크리스토프시스 캠페인으로</a>
+    <a id="modeLink" class="mode-link" href="#campaign"><span>CAMPAIGN</span>← 크리스토프시스 캠페인으로</a>
   </div>`;
 
 async function boot() {
