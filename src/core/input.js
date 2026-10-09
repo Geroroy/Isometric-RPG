@@ -3,7 +3,7 @@
 //   Shift + LMB  attack in place
 //   RMB          cast the right-button skill at the cursor (hold to repeat)
 //   1-6          cast hotbar skill at the cursor
-//   WASD walk · X saber on/off · E talk · Q bacta · K skill tree · C character · Tab automap · M mute · F1 help
+//   WASD walk · X saber on/off · E talk · P Star Cards · Q bacta · K skill tree · C character · Tab automap · M mute · F1 help
 import { SKILLS } from '../game/skills.js';
 import { dist } from '../core/math.js';
 import { screenVecToWorldAngle } from '../core/iso.js';
@@ -225,6 +225,9 @@ export class Input {
         break;
       case 'c':
         hud.toggle('char');
+        break;
+      case 'p':
+        hud.toggle('cards');
         break;
       case 'o':
         hud.toggle('settings');

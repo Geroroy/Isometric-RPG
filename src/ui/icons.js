@@ -303,6 +303,18 @@ const DRAW = {
     saber(ctx, 8, 26, 24, 6, '#5ab0ff');
     saber(ctx, 24, 26, 8, 6, '#6aff7a');
   },
+  cards(ctx) {
+    base(ctx, '#2a2414', '#100c06');
+    ctx.fillStyle = '#4a6fbf';
+    ctx.fillRect(7, 6, 13, 19);
+    ctx.fillStyle = '#e9c47a';
+    ctx.fillRect(12, 8, 13, 19);
+    ctx.fillStyle = '#5a3f14';
+    ctx.fillRect(14, 10, 9, 8);
+  },
+  might(ctx) {
+    DRAW.fury(ctx);
+  },
   credits(ctx) {
     base(ctx, '#2a2414', '#100c06');
     ctx.fillStyle = '#e9c47a';

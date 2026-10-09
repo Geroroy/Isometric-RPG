@@ -237,6 +237,7 @@ export class Game {
         crit = true;
       }
       if (tgt.def.droid) {
+        amount *= 1 + p.cards.value('droidSlayer') / 100;
         const ml = p.skillLevel('mechanic');
         if (ml) {
           amount *= 1 + SKILLS.mechanic.bonus(ml) / 100;
@@ -250,6 +251,7 @@ export class Game {
     } else if (src && src.team === 'rep' && src !== p) {
       const cl = p.skillLevel('command');
       if (cl) amount *= 1 + SKILLS.command.dmg(cl) / 100;
+      if (src.owner === p) amount *= 1 + p.cards.value('legionBond') / 100;
     }
     if (tgt === p) amount *= 1 - p.damageReduction();
     else if (tgt.team === 'rep') {
@@ -284,7 +286,10 @@ export class Game {
         this.say('lowHp');
       }
     }
-    if (tgt.hp <= 0) this.kill(tgt);
+    if (tgt.hp <= 0) {
+      if (src === p && tgt.team === 'cis') p.addMight();
+      this.kill(tgt);
+    }
     return amount;
   }
 
@@ -308,6 +313,7 @@ export class Game {
       this.lastKillT = this.time;
       if (this.streak === 4) this.chatter('streak', 0.9);
       p.credits += u.elite ? 40 : u.kind === 'b2' ? 8 : 3;
+      p.cards.parts += u.elite ? 12 : u.kind === 'b2' ? 2 : 1; // salvaged crafting parts
       this.quests.onKill(u);
       if (dist(u.x, u.y, p.x, p.y) < 40) p.gainXp(u.xp);
       this.fx.debris(u.x, u.y, u.kind === 'b2' ? 10 : 6, u.kind === 'b2' ? '#56606b' : '#b39f74');
@@ -487,6 +493,7 @@ export class Game {
             this.say('campClear');
             const bonus = Math.round(20 * c.level * c.level);
             p.gainXp(bonus);
+            p.cards.parts += 8;
             this.fx.text(p.x, p.y, `거점 소탕 +${bonus} XP`, '#ffd27f', 1.1, 2.6);
           }
         } else if (c.cleared && this.time > c.respawnAt && dist(c.x, c.y, p.x, p.y) > 36) {
@@ -653,7 +660,7 @@ export class Game {
       return;
     }
     p.bacta--;
-    p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.45);
+    p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.45 * (1 + p.cards.value('bactaPack') / 100));
     this.lowHpSaid = false;
     this.fx.text(p.x, p.y, '박타 치료', '#7dff9a', 1);
     this.fx.ring(p.x, p.y, 0.8, '#7dff9a', 0.5);

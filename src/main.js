@@ -132,7 +132,7 @@ async function boot() {
     input.update(dt);
     touch.update(dt);
     // menus pause the action (the map does not)
-    const paused = !help.classList.contains('hidden') || hud.open.tree || hud.open.char || hud.open.settings || dialogue.isOpen;
+    const paused = !help.classList.contains('hidden') || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || dialogue.isOpen;
     if (!paused) game.update(dt);
     renderer.render(dt);
     hud.update(dt);

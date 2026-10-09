@@ -90,6 +90,7 @@ export class QuestLog {
     const r = q.reward;
     this.state[id].state = 'done';
     if (r.credits) p.credits += r.credits;
+    p.cards.parts += 30; // every report pays crafting parts for Star Cards
     if (r.bacta) p.bacta = Math.min(5, p.bacta + r.bacta);
     if (r.skillPoints) p.skillPoints += r.skillPoints;
     if (r.xp) p.gainXp(r.xp);

@@ -11,6 +11,7 @@
 import { SKILLS, TREES, TIER_LEVELS, canLearn, isActive } from '../game/skills.js';
 import { iconURL } from './icons.js';
 import { dist } from '../core/math.js';
+import { StarCardsUI } from './starCards.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (tag, cls, html) => {
@@ -43,7 +44,7 @@ export class HUD {
     this.sub = null;
     this.hpChip = 1;
     this.tab = 0;
-    this.open = { tree: false, char: false, map: false, settings: false };
+    this.open = { tree: false, char: false, map: false, settings: false, cards: false };
     this.mapImg = renderer.terrain.minimapImage();
     this.fogCanvas = document.createElement('canvas');
     this.fogCanvas.width = game.world.w;
@@ -53,6 +54,7 @@ export class HUD {
     this.buildInfo();
     this.buildMap();
     this.buildSettings();
+    this.cardsUI = new StarCardsUI(this, game);
     this.buildMisc();
     this.updateFog();
     this.refreshPanels();
@@ -107,6 +109,7 @@ export class HUD {
       <div class="ab-menu">
         <button type="button" data-open="tree"><kbd>K</kbd>스킬<i class="dot"></i></button>
         <button type="button" data-open="char"><kbd>C</kbd>정보<i class="dot"></i></button>
+        <button type="button" data-open="cards"><kbd>P</kbd>카드</button>
         <button type="button" data-open="map"><kbd>Tab</kbd>지도</button>
         <button type="button" data-open="settings"><kbd>O</kbd>설정</button>
       </div>`;
@@ -192,7 +195,8 @@ export class HUD {
     o.id = id;
     o.innerHTML = `<div class="ov-head"><div class="ov-title">${title}</div>${extraHead}<button class="ov-close" type="button" aria-label="닫기"><kbd>Esc</kbd>닫기</button></div><div class="ov-body"></div>`;
     o.addEventListener('mousedown', (e) => e.stopPropagation());
-    o.querySelector('.ov-close').addEventListener('click', () => this.toggle(id === 'skilltree' ? 'tree' : id === 'charsheet' ? 'char' : id === 'mapview' ? 'map' : 'settings', false));
+    const key = { skilltree: 'tree', charsheet: 'char', mapview: 'map', settings: 'settings', starcards: 'cards' }[id];
+    o.querySelector('.ov-close').addEventListener('click', () => this.toggle(key, false));
     this.root.appendChild(o);
     return o;
   }
@@ -451,7 +455,7 @@ export class HUD {
     const v = force ?? !this.open[which];
     if (v) for (const k of Object.keys(this.open)) if (k !== which && this.open[k]) this.toggle(k, false);
     this.open[which] = v;
-    const ids = { tree: '#skilltree', char: '#charsheet', map: '#mapview', settings: '#settings' };
+    const ids = { tree: '#skilltree', char: '#charsheet', map: '#mapview', settings: '#settings', cards: '#starcards' };
     $(ids[which]).classList.toggle('hidden', !v);
     document.body.classList.toggle('overlay-open', Object.values(this.open).some(Boolean));
     if (v) {
@@ -459,6 +463,7 @@ export class HUD {
       if (which === 'tree') this.renderTree();
       if (which === 'map') this.drawMapView();
       if (which === 'settings') this.syncCropInputs();
+      if (which === 'cards') this.cardsUI.render();
     } else this.hideTip();
     this.audio.play('click');
   }

@@ -2,6 +2,7 @@
 import { dist, angleDiff, rand, clamp } from '../core/math.js';
 import { dirIndex } from '../core/iso.js';
 import { SKILLS, isActive } from './skills.js';
+import { StarCards } from './perks.js';
 
 export const UNIT_DEFS = {
   player: { name: '아나킨 스카이워커', sprite: 'anakin', team: 'rep', radius: 0.35 },
@@ -472,6 +473,7 @@ export class Player extends Unit {
     this.saberLit = true;
     this.credits = 0;
     this.upgrades = { lens: 0, plate: 0 };
+    this.cards = new StarCards(this);
     this.kills = 0;
     this.recalc(true);
   }
@@ -526,13 +528,25 @@ export class Player extends Unit {
     const strMult = 1 + this.attr.str * 0.015;
     const dark = 1 + this.darkness * 0.003;
     const cmd = 1 + this.skillLevel('command') * 0.01;
-    return rand(lo, hi) * strMult * dark * cmd * (1 + this.upgrades.lens * 0.06);
+    const card = 1 + this.cards.value('aggressive') / 100;
+    return rand(lo, hi) * strMult * dark * cmd * (1 + this.upgrades.lens * 0.06) * card * this.angerMult();
   }
   forceMult() {
-    return (1 + this.attr.for * 0.012) * (1 + this.darkness * 0.003);
+    return (1 + this.attr.for * 0.012) * (1 + this.darkness * 0.003) * (1 + this.cards.value('forceMastery') / 100) * this.angerMult();
+  }
+  /** Star Card "분노의 힘": extra damage while the dark meter is high. */
+  angerMult() {
+    return this.darkness >= 50 ? 1 + this.cards.value('darkAnger') / 100 : 1;
+  }
+  /** Star Card "영웅의 기세": attack speed stacks from kills. */
+  addMight() {
+    if (!this.cards.value('heroicMight')) return;
+    const b = this.buffs.might;
+    this.addBuff('might', 8, { n: Math.min(5, (b ? b.n : 0) + 1) });
   }
   attackSpeed() {
-    return (1 + this.attr.agi * 0.006) * (1 + (this.buffs.speed ? this.buffs.speed.atk : 0)) * (1 + (this.buffs.spar ? this.buffs.spar.atk : 0));
+    const might = this.buffs.might ? (this.buffs.might.n * this.cards.value('heroicMight')) / 100 : 0;
+    return (1 + this.attr.agi * 0.006) * (1 + (this.buffs.speed ? this.buffs.speed.atk : 0)) * (1 + (this.buffs.spar ? this.buffs.spar.atk : 0)) * (1 + might);
   }
   moveSpeed() {
     let s = 4.6 * (1 + (this.buffs.speed ? this.buffs.speed.move : 0));
@@ -541,23 +555,23 @@ export class Player extends Unit {
   }
   deflectChance() {
     if (this.buffs.barrier) return 1;
-    return Math.min(0.85, 0.12 + this.attr.agi * 0.003 + SKILLS.shien.deflect(this.skillLevel('shien')) / 100);
+    return Math.min(0.9, 0.12 + this.attr.agi * 0.003 + SKILLS.shien.deflect(this.skillLevel('shien')) / 100 + this.cards.value('shienMaster') / 100);
   }
   redirectChance() {
     if (this.buffs.barrier) return 1;
     return SKILLS.shien.redirect(this.skillLevel('shien')) / 100;
   }
   dodgeChance() {
-    return SKILLS.precog.dodge(this.skillLevel('precog')) / 100;
+    return (SKILLS.precog.dodge(this.skillLevel('precog')) + this.cards.value('foresight')) / 100;
   }
   critChance() {
     return 0.05 + SKILLS.precog.crit(this.skillLevel('precog')) / 100;
   }
   damageReduction() {
-    return 0.1 + (this.buffs.barrier ? this.buffs.barrier.dr : 0);
+    return 0.1 + (this.buffs.barrier ? this.buffs.barrier.dr : 0) + this.cards.value('tenacity') / 100;
   }
   forceRegen() {
-    return (1.6 + this.attr.for * 0.06) * (1 - this.darkness * 0.004);
+    return (1.6 + this.attr.for * 0.06) * (1 - this.darkness * 0.004) * (1 + this.cards.value('forceAttune') / 100);
   }
   hpRegen() {
     let r = 0.4 + this.attr.vit * 0.02;
@@ -691,7 +705,7 @@ export class Player extends Unit {
     const ok = s.cast(this.game, this, l, tx, ty, target);
     if (ok) {
       this.force -= cost;
-      const cd = s.cd ? s.cd(l) : 0;
+      const cd = (s.cd ? s.cd(l) : 0) * (1 - this.cards.value('focus') / 100);
       if (cd) this.cooldowns[id] = cd;
     }
     return ok;

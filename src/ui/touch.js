@@ -99,6 +99,7 @@ export class TouchControls {
     const items = [
       ['skills', '스킬', () => this.hud.toggle('tree')],
       ['character', '정보', () => this.hud.toggle('char')],
+      ['cards', '카드', () => this.hud.toggle('cards')],
       ['map', '지도', () => this.hud.toggle('map')],
       ['settings', '설정', () => this.hud.toggle('settings')],
       ['flurry', '광선검', () => this.game.player.setSaber(!this.game.player.saberLit)],
