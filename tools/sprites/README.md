@@ -15,7 +15,7 @@ node tools/sprites/export_rig_anims.mjs anakin > tools/sprites/anakin_anims.json
 # 2) 디테일 모델을 만들어 애니메이션과 함께 .glb로 (레퍼런스: 핫토이 클론 전쟁 아나킨)
 .bvenv/bin/python tools/sprites/build_anakin.py tools/sprites/anakin_anims.json tools/sprites/out/anakin.glb
 # 3) 8방향 렌더 → 시트 + JSON (128: 오리지널, 256: 리마스터)
-.bvenv/bin/python tools/sprites/render_sprites.py tools/sprites/out/anakin.glb public/sprites --sizes 128,256
+.bvenv/bin/python tools/sprites/render_sprites.py tools/sprites/out/anakin.glb public/sprites --sizes 128,256 --meta tools/sprites/anakin_anims.json
 ```
 
 `render_sprites.py`: 직교 카메라 30°(게임과 같은 2:1 투영, 1유닛 = 28.28px), 왼쪽 위 키라이트(그림자) + 뒤쪽 림라이트 + 어두운 하늘 앰비언트 + 앰비언트 오클루전,

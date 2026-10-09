@@ -263,7 +263,11 @@ rdiff = np.clip(refl_on[..., :3] * refl_on[..., 3:] - refl_off[..., :3] * refl_o
 # ...as streaks: wet streets smear reflections vertically
 rimg = Image.fromarray((rdiff * 255).astype(np.uint8))
 rimg = rimg.resize((RES, RES // 4), Image.BILINEAR).resize((RES, RES), Image.BILINEAR)
-refl_rgb = np.clip(np.asarray(rimg).astype(np.float32) / 255 * 1.4, 0, 1)
+refl_rgb = np.asarray(rimg).astype(np.float32) / 255
+# ...fading out before the image's edges (no hard cut where the render ends)
+yy, xx = np.mgrid[0:RES, 0:RES] / RES
+edge = np.clip(np.minimum.reduce([xx, 1 - xx, 1 - yy]) / 0.14, 0, 1) ** 1.5
+refl_rgb = np.clip(refl_rgb * edge[..., None] * 0.9, 0, 1)
 
 # ----------------------------------------------------------------------------
 # The footprint (collision) and the sort point

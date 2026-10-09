@@ -39,7 +39,8 @@ async function loadCharacter(url) {
 async function loadBuilding(url) {
   const meta = await (await fetch(url)).json();
   const base = dirOf(url);
-  for (const [k, f] of Object.entries(meta.layers)) meta[k] = await loadImg(base + f);
+  meta.img = {}; // the layers' images (the JSON's own `neon` holds the flicker settings)
+  for (const [k, f] of Object.entries(meta.layers)) meta.img[k] = await loadImg(base + f);
   return meta;
 }
 
@@ -90,7 +91,7 @@ async function main() {
   const run = anims.includes('run') ? 'run' : anims[0];
   let last = performance.now();
   const frame = (now) => {
-    const dt = Math.min(0.05, (now - last) / 1000);
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); // rAF time can start just before `last`
     last = now;
     const t = now / 1000;
     // --- walk
@@ -148,7 +149,7 @@ async function main() {
       const s = iso(b.x, b.y);
       const m = b.meta;
       g.globalAlpha = Math.min(1, b.level);
-      g.drawImage(b.meta.reflect, s.x - m.anchor[0] * m.k, s.y - m.anchor[1] * m.k, m.size * m.k, m.size * m.k);
+      g.drawImage(b.meta.img.reflect, s.x - m.anchor[0] * m.k, s.y - m.anchor[1] * m.k, m.size * m.k, m.size * m.k);
     }
     g.globalAlpha = 1;
     g.globalCompositeOperation = 'source-over';
@@ -202,10 +203,10 @@ async function main() {
       const behind = it.y > ps.y && prect[0] + prect[2] > x0 && prect[0] < x0 + W && prect[1] + prect[3] > y0 && prect[1] < y0 + W;
       b.fade = (b.fade ?? 1) + ((behind ? 0.4 : 1) - (b.fade ?? 1)) * Math.min(1, dt * 8);
       g.globalAlpha = b.fade;
-      g.drawImage(m.body, x0, y0, W, W);
+      g.drawImage(m.img.body, x0, y0, W, W);
       g.globalCompositeOperation = 'lighter';
       g.globalAlpha = b.fade * Math.min(1, b.level);
-      g.drawImage(m.neon, x0, y0, W, W);
+      g.drawImage(m.img.neon, x0, y0, W, W);
       g.globalCompositeOperation = 'source-over';
       g.globalAlpha = 1;
     }

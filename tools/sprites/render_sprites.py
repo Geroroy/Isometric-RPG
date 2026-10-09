@@ -18,6 +18,8 @@ Render a .glb character into isometric sprite sheets for the game.
   --only-dirs 0,2      only these directions (previews)
   --samples 24         Cycles samples for the character (denoised)
   --shadow-samples 12  Cycles samples for the shadow pass
+  --meta FILE.json     timing per animation (fps, loop, hit frame) — e.g. the
+                       export_rig_anims.mjs output; default 10 fps, looping
   --hide blade         objects whose name starts with these are not rendered
                        (the game draws saber blades itself) but still give
                        blade occlusion
@@ -93,6 +95,7 @@ MAXF = int(opt['frames']) if 'frames' in opt else None
 SAMPLES = int(opt.get('samples', 24))
 SH_SAMPLES = int(opt.get('shadow-samples', 12))
 HIDE = opt.get('hide', 'blade').split(',')
+META = json.load(open(opt['meta']))['anims'] if 'meta' in opt else {}
 ONLY_DIRS = [int(x) for x in opt['only-dirs'].split(',')] if 'only-dirs' in opt else None
 os.makedirs(OUT, exist_ok=True)
 
@@ -393,7 +396,8 @@ for size in SIZES:
     anims = {}
     for (an, f, d, img, sh, mk, bl) in frames:
         act = next(a for a in acts if a.name == an)
-        A = anims.setdefault(an, {'frames': [[None] * DIRS for _ in range(meta[an])]})
+        tm = META.get(an, {})
+        A = anims.setdefault(an, {'fps': tm.get('fps', 10), 'loop': tm.get('loop', True), 'hit': tm.get('hit'), 'frames': [[None] * DIRS for _ in range(meta[an])]})
         ci, cx, cy = trimmed(img, size)
         # the shadow: black with the catcher's alpha
         sa = np.asarray(sh.resize((size, size), Image.LANCZOS))[:, :, 3]
