@@ -114,7 +114,7 @@ src/
     fx.js               파티클/충격파/번개/텍스트
   world/                월드 생성, A* 길찾기
   game/                 게임 규칙, 유닛 AI, 스킬 트리, 대사
-  ui/                   HUD(콘솔·패널·툴팁·미니맵), 픽셀 아이콘
+  ui/                   HUD·메뉴·레이더, 사진 초상화, 터치·확대·전체 화면, 픽셀 아이콘
 debug.html              스프라이트 시트 확인용 (?m=anakin|clone|rex|b1|b2|r2)
 debug-portrait.html     픽셀 초상화 변형(배경·어둠·대사) 확인용
 ```
@@ -129,4 +129,4 @@ debug-portrait.html     픽셀 초상화 변형(배경·어둠·대사) 확인�
 ## 참고
 
 비상업 팬 프로젝트입니다. Star Wars 및 관련 명칭은 Lucasfilm Ltd.의 상표입니다.
-UI 폰트: [Galmuri](https://github.com/quiple/galmuri) (SIL OFL 1.1).
+UI 폰트: [Pretendard](https://github.com/orioncactus/pretendard), [Rajdhani](https://fonts.google.com/specimen/Rajdhani) (SIL OFL 1.1).
