@@ -9,6 +9,7 @@ import { HUD } from './ui/hud.js';
 import { Input } from './core/input.js';
 import { Audio } from './core/audio.js';
 import { TouchControls, isTouchDevice } from './ui/touch.js';
+import { Fullscreen } from './ui/fullscreen.js';
 
 const loading = document.getElementById('loading');
 const bar = document.querySelector('#loading .bar div');
@@ -31,6 +32,8 @@ async function boot() {
   const hud = new HUD(game, renderer, portrait, audio);
   const input = new Input(game, renderer, hud, audio, canvas);
   const touch = new TouchControls(game, renderer, hud, input, audio);
+  const fullscreen = new Fullscreen();
+  input.onFullscreen = () => fullscreen.toggle();
 
   const measure = () => {
     renderer.resize();
@@ -53,15 +56,8 @@ async function boot() {
     e.stopPropagation();
     help.classList.add('hidden');
     audio.unlock();
-    if (touch.enabled) {
-      // best effort: fullscreen + landscape lock (ignored where unsupported)
-      const de = document.documentElement;
-      if (de.requestFullscreen && !document.fullscreenElement) {
-        de.requestFullscreen({ navigationUI: 'hide' })
-          .then(() => screen.orientation?.lock?.('landscape'))
-          .catch(() => {});
-      }
-    }
+    // phones go fullscreen (and landscape) right away; on PC use the button or F
+    if (touch.enabled) fullscreen.enter();
     audio.play('ignite');
     game.say('intro');
   };

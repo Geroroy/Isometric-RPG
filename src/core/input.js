@@ -187,6 +187,9 @@ export class Input {
       case 'a':
         hud.toggle('char');
         break;
+      case 'f':
+        if (this.onFullscreen) this.onFullscreen();
+        break;
       case 'm':
         this.audio.toggleMute();
         g.fx.text(p.x, p.y, this.audio.muted ? '음소거' : '소리 켜짐', '#ddd', 0.8);
