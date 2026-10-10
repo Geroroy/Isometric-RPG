@@ -1,6 +1,6 @@
 // Lightsaber looks, measured from the reference footage (docs/SABER_STYLE.md, tools/qa/saberprofile.py):
 // two trail styles (Clone Wars / the films) and two palettes (Clone Wars / Revenge of the Sith),
-// picked separately. Glows are pre-drawn sprites (no shadowBlur); trails are polygons.
+// picked separately; four blade colours (blue, red, green, purple) in each. Glows are pre-drawn sprites (no shadowBlur); trails are polygons.
 // Every saber in the game is drawn here (renderer.drawSabers); the light the blades throw on the
 // floor and on characters is saberLight.js.
 
@@ -24,20 +24,47 @@ export const TRAIL_NAMES = { tcw: '클론워즈 (셀 셰이딩)', movie: '영화
 export const PALETTE_NAMES = { tcw: '클론워즈', rots: '시스의 복수' };
 
 // Colours sampled from the references (1280 px wide frames): the white core, then the colour
-// 1-2 px, 2-4 px, 4-8 px and 8-16 px outside it. Only hues the footage shows: the Revenge of
-// the Sith clip (Mustafar) has blue blades only, so its red falls back to the Clone Wars red.
+// 1-2 px, 2-4 px, 4-8 px and 8-16 px outside it. Only blue and red are in the footage (the
+// Revenge of the Sith clip has blue only; its red follows the Clone Wars red's ring pattern);
+// green and purple are built on the same pattern at their own hues (green 120-135°, purple
+// 275-285°, well away from blue's 210-226°) so the four read apart at a glance.
+// coreW: the white core's line width (the films' palette keeps it thinner).
 export const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 export const PALETTES = {
   tcw: {
     blue: { core: '#f8fafe', rim: '#3475e1', inner: '#0946bb', glow: '#0c3295', halo: '#09287c' },
     red: { core: '#fefbfa', rim: '#d92c42', inner: '#a40738', glow: '#790e35', halo: '#621234' },
+    green: { core: '#f8fef8', rim: '#4fe06a', inner: '#13a53a', glow: '#0c7a2a', halo: '#0a5a22' },
+    purple: { core: '#fcf8fe', rim: '#b56ae8', inner: '#7a2fbf', glow: '#561f8c', halo: '#431a6e' },
   },
   rots: {
-    // core: '#fcdefe' as specified by the user (measured from the footage: '#fcfefe', without the pink)
-    blue: { core: '#fcdefe', rim: '#a7bbf8', inner: '#8294f4', glow: '#5963dc', halo: '#423ca6' },
-    red: null, // not in the reference: the Clone Wars red is used
+    // the footage's rings (#a7bbf8 → #423ca6) drift to 243° (lavender) under the bloom; these keep
+    // the hue at 212-222° and the rings saturated (lightness 68 → 58 → 48 → 32 %), with a
+    // thinner white core — the same pattern for the other three hues (red 6°, green 126°, purple 272°)
+    blue: { core: '#ffffff', rim: '#5aa0ff', inner: '#2b78ff', glow: '#1650e0', halo: '#0f338f', coreW: 1.0 },
+    red: { core: '#fff6f2', rim: '#ff5a48', inner: '#f52a14', glow: '#c0160a', halo: '#7a0d07', coreW: 1.0 },
+    green: { core: '#ffffff', rim: '#5cf06a', inner: '#22cc3e', glow: '#139a2c', halo: '#0c6a1e', coreW: 1.0 },
+    purple: { core: '#fff2ff', rim: '#c070ff', inner: '#9a3cff', glow: '#7220d8', halo: '#4c148f', coreW: 1.0 },
   },
 };
+
+/**
+ * The named hue of a saber colour ([r, g, b]): 'blue', 'red', 'green', 'purple', or null for
+ * anything else (the palettes and the light's tints are keyed by it).
+ */
+export function hueOf(rgb) {
+  const [r, g, b] = rgb;
+  const mx = Math.max(r, g, b);
+  const mn = Math.min(r, g, b);
+  if (mx - mn < 40) return null; // grey / white
+  let h = mx === r ? ((g - b) / (mx - mn)) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4;
+  h = ((h * 60) % 360 + 360) % 360;
+  if (h < 25 || h >= 330) return 'red';
+  if (h >= 70 && h < 170) return 'green';
+  if (h >= 185 && h < 252) return 'blue';
+  if (h >= 252 && h < 322) return 'purple';
+  return null;
+}
 
 /**
  * The trail styles, from the frame-by-frame comparison (24 fps footage; the game's swings run
@@ -61,19 +88,18 @@ export function trailWindow() {
 }
 
 /**
- * The palette entry for a unit's saber colour: the measured blue or red, any other colour (green,
- * purple…) a palette made from the colour itself the same way (white core, the colour as the rim,
- * darker rings out) — so every blade, and the light it throws, is its own colour.
+ * The palette entry for a unit's saber colour: the chosen palette's blue, red, green or purple
+ * (hueOf), any other colour a palette made from the colour itself the same way (white core, the
+ * colour as the rim, darker rings out) — so every blade is its own colour.
  */
 const derived = new Map();
 export function paletteFor(rgb) {
-  const [r, g, b] = rgb;
-  const blue = b > r + 40 && b >= g;
-  const red = r > g + 60 && r > b + 60;
-  if (blue || red) {
+  const name = hueOf(rgb);
+  if (name) {
     const p = PALETTES[SABER.palette] || PALETTES.tcw;
-    return p[blue ? 'blue' : 'red'] || PALETTES.tcw[blue ? 'blue' : 'red'];
+    return p[name] || PALETTES.tcw[name];
   }
+  const [r, g, b] = rgb;
   const key = (r << 16) | (g << 8) | b;
   let p = derived.get(key);
   if (!p) {
@@ -82,6 +108,15 @@ export function paletteFor(rgb) {
     derived.set(key, (p = { core, rim: h(1), inner: h(0.72), glow: h(0.52), halo: h(0.4) }));
   }
   return p;
+}
+
+/**
+ * The blade's shimmer at `time` (× brightness): the films' style only, ±6 % at two rates. The
+ * blade and the light it throws (saberLight.js) both take it, so they flicker together.
+ */
+export function flickerAt(time) {
+  const fl = (TRAILS[SABER.trail] || TRAILS.tcw).flicker;
+  return fl ? 1 + fl * (Math.sin(time * 61) * 0.6 + Math.sin(time * 23.7) * 0.4) : 1;
 }
 
 // ---------------------------------------------------------------------------- glow sprites
@@ -144,7 +179,7 @@ function glowSprite(pal, style) {
  */
 export function drawBlade(ctx, x1, y1, x2, y2, pal, k, time) {
   const st = TRAILS[SABER.trail] || TRAILS.tcw;
-  const fl = st.flicker ? 1 + st.flicker * (Math.sin(time * 61) * 0.6 + Math.sin(time * 23.7) * 0.4) : 1;
+  const fl = flickerAt(time);
   const dx = x2 - x1;
   const dy = y2 - y1;
   const len = Math.hypot(dx, dy) || 1;
@@ -174,7 +209,7 @@ export function drawBlade(ctx, x1, y1, x2, y2, pal, k, time) {
   ctx.lineWidth = 2.4;
   ctx.stroke();
   ctx.strokeStyle = pal.core;
-  ctx.lineWidth = 1.3;
+  ctx.lineWidth = pal.coreW || 1.3;
   ctx.stroke();
   ctx.lineCap = 'butt';
   ctx.globalCompositeOperation = prev;
@@ -297,7 +332,7 @@ export function drawTrail(ctx, hist, now, cam, pal) {
     ctx.globalAlpha = 0.45 * e;
     ctx.fillStyle = pal.rim;
     ctx.fill();
-    for (const [i0, a, col] of [[2, 0.6, pal.rim], [3, 0.9, pal.core]]) {
+    for (const [i0, a, col] of [[2, 0.7, pal.rim], [3, 0.45, pal.core]]) {
       band(ctx, cx, cy, i0, inner);
       ctx.globalAlpha = a * e;
       ctx.fillStyle = col;
@@ -414,4 +449,4 @@ export function drawClash(ctx, x, y, k, pal = PALETTES.tcw.blue) {
 // ---------------------------------------------------------------------------- the blades' light
 
 // QA (tools/qa/saberlab.mjs): the clash drawing and the settings, from the page
-if (typeof window !== 'undefined') window.__saberStyle = { SABER, TRAILS, setSaberOpt, drawClash };
+if (typeof window !== 'undefined') window.__saberStyle = { SABER, TRAILS, PALETTES, setSaberOpt, drawClash, drawBlade, paletteFor };

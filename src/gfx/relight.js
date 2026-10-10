@@ -8,7 +8,6 @@
 // rims Anakin's arm. The light map already brightens the area round a light;
 // this adds the direction.
 import { worldToScreen, PX_PER_UNIT } from '../core/iso.js';
-import { paletteFor } from './saberStyle.js';
 import { preset, tintFor, falloff } from './saberLight.js';
 
 const GAIN = 1.25;
@@ -62,12 +61,11 @@ export function transientLights(game, cam) {
     const s = worldToScreen(u.x, u.y, u.z);
     if (b && e) {
       // the blade's middle, a little in front of the body
-      // the saber: its light model (saberLight.js) — the preset's falloff and reach, the palette's
-      // reflected tints (near / far), banded for the Clone Wars preset, plus a rim term below
-      const pal = paletteFor(u.saberColor);
+      // the saber: its light model (saberLight.js) — the falloff and reach, the blade colour's
+      // reflected tints (near / far), plus a rim term below
       const p = preset();
-      const t = pal ? tintFor(pal) : null;
-      out.push({ sx: s.x + (b[0] + e[0]) / 2 - cam.x, sy: s.y + (b[1] + e[1]) / 2 - cam.y, wx: u.x, wy: u.y, z: 1.1 + u.z, rgb: t ? t.farRGB : u.saberColor, near: t ? t.nearRGB : null, p, rad: p.r0 * p.reach, a: 0.9, tz: 8 });
+      const t = tintFor(u.saberColor);
+      out.push({ sx: s.x + (b[0] + e[0]) / 2 - cam.x, sy: s.y + (b[1] + e[1]) / 2 - cam.y, wx: u.x, wy: u.y, z: 1.1 + u.z, rgb: t.farRGB, near: t.nearRGB, p, rad: p.r0 * p.reach, a: 2.0, tz: 8 });
     }
   }
   return out;
@@ -128,7 +126,7 @@ export function relightUnits(ctx, game, cam, lights, W, H) {
             // the silhouette (normals turned away from the camera) that faces the blade lights up
             const f = falloff(d, L.p) / 1.7;
             const rim = (1 - Math.max(0, nz)) ** 2;
-            const w = ndl * f * L.a * GAIN * (1 + 2 * rim);
+            const w = ndl * f * L.a * GAIN * (1 + 4 * rim);
             const m = Math.min(1, f * 1.7);
             r += (L.rgb[0] + (L.near[0] - L.rgb[0]) * m) * w;
             gg += (L.rgb[1] + (L.near[1] - L.rgb[1]) * m) * w;

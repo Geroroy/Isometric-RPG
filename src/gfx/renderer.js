@@ -12,8 +12,8 @@ import { glowSprite } from './fx.js';
 import { transientLights, relightUnits } from './relight.js';
 import { SIG } from '../game/units.js';
 import { canvasFont } from '../ui/fonts.js';
-import { SABER, PALETTES, trailWindow, paletteFor, drawBlade, drawTrail, drawClash, record } from './saberStyle.js';
-import { preset, tintFor, drawLight, drawGround, sweepOf, lightCharacter } from './saberLight.js';
+import { SABER, PALETTES, trailWindow, paletteFor, flickerAt, drawBlade, drawTrail, drawClash, record } from './saberStyle.js';
+import { preset, tintFor, drawLight, drawGround, drawGroundTint, sweepOf, lightCharacter } from './saberLight.js';
 
 const AMBIENT = [150, 146, 178];
 const byDepth = (a, b) => a.depth - b.depth;
@@ -185,6 +185,7 @@ export class Renderer {
     this.terrain.draw(ctx, cam.x, cam.y, W, H);
     g.fx.drawDecals(ctx, cam);
     if (g.world.puddles) this.drawPuddles(ctx, cam, dt);
+    this.drawSaberFloorTint(ctx, cam);
 
     const inView = (x, y, w, h) => x + w > cam.x - 4 && x < cam.x + W + 4 && y + h > cam.y - 4 && y < cam.y + H + 4;
 
@@ -645,8 +646,9 @@ export class Renderer {
       spot(L.x, L.y, L.z, L.r, L.g, L.b, L.rad * fl, 0.55);
     }
     // a lit blade lights its surroundings (saberLight.js: inverse-square falloff with a hot core, the
-    // palette's reflected tints): along the blade, and the floor under it as an iso ellipse that
-    // stretches along a swing
+    // blade colour's reflected tints): along the blade, and the floor under it as an iso ellipse
+    // along the blade's projection that stretches along a swing; the blade's flicker goes in
+    const fl = flickerAt(this.time);
     for (const u of g.activeUnits) {
       if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) continue;
       const pal = paletteFor(u.saberColor);
@@ -661,10 +663,10 @@ export class Renderer {
         spot(u.x, u.y, 1.2 + u.z, r, gg, bl, 70, 0.6);
         continue;
       }
-      const t = tintFor(pal);
+      const t = tintFor(u.saberColor);
       const p = preset();
       const sweep = sweepOf(u, this.time);
-      const a = (0.75 + (sweep ? 0.3 * sweep.fresh : 0) + (u.deflectFlash > 0 ? 0.4 : 0)) * p.mapA;
+      const a = (0.75 + (sweep ? 0.3 * sweep.fresh : 0) + (u.deflectFlash > 0 ? 0.4 : 0)) * p.mapA * fl;
       for (const k of ['saber', 'saber2']) {
         const bb = f.markers[k + 'Base'];
         const ee = f.markers[k + 'Tip'];
@@ -672,8 +674,8 @@ export class Renderer {
         // the blade's middle, a little towards the tip
         drawLight(l, sx + (bb[0] + ee[0]) * 0.5 + (ee[0] - bb[0]) * 0.15, sy + (bb[1] + ee[1]) * 0.5 + (ee[1] - bb[1]) * 0.15, t, p, a);
       }
-      const g0 = worldToScreen(u.x, u.y, 0);
-      drawGround(l, g0.x - cam.x + (b[0] + e[0]) * 0.3, g0.y - cam.y, t, p, sweep, a * 0.6, 'lighter');
+      const o = this.saberPool(u, cam);
+      drawGround(l, o.gx, o.gy, o.dx, o.dy, t, p, sweep, a * 0.6, 'lighter');
     }
     for (const t of g.throws) spot(t.x, t.y, t.z, 90, 160, 255, 60, 0.6);
     for (const b of g.bolts) spot(b.x, b.y, b.z, b.color === 'red' ? 255 : 90, b.color === 'red' ? 70 : 140, b.color === 'red' ? 60 : 255, 26, 0.6);
@@ -775,30 +777,61 @@ export class Renderer {
   }
 
   /**
+   * Where a unit's blade lights the floor: the tints, the sweep, the ground point under the
+   * blade's middle (screen px), the blade vector and the floor's brightness there (0..1, as the
+   * light map leaves it). null without a lit blade.
+   */
+  saberPool(u, cam) {
+    if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) return null;
+    const f = u.frame();
+    const b = f.markers.saberBase;
+    const e = f.markers.saberTip;
+    if (!b || !e) return null;
+    const o = this.pool || (this.pool = { t: null, p: null, sweep: null, gx: 0, gy: 0, dx: 0, dy: 0, lx: 0, ly: 0, lum: 0 });
+    const amb = this.game.world.ambient || AMBIENT;
+    const s = worldToScreen(u.x, u.y, u.z);
+    const g0 = worldToScreen(u.x, u.y, 0);
+    const mx = (b[0] + e[0]) / 2;
+    const my = (b[1] + e[1]) / 2;
+    o.t = tintFor(u.saberColor);
+    o.p = preset();
+    o.sweep = sweepOf(u, this.time);
+    o.lx = s.x - cam.x + mx; // the blade's middle: where its light comes from
+    o.ly = s.y - cam.y + my;
+    o.gx = g0.x - cam.x + mx * 0.75;
+    o.gy = g0.y - cam.y + Math.max(-8, Math.min(8, my * 0.15));
+    o.dx = e[0] - b[0];
+    o.dy = e[1] - b[1];
+    o.lum = Math.min(1, this.terrain.lumAt(u.x, u.y) * ((amb[0] + amb[1] + amb[2]) / 765) * 1.7);
+    return o;
+  }
+
+  /** A bright floor takes the blades' colour (saberLight.drawGroundTint), under the sprites. */
+  drawSaberFloorTint(ctx, cam) {
+    const fl = flickerAt(this.time);
+    for (const u of this.game.activeUnits) {
+      const o = this.saberPool(u, cam);
+      if (!o || o.lum <= 0.2) continue;
+      drawGroundTint(ctx, o.gx, o.gy, o.dx, o.dy, o.t, o.p, o.sweep, (SABER.glow || 1) * fl, o.lum);
+    }
+  }
+
+  /**
    * The blades' light on characters beyond what the light map gives: each sprite's own colours
    * times the blade's light, fading from the blade ('lighter') — sheets with a normal pass get
    * the directional version instead (relight.js).
    */
   drawSaberLight(ctx, cam) {
     const g = this.game;
+    const fl = flickerAt(this.time);
     for (const u of g.activeUnits) {
-      if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) continue;
-      const pal = paletteFor(u.saberColor);
-      if (!pal) continue;
-      const f = u.frame();
-      const b = f.markers.saberBase;
-      const e = f.markers.saberTip;
-      if (!b || !e) continue;
-      const t = tintFor(pal);
-      const p = preset();
-      const sweep = sweepOf(u, this.time);
-      const s = worldToScreen(u.x, u.y, u.z);
-      const lx = s.x - cam.x + (b[0] + e[0]) / 2; // the blade's middle: where its light comes from
-      const ly = s.y - cam.y + (b[1] + e[1]) / 2;
+      const o = this.saberPool(u, cam);
+      if (!o) continue;
+      const { t, p, sweep, lx, ly } = o;
       // the floor: the light's ellipse added over the lit picture (the light map only darkens or
-      // tints; this is the glow that punches through on a dark floor), wider while swinging
-      const g0 = worldToScreen(u.x, u.y, 0);
-      drawGround(ctx, g0.x - cam.x + (b[0] + e[0]) * 0.3, g0.y - cam.y, t, p, sweep, SABER.glow || 1);
+      // tints; this is the glow that punches through on a dark floor), along the blade, streaked
+      // while swinging; a bright floor took the hue instead (drawSaberFloorTint)
+      drawGround(ctx, o.gx, o.gy, o.dx, o.dy, t, p, sweep, (SABER.glow || 1) * fl, 'lighter', o.lum);
       // the characters it reaches (itself and the nearest others, at most four)
       ctx.globalCompositeOperation = 'lighter';
       const R = (p.r0 * p.reach) / PX_PER_UNIT; // world units the light reaches
@@ -809,13 +842,13 @@ export class Renderer {
         if (Math.hypot(v.x - u.x, v.y - u.y) <= R) near.push(v);
       }
       if (near.length > 4) near.sort((a, c) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(c.x - u.x, c.y - u.y)).length = 4;
-      const boost = 1 + (sweep ? 0.35 * sweep.fresh : 0);
+      const boost = (1 + (sweep ? 0.35 * sweep.fresh : 0)) * fl;
       for (const v of near) {
         const vf = v.frame();
         const vs = worldToScreen(v.x, v.y, v.z);
         const k = vf.k || 1;
         // the wielder: the arm and side by the blade catch it, the rest little
-        lightCharacter(ctx, vf, Math.round(vs.x - vf.ox * k - cam.x), Math.round(vs.y - vf.oy * k - cam.y), t, p, (v === u ? 0.7 : 1) * boost * (SABER.glow || 1), lx, ly);
+        lightCharacter(ctx, vf, Math.round(vs.x - vf.ox * k - cam.x), Math.round(vs.y - vf.oy * k - cam.y), t, p, (v === u ? 0.55 : 1.2) * boost * (SABER.glow || 1), lx, ly);
       }
     }
   }

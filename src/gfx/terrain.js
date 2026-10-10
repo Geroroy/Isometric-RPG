@@ -118,6 +118,15 @@ export class Terrain {
     return r.value;
   }
 
+  /** The floor's own brightness at a world point, 0..1 (its tile colour before the light map). */
+  lumAt(x, y) {
+    const w = this.world;
+    const tx = Math.max(0, Math.min(w.w - 1, Math.floor(x)));
+    const ty = Math.max(0, Math.min(w.h - 1, Math.floor(y)));
+    const i = ty * w.w + tx;
+    return Math.max(0, Math.min(1, (this.R[i] + this.G[i] + this.B[i]) / 765));
+  }
+
   /** Builds a chunk, yielding every few rows (prefetch spreads it over frames). */
   *buildGen(cx, cy) {
     const S = this.S;
