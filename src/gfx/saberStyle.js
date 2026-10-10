@@ -1,18 +1,18 @@
 // Lightsaber looks, measured from the reference footage (docs/SABER_STYLE.md, tools/qa/saberprofile.py):
 // two trail styles (Clone Wars / the films) and two palettes (Clone Wars / Revenge of the Sith),
 // picked separately. Glows are pre-drawn sprites (no shadowBlur); trails are polygons.
-//
-// PROTOTYPE: used only in the test scene (?saberLab) until the look is approved.
+// Every blue or red saber in the game is drawn here (renderer.drawSabers); the light the blades
+// throw on the floor and on characters is drawLightPool / spill below and in renderer.drawLighting.
 
 const STORE = 'cw.saber';
-// len / glow: the test card's sliders (trail length, glow strength); slow: 1/4 game speed (test only)
-export const SABER = { trail: 'tcw', palette: 'tcw', lab: false, len: 1, glow: 1, slow: false };
+// len / glow: the settings card's sliders (trail length, glow strength); slow: 1/4 game speed
+// (to look at the trails; never kept)
+export const SABER = { trail: 'tcw', palette: 'tcw', len: 1, glow: 1, slow: false };
 try {
   Object.assign(SABER, JSON.parse(localStorage.getItem(STORE) || '{}'), { slow: false });
 } catch {}
-if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('saberLab')) SABER.lab = true;
 
-/** Change a setting (trail, palette, lab) and keep it on this device. */
+/** Change a setting (trail, palette, len, glow, slow) and keep it on this device. */
 export function setSaberOpt(key, value) {
   SABER[key] = value;
   try {
@@ -26,7 +26,7 @@ export const PALETTE_NAMES = { tcw: '클론워즈', rots: '시스의 복수' };
 // Colours sampled from the references (1280 px wide frames): the white core, then the colour
 // 1-2 px, 2-4 px, 4-8 px and 8-16 px outside it. Only hues the footage shows: the Revenge of
 // the Sith clip (Mustafar) has blue blades only, so its red falls back to the Clone Wars red.
-const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+export const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 export const PALETTES = {
   tcw: {
     blue: { core: '#f8fafe', rim: '#3475e1', inner: '#0946bb', glow: '#0c3295', halo: '#09287c' },
@@ -393,6 +393,63 @@ export function drawClash(ctx, x, y, k, pal = PALETTES.tcw.blue) {
   ctx.lineCap = 'butt';
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = prev;
+}
+
+// ---------------------------------------------------------------------------- the blades' light
+
+// A pool of light on the floor: a soft disc per colour, drawn squashed 2:1 (the iso floor)
+const pools = new Map();
+function poolSprite(col) {
+  let c = pools.get(col);
+  if (c) return c;
+  c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x = c.getContext('2d');
+  const [r, g, b] = hex(col);
+  const grd = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, `rgba(${r},${g},${b},0.9)`);
+  grd.addColorStop(0.45, `rgba(${r},${g},${b},0.35)`);
+  grd.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  x.fillStyle = grd;
+  x.fillRect(0, 0, 64, 64);
+  pools.set(col, c);
+  return c;
+}
+
+/** The blade's light on the floor round (gx, gy) — screen px of the ground under the blade. */
+export function drawLightPool(ctx, gx, gy, pal, k) {
+  const w = 44 * (0.8 + 0.3 * k);
+  ctx.globalAlpha = Math.min(1, 0.6 * k * (SABER.glow || 1));
+  ctx.drawImage(poolSprite(pal.rim), gx - w, gy - w / 2, w * 2, w);
+  ctx.globalAlpha = 1;
+}
+
+// A sheet without a normal pass gets the blade's colour washed over it (additive, fading with
+// distance): one reused canvas, the frame drawn into it and filled with the colour.
+let spillC = null;
+let spillX = null;
+export function spill(ctx, f, x, y, col, a) {
+  const k = f.k || 1;
+  const w = Math.ceil(f.w * k);
+  const h = Math.ceil(f.h * k);
+  if (!spillC) {
+    spillC = document.createElement('canvas');
+    spillX = spillC.getContext('2d');
+  }
+  if (spillC.width < w || spillC.height < h) {
+    spillC.width = Math.max(spillC.width, w);
+    spillC.height = Math.max(spillC.height, h);
+    spillX = spillC.getContext('2d');
+  }
+  spillX.globalCompositeOperation = 'copy';
+  spillX.imageSmoothingEnabled = !!f.k;
+  spillX.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, w, h);
+  spillX.globalCompositeOperation = 'source-in';
+  spillX.fillStyle = col;
+  spillX.fillRect(0, 0, w, h);
+  ctx.globalAlpha = Math.min(1, a);
+  ctx.drawImage(spillC, 0, 0, w, h, x, y, w, h);
+  ctx.globalAlpha = 1;
 }
 
 // QA (tools/qa/saberlab.mjs): the clash drawing and the settings, from the page

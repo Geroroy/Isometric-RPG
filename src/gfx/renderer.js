@@ -11,10 +11,17 @@ import { neonLevel } from './citySprites.js';
 import { glowSprite } from './fx.js';
 import { transientLights, relightUnits } from './relight.js';
 import { SIG } from '../game/units.js';
-import { SABER, PALETTES, trailWindow, paletteFor, drawBlade, drawTrail, drawClash, record } from './saberStyle.js';
+import { PALETTES, trailWindow, paletteFor, drawBlade, drawTrail, drawClash, drawLightPool, spill, hex, record } from './saberStyle.js';
 
 const AMBIENT = [150, 146, 178];
 const byDepth = (a, b) => a.depth - b.depth;
+const prefixes = new Map(); // 'rgba(r,g,b,' per colour, made once
+const rgbaPrefix = (rgb) => {
+  const key = (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
+  let p = prefixes.get(key);
+  if (!p) prefixes.set(key, (p = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},`));
+  return p;
+};
 const TRAIL_LIFE = 0.13; // seconds a saber swing's afterimage lasts
 const SHADOW_ALPHA = 0.75; // a sheet's rendered shadow (the shadow catcher's own alpha)
 export const ZOOM_MIN = 0.5;
@@ -303,6 +310,7 @@ export class Renderer {
     // --- additive glows
     ctx.globalCompositeOperation = 'lighter';
     this.drawCityGlow(ctx, cam, dt);
+    this.drawSaberLight(ctx, cam);
     this.drawSabers(ctx, cam, dt);
     for (const c of g.fx.saberClashes) {
       // the saber-look preview's clashes, in the chosen style
@@ -641,10 +649,39 @@ export class Renderer {
       const fl = 1 + Math.sin(this.time * 3 + L.x * 7) * L.flicker;
       spot(L.x, L.y, L.z, L.r, L.g, L.b, L.rad * fl, 0.55);
     }
+    // a lit blade lights its surroundings along its length (middle and tip) and the floor under it,
+    // in the palette's colour, a little brighter while it swings
+    const spotAt = (sx, sy, pre, rad, a) => {
+      if (sx < -rad || sy < -rad || sx > W + rad || sy > H + rad) return;
+      const grd = l.createRadialGradient(sx, sy, 0, sx, sy, rad);
+      grd.addColorStop(0, pre + a.toFixed(2) + ')');
+      grd.addColorStop(1, pre + '0)');
+      l.fillStyle = grd;
+      l.fillRect(sx - rad, sy - rad, rad * 2, rad * 2);
+    };
     for (const u of g.activeUnits) {
       if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) continue;
-      const [r, gg, b] = u.saberColor;
-      spot(u.x, u.y, 1.2 + u.z, Math.min(255, r * 1.4), Math.min(255, gg * 1.25), b, 70, 0.55 + (u.deflectFlash > 0 ? 0.4 : 0));
+      const pal = paletteFor(u.saberColor);
+      const rgb = pal ? hex(pal.rim) : u.saberColor;
+      const pre = rgbaPrefix(rgb);
+      const a = (this.time <= (u.trailUntil || 0) ? 0.8 : 0.62) + (u.deflectFlash > 0 ? 0.4 : 0);
+      const f = u.frame();
+      const s = worldToScreen(u.x, u.y, u.z);
+      const sx = s.x - cam.x;
+      const sy = s.y - cam.y;
+      let lit = false;
+      for (const k of ['saber', 'saber2']) {
+        const b = f.markers[k + 'Base'];
+        const e = f.markers[k + 'Tip'];
+        if (!b || !e) continue;
+        lit = true;
+        const mx = sx + (b[0] + e[0]) / 2;
+        const my = sy + (b[1] + e[1]) / 2;
+        spotAt(mx, my, pre, 72, a);
+        spotAt(sx + e[0], sy + e[1], pre, 40, a * 0.7);
+        spotAt(sx + (mx - sx) * 0.6, sy - 2, pre, 64, a * 0.8); // the floor under the blade
+      }
+      if (!lit) spot(u.x, u.y, 1.2 + u.z, rgb[0], rgb[1], rgb[2], 70, a);
     }
     for (const t of g.throws) spot(t.x, t.y, t.z, 90, 160, 255, 60, 0.6);
     for (const b of g.bolts) spot(b.x, b.y, b.z, b.color === 'red' ? 255 : 90, b.color === 'red' ? 70 : 140, b.color === 'red' ? 60 : 255, 26, 0.6);
@@ -695,9 +732,9 @@ export class Renderer {
         const tx = s.x + e[0] - cam.x;
         const ty = s.y + e[1] - cam.y;
         const segs = f.blades ? f.blades[k] : [[0, 1]];
-        const pal = SABER.lab ? paletteFor(u.saberColor) : null;
+        const pal = paletteFor(u.saberColor);
         if (pal) {
-          // the test scene's looks (saberStyle.js): trail by style, colours by palette
+          // the saber look (saberStyle.js): trail by style, colours by palette
           const hist = ((u.saberHist ||= {})[k] ||= []);
           record(hist, bx + cam.x, by + cam.y, tx + cam.x, ty + cam.y, this.time);
           if (swinging) u.trailUntil = this.time + trailWindow() + 0.05;
@@ -741,6 +778,42 @@ export class Renderer {
           if (s1 - s0 < 0.02) continue;
           this.glowLine(ctx, bx + (tx - bx) * s0, by + (ty - by) * s0, bx + (tx - bx) * s1, by + (ty - by) * s1, u.saberColor, flash, u.saberCore);
         }
+      }
+    }
+  }
+
+  /**
+   * The blades' light where the light map's multiply cannot reach: a pool of the blade's colour
+   * on the floor under it ('screen'), and the colour washed over characters near it ('lighter',
+   * fading with distance) — sheets with a normal pass get the directional version instead
+   * (relight.js).
+   */
+  drawSaberLight(ctx, cam) {
+    const g = this.game;
+    const R = 2.6; // world units a blade's light reaches on a character
+    for (const u of g.activeUnits) {
+      if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) continue;
+      const pal = paletteFor(u.saberColor);
+      if (!pal) continue;
+      const f = u.frame();
+      const b = f.markers.saberBase;
+      const e = f.markers.saberTip;
+      if (!b || !e) continue;
+      const s = worldToScreen(u.x, u.y, u.z);
+      const swing = this.time <= (u.trailUntil || 0) ? 1.25 : 1;
+      ctx.globalCompositeOperation = 'screen';
+      drawLightPool(ctx, s.x - cam.x + ((b[0] + e[0]) / 2) * 0.6, worldToScreen(u.x, u.y, 0).y - cam.y, pal, swing);
+      ctx.globalCompositeOperation = 'lighter';
+      for (const v of g.activeUnits) {
+        if (v.dead || v.hidden) continue;
+        const d = Math.hypot(v.x - u.x, v.y - u.y);
+        if (d > R) continue;
+        const vf = v.frame();
+        if (vf.normal) continue; // lit with its normals (relightUnits)
+        const vs = worldToScreen(v.x, v.y, v.z);
+        const k = vf.k || 1;
+        // the wielder catches less (the blade is beside, not facing, most of him)
+        spill(ctx, vf, Math.round(vs.x - vf.ox * k - cam.x), Math.round(vs.y - vf.oy * k - cam.y), pal.rim, (v === u ? 0.11 : 0.4) * (1 - d / R) * swing);
       }
     }
   }

@@ -8,6 +8,7 @@
 // rims Anakin's arm. The light map already brightens the area round a light;
 // this adds the direction.
 import { worldToScreen, PX_PER_UNIT } from '../core/iso.js';
+import { paletteFor, hex } from './saberStyle.js';
 
 const GAIN = 1.25;
 const SIN = 0.5; // sin 30°, the camera's elevation
@@ -60,7 +61,9 @@ export function transientLights(game, cam) {
     const s = worldToScreen(u.x, u.y, u.z);
     if (b && e) {
       // the blade's middle, a little in front of the body
-      out.push({ sx: s.x + (b[0] + e[0]) / 2 - cam.x, sy: s.y + (b[1] + e[1]) / 2 - cam.y, wx: u.x, wy: u.y, z: 1.1 + u.z, rgb: u.saberColor, rad: 64, a: 0.55, tz: 8 });
+      // in the saber palette's colour (saberStyle.js), reaching a little further than a bolt
+      const pal = paletteFor(u.saberColor);
+      out.push({ sx: s.x + (b[0] + e[0]) / 2 - cam.x, sy: s.y + (b[1] + e[1]) / 2 - cam.y, wx: u.x, wy: u.y, z: 1.1 + u.z, rgb: pal ? hex(pal.rim) : u.saberColor, rad: 80, a: 0.85, tz: 8 });
     }
   }
   return out;

@@ -1,7 +1,7 @@
 // The four lightsaber looks (trail style x palette, src/gfx/saberStyle.js) side by side.
 // Per look: a swing's start / middle / end on a dark floor, the middle on a bright floor,
 // a clash; the game is frozen and stepped by hand so every look shows the same instant.
-// Also times a frame (render + post-processing, GPU finished) per look and with the old look.
+// Also times a frame (render + post-processing, GPU finished) per look.
 //   npx vite preview --port 4173 (build first); node tools/qa/saberlab.mjs [out_dir]
 import { chromium } from 'playwright-core';
 import fs from 'fs';
@@ -18,7 +18,6 @@ const LOOKS = [
   ['tcw', 'rots'],
   ['movie', 'tcw'],
   ['movie', 'rots'],
-  ['old', null], // the game as it is (for the timing)
 ];
 const timing = {};
 for (const [trail, palette] of LOOKS) {
@@ -26,7 +25,7 @@ for (const [trail, palette] of LOOKS) {
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message));
   await page.addInitScript(({ trail, palette }) => {
-    localStorage.setItem('cw.saber', JSON.stringify(trail === 'old' ? { lab: false } : { trail, palette, lab: true }));
+    localStorage.setItem('cw.saber', JSON.stringify(trail === 'old' ? {} : { trail, palette }));
     const raf = window.requestAnimationFrame.bind(window);
     window.__stop = false;
     window.requestAnimationFrame = (cb) => raf((t) => (window.__stop ? raf(() => window.requestAnimationFrame(cb)) : cb(t)));
