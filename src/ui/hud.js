@@ -116,6 +116,7 @@ export class HUD {
     cn.addEventListener('mousedown', (e) => e.stopPropagation());
     $('#stims').addEventListener('click', (e) => {
       e.stopPropagation();
+      if (this.game.talkingTo) return;
       this.game.useBacta();
     });
     $('#saberBtn').addEventListener('click', (e) => {

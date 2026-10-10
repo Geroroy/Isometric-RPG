@@ -112,6 +112,7 @@ export class Citizen extends Unit {
 
   update(dt) {
     this.baseUpdate(dt);
+    if (this.dead) return; // the routine ends with them
     const g = this.game;
     const p = g.player;
     this.t -= dt;

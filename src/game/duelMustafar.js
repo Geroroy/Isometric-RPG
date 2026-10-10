@@ -248,7 +248,7 @@ export class MustafarDuel extends Duel {
 
   phases(k) {
     const g = this.game;
-    if (g.cinema || this.lock || this.over || this.afterLock) return;
+    if (g.cinema || this.cine || this.lock || this.over || this.afterLock) return;
     const next = BEATS[this.ch];
     if (next && k <= next.at) {
       this.ch++;
@@ -561,7 +561,7 @@ export class MustafarDuel extends Duel {
       h.done = true;
       g.fx.explosion(h.x, h.y, 0.5);
       g.fx.sparks(h.x, h.y, 0.6, h.color, 14, 5);
-      if (!this.cine && !p.dead && dist(p.x, p.y, h.x, h.y) < h.r + 0.3) {
+      if (!this.cine && !this.lock && !p.dead && dist(p.x, p.y, h.x, h.y) < h.r + 0.3) {
         g.damage(null, p, h.dmg, { type: 'duel', knock: { ang: Math.atan2(p.y - h.y, p.x - h.x), power: 2.5 } });
         p.stun = Math.max(p.stun, 0.3);
         p.setAnim('hurt', 0.8, true);
@@ -577,7 +577,7 @@ export class MustafarDuel extends Duel {
       const left = river.x1 - this.drift.x;
       if (left > 0) this.moveRiver(Math.min(left, DRIFT * dt));
     }
-    if (this.afterLock && !this.lock) {
+    if (this.afterLock && !this.lock && !this.over) {
       const next = this.afterLock;
       this.afterLock = null;
       next();
@@ -680,6 +680,7 @@ export class MustafarDuel extends Duel {
     p.blocking = false;
     p.composure -= 22;
     p.composureT = g.time;
+    if (p.composure <= 0) this.breakGuard(p);
     p.setAnim('hurt', 0.8, true);
     g.damage(dk, p, 8, { type: 'duel' });
     if (Math.random() < 0.4) this.line('obiwan', 'push');

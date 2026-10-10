@@ -82,6 +82,10 @@ export class Dooku extends Unit {
     const face = () => this.faceTo(p.x, p.y);
     const aggression = d.phase === 3 ? 1.5 : d.phase === 2 ? 1.25 : 1;
 
+    if (this.stun > 0) {
+      this.setAnim('hurt', 0.35); // a Djem So strike's stun is real for him too
+      return;
+    }
     switch (this.state) {
       case 'broken':
       case 'stagger':
@@ -509,6 +513,7 @@ export class Duel {
       return amount;
     }
     if (tgt !== dk) return amount;
+    if (dk.scripted || this.cine || dk.state === 'lock') return 0; // in a scene or bound blade to blade: nothing lands
     dk.lastHurtT = g.time;
     if (dk.state === 'broken') return amount * 1.5;
     if (dk.state === 'stagger') return amount * 1.3;
@@ -658,7 +663,7 @@ export class Duel {
 
   /** Phase changes by the foe's remaining health `k` (the film's beats). */
   phases(k) {
-    if (this.game.cinema) return; // one scene at a time
+    if (this.game.cinema || this.cine || this.lock) return; // one scene at a time, never from inside a lock
     if (this.phase === 1 && k <= 0.6) {
       this.phase = 2;
       this.toPhase2();

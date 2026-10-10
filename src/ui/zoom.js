@@ -76,12 +76,19 @@ export class ZoomControl {
     return v;
   }
 
+  /** The title screen and cutscenes set their own zoom: not the player's to change or save. */
+  get borrowed() {
+    return document.body.classList.contains('title') || !!this.renderer.game.cinema;
+  }
+
   step(dir) {
+    if (this.borrowed) return;
     this.set(this.renderer.zoom * (dir > 0 ? STEP : 1 / STEP));
     this.save();
   }
 
   reset() {
+    if (this.borrowed) return;
     this.set(1);
     this.save();
   }

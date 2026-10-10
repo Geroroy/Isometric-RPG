@@ -277,12 +277,12 @@ export class Soldier extends Unit {
     this.thinkT -= dt;
     if (this.thinkT <= 0) {
       this.thinkT = 0.3;
-      if (!this.target || this.target.dead || dist(this.x, this.y, this.target.x, this.target.y) > 18) this.target = this.pickTarget();
+      if (!this.target || this.target.dead || this.target.remove || dist(this.x, this.y, this.target.x, this.target.y) > 18) this.target = this.pickTarget(); // a companion that expired or flew off is gone too
       if (this.elite && !this.announced && this.target && this.target.kind === 'player') {
         this.announced = true;
         g.chatter('elite', 0.9);
       }
-      if (this.lastAttacker && !this.lastAttacker.dead && this.lastAttacker.team !== this.team && !this.target) this.target = this.lastAttacker;
+      if (this.lastAttacker && !this.lastAttacker.dead && !this.lastAttacker.remove && this.lastAttacker.team !== this.team && !this.target) this.target = this.lastAttacker;
     }
     // Owner leash for summons.
     if (this.owner) {
@@ -420,7 +420,7 @@ export class R2Unit extends Unit {
       let best = null;
       let bd = 4.5;
       for (const u of g.activeUnits) {
-        if (u.dead || u.team === this.team) continue;
+        if (u.dead || u.team === this.team || u.untargetable) continue; // not the city's people
         const d = dist(this.x, this.y, u.x, u.y);
         if (d < bd) {
           bd = d;
@@ -615,7 +615,7 @@ export class Player extends Unit {
   // --- actions -----------------------------------------------------------------
   /** Walking (click-to-move or joystick steering) can be interrupted freely. */
   get moving() {
-    return !!this.action && (this.action.type === 'move' || this.action.type === 'steer');
+    return !!this.action && (this.action.type === 'move' || this.action.type === 'steer' || this.action.type === 'talk'); // walking to an NPC can be called off too
   }
 
   get busy() {
@@ -719,9 +719,11 @@ export class Player extends Unit {
       return false;
     }
     if (s.target === 'enemy' && !target) return false;
+    const prev = this.action;
     this.setSaber(true);
     this.action = null;
     const ok = s.cast(this.game, this, l, tx, ty, target);
+    if (!ok && !this.action) this.action = prev; // nothing happened: carry on with what he was doing
     if (ok) {
       if (!free) this.force -= cost;
       const cd = (s.cd ? s.cd(l) : 0) * (1 - this.cards.value('focus') / 100);

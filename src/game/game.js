@@ -169,7 +169,7 @@ export class Game {
     this.say(dest === 'hub' ? 'flyHub' : 'flyFront');
     let to = null;
     const cues = [
-      { t: 0, do: (c) => ((from.scripted = from.airborne = true), p.setAnim('run'), c.move(p, from.x, from.y, 0.7)), cam: { follow: from, x: from.x, y: from.y, dur: 0.6 } },
+      { t: 0, do: (c) => ((from.scripted = from.airborne = true), (p.scripted = true), p.setAnim('run'), c.move(p, from.x, from.y, 0.7)), cam: { follow: from, x: from.x, y: from.y, dur: 0.6 } },
       { t: 0.7, do: () => ((p.hidden = true), this.audio.play('ignite')) },
       { t: 1.0, do: (c) => (c.onFrame = (k) => (from.z = Math.min(6, from.z + k * 2.6))) },
       { t: 2.2, do: (c) => c.move(from, from.x + Math.cos(from.facing) * 9, from.y + Math.sin(from.facing) * 9, 1.4) },
@@ -200,6 +200,7 @@ export class Game {
     ];
     return new Cinema(this, { length: 6.0, cues }).play().then(() => {
       p.hidden = false;
+      p.scripted = false;
       if (to) {
         to.z = 0;
         to.scripted = to.airborne = false;
@@ -411,6 +412,7 @@ export class Game {
       amount = this.duel.filter(src, tgt, amount, opts);
       if (amount <= 0) return 0;
     }
+    const duelCap = this.duel && tgt === this.duel.foe ? Math.max(0, tgt.hp - 1) : Infinity; // the film's ending decides the duel, not a crit
     const p = this.player;
     if (tgt === p && this.cheats.god) return 0; // debug: invincible
     let crit = false;
@@ -445,7 +447,8 @@ export class Game {
       const cl = p.skillLevel('command');
       if (cl) amount *= 1 - SKILLS.command.dr(cl) / 100;
     }
-    amount = Math.max(1, Math.round(amount));
+    amount = Math.max(1, Math.round(Math.min(amount, duelCap)));
+    if (amount <= 0) return 0;
     tgt.hp -= amount;
     const feel = feelFor(opts, crit);
     tgt.flash = Math.max(tgt.flash, feel.flash);
@@ -587,6 +590,10 @@ export class Game {
     p.deathT = 0;
     p.recalc(true);
     p.action = null;
+    p.queued = null;
+    p.airborne = false; // killed mid-leap: back on the ground
+    p.z = 0;
+    p.kx = p.ky = 0;
     p.darkness = 0;
     p.saberOut = false;
     p.setAnim('idle', 1, true);

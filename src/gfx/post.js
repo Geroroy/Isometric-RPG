@@ -257,6 +257,10 @@ export class Post {
     }
     this.mixT = Math.min(1, this.mixT + dt);
     const G = GRADES[g];
+    const bloom = this.opts.bloom;
+    const w2 = Math.max(1, W >> 1);
+    const h2 = Math.max(1, H >> 1);
+    if (bloom) for (const f of this.fbos) this.sizeFbo(f, w2, h2); // before the world texture is bound: sizing binds its own
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.src);
     // a canvas's first row is its top, GL's is the bottom: flip on upload or the
@@ -265,13 +269,8 @@ export class Post {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.world);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     // bloom: bright parts at half size, blurred across and down
-    const bloom = this.opts.bloom;
     if (bloom) {
       const [a, b] = this.fbos;
-      const w2 = Math.max(1, W >> 1);
-      const h2 = Math.max(1, H >> 1);
-      this.sizeFbo(a, w2, h2);
-      this.sizeFbo(b, w2, h2);
       gl.viewport(0, 0, w2, h2);
       gl.useProgram(this.pBright.p);
       gl.uniform1i(this.pBright.u.src, 0);

@@ -338,7 +338,7 @@ export class Audio {
     // duck effects under the voice
     const t = this.ctx.currentTime;
     const g = this.sfxBus.gain;
-    const base = g.value || 1;
+    const base = this.base.sfx * this.vol.sfx; // the configured level, not the current (maybe already ducked) one
     g.cancelScheduledValues(t);
     g.setTargetAtTime(base * 0.45, t, 0.05);
     g.setTargetAtTime(base, t + clip.buf.duration, 0.3);
