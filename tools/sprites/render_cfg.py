@@ -11,7 +11,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 CFG = json.load(open(os.path.join(ROOT, 'render_config.json')))
 # bump when a change to the render scripts changes their output (a doc or
 # refactor edit must not re-render every sheet): it is part of every hash
-PIPELINE_VERSION = 2
+PIPELINE_VERSION = 3  # 3: blade occlusion rays step through the saber itself
 
 
 def setup_gpu(bpy):

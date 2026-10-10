@@ -50,6 +50,11 @@ def changed(name):
     return 'UNCHANGED' not in subprocess.run(cmd(name, '--check'), capture_output=True, text=True).stdout
 
 
+if '--blades-only' in args:  # no render: rewrite the blade stretches of the existing sheets
+    for n in names:
+        r = subprocess.run(cmd(n, '--blades-only'), capture_output=True, text=True)
+        print(next((ln for ln in r.stdout.splitlines() if ln.startswith('BLADES')), f'{n}: ' + r.stderr[-300:]), flush=True)
+    sys.exit(0)
 with ThreadPoolExecutor(4) as ex:
     todo = [n for n, c in zip(names, ex.map(changed, names)) if c]
 skipped = [n for n in names if n not in todo]

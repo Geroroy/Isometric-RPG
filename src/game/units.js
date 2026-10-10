@@ -4,6 +4,10 @@ import { dirIndex } from '../core/iso.js';
 import { SKILLS, isActive } from './skills.js';
 import { StarCards } from './perks.js';
 
+// Signature Move timing (frames of gfx/models/anakinAnims.js 'sig'): bolts are turned through
+// the spin until the hit; swing sounds on the wind-up and the pass behind the back
+export const SIG = { spin: [8, 13], hit: 11, sounds: [[4, 'light'], [8, 'heavy']] };
+
 export const UNIT_DEFS = {
   player: { name: '아나킨 스카이워커', sprite: 'anakin', team: 'rep', radius: 0.35 },
   b1: { name: 'B1 전투 드로이드', sprite: 'b1', team: 'cis', hp: 22, dmg: [3, 5], range: 7, fireCd: [1.6, 2.6], speed: 2.3, xp: 10, radius: 0.32, burst: 1, droid: true, knockRes: 1 },
@@ -734,6 +738,7 @@ export class Player extends Unit {
 
   update(dt) {
     this.baseUpdate(dt);
+    this.sigEvents();
     if (this.scripted) return; // a cutscene is moving him
     if (this.dead) {
       this.deathT += dt;
@@ -945,9 +950,29 @@ export class Player extends Unit {
 
   /** In the signature's spin, before its cut lands: the turning blade walls off bolts. */
   spinning() {
-    if (this.anim !== 'sig' || !this.sprites.anims.sig) return false;
-    const info = this.animInfo();
-    return !info.hit;
+    const f = this.sigFrame();
+    return f >= SIG.spin[0] && f < SIG.hit;
+  }
+
+  /** The Signature Move's current frame (-1 when not in it). */
+  sigFrame() {
+    if (this.anim !== 'sig' || !this.sprites.anims.sig) return -1;
+    return Math.floor(this.animInfo().raw);
+  }
+
+  /** The Signature Move's timed effects: the wind-up and the whoosh behind the back. */
+  sigEvents() {
+    const f = this.sigFrame();
+    if (f < 0) {
+      this.sigDone = -1;
+      return;
+    }
+    for (const [at, sound] of SIG.sounds) {
+      if (f >= at && this.sigDone < at) {
+        this.sigDone = at;
+        this.game.audio.play('swing', this, { heavy: sound === 'heavy', rate: sound === 'heavy' ? 0.9 : 1.3 });
+      }
+    }
   }
 }
 

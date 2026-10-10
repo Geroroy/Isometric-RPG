@@ -96,6 +96,16 @@ def render(name):
 for n, m in metas.items():  # each character's timing, for render_sprites.py
     json.dump({'anims': m['anims']}, open(os.path.join(GLB, n + '.meta.json'), 'w'))
 
+if '--blades-only' in args:  # no render: rewrite the blade stretches of the sheets that have a saber
+    for n in metas:
+        p = os.path.join(OUT, f'{n}_{window(n)[0]}.json')
+        if not os.path.exists(p) or not metas[n].get('markers'):
+            continue
+        r = subprocess.run([PY, os.path.join(HERE, 'render_sprites.py'), os.path.join(GLB, n + '.glb'), OUT, *args_of(n), '--blades-only'],
+                           capture_output=True, text=True)
+        print(next((ln for ln in r.stdout.splitlines() if ln.startswith('BLADES')), f'{n}: ' + r.stderr[-300:]), flush=True)
+    sys.exit(0)
+
 
 def changed(name):
     if FORCE or PREVIEW:

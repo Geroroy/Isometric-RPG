@@ -10,6 +10,7 @@ import { SHEET_PROPS } from '../world/cityProps.js';
 import { neonLevel } from './citySprites.js';
 import { glowSprite } from './fx.js';
 import { transientLights, relightUnits } from './relight.js';
+import { SIG } from '../game/units.js';
 
 const AMBIENT = [150, 146, 178];
 const TRAIL_LIFE = 0.13; // seconds a saber swing's afterimage lasts
@@ -320,6 +321,19 @@ export class Renderer {
     const ctx = this.ctx;
     const s = worldToScreen(u.x, u.y, u.z);
     const f = u.frame();
+    // Signature Move: the last two poses of the spin linger faintly behind him (motion blur)
+    const sf = u.anim === 'sig' && u.sigFrame ? u.sigFrame() : -1;
+    if (sf >= SIG.spin[0] + 1 && sf <= SIG.hit + 1) {
+      const a = u.sprites.anims.sig;
+      const dir = a.data.findIndex((row) => row.includes(f));
+      for (const [back, alpha] of [[2, 0.14], [1, 0.26]]) {
+        const pf = dir >= 0 && a.data[dir][sf - back];
+        if (!pf) continue;
+        ctx.globalAlpha = alpha;
+        this.drawFrame(pf, s.x, s.y);
+      }
+      ctx.globalAlpha = 1;
+    }
     this.drawFrame(f, s.x, s.y);
     if (u.flash > 0) (this.flashUnits ||= []).push(u); // white, after the light map (hitfeel.js)
     if (u.stun > 0 && !u.choke && u.kind !== 'player') {
@@ -636,7 +650,9 @@ export class Renderer {
       if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) continue;
       const f = u.frame();
       const s = worldToScreen(u.x, u.y, u.z);
-      const swinging = u.anim.startsWith('attack') || u.anim === 'leap' || u.anim === 'parry';
+      const sf = u.anim === 'sig' && u.sigFrame ? u.sigFrame() : -1;
+      // the Signature Move leaves its trail only through the spin and the cut (frames 9-13)
+      const swinging = u.anim.startsWith('attack') || u.anim === 'leap' || u.anim === 'parry' || (sf >= SIG.spin[0] + 1 && sf <= SIG.spin[1]);
       for (const k of ['saber', 'saber2']) {
         const b = f.markers[k + 'Base'];
         const e = f.markers[k + 'Tip'];

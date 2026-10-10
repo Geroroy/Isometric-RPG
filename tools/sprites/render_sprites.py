@@ -23,6 +23,10 @@ asset and override a setting only for experiments.
   --force              render even if the sheets are up to date
   --check              only print UNCHANGED / CHANGED
   --adopt              stamp the existing sheets as made from the current inputs
+  --blades-only        no render: recompute only the saber markers' visible blade
+                       stretches and write them into the existing sheets (a fix to
+                       blade_segments without re-rendering); the sheets' source stamp is
+                       left alone (use --adopt when the rest of the inputs are unchanged)
   --yes                go ahead even if the estimate is over ask_minutes
   (experiments: --engine, --samples, --render, --frames, --only-dirs, --mirror,
    --passes, --sharpen, --view, --hide)
@@ -100,7 +104,7 @@ from PIL import Image, ImageFilter, ImageOps  # noqa: E402
 ELEV = math.radians(30)
 
 
-FLAGS = {'preview', 'force', 'yes', 'check', 'adopt'}  # options without a value
+FLAGS = {'preview', 'force', 'yes', 'check', 'adopt', 'blades-only'}  # options without a value
 
 
 def parse(argv):
@@ -506,15 +510,28 @@ def to_game(co, d):
 
 
 def blade_segments(base, tip, deps):
-    """Stretches (0..1 from base to tip) of the blade not hidden behind the body."""
+    """Stretches (0..1 from base to tip) of the blade not hidden behind the body.
+
+    A ray from each sample point towards the camera; the saber's own parts
+    (blade, hilt) and anything not drawn are stepped through, so a blade behind
+    the back reads as hidden (it used to stop at the blade mesh itself and call
+    every point visible)."""
     toc = back.normalized()
     segs, start, N = [], -1, 14
     for i in range(N + 1):
         f = i / N
-        p = base.lerp(tip, f)
-        hit, loc, nrm, idx, obj, mat = scene.ray_cast(deps, p + toc * 0.004, toc)
-        name = ORIG.get(obj, obj.name if obj else '')
-        hidden = bool(hit) and obj is not None and name not in hidden_names and not name.startswith('hilt') and obj is not ground
+        p = base.lerp(tip, f) + toc * 0.004
+        hidden = False
+        for _ in range(8):  # step past the saber's own surfaces
+            hit, loc, nrm, idx, obj, mat = scene.ray_cast(deps, p, toc)
+            if not hit or obj is None or obj is ground:
+                break
+            name = ORIG.get(obj, obj.name)
+            if name in hidden_names or name.startswith(('hilt', 'blade', 'saber', 'belt_')):
+                p = loc + toc * 0.004
+                continue
+            hidden = True
+            break
         if not hidden and start < 0:
             start = f
         if (hidden or i == N) and start >= 0:
@@ -627,11 +644,12 @@ def estimate_seconds():
 
 
 est = estimate_seconds()
-print(f'ESTIMATE {NAME}: {nframes} frames × {len(WANTED)} directions = {nframes * len(WANTED)} sprites '
-      f'(+ {len(PASSES) - 1} pass(es) each), {nframes * (2 if EEVEE else 1)} renders, about {est / 60:.1f} min', flush=True)
-if est / 60 > CFG['estimate']['ask_minutes'] and not opt.get('yes') and not PREVIEW:
-    print(f'ASK: over {CFG["estimate"]["ask_minutes"]} min — confirm first, then run again with --yes', flush=True)
-    sys.exit(3)
+if not opt.get('blades-only'):
+    print(f'ESTIMATE {NAME}: {nframes} frames × {len(WANTED)} directions = {nframes * len(WANTED)} sprites '
+          f'(+ {len(PASSES) - 1} pass(es) each), {nframes * (2 if EEVEE else 1)} renders, about {est / 60:.1f} min', flush=True)
+    if est / 60 > CFG['estimate']['ask_minutes'] and not opt.get('yes') and not PREVIEW:
+        print(f'ASK: over {CFG["estimate"]["ask_minutes"]} min — confirm first, then run again with --yes', flush=True)
+        sys.exit(3)
 CAM_R = [list(r) for r in cam.matrix_world.to_3x3().inverted()]
 if MIRROR and not EEVEE:  # a mirrored direction's copy is only there for its shadow
     for d in TILES:
@@ -641,6 +659,8 @@ if MIRROR and not EEVEE:  # a mirrored direction's copy is only there for its sh
                     o.visible_camera = False
 t_char = t_shadow = 0.0
 first = None
+BLADES_ONLY = bool(opt.get('blades-only'))
+blades_out = {}  # anim -> frame -> dir -> blade stretches (--blades-only)
 done = 0
 t0 = time.time()
 meta = {}
@@ -665,6 +685,11 @@ for act in acts:
                     mk[k + 'Tip'] = to_game(wt, d)
                     bl[k] = blade_segments(wb, wt, deps)
             mks[d] = (mk, bl)
+        if BLADES_ONLY:
+            for d in WANTED:
+                src = d if d in RENDERED else mirror_of(d)
+                blades_out.setdefault(act.name, {}).setdefault(f, {})[d] = mks[src][1]
+            continue
         ts = time.time()
         if EEVEE:  # two renders: the character, then its shadow on a white floor
             shadow_mode(False)
@@ -715,6 +740,27 @@ for act in acts:
         print(f'[{done}/{nframes} frames] {act.name} f{f} — {el:.0f}s, ~{el / done * (nframes - done):.0f}s left', flush=True)
 
 t_render = time.time() - t0
+
+if BLADES_ONLY:  # write the recomputed blade stretches into the existing sheets, nothing else
+    for size in SIZES:
+        p = os.path.join(OUT, f'{NAME}_{size}.json')
+        d = json.load(open(p))
+        n = 0
+        for an, frs in blades_out.items():
+            a = d['anims'].get(an)
+            if not a:
+                continue
+            for f, dirs in frs.items():
+                if f >= len(a['frames']):
+                    continue
+                for dd, bl in dirs.items():
+                    r = a['frames'][f][dd]
+                    if r is not None:
+                        r['b'] = bl
+                        n += 1
+        json.dump(d, open(p, 'w'), separators=(',', ':'))  # 'source' left as is: the sheet is still the old render
+        print(f'BLADES {NAME}_{size}: {n} frames updated in {time.time() - T_START:.0f}s', flush=True)
+    sys.exit(0)
 
 # ----------------------------------------------------------------------------
 # Downscale, trim, pack, write
