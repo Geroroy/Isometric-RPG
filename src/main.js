@@ -1,7 +1,7 @@
 // Entry point: bake sprites, build the world, then run the game loop.
 import './style.css';
 import { applySkin } from './ui/skin.js';
-import { bakeAssets, bakeDuelAssets, bakeSkin, CHARACTERS } from './gfx/assets.js';
+import { bakeAssets, bakeDuelAssets, bakeSkin, bakeCharacter, CHARACTERS } from './gfx/assets.js';
 import { loadSheets } from './gfx/sheet.js';
 import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
@@ -77,6 +77,19 @@ async function boot() {
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
   if (look && !assets.sprites[look.sprite]) assets.sprites[look.sprite] = await bakeSkin(look.sprite, (k) => onProgress(k, '외형 준비 중…'));
+  // QA: a character baked from the pose code instead of its sheet — a new animation before its render.
+  // ?qaBake=anakin (all of it) or anakin:sig (only that animation, put into the sheet's set);
+  // a build can carry it as VITE_QA_BAKE (a playable preview of a move).
+  const qaBake = new URLSearchParams(location.search).get('qaBake') || import.meta.env.VITE_QA_BAKE;
+  if (qaBake) {
+    for (const item of qaBake.split(',')) {
+      const [n, only] = item.split(':');
+      if (only && !assets.sprites[n]) continue; // that set isn't part of this mode
+      const baked = await bakeCharacter(n, (k) => onProgress(k, '새 동작 준비 중…'), only ? only.split('+') : null);
+      if (only) Object.assign(assets.sprites[n].anims, baked.anims);
+      else assets.sprites[n] = baked;
+    }
+  }
   label.textContent = MODE === 'duel' ? DUEL_TITLES[DUEL][3] : '코러산트 · 크리스토프시스 생성 중…';
   await new Promise((r) => setTimeout(r, 20));
 

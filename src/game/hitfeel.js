@@ -17,6 +17,7 @@ export const HITFEEL = {
   shock: { hitstop: 1, shake: 0.5, flash: 0.08, push: 0.5, knock: 1 },
   explosive: { hitstop: 2, shake: 0, flash: 0.12, push: 0, knock: 1 }, // the explosion shakes on its own
   duel: { hitstop: 3, shake: 3, flash: 0.1, push: 1.5, knock: 1 },
+  signature: { hitstop: 5, shake: 3, flash: 0.12, push: 2.4, knock: 1.2 }, // the landing cut: a short, hard freeze
   clash: { hitstop: 3, shake: 2.5, flash: 0, push: 0, knock: 0 }, // blade on blade (no damage)
   deflect: { hitstop: 1, shake: 0.8, flash: 0, push: 0, knock: 0 }, // a bolt turned by the saber
 };

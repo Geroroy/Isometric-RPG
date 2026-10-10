@@ -345,8 +345,8 @@ export const ANAKIN_DUAL_ANIMS = bake(GUARD2, {
   // skills also used while dual-wielding: Obi-Wan's saber stays low in the left hand
   throw: { ...ANAKIN_ANIMS.throw, pose: (t) => pose(ANAKIN_ANIMS.throw.pose(t), { sab2: [0.05, 1.0, -0.33, -2.5, -0.35] }) },
   leap: { ...ANAKIN_ANIMS.leap, pose: (t) => pose(ANAKIN_ANIMS.leap.pose(t), { two: 0, sab2: [0.1, 1.2, -0.35, -2.2, 0.2] }) },
-  sigF: { ...ANAKIN_ANIMS.sigF, pose: (t) => pose(ANAKIN_ANIMS.sigF.pose(t), { two: 0, sab2: [0.1, 1.0, -0.35, -2.4, -0.3] }) },
-  sigB: { ...ANAKIN_ANIMS.sigB, pose: (t) => pose(ANAKIN_ANIMS.sigB.pose(t), { two: 0, sab2: [0.1, 1.0, -0.35, -2.4, -0.3] }) },
+  // dual wield: the second blade rides along in the left hand, held low and back (the left hand can't plant)
+  sig: { ...ANAKIN_ANIMS.sig, pose: (t) => pose(ANAKIN_ANIMS.sig.pose(t), { two: 0, sab2: [0.1, 1.0, -0.35, -2.4, -0.3] }) },
   death: ANAKIN_ANIMS.death,
 });
 

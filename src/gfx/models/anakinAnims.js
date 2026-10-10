@@ -171,46 +171,152 @@ const combo = (wind, hit, follow, hitAt = 0.6) =>
   ]);
 
 // ---------------------------------------------------------------------------
-// Signature onslaught: sigF (the twirl and diagonal cut) and sigB (the kneeling
-// sweep back up into the guard), alternating.
+// The signature (Anakin's Strike / the Ana-Obi attack, "The Clone Wars: The
+// Chosen One" pillar duel, reference frames 17.17-18.07 s): a wrist circle on
+// the right side while the whole body turns once to the left on the right
+// foot, landing on the left foot; the low flat cut comes as the body turns
+// back to the right, and he settles onto the right foot, left knee and left
+// hand. Keyframes (seconds, the film's 30 fps; θ = body turn to the left,
+// φ = blade angle in the body's side plane, 0 forward, + up):
+//   0.00  guard, facing the foe                     θ 0     φ 1.92 (guard)
+//   0.12  blade dropped low in front, coiling        θ 45°   φ -1.2
+//   0.24  back to the foe, pivoting on the right     θ 180°  φ -3.7 (up behind)
+//   0.34  over the top, left foot lands              θ 300°  φ -5.6
+//   0.38  flat cut at knee height (the hit)          θ 360°  blade level, sweeping right
+//   0.46  down on right foot, left knee, left hand   θ 340°  blade flowing up to the right
+//   0.86  held low, blade raised behind              θ 340°
+//   1.20  back up into the guard                     θ 360°
+// It is authored here as its own pose function (not keyed specs): the body
+// turn moves the feet's frame, so feet are given on the ground (root frame,
+// +X towards the foe) and turned into the body's frame for the leg IK, and the
+// hilt is given in the body's frame and turned out to the root's.
 
-const SIG_RISE = S(LOW_HANG, { d: -0.12, spine: [0, 0.15, -0.06], chest: [0, 0.1, -0.02], head: [0, -0.2, 0.06], sab: [0.36, 1.32, 0.06, 0.35, 1.5] });
-const SIG_LOOP = S(GUARD, ARM_OUT, { two: 0, d: -0.1, spine: [0, -0.15, 0.04], chest: [0, -0.2, 0.04], head: [0, 0.0, -0.04], sab: [0.06, 1.78, -0.02, -2.4, 0.55], poleR: [0.2, -0.2, 1] });
-const SIG_CUT = S(GUARD, {
-  x: 0.16,
-  d: -0.2,
-  fL: [0.48, -0.24],
-  spine: [0, 0.3, -0.24],
-  chest: [0, 0.32, -0.1],
-  head: [0, -0.4, 0.08],
-  sab: [0.55, 1.12, 0.1, 0.4, -0.3],
-});
-const SIG_END = S(SIG_CUT, { spine: [0, -0.3, -0.2], chest: [0, -0.3, -0.08], head: [0, 0.2, 0.08], sab: [0.3, 0.86, 0.44, 1.45, -0.75], two: 0, ...ARM_OUT });
-const SIG_F = seq([
-  { t: 0, s: GUARD },
-  { t: 0.2, s: LOW_HANG, e: out },
-  { t: 0.42, s: SIG_RISE, e: inn },
-  { t: 0.58, s: SIG_LOOP, e: lin },
-  { t: 0.73, s: SIG_CUT, e: inn },
-  { t: 1, s: SIG_END, e: out },
-]);
+const SIG_LEN = 1.2; // seconds
+const SIG_FRAMES = 30;
+const SIG_HIT_FRAME = 9;
+const SIG_HIT = (SIG_HIT_FRAME / (SIG_FRAMES - 1)) * SIG_LEN; // ≈ 0.372 s: the level cut lands on a frame
 
-const KNEEL = {
-  x: 0.12,
-  d: -0.44,
-  fL: [0.44, -0.2],
-  fR: [-0.52, 0.24, 0.06, 0.9],
+/** Smooth piecewise curve through [time, value] keys (ease in-out per span). */
+function curve(keys, ease = io) {
+  return (s) => {
+    if (s <= keys[0][0]) return keys[0][1];
+    for (let i = 0; i < keys.length - 1; i++) {
+      const [ta, a] = keys[i];
+      const [tb, b] = keys[i + 1];
+      if (s <= tb) {
+        const u = (typeof ease === 'function' ? ease : ease[i] || io)((s - ta) / (tb - ta));
+        return Array.isArray(a) ? a.map((v, k) => v + (b[k] - v) * u) : a + (b - a) * u;
+      }
+    }
+    return keys[keys.length - 1][1];
+  };
+}
+
+// body turn: a quick coil, the spin accelerating through the back, the snap
+// back to the right on the cut, then the hold and the turn home
+const sigTurn = curve(
+  [[0, 0], [0.12, 0.8], [0.24, PI], [0.33, 5.25], [SIG_HIT, TAU], [0.46, TAU - 0.35], [0.86, TAU - 0.35], [1.2, TAU]],
+  [out, lin, lin, inn, out, lin, io],
+);
+// the blade's direction on the ground's frame (+X towards the foe), [yaw, pitch],
+// read off the reference: from the guard it drops back and low behind him, rises
+// behind and over his head as he turns his back, comes over the top and down in
+// front to the level cut (yaw π with pitch past 90° = pointing forward)
+const sigBladeIn = curve(
+  [[0, [PI + 0.3, 1.22]], [0.13, [PI, -0.15]], [0.17, [PI, 0.1]], [0.23, [PI, 0.9]], [0.27, [PI, 1.57]], [0.3, [PI, 2.2]], [0.335, [PI, 2.75]], [SIG_HIT, [PI, PI]]],
+  [out, lin, lin, lin, lin, lin, inn],
+);
+// after the cut it carries on round to his right and up behind him, held there, then home
+const sigBladeOut = curve([[SIG_HIT, [0, 0]], [0.43, [1.3, 0.15]], [0.52, [2.6, 0.9]], [0.86, [2.7, 1.0]], [1.2, [0.3, 1.92]]], [out, out, lin, io]);
+// the hilt in the body's frame: in the right hand at the side, reaching out for the cut
+const sigHilt = curve(
+  [[0, [0.2, 1.3, 0.18]], [0.13, [0.1, 1.1, 0.42]], [0.27, [0.16, 1.32, 0.4]], [0.335, [0.34, 1.08, 0.32]], [SIG_HIT, [0.5, 0.82, 0.12]], [0.43, [0.38, 0.76, 0.42]], [0.52, [0.12, 0.92, 0.46]], [0.86, [0.1, 0.96, 0.44]], [1.2, [0.2, 1.3, 0.18]]],
+  [out, lin, inn, inn, out, out, lin, io],
+);
+// the right foot is the pivot until the left lands; then the right steps in
+const PIVOT = [-0.22, 0.2];
+const sigFR = curve([[0, PIVOT], [0.34, PIVOT], [0.4, [0.3, 0.2]], [0.46, [0.38, 0.22]], [0.86, [0.38, 0.22]], [1.2, [-0.3, 0.26]]], [lin, inn, out, lin, io]);
+const sigFRlift = curve([[0, 0], [0.34, 0], [0.37, 0.12], [0.42, 0], [1.2, 0]], [lin, out, inn, lin]);
+// the left swings round (lifted) and lands forward-left, then slides back to kneel
+const sigFL = curve(
+  [[0, [0.3, -0.24]], [0.12, [0.15, -0.38]], [0.24, [-0.42, -0.02]], [0.34, [0.36, -0.34]], [0.4, [0.2, -0.3]], [0.48, [-0.62, -0.16]], [0.86, [-0.62, -0.16]], [1.2, [0.3, -0.24]]],
+  [out, lin, lin, out, inn, lin, io],
+);
+const sigFLlift = curve([[0, 0], [0.08, 0.06], [0.24, 0.28], [0.34, 0], [0.4, 0], [0.44, 0.04], [0.48, 0], [0.86, 0], [1.03, 0.12], [1.2, 0]], [out, lin, inn, lin, out, inn, lin, out, inn]);
+const sigFLtoe = curve([[0, 0], [0.4, 0], [0.48, 1.25], [0.86, 1.25], [1.0, 0], [1.2, 0]], [lin, out, lin, io, lin]);
+// pelvis: crouching into the spin, rising a little through it, dropping onto the knee
+const sigD = curve([[0, -0.12], [0.12, -0.22], [0.24, -0.18], [0.33, -0.3], [SIG_HIT, -0.4], [0.46, -0.56], [0.86, -0.56], [1.2, -0.12]], [out, lin, inn, inn, out, lin, io]);
+// torso lean (rz < 0 forward) and twist; the head keeps finding the foe
+const sigLean = curve([[0, -0.08], [0.12, -0.24], [0.33, -0.24], [SIG_HIT, -0.4], [0.46, -0.48], [0.86, -0.38], [1.2, -0.08]], [out, lin, inn, out, lin, io]);
+const sigTwist = curve([[0, 0.24], [0.12, 0.35], [0.33, 0.25], [SIG_HIT, -0.1], [0.46, -0.45], [0.86, -0.35], [1.2, 0.24]], [out, lin, inn, out, lin, io]);
+
+/** Root-frame point -> body frame (the body turned by θ about Y, its origin at [bx, bz]). */
+const toBody = (x, z, th, bx, bz) => {
+  const dx = x - bx;
+  const dz = z - bz;
+  return [dx * cos(th) - dz * sin(th), dx * sin(th) + dz * cos(th)];
 };
-const SIG_KWIND = S(SIG_END, KNEEL, { spine: [0, -0.5, -0.24], chest: [0, -0.45, -0.1], head: [0, 0.35, 0.1], sab: [0.02, 0.72, 0.46, 2.2, -0.12], shL: [0.4, 0, 1.0], elL: [0, 0, 0.2] });
-const SIG_KHIT = S(SIG_KWIND, { spine: [0, 0.2, -0.28], chest: [0, 0.2, -0.1], head: [0, -0.2, 0.1], sab: [0.58, 0.62, 0.02, -0.15, -0.12], shL: [0.9, 0, 0.0] });
-const SIG_KFOLLOW = S(SIG_KHIT, { spine: [0, 0.6, -0.24], chest: [0, 0.5, -0.08], head: [0, -0.6, 0.1], sab: [0.26, 0.68, -0.46, -1.6, 0.06], shL: [1.1, 0, -0.4] });
-const SIG_B = seq([
-  { t: 0, s: SIG_END },
-  { t: 0.3, s: SIG_KWIND, e: out },
-  { t: 0.55, s: SIG_KHIT, e: inn },
-  { t: 0.74, s: SIG_KFOLLOW, e: out },
-  { t: 1, s: GUARD, e: io },
-]);
+/** Body-frame point -> root frame. */
+const toRoot = (x, z, th, bx, bz) => [bx + x * cos(th) + z * sin(th), bz - x * sin(th) + z * cos(th)];
+
+function signature(t) {
+  const s = t * SIG_LEN;
+  const th = sigTurn(s);
+  const d = sigD(s);
+  // the body's centre: over the pivot foot while turning, then between the feet
+  const fR = sigFR(s);
+  const fL = sigFL(s);
+  const w = clamp((s - 0.34) / 0.12, 0, 1) * (1 - clamp((s - 0.86) / 0.34, 0, 1));
+  const spinC = toRoot(0.02, -0.1, th, PIVOT[0], PIVOT[1]); // body centre with the right foot under the right hip
+  const homeC = [(fL[0] + fR[0]) / 2 + 0.06, (fL[1] + fR[1]) / 2 - 0.0];
+  const k = s < 0.34 ? clamp(s / 0.12, 0, 1) : 1 - w;
+  const bx = (spinC[0] * k + homeC[0] * (1 - k)) * (s < 0.34 ? 1 : 1) * (s < 0.34 ? 1 : 1);
+  const bz = spinC[1] * k + homeC[1] * (1 - k);
+  const [blx, blz] = toBody(fL[0], fL[1], th, bx, bz);
+  const [brx, brz] = toBody(fR[0], fR[1], th, bx, bz);
+  const hy = HIP + d - 0.05;
+  const [hipL, knL, anL] = leg(0, hy, -0.1, [blx, blz, sigFLlift(s), sigFLtoe(s)]);
+  const [hipR, knR, anR] = leg(0, hy, 0.1, [brx, brz, sigFRlift(s), 0]);
+
+  // the blade: hilt in the body's frame (it turns with him), direction on the ground's frame
+  const hilt = sigHilt(s);
+  const [hy0, hz0] = [hilt[1] + (d - sigD(s < SIG_HIT ? 0 : SIG_HIT)) * (s < SIG_HIT ? 0.5 : 1), 0];
+  const [hx, hz] = toRoot(hilt[0], hilt[2], th, bx, bz);
+  const [byaw, bpitch] = s < SIG_HIT ? sigBladeIn(s) : sigBladeOut(s);
+  const rootSab = [hx, hy0 + hz0, hz, byaw, bpitch];
+  const two = s < 0.05 || s > 1.12 ? 1 : 0;
+  const pr = [0.1, -0.6, 1];
+  const [prx, prz] = toRoot(pr[0], pr[2], th, 0, 0);
+
+  // the free left arm: out to balance in the spin, then planted on the ground
+  const plant = clamp((s - 0.4) / 0.08, 0, 1) * (1 - clamp((s - 0.9) / 0.2, 0, 1));
+  const spread = s < 0.06 ? s / 0.06 : 1;
+  const shL = [0.9 * spread * (1 - plant) + 0.15 * plant, 0, 0.2 * (1 - plant) + 0.95 * plant];
+  const elL = [0, 0, 0.35 * (1 - plant) + 0.12 * plant];
+
+  return {
+    body: [0, th, 0],
+    bodyX: bx,
+    bodyZ: bz,
+    pelvisY: d,
+    hipL,
+    knL,
+    anL,
+    hipR,
+    knR,
+    anR,
+    spine: [0, sigTwist(s), sigLean(s)],
+    chest: [0, sigTwist(s) * 0.6, sigLean(s) * 0.4],
+    neck: [0, 0, 0.04],
+    head: [0, -sigTwist(s) * 1.2, 0.08 - sigLean(s) * 0.4],
+    sab: rootSab,
+    poleR: [prx, pr[1], prz],
+    two,
+    shL,
+    elL,
+    haL: [0, 0, 0.3 * plant],
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Force push: the blade trails low in the right hand, the left hand gathers at
@@ -509,8 +615,8 @@ export const ANAKIN_ANIMS = {
   attack1: { frames: 11, fps: 23, loop: false, hit: 6, pose: combo(A1_WIND, A1_HIT, A1_FOLLOW) },
   attack2: { frames: 11, fps: 23, loop: false, hit: 6, pose: combo(A2_WIND, A2_HIT, A2_FOLLOW) },
   attack3: { frames: 12, fps: 22, loop: false, hit: 7, pose: combo(A3_WIND, A3_HIT, A3_FOLLOW, 0.62) },
-  sigF: { frames: 11, fps: 26, loop: false, hit: 7, pose: SIG_F },
-  sigB: { frames: 10, fps: 30, loop: false, hit: 5, pose: SIG_B },
+  // 30 frames over 1.2 s; frame 9 (0.37 s, the blade level at the foe's knees) is the only hit
+  sig: { frames: SIG_FRAMES, fps: SIG_FRAMES / SIG_LEN, loop: false, hit: SIG_HIT_FRAME, pose: signature },
   cast: { frames: 10, fps: 20, loop: false, hit: 5, pose: CAST },
   throw: { frames: 10, fps: 22, loop: false, hit: 5, pose: THROW },
   leap: { frames: 10, fps: 14, loop: false, pose: LEAP },

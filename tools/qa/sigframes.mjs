@@ -1,13 +1,14 @@
 // The signature move frame by frame: (a) every sprite frame of its animations
 // rendered deterministically at two facings, (b) a real-time run captured
 // every ~50 ms with the trail, lunge and hitstop. Geonosis duel, Dooku held.
-//   npm run dev; node tools/qa/sigframes.mjs <out_dir> [skill=signature]
+//   npm run dev; node tools/qa/sigframes.mjs <out_dir> [skill=signature] [?qaBake=anakinDual]
 import { chromium } from 'playwright-core';
 import fs from 'fs';
 import path from 'path';
 
 const out = process.argv[2] || 'tools/qa/out/sig';
 const skill = process.argv[3] || 'signature';
+const query = process.argv[4] || ''; // e.g. '?qaBake=anakinDual' to see the pose code before the sheet is rendered
 fs.mkdirSync(out, { recursive: true });
 function findChrome(dir) {
   for (const d of fs.readdirSync(dir)) {
@@ -19,7 +20,7 @@ const browser = await chromium.launch({ executablePath: findChrome('/opt/pw-brow
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errs = [];
 page.on('pageerror', (e) => errs.push(e.message));
-await page.goto('http://127.0.0.1:5173/#duel');
+await page.goto('http://127.0.0.1:5173/' + query + '#duel');
 await page.waitForFunction(() => window.__ready, null, { timeout: 600000 });
 await page.click('#startBtn');
 await page.waitForTimeout(800);

@@ -838,7 +838,15 @@ export class Player extends Unit {
           if (info.hit && !act.fired) {
             act.fired = true;
             const reach = this.radius + (t ? t.radius : 0) + 1.5;
-            if (t && !t.dead && dist(this.x, this.y, t.x, t.y) <= reach) {
+            if (hit.sweep) {
+              // a flat cut: everyone in the half circle in front, within the blade's reach
+              for (const u of g.hostilesInRadius(this, this.x, this.y, hit.sweep)) {
+                const a = Math.atan2(u.y - this.y, u.x - this.x);
+                if (Math.abs(angleDiff(a, this.facing)) > Math.PI / 2) continue;
+                g.damage(this, u, this.weaponDamage() * hit.mult, { type: 'saber', feel: hit.feel, stun: hit.stun, pressure: hit.pressure });
+                if (hit.onHit) hit.onHit(u);
+              }
+            } else if (t && !t.dead && dist(this.x, this.y, t.x, t.y) <= reach) {
               g.damage(this, t, this.weaponDamage() * hit.mult, { type: 'saber', heavy: hit.anim === 'attack3', stun: hit.stun, pressure: hit.pressure });
               if (hit.onHit) hit.onHit(t);
             }
@@ -933,6 +941,13 @@ export class Player extends Unit {
   canDeflect() {
     if (this.dead || this.saberOut || !this.saberLit || this.stun > 0 || this.choke) return false;
     return true;
+  }
+
+  /** In the signature's spin, before its cut lands: the turning blade walls off bolts. */
+  spinning() {
+    if (this.anim !== 'sig' || !this.sprites.anims.sig) return false;
+    const info = this.animInfo();
+    return !info.hit;
   }
 }
 

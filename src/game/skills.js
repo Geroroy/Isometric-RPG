@@ -80,27 +80,26 @@ export const SKILLS = {
   },
   signature: {
     tree: 0, row: 3, col: 0, max: 20, kind: 'active', target: 'enemy', icon: 'signature', prereq: ['djemso'],
-    name: '선택받은 자의 연격', en: "Skywalker's Onslaught",
-    lore: '에피소드 III의 아나킨. 앞뒤로 쉴 새 없이 세이버를 휘두르며 밀어붙여 상대의 방어를 무너뜨린다.',
-    cost: (l) => Math.round(12 + l * 0.6),
+    name: '아나킨의 일격', en: "Anakin's Strike",
+    lore: '클론 전쟁, 코러산트의 기둥 사이에서 오비완에게 보인 그 기술. 몸 오른쪽으로 검을 크게 돌리며 한 바퀴 돌아 등을 보였다가, 착지와 함께 무릎을 꿇으며 낮고 평평하게 베어 낸다.',
+    cost: (l) => Math.round(14 + l * 0.6),
     cd: () => 6,
-    hits: (l) => 6 + Math.floor(l / 5),
-    mult: (l, p) => (0.55 + l * 0.05) * (1 + 0.04 * (p?.skillLevel('djemso') || 0)),
+    mult: (l, p) => (2.4 + l * 0.2) * (1 + 0.04 * (p?.skillLevel('djemso') || 0)),
     lines: (l, s, p) => [
-      [`앞뒤 연속 베기 ${s.hits(l)}회, 타격당 무기 피해의 ${pct(s.mult(l, p) * 100)}`],
+      [`회전 후 낮은 수평 베기: 앞쪽 반원 안의 모든 적에게 무기 피해의 ${pct(s.mult(l, p) * 100)}`],
+      ['회전하는 동안 블래스터 볼트를 모두 튕겨냄'],
       ['막히면 상대의 평정을 크게 깎음 (결투)'],
       ['시너지: 젬 소 내려치기 레벨당 +4%'],
       [`포스 소모 ${s.cost(l)} · 재사용 ${s.cd(l)}초`],
     ],
     cast(game, p, l, tx, ty, target) {
       if (!target) return false;
-      const m = this.mult(l, p);
-      const hits = [];
-      for (let i = 0; i < this.hits(l); i++) hits.push({ anim: i % 2 ? 'sigB' : 'sigF', speed: 1 + i * 0.04, mult: i === this.hits(l) - 1 ? m * 1.6 : m, pressure: 2.2, lunge: 0.35 });
-      p.startMelee(target, hits);
+      // one move, one hit: the level cut at the end of the spin (gfx/models/anakinAnims.js 'sig')
+      p.startMelee(target, [{ anim: 'sig', speed: 1, mult: this.mult(l, p), sweep: 2.4, feel: 'signature', pressure: 3, lunge: 0.25 }]);
       return true;
     },
   },
+
   throw: {
     tree: 0, row: 2, col: 1, max: 20, kind: 'active', target: 'point', icon: 'throw', prereq: ['flurry'],
     name: '세이버 투척', en: 'Saber Throw',

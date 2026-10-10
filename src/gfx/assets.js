@@ -2,7 +2,7 @@
 // into sprite atlases, reporting progress for the loading screen.
 import { Baker } from './baker.js';
 import { PROPS, buildPropVariants, buildLaat } from './models/props.js';
-import { CHARACTERS, DUELS, SKINS } from './specs.js';
+import { CHARACTERS, DUELS, SKINS, DUEL_CHARACTERS } from './specs.js';
 import { RNG } from '../core/math.js';
 import { loadBundle, saveBundle, loadShipped } from './assetCache.js';
 import { sheetIndex, loadSheets } from './sheet.js';
@@ -115,6 +115,24 @@ export async function bakeSkin(name, onProgress) {
   const specs = { [name]: SKINS[name]() };
   const sprites = await bakeCharacters(baker, specs, progress(onProgress, frameCost(specs)));
   saveBundle(name, { sprites });
+  baker.dispose();
+  return sprites[name];
+}
+
+/**
+ * QA only (`?qaBake=anakin` or `anakin:sig`): bake a character in the browser
+ * from the game's own model and pose code even though it has a Blender sheet —
+ * to see a new animation in play before its sheet is rendered. `only` limits
+ * the bake to those animations. Not cached.
+ */
+export async function bakeCharacter(name, onProgress, only = null) {
+  const make = CHARACTERS[name] || SKINS[name] || DUEL_CHARACTERS[name];
+  if (!make) throw new Error('no character ' + name);
+  const baker = new Baker();
+  const spec = make();
+  if (only) spec.anims = Object.fromEntries(Object.entries(spec.anims).filter(([k]) => only.includes(k)));
+  const specs = { [name]: spec };
+  const sprites = await bakeCharacters(baker, specs, progress(onProgress, frameCost(specs)));
   baker.dispose();
   return sprites[name];
 }

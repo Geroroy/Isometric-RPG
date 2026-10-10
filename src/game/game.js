@@ -765,7 +765,7 @@ export class Game {
           if (u.dead || u.team === b.team || u.untargetable) continue;
           if (Math.abs(u.x - b.x) > 0.6 || Math.abs(u.y - b.y) > 0.6) continue;
           if (dist(u.x, u.y, b.x, b.y) > u.radius + 0.12) continue;
-          if (u === this.player && u.canDeflect() && chance(u.deflectChance())) {
+          if (u === this.player && u.canDeflect() && (u.spinning() || chance(u.deflectChance()))) { // the signature's spin turns every bolt
             this.deflect(u, b);
           } else {
             this.damage(b.owner, u, b.dmg, { type: 'blaster' });
