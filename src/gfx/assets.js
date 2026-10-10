@@ -4,7 +4,7 @@ import { Baker } from './baker.js';
 import { PROPS, buildPropVariants, buildLaat } from './models/props.js';
 import { CHARACTERS, DUELS, SKINS } from './specs.js';
 import { RNG } from '../core/math.js';
-import { loadBundle, saveBundle } from './assetCache.js';
+import { loadBundle, saveBundle, loadShipped } from './assetCache.js';
 import { sheetIndex, loadSheets } from './sheet.js';
 
 export { CHARACTERS, DUELS, DUEL_CHARACTERS, SKINS } from './specs.js';
@@ -47,6 +47,12 @@ export async function bakeAssets(onProgress) {
   if (cached) {
     onProgress(1, '저장된 스프라이트 불러옴');
     return cached;
+  }
+  // shipped pre-baked with the game: nothing to bake on this device
+  const shipped = await loadShipped('core');
+  if (shipped) {
+    onProgress(1, '스프라이트 불러옴');
+    return shipped;
   }
   const baker = new Baker();
   // characters with a Blender sprite sheet are loaded instead (main.js), not baked

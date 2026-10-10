@@ -258,8 +258,8 @@ async function boot() {
 }
 
 // Offline cache / installable app (only on a real web host, never in dev).
-if (import.meta.env.PROD && 'serviceWorker' in navigator && location.protocol === 'https:') {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
+if (import.meta.env.PROD && 'serviceWorker' in navigator && window.isSecureContext) {
+  navigator.serviceWorker.register('./sw.js?v=' + __BUILD__).catch(() => {}); // a new build: a fresh cache (sw.js)
 }
 
 boot().catch((err) => {

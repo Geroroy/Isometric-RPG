@@ -101,3 +101,34 @@ export async function loadBundle(name) {
     return null;
   }
 }
+
+const BAKED = 'sprites/baked/';
+
+/**
+ * The bundle shipped with the game (tools/bake_core.mjs), so a device doesn't
+ * bake on its first launch or after an update. Used only while its hash
+ * matches the current sources; `?bake` skips it (that's how the tool makes it).
+ */
+export async function loadShipped(name) {
+  if (/[?&]bake\b/.test(location.search)) return null;
+  try {
+    const res = await fetch(import.meta.env.BASE_URL + BAKED + name + '.json');
+    if (!res.ok) return null;
+    const meta = await res.json();
+    if (meta.hash !== SOURCE_HASH) {
+      console.warn(`sprite cache: shipped '${name}' bundle is stale (${meta.hash} ≠ ${SOURCE_HASH}) — run tools/bake_core.mjs`);
+      return null;
+    }
+    const pages = await Promise.all(
+      meta.pages.map((p) =>
+        fetch(import.meta.env.BASE_URL + BAKED + p)
+          .then((r) => r.blob())
+          .then((b) => createImageBitmap(b)),
+      ),
+    );
+    return decode(meta.json, pages);
+  } catch (e) {
+    console.warn('sprite cache: shipped bundle failed', e);
+    return null;
+  }
+}
