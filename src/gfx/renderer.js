@@ -716,7 +716,7 @@ export class Renderer {
         if (L.over) {
           // high overhead: a small craft, a white headlight and a coloured tail light
           const b = worldToScreen(x - ux * 0.5, y - uy * 0.5, L.z);
-          const col = SPEEDER_COLORS[(i + Math.floor(t * L.speed / L.gap)) % SPEEDER_COLORS.length];
+          const col = SPEEDER_COLORS[(((i + Math.floor((t * L.speed) / L.gap)) % SPEEDER_COLORS.length) + SPEEDER_COLORS.length) % SPEEDER_COLORS.length];
           this.glowLine(ctx, b.x - cam.x, b.y - cam.y, a.x - cam.x, a.y - cam.y, col, 0.4, 'rgba(255,250,240,0.6)');
           continue;
         }

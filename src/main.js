@@ -11,6 +11,7 @@ import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
 import { Game } from './game/game.js';
 import { Renderer } from './gfx/renderer.js';
+import { Post } from './gfx/post.js';
 import { Portrait } from './gfx/portrait.js';
 import { HUD } from './ui/hud.js';
 import { Input } from './core/input.js';
@@ -101,6 +102,7 @@ async function boot() {
   const canvas = document.getElementById('world');
   const overlay = document.getElementById('overlay');
   const renderer = (game.renderer = new Renderer(game, assets, canvas, overlay));
+  const post = (renderer.post = new Post(canvas, game)); // LUT, bloom, vignette, grain (options)
   const portrait = new Portrait();
   const photo = new PortraitPhoto(portrait);
   await photo.init();
@@ -217,7 +219,7 @@ async function boot() {
   let titleT = 0;
   const reported = new Set();
   const loop = (now) => {
-    const dt = Math.min(0.05, (now - last) / 1000);
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); // the first frame can stamp before `last`
     last = now;
     input.update(dt);
     touch.update(dt);
@@ -238,7 +240,7 @@ async function boot() {
     const paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
     // one failing system must not freeze the whole game: report it once, keep running
     requestAnimationFrame(loop);
-    for (const step of [() => paused || game.update(dt), () => renderer.render(dt), () => hud.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update(), () => duelHud && duelHud.update(dt)]) {
+    for (const step of [() => paused || game.update(dt), () => renderer.render(dt), () => post.render(dt), () => hud.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update(), () => duelHud && duelHud.update(dt)]) {
       try {
         step();
       } catch (err) {

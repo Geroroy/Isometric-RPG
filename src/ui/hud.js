@@ -418,6 +418,15 @@ export class HUD {
         <p class="set-note">이 기기에 저장됩니다. 대사 음성·효과음 파일을 직접 넣는 방법은 <code>public/audio/README.md</code>를 참고하세요.</p>
       </section>
       <section class="set-card">
+        <h4>화면 효과</h4>
+        <label class="set-toggle"><input type="checkbox" data-post="grade"> 행성별 색 보정 (LUT)</label>
+        <label class="set-toggle"><input type="checkbox" data-post="bloom"> 빛 번짐 (블룸)</label>
+        <label class="set-toggle"><input type="checkbox" data-post="vignette"> 비네팅</label>
+        <label class="set-toggle"><input type="checkbox" data-post="grain"> 필름 그레인</label>
+        <label class="set-toggle"><input type="checkbox" data-post="fps"> FPS 표시</label>
+        <p class="set-note" id="postNote">이 기기에 저장됩니다. 느린 기기에서는 끄면 가벼워집니다.</p>
+      </section>
+      <section class="set-card">
         <h4>개발자</h4>
         <p class="set-note">스킬 · 음악 해금, 무적, 순간 이동 같은 테스트용 기능입니다. 언제든 <kbd>\`</kbd> 키로도 열 수 있습니다.</p>
         <button type="button" class="btn-ghost" id="openDebug">디버그 모드</button>
@@ -469,6 +478,13 @@ export class HUD {
     spOn.disabled = !(sp && sp.available);
     spOn.addEventListener('change', (e) => sp && sp.setOn(e.target.checked));
     $('#speechVoice').textContent = !sp || !sp.available ? '(이 브라우저는 음성 합성을 지원하지 않음)' : '';
+    const post = this.renderer.post;
+    o.querySelectorAll('[data-post]').forEach((cb) => {
+      cb.checked = !!post.opts[cb.dataset.post];
+      if (!post.ok && cb.dataset.post !== 'fps') cb.disabled = true;
+      cb.addEventListener('change', () => post.set(cb.dataset.post, cb.checked));
+    });
+    if (!post.ok) $('#postNote').textContent = '이 기기에서는 WebGL을 쓸 수 없어 화면 효과가 꺼져 있습니다.';
     $('#openDebug').addEventListener('click', () => this.toggle('debug', true));
     $('#openHelp').addEventListener('click', () => {
       this.toggle('settings', false);

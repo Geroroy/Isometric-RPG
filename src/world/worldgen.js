@@ -435,6 +435,7 @@ export class Arena extends World {
     this.rng = new RNG(this.seed);
     const { x: cx, y: cy, r } = ARENA;
     this.ambient = [104, 118, 104];
+    this.grade = 'geonosis'; // post.js colour grade
     this.pois.push({ x: cx, y: cy, r: 30, name: BIOME_NAMES[BIOME.HANGAR] });
     for (let y = 0; y < MAP_H; y++) {
       for (let x = 0; x < MAP_W; x++) {
@@ -497,6 +498,7 @@ export class MustafarArena extends World {
     const M = MUSTAFAR;
     const { deck, hallway, hall, door, control, balcony, arm, river, bank } = M;
     this.ambient = [150, 86, 70];
+    this.grade = 'mustafar';
     this.pois.push({ x: deck.x, y: deck.y, r: 12, name: BIOME_NAMES[BIOME.MUSTAFAR] });
     this.pois.push({ x: hall.x, y: hall.y, r: 9, name: '무스타파 · 분리주의 회의실' });
     this.pois.push({ x: control.x, y: control.y, r: 8, name: '무스타파 · 제어실' });
@@ -630,6 +632,7 @@ export class CityHub extends World {
     const rng = this.rng;
     const { up, low, pad, liftUp, liftLow, bar, shaft } = CITY;
     this.ambient = [96, 100, 128];
+    this.grade = 'coruscant'; // the undercity below y 90 grades as 'undercity'
     this.city = true;
     const inRect = (x, y, r) => Math.abs(x - r.x) <= r.hw && Math.abs(y - r.y) <= r.hh;
     for (let y = 0; y < MAP_H; y++) {
