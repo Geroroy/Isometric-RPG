@@ -47,6 +47,22 @@
     "render_scale": 2.5,
     "light": 2.4
   },
+  "ui": {
+    "_doc": "The console's UI pieces (tools/ui/render_ui.py): one atlas render, cut into 9-slice PNGs in public/ui. rig: the characters' lights in camera space (right, up, toward the camera), ART_GUIDE.md §3.",
+    "samples": { "cpu": 64, "gpu": 256 },
+    "denoiser": "OPENIMAGEDENOISE",
+    "render_scale": 3.0,
+    "sharpen": 0.3,
+    "estimate_seconds_per_mpx": 12,
+    "rig": {
+      "lights": {
+        "key": { "dir": [-0.9, 1.35, 0.55], "strength": 4.2, "color": [1.0, 0.95, 0.88], "angle": 6 },
+        "rim": { "dir": [0.7, 0.55, -1.0], "strength": 3.0, "color": [0.72, 0.84, 1.0], "angle": 6 },
+        "fill": { "dir": [0.6, 0.3, 1.0], "strength": 0.7, "color": [0.85, 0.9, 1.0], "shadow": false }
+      },
+      "sky": { "color": [0.198, 0.209, 0.242], "strength": 1.0 }
+    }
+  },
   "preview": {
     "_doc": "--preview: a quick look at a new feature instead of a full render — one direction (front: facing the camera), two frames of each animation, written to tools/sprites/out/preview.",
     "dir": "front",

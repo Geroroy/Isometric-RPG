@@ -120,8 +120,52 @@ const pad = () =>
     });
   });
 
+// Aurebesh-style decoration: angular glyphs drawn from strokes on a 4×6 grid,
+// one fixed glyph per Latin letter. Decoration only (ART_GUIDE.md §9) — every
+// readable label next to it is Korean; screen readers skip these.
+const STROKES = [
+  [0, 0, 3, 0], [0, 5, 3, 5], [0, 2.5, 3, 2.5], [0, 0, 0, 5], [3, 0, 3, 5], [1.5, 0, 1.5, 5],
+  [0, 0, 3, 5], [3, 0, 0, 5], [0, 5, 3, 2], [0, 2, 3, 5], [0, 0, 3, 2.5], [0, 2.5, 3, 0], [1, 1, 2, 1], [1, 4, 2, 4],
+];
+function glyph(ch) {
+  let h = ch.charCodeAt(0) * 2654435761;
+  const pick = () => ((h = (h ^ (h >>> 13)) * 1274126177), (h >>> 0) % STROKES.length);
+  const set = new Set([pick(), pick(), pick()]);
+  if (ch.charCodeAt(0) % 3 === 0) set.add(pick());
+  return [...set].map((i) => STROKES[i]);
+}
+/** A strip of Aurebesh-style glyphs for `text` (letters only), as a data URL. */
+export function aurebesh(text, color = 'rgba(80,230,255,0.85)', h = 10) {
+  const letters = text.toUpperCase().replace(/[^A-Z ]/g, '');
+  const gw = h * 0.6;
+  const w = Math.ceil(letters.length * (gw + 3)) + 2;
+  return canvas(w, h + 2, (g) => {
+    g.strokeStyle = color;
+    g.lineWidth = 1.3;
+    g.lineCap = 'square';
+    let x = 1.5;
+    for (const ch of letters) {
+      if (ch !== ' ')
+        for (const [x0, y0, x1, y1] of glyph(ch)) {
+          g.beginPath();
+          g.moveTo(x + (x0 / 3) * gw, 1 + (y0 / 5) * h);
+          g.lineTo(x + (x1 / 3) * gw, 1 + (y1 / 5) * h);
+          g.stroke();
+        }
+      x += gw + 3;
+    }
+  });
+}
+
+// the console's labels in Aurebesh-style script (data-aure="key")
+const AURE = { pilot: 'PILOT', comms: 'COMMS', scan: 'SCANNER', vitals: 'VITAL SYS', command: 'COMMAND', force: 'FORCE' };
+
 export function applySkin() {
   const root = document.documentElement.style;
+  // the console pieces rendered in Blender (tools/ui/render_ui.py)
+  for (const n of ['frame', 'bezel', 'gauge', 'key_off', 'key_down', 'key_on']) root.setProperty(`--ui-${n.replace('_', '-')}`, `url(${import.meta.env.BASE_URL}ui/${n}.png)`);
+  for (const [k, t] of Object.entries(AURE)) root.setProperty(`--aure-${k}`, `url(${aurebesh(t)})`);
+  root.setProperty('--aure-gold', `url(${aurebesh('REPUBLIC', 'rgba(240,168,60,0.8)')})`);
   root.setProperty('--tex-hull', `url(${hull()})`);
   root.setProperty('--tex-holo', `url(${holo()})`);
   root.setProperty('--tex-pad', `url(${pad()})`);

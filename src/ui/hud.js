@@ -78,11 +78,11 @@ export class HUD {
     // the console along the bottom edge
     const cn = el('div', 'console');
     cn.innerHTML = `
-      <div class="cn-portrait monitor"><canvas id="portrait" width="240" height="240"></canvas><div class="ps-eq"><i></i><i></i><i></i><i></i><i></i></div></div>
-      <div class="cn-log monitor"><div class="log" id="msgLog"></div></div>
+      <div class="cn-portrait monitor"><canvas id="portrait" width="240" height="240"></canvas><div class="ps-eq"><i></i><i></i><i></i><i></i><i></i></div><span class="aure" aria-hidden="true" data-aure="pilot"></span></div>
+      <div class="cn-log monitor"><span class="aure" aria-hidden="true" data-aure="comms"></span><div class="log" id="msgLog"></div></div>
       <div class="cn-btns">
         <button class="fo-btn stims" id="stims" type="button" title="박타 주사기 (Q)"></button>
-        <button class="fo-btn" id="saberBtn" type="button" title="광선검 켜기/끄기 (X)"><i></i><span>SABER</span></button>
+        <button class="fo-btn" id="saberBtn" type="button" title="광선검 켜기/끄기 (X)"><i></i><span>광선검</span></button>
       </div>
       <div class="cn-center">
         <div class="fp-lights" id="forceSeg">${'<i></i>'.repeat(FORCE_SEGMENTS)}</div>
@@ -90,20 +90,20 @@ export class HUD {
         <div class="xp-line" title="경험치"><i id="xpFill"></i></div>
       </div>
       <div class="cn-stats">
-        <div class="counter hp"><label>HP</label><b id="hpText">0</b></div>
-        <div class="hp-bar"><div class="hp-chip"></div><div class="hp-fill"></div></div>
-        <div class="counter fp"><label>FP</label><b id="fpText">0</b></div>
+        <div class="plate-h"><span class="aure" aria-hidden="true" data-aure="vitals"></span><small>생체 신호</small></div>
+        <div class="gauge hp hp-bar" title="체력"><span class="g-chip hp-chip"></span><span class="g-fill hp-fill"></span><label>체력</label><b id="hpText">0</b></div>
+        <div class="gauge fp" title="포스"><span class="g-fill" id="fpFill"></span><label>포스</label><b id="fpText">0</b></div>
         <div class="cn-sub"><span id="lvlText">LV 1</span><div class="dark-meter" title="빛과 어둠"><span>빛</span><div class="dm"><i id="dmMark"></i></div><span>어둠</span></div></div>
       </div>
       <div class="cn-menu ab-menu">
-        <button type="button" data-open="map"><i></i>MAP<small>Tab</small></button>
-        <button type="button" data-open="char"><i></i>CHA<small>C</small><b class="dot"></b></button>
-        <button type="button" data-open="tree"><i></i>SKL<small>K</small><b class="dot"></b></button>
-        <button type="button" data-open="cards"><i></i>CRD<small>P</small></button>
-        <button type="button" data-open="settings"><i></i>OPT<small>O</small></button>
-        <button type="button" data-open="help"><i></i>HELP<small>F1</small></button>
+        <button type="button" data-open="map"><i></i>지도<small>Tab</small></button>
+        <button type="button" data-open="char"><i></i>정보<small>C</small><b class="dot"></b></button>
+        <button type="button" data-open="tree"><i></i>기술<small>K</small><b class="dot"></b></button>
+        <button type="button" data-open="cards"><i></i>카드<small>P</small></button>
+        <button type="button" data-open="settings"><i></i>설정<small>O</small></button>
+        <button type="button" data-open="help"><i></i>도움<small>F1</small></button>
       </div>
-      <div class="cn-radar monitor"><canvas id="radar" width="360" height="360"></canvas><div class="radar-region" id="regionText"></div></div>`;
+      <div class="cn-radar monitor"><span class="aure" aria-hidden="true" data-aure="scan"></span><canvas id="radar" width="360" height="360"></canvas><div class="radar-region" id="regionText"></div></div>`;
     r.appendChild(cn);
     this.pcanvas = $('#portrait');
     this.pctx = this.pcanvas.getContext('2d');
@@ -694,6 +694,7 @@ export class HUD {
     $('.hp-fill').style.width = hpK * 100 + '%';
     $('.hp-chip').style.width = this.hpChip * 100 + '%';
     $('.hp-bar').classList.toggle('low', hpK < 0.25);
+    $('#fpFill').style.width = Math.max(0, p.force / p.maxForce) * 100 + '%';
     // Force as a bar of indicator segments
     const fpK = Math.max(0, p.force / p.maxForce) * FORCE_SEGMENTS;
     const segs = $('#forceSeg').children;
@@ -754,7 +755,7 @@ export class HUD {
       $('#lvlText').textContent = `LV ${p.level}`;
       $('#xpFill').style.width = (p.xp / p.xpNext) * 100 + '%';
       $('#dmMark').style.left = p.darkness + '%';
-      $('#stims').innerHTML = `<i></i><span>BACTA</span><em>${[0, 1, 2, 3, 4].map((k) => `<b class="${k < p.bacta ? 'on' : ''}"></b>`).join('')}</em>`;
+      $('#stims').innerHTML = `<i></i><span>박타</span><em>${[0, 1, 2, 3, 4].map((k) => `<b class="${k < p.bacta ? 'on' : ''}"></b>`).join('')}</em>`;
       $('#saberBtn').classList.toggle('on', p.saberLit && !p.saberOut);
       $('#regionText').textContent = g.region;
       const buffs = [];

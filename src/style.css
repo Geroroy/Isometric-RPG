@@ -4130,3 +4130,216 @@ body.touch .cn-skip kbd {
 }
 
 /* Settings → 화면: Original / Remaster graphics */
+
+/* ============================================================ Republic ship dashboard (ART_GUIDE.md §9)
+   The metal frame, monitor bezels, gauge housings and console keys are
+   rendered in Blender with the game's lights (tools/ui/render_ui.py →
+   public/ui, CSS variables set in ui/skin.js); the glow is CSS on top. */
+.console {
+  border-style: solid;
+  border-width: 14px 14px 8px;
+  border-color: transparent;
+  border-image: var(--ui-frame) 28 28 28 28 / 14px 14px 8px 14px stretch;
+  padding-top: 2px;
+  background: var(--tex-hull) repeat, #3b4046;
+  background-blend-mode: multiply;
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.75);
+}
+.console::before,
+.console::after {
+  display: none; /* the frame has its own screws */
+}
+/* monitors: a recessed bezel, holo glass with drifting scanlines */
+.cn-portrait.monitor,
+.cn-log.monitor {
+  border-style: solid;
+  border-width: 8px;
+  border-color: transparent;
+  border-image: var(--ui-bezel) 16 / 8px stretch;
+  border-radius: 0;
+  background-clip: padding-box;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.9), inset 0 0 1px rgba(80, 230, 255, 0.35);
+}
+.monitor::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: repeating-linear-gradient(180deg, rgba(80, 230, 255, 0.06) 0 1px, transparent 1px 3px);
+  animation: holo-drift 6s linear infinite;
+  mix-blend-mode: screen;
+}
+@keyframes holo-drift {
+  to {
+    background-position: 0 30px;
+  }
+}
+.cn-log .log {
+  padding-top: 10px;
+}
+/* Aurebesh-style labels (decoration only; the readable text is Korean) */
+.aure {
+  display: block;
+  height: 12px;
+  min-width: 40px;
+  background-repeat: no-repeat;
+  background-position: left center;
+  opacity: 0.75;
+  pointer-events: none;
+}
+.monitor > .aure {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  z-index: 3;
+  width: 80%;
+}
+.cn-radar > .aure {
+  left: 50%;
+  top: 14px;
+  transform: translateX(-28%);
+}
+.aure[data-aure='pilot'] { background-image: var(--aure-pilot); }
+.aure[data-aure='comms'] { background-image: var(--aure-comms); }
+.aure[data-aure='scan'] { background-image: var(--aure-scan); }
+.aure[data-aure='vitals'] { background-image: var(--aure-vitals); }
+.plate-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 2px;
+}
+.plate-h small {
+  font-size: 10px;
+  color: #b9c4cc;
+  text-shadow: 1px 1px 0 #000;
+}
+.cn-menu::before {
+  content: '';
+  grid-column: 1 / -1;
+  height: 11px;
+  background: var(--aure-command) no-repeat center;
+  opacity: 0.7;
+}
+/* glowing gauge tubes for health and the Force */
+.fp-lights {
+  display: none; /* the Force has its own tube now */
+}
+.cn-stats {
+  width: 178px;
+  gap: 5px;
+}
+.gauge,
+.gauge.hp-bar {
+  position: relative;
+  height: 26px;
+  margin: 0;
+  overflow: hidden;
+  border-style: solid;
+  border-width: 6px 13px;
+  border-color: transparent;
+  border-image: var(--ui-gauge) 12 26 12 26 / 6px 13px stretch;
+  background: #030507;
+  background-clip: padding-box;
+}
+.gauge .g-fill,
+.gauge .g-chip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  transition: width 0.12s;
+}
+.gauge.hp .g-fill {
+  background: linear-gradient(#ffb49a, #ff4a2a 40%, #b01a0c 75%, #5a0804);
+  box-shadow: 0 0 10px 1px rgba(255, 70, 40, 0.75);
+}
+.gauge.hp .g-chip {
+  background: rgba(255, 220, 170, 0.75);
+  transition: none;
+}
+.gauge.fp .g-fill {
+  background: linear-gradient(#d8f6ff, #4ab8ff 40%, #1060c8 75%, #062a5a);
+  box-shadow: 0 0 10px 1px rgba(70, 170, 255, 0.75);
+}
+.gauge::after {
+  /* the glass: a highlight along the top */
+  content: '';
+  position: absolute;
+  inset: 0 0 50% 0;
+  background: linear-gradient(rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.02));
+  pointer-events: none;
+}
+.gauge label,
+.gauge b {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  transform: translateY(-50%);
+  text-shadow: 0 0 3px #000, 1px 1px 0 #000;
+}
+.gauge label {
+  left: 4px;
+  font-size: 10px;
+  color: #f2f4f6;
+}
+.gauge b {
+  right: 4px;
+  font-family: Galmuri11, monospace;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: #fff;
+}
+/* console keys: lamp dark at rest, lit amber while pressed, blue when switched on */
+.fo-btn,
+.ab-menu button {
+  border-style: solid;
+  border-width: 5px 5px 5px 14px;
+  border-color: transparent;
+  border-image: var(--ui-key-off) 10 10 10 28 fill / 5px 5px 5px 14px stretch;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding: 1px 7px 1px 6px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: #e6d6b0;
+  transition: filter 0.08s;
+}
+.fo-btn > i,
+.ab-menu button > i {
+  display: none; /* the lamp is in the key */
+}
+.fo-btn:active,
+.ab-menu button:active,
+.fo-btn.down,
+.ab-menu button.down {
+  border-image-source: var(--ui-key-down);
+  color: #fff3d0;
+  filter: drop-shadow(0 0 5px rgba(255, 160, 60, 0.7));
+  transform: translateY(1px);
+}
+#saberBtn.on {
+  border-image-source: var(--ui-key-on);
+  color: #e6f6ff;
+  filter: drop-shadow(0 0 5px rgba(80, 170, 255, 0.65));
+}
+#saberBtn.on:active {
+  border-image-source: var(--ui-key-down);
+}
+.ab-menu button small {
+  margin-left: 2px;
+}
+.ab-menu .dot {
+  left: -9px;
+  top: 2px;
+}
+body.touch .cn-stats {
+  width: 140px;
+}
+body.touch .gauge {
+  height: 22px;
+}
