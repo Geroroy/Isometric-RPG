@@ -20,6 +20,7 @@ export const VOLUMES = [
   ['sfx', '효과음'],
   ['hum', '광선검 험'],
   ['voice', '음성'],
+  ['amb', '환경음'],
 ];
 
 export class Audio {
@@ -32,13 +33,14 @@ export class Audio {
     this.lastPick = {};
     this.voiceSrc = null;
     // player volume settings (0..1 each), applied on top of the mix levels
-    this.vol = { master: 1, music: 1, sfx: 1, hum: 1, voice: 1 };
+    this.vol = { master: 1, music: 1, sfx: 1, hum: 1, voice: 1, amb: 1 };
+    this.musicDuck = 1; // the city's ambience lowers the music near the cantina band
     try {
       Object.assign(this.vol, JSON.parse(localStorage.getItem(VOL_KEY) || '{}'));
     } catch {
       /* storage blocked: defaults */
     }
-    this.base = { master: 0.6, sfx: 1, voice: 1.1, music: 0.5 }; // mix levels before the player's settings
+    this.base = { master: 0.6, sfx: 1, voice: 1.1, music: 0.5, amb: 0.8 }; // mix levels before the player's settings
   }
 
   setVolume(key, v) {
@@ -59,7 +61,15 @@ export class Audio {
     this.sfxBus.gain.value = b.sfx * v.sfx;
     this.voiceBus.gain.value = b.voice * v.voice;
     if (this.humVol) this.humVol.gain.value = v.hum;
-    if (this.musicBus) this.musicBus.gain.value = b.music * v.music;
+    if (this.musicBus) this.musicBus.gain.value = b.music * v.music * this.musicDuck;
+    if (this.ambBus) this.ambBus.gain.value = b.amb * v.amb;
+  }
+
+  /** Lower the music by k (0..1 of its level), smoothly. */
+  duckMusic(k) {
+    if (Math.abs(k - this.musicDuck) < 0.01) return;
+    this.musicDuck = k;
+    if (this.musicBus) this.musicBus.gain.setTargetAtTime(this.base.music * this.vol.music * k, this.ctx.currentTime, 0.4);
   }
 
   unlock() {
@@ -78,6 +88,8 @@ export class Audio {
     this.voiceBus = c.createGain();
     this.voiceBus.gain.value = 1.1;
     this.voiceBus.connect(this.master);
+    this.ambBus = c.createGain();
+    this.ambBus.connect(this.master);
     // noise buffer
     const len = c.sampleRate;
     this.noise = c.createBuffer(1, len, c.sampleRate);
@@ -311,7 +323,10 @@ export class Audio {
     if (!this.ctx || this.muted) return null;
     const list = this.bank.voice[key];
     if (!list) return null;
-    const clip = list[Math.floor(Math.random() * list.length)];
+    // random, but never the same clip twice in a row
+    let i = Math.floor(Math.random() * list.length);
+    if (list.length > 1 && list[i] === list.last) i = (i + 1) % list.length;
+    const clip = (list.last = list[i]);
     if (this.voiceSrc) {
       try {
         this.voiceSrc.stop();
@@ -537,6 +552,11 @@ export class Audio {
       case 'swing':
         this.dopplerSweep(0.85 + Math.random() * 0.3, 0.3 + Math.random() * 0.08);
         this.noiseBurst(0.22, 0.05, 'bandpass', 500, 1400, 0, 2);
+        break;
+      case 'punch':
+        // a fist landing: a dull thud and a slap
+        this.osc('sine', 120, 50, 0.12, 0.35 * vol);
+        this.noiseBurst(0.06, 0.25 * vol, 'lowpass', 1800, 600);
         break;
       case 'hit':
         // blade burning into metal: sizzle + low thud + crackle

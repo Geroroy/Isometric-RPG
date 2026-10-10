@@ -11,7 +11,6 @@ import { StarCardsUI } from './starCards.js';
 import { AppearanceUI } from './appearance.js';
 import { QUESTS } from '../game/quests.js';
 import { VOLUMES } from '../core/audio.js';
-import { GFX_LABEL, gfxMode, setGfxMode, onGfxMode } from '../core/gfx.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (tag, cls, html) => {
@@ -62,6 +61,7 @@ export class HUD {
 
     game.on('say', (text, key, dur, speaker) => this.say(text, dur, speaker));
     game.on('region', (name) => this.banner(name));
+    game.on('log', (text, cls) => this.log(text, cls));
     game.on('hurt', () => portrait.hurt());
     game.on('levelup', (lv) => {
       this.refreshPanels();
@@ -78,11 +78,11 @@ export class HUD {
     // the console along the bottom edge
     const cn = el('div', 'console');
     cn.innerHTML = `
-      <div class="cn-portrait monitor"><canvas id="portrait" width="240" height="240"></canvas><div class="ps-eq"><i></i><i></i><i></i><i></i><i></i></div></div>
-      <div class="cn-log monitor"><div class="log" id="msgLog"></div></div>
+      <div class="cn-portrait monitor"><canvas id="portrait" width="240" height="240"></canvas><div class="ps-eq"><i></i><i></i><i></i><i></i><i></i></div><span class="aure" aria-hidden="true" data-aure="pilot"></span></div>
+      <div class="cn-log monitor"><span class="aure" aria-hidden="true" data-aure="comms"></span><div class="log" id="msgLog"></div></div>
       <div class="cn-btns">
         <button class="fo-btn stims" id="stims" type="button" title="박타 주사기 (Q)"></button>
-        <button class="fo-btn" id="saberBtn" type="button" title="광선검 켜기/끄기 (X)"><i></i><span>SABER</span></button>
+        <button class="fo-btn" id="saberBtn" type="button" title="광선검 켜기/끄기 (X)"><i></i><span>광선검</span></button>
       </div>
       <div class="cn-center">
         <div class="fp-lights" id="forceSeg">${'<i></i>'.repeat(FORCE_SEGMENTS)}</div>
@@ -90,20 +90,20 @@ export class HUD {
         <div class="xp-line" title="경험치"><i id="xpFill"></i></div>
       </div>
       <div class="cn-stats">
-        <div class="counter hp"><label>HP</label><b id="hpText">0</b></div>
-        <div class="hp-bar"><div class="hp-chip"></div><div class="hp-fill"></div></div>
-        <div class="counter fp"><label>FP</label><b id="fpText">0</b></div>
+        <div class="plate-h"><span class="aure" aria-hidden="true" data-aure="vitals"></span><small>생체 신호</small></div>
+        <div class="gauge hp hp-bar" title="체력"><span class="g-chip hp-chip"></span><span class="g-fill hp-fill"></span><label>체력</label><b id="hpText">0</b></div>
+        <div class="gauge fp" title="포스"><span class="g-fill" id="fpFill"></span><label>포스</label><b id="fpText">0</b></div>
         <div class="cn-sub"><span id="lvlText">LV 1</span><div class="dark-meter" title="빛과 어둠"><span>빛</span><div class="dm"><i id="dmMark"></i></div><span>어둠</span></div></div>
       </div>
       <div class="cn-menu ab-menu">
-        <button type="button" data-open="map"><i></i>MAP<small>Tab</small></button>
-        <button type="button" data-open="char"><i></i>CHA<small>C</small><b class="dot"></b></button>
-        <button type="button" data-open="tree"><i></i>SKL<small>K</small><b class="dot"></b></button>
-        <button type="button" data-open="cards"><i></i>CRD<small>P</small></button>
-        <button type="button" data-open="settings"><i></i>OPT<small>O</small></button>
-        <button type="button" data-open="help"><i></i>HELP<small>F1</small></button>
+        <button type="button" data-open="map"><i></i>지도<small>Tab</small></button>
+        <button type="button" data-open="char"><i></i>정보<small>C</small><b class="dot"></b></button>
+        <button type="button" data-open="tree"><i></i>기술<small>K</small><b class="dot"></b></button>
+        <button type="button" data-open="cards"><i></i>카드<small>P</small></button>
+        <button type="button" data-open="settings"><i></i>설정<small>O</small></button>
+        <button type="button" data-open="help"><i></i>도움<small>F1</small></button>
       </div>
-      <div class="cn-radar monitor"><canvas id="radar" width="360" height="360"></canvas><div class="radar-region" id="regionText"></div></div>`;
+      <div class="cn-radar monitor"><span class="aure" aria-hidden="true" data-aure="scan"></span><canvas id="radar" width="360" height="360"></canvas><div class="radar-region" id="regionText"></div></div>`;
     r.appendChild(cn);
     this.pcanvas = $('#portrait');
     this.pctx = this.pcanvas.getContext('2d');
@@ -114,7 +114,14 @@ export class HUD {
       this.pokes = (this.pokes || 0) + 1;
       clearTimeout(this.pokeReset);
       this.pokeReset = setTimeout(() => (this.pokes = 0), 4000);
-      this.game.say(this.pokes > 4 ? 'pokeAnnoyed' : 'poke');
+      // his own recorded voice (audio/voice/anakin), else a subtitled line
+      const a = this.game.audio;
+      const clip = a.voice('portrait');
+      if (clip) {
+        if (a.speech) a.speech.stop();
+        this.portrait.talk(clip.duration);
+        this.sub = { t: 0, talk: clip.duration, speaker: '아나킨' };
+      } else this.game.say(this.pokes > 4 ? 'pokeAnnoyed' : 'poke');
     });
     cn.addEventListener('mousedown', (e) => e.stopPropagation());
     $('#stims').addEventListener('click', (e) => {
@@ -411,14 +418,21 @@ export class HUD {
         <p class="set-note">이 기기에 저장됩니다. 대사 음성·효과음 파일을 직접 넣는 방법은 <code>public/audio/README.md</code>를 참고하세요.</p>
       </section>
       <section class="set-card">
+        <h4>화면 효과</h4>
+        <label class="set-toggle"><input type="checkbox" data-post="grade"> 행성별 색 보정 (LUT)</label>
+        <label class="set-toggle"><input type="checkbox" data-post="bloom"> 빛 번짐 (블룸)</label>
+        <label class="set-toggle"><input type="checkbox" data-post="vignette"> 비네팅</label>
+        <label class="set-toggle"><input type="checkbox" data-post="grain"> 필름 그레인</label>
+        <label class="set-toggle"><input type="checkbox" data-post="fps"> FPS 표시</label>
+        <p class="set-note" id="postNote">이 기기에 저장됩니다. 느린 기기에서는 끄면 가벼워집니다.</p>
+      </section>
+      <section class="set-card">
         <h4>개발자</h4>
         <p class="set-note">스킬 · 음악 해금, 무적, 순간 이동 같은 테스트용 기능입니다. 언제든 <kbd>\`</kbd> 키로도 열 수 있습니다.</p>
         <button type="button" class="btn-ghost" id="openDebug">디버그 모드</button>
       </section>
       <section class="set-card">
         <h4>화면</h4>
-        <div class="set-gfx"><span>그래픽</span>${['original', 'remaster'].map((m) => `<button type="button" class="btn-ghost" data-gfx="${m}">${GFX_LABEL[m]}</button>`).join('')}<kbd>F5</kbd></div>
-        <p class="set-note">오리지널: 저해상도 픽셀 · 줄인 색 · 딱딱한 가장자리. 리마스터: 화면 해상도 · 2배 밀도 지형과 오브젝트 · 부드러운 가장자리와 그림자 · 매끄러운 조명.</p>
         <p class="set-note">확대·축소: 휴대폰은 두 손가락, PC는 마우스 휠 또는 <kbd>-</kbd> <kbd>=</kbd> (<kbd>0</kbd> 기본). 전체 화면: <kbd>F</kbd></p>
         <button type="button" class="btn-ghost" id="openHelp">조작법 보기</button>
       </section>`;
@@ -464,10 +478,13 @@ export class HUD {
     spOn.disabled = !(sp && sp.available);
     spOn.addEventListener('change', (e) => sp && sp.setOn(e.target.checked));
     $('#speechVoice').textContent = !sp || !sp.available ? '(이 브라우저는 음성 합성을 지원하지 않음)' : '';
-    o.querySelectorAll('[data-gfx]').forEach((b) => b.addEventListener('click', () => setGfxMode(b.dataset.gfx)));
-    const syncGfx = () => o.querySelectorAll('[data-gfx]').forEach((b) => b.classList.toggle('on', b.dataset.gfx === gfxMode()));
-    syncGfx();
-    onGfxMode(syncGfx);
+    const post = this.renderer.post;
+    o.querySelectorAll('[data-post]').forEach((cb) => {
+      cb.checked = !!post.opts[cb.dataset.post];
+      if (!post.ok && cb.dataset.post !== 'fps') cb.disabled = true;
+      cb.addEventListener('change', () => post.set(cb.dataset.post, cb.checked));
+    });
+    if (!post.ok) $('#postNote').textContent = '이 기기에서는 WebGL을 쓸 수 없어 화면 효과가 꺼져 있습니다.';
     $('#openDebug').addEventListener('click', () => this.toggle('debug', true));
     $('#openHelp').addEventListener('click', () => {
       this.toggle('settings', false);
@@ -677,6 +694,7 @@ export class HUD {
     $('.hp-fill').style.width = hpK * 100 + '%';
     $('.hp-chip').style.width = this.hpChip * 100 + '%';
     $('.hp-bar').classList.toggle('low', hpK < 0.25);
+    $('#fpFill').style.width = Math.max(0, p.force / p.maxForce) * 100 + '%';
     // Force as a bar of indicator segments
     const fpK = Math.max(0, p.force / p.maxForce) * FORCE_SEGMENTS;
     const segs = $('#forceSeg').children;
@@ -737,7 +755,7 @@ export class HUD {
       $('#lvlText').textContent = `LV ${p.level}`;
       $('#xpFill').style.width = (p.xp / p.xpNext) * 100 + '%';
       $('#dmMark').style.left = p.darkness + '%';
-      $('#stims').innerHTML = `<i></i><span>BACTA</span><em>${[0, 1, 2, 3, 4].map((k) => `<b class="${k < p.bacta ? 'on' : ''}"></b>`).join('')}</em>`;
+      $('#stims').innerHTML = `<i></i><span>박타</span><em>${[0, 1, 2, 3, 4].map((k) => `<b class="${k < p.bacta ? 'on' : ''}"></b>`).join('')}</em>`;
       $('#saberBtn').classList.toggle('on', p.saberLit && !p.saberOut);
       $('#regionText').textContent = g.region;
       const buffs = [];
@@ -767,6 +785,7 @@ export class HUD {
 
   updateObjectives() {
     const g = this.game;
+    if (g.duel) return; // the Movie Duels have no campaign objectives
     const p = g.player;
     const front = g.front;
     const camps = front.camps.filter((c) => !c.boss);

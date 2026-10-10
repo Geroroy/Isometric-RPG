@@ -27,6 +27,13 @@
 > 저작권이 있는 영화 음원·배우 음성은 저장소에 포함하지 마세요.
 > 직접 녹음했거나 사용 권한(라이선스)이 있는 파일만 넣으세요.
 
+## 도시 환경음 (`amb/*.webm`)
+
+`tools/city_ambience.py`가 numpy · scipy로 직접 합성한 반복 소리입니다(녹음 · 샘플 없음, 칸티나 곡도 이 게임을 위한 오리지널).
+`hum`(하층 기계음 · 물방울) `wind`(상층 바람) `traffic`(먼 스피더) `murmur`(외계어 웅성거림) `steam`(증기) `cantina`(칸티나 밴드).
+게임(`src/core/ambience.js`)이 아나킨의 위치에 따라 겹치고, 칸티나 · 증기는 거리에 따라 크기 · 방향 · 먹먹함을 바꿉니다.
+다시 만들기: `python3 tools/city_ambience.py` (ffmpeg 필요).
+
 ## 형식
 
 `index.example.json`을 `index.json`으로 복사한 뒤 파일 경로를 채우세요.

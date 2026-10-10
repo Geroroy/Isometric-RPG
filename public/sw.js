@@ -1,5 +1,5 @@
 // Service worker: makes the game installable and playable offline.
-// Pages are network-first (updates arrive as soon as you're online);
+// Pages and sprite sheets are network-first (updates arrive as soon as you're online);
 // hashed build assets and fonts are cache-first.
 const CACHE = 'clone-wars-v1';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
@@ -28,7 +28,8 @@ self.addEventListener('fetch', (e) => {
     }
     return res;
   };
-  if (req.mode === 'navigate') {
+  // pages and the sprite sheets (fixed names, re-rendered in place) are network-first
+  if (req.mode === 'navigate' || new URL(req.url).pathname.includes('/sprites/')) {
     e.respondWith(
       fetch(req)
         .then(put)

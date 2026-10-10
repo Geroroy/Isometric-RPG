@@ -1,67 +1,13 @@
 // Load-time asset pipeline: bakes every character animation and world prop
 // into sprite atlases, reporting progress for the loading screen.
 import { Baker } from './baker.js';
-import * as M from './models/characters.js';
-import * as A from './models/anims.js';
-import { PROPS, buildPropVariants, buildLaat, buildFighter } from './models/props.js';
+import { PROPS, buildPropVariants, buildLaat } from './models/props.js';
+import { CHARACTERS, DUELS, SKINS } from './specs.js';
 import { RNG } from '../core/math.js';
 import { loadBundle, saveBundle } from './assetCache.js';
+import { sheetIndex, loadSheets } from './sheet.js';
 
-const SABER = ['saberBase', 'saberTip'];
-const SABERS = ['saberBase', 'saberTip', 'saber2Base', 'saber2Tip'];
-
-export const CHARACTERS = {
-  anakin: () => ({ model: M.buildAnakin(), dirs: 16, frame: [170, 160, 85, 120], anims: A.ANAKIN_ANIMS, markers: SABER, ss: 2 }),
-  clone: () => ({ model: M.buildClone(), dirs: 8, frame: [120, 110, 60, 90], anims: A.CLONE_ANIMS, markers: [] }),
-  rex: () => ({ model: M.buildClone({ rex: true }), dirs: 8, frame: [120, 110, 60, 90], anims: A.REX_ANIMS, markers: [] }),
-  b1: () => ({ model: M.buildB1(), dirs: 8, frame: [120, 110, 60, 90], anims: A.B1_ANIMS, markers: [] }),
-  b2: () => ({ model: M.buildB2(), dirs: 8, frame: [140, 130, 70, 105], anims: A.B2_ANIMS, markers: [] }),
-  r2: () => ({ model: M.buildR2(), dirs: 8, frame: [60, 60, 30, 45], anims: A.R2_ANIMS, markers: [] }),
-  // base camp NPCs
-  obiwan: () => ({ model: M.buildObiWan(), dirs: 8, frame: [120, 110, 60, 90], anims: A.OBIWAN_ANIMS, markers: [], ss: 2 }),
-  ahsoka: () => ({ model: M.buildAhsoka(), dirs: 8, frame: [120, 110, 60, 90], anims: A.AHSOKA_ANIMS, markers: [], ss: 2 }),
-  quartermaster: () => ({ model: M.buildClone({ marks: 0xd99a2b }), dirs: 8, frame: [120, 110, 60, 90], anims: A.NPC_CLONE_ANIMS, markers: [] }),
-  bith: () => ({ model: M.buildBith(), dirs: 8, frame: [120, 110, 60, 90], anims: A.BITH_ANIMS, markers: [], ss: 2 }),
-  // city hub crowd (original designs)
-  citNoble: () => citizen('noble', 0, A.NOBLE_ANIMS),
-  citNoble2: () => citizen('noble', 1, A.NOBLE_ANIMS),
-  citAide: () => citizen('aide', 0, A.CITIZEN_ANIMS),
-  citWorker: () => citizen('worker', 0, A.CITIZEN_ANIMS),
-  citWorker2: () => citizen('worker', 1, A.CITIZEN_ANIMS),
-  citDrifter: () => citizen('drifter', 0, A.DRIFTER_ANIMS),
-  citVendor: () => citizen('vendor', 0, A.CITIZEN_ANIMS),
-  citOfficer: () => citizen('officer', 0, A.CITIZEN_ANIMS),
-  citAlien: () => citizen('alien', 0, A.CITIZEN_ANIMS),
-  // Anakin's starfighter: a unit so it can take off and land
-  fighter: () => ({ model: { root: buildFighter(), applyPose() {} }, dirs: 8, frame: [240, 170, 120, 120], anims: { idle: { frames: 1, fps: 1, loop: true, pose: () => ({}) } }, markers: [], ss: 2 }),
-};
-
-function citizen(kind, palette, anims) {
-  return { model: M.buildCitizen({ kind, palette }), dirs: 8, frame: [120, 120, 60, 100], anims, markers: [] };
-}
-
-/** Baked only when that Movie Duel starts. */
-export const DUELS = {
-  geonosis: {
-    anakinDual: () => ({ model: M.buildAnakin({ dual: true }), dirs: 16, frame: [170, 160, 85, 120], anims: A.ANAKIN_DUAL_ANIMS, markers: SABERS, ss: 2 }),
-    dooku: () => ({ model: M.buildDooku(), dirs: 16, frame: [180, 170, 90, 125], anims: A.DOOKU_ANIMS, markers: SABER, ss: 2 }),
-    master: () => ({ model: M.buildMaster(), dirs: 8, frame: [120, 110, 60, 90], anims: A.MASTER_ANIMS, markers: [], ss: 2 }),
-  },
-  mustafar: {
-    anakinHood: () => ({ model: M.buildAnakin({ outfit: 'hood' }), dirs: 8, frame: [170, 160, 85, 120], anims: A.ANAKIN_HOOD_ANIMS, markers: [], ss: 2 }),
-    anakinMustafar: () => ({ model: M.buildAnakin({ outfit: 'tunic' }), dirs: 16, frame: [200, 220, 100, 170], anims: A.ANAKIN_MUSTAFAR_ANIMS, markers: SABER, ss: 2 }),
-    obiwan3: () => ({ model: M.buildObiWan3(), dirs: 16, frame: [170, 160, 85, 120], anims: A.OBIWAN3_ANIMS, markers: SABER, ss: 2 }),
-    obiwan3Robe: () => ({ model: M.buildObiWan3({ robe: true }), dirs: 8, frame: [170, 160, 85, 120], anims: A.OBIWAN3_ROBE_ANIMS, markers: [], ss: 2 }),
-    padme: () => ({ model: M.buildPadme(), dirs: 8, frame: [140, 130, 70, 100], anims: A.PADME_ANIMS, markers: [], ss: 2 }),
-  },
-};
-export const DUEL_CHARACTERS = Object.assign({}, ...Object.values(DUELS));
-
-/** Anakin's alternative appearances (sprite name `anakin_<id>`), baked when equipped. */
-export const SKINS = {
-  anakin_tunic: () => ({ model: M.buildAnakin({ outfit: 'tunic' }), dirs: 16, frame: [170, 160, 85, 120], anims: A.ANAKIN_ANIMS, markers: SABER, ss: 2 }),
-  anakin_robe: () => ({ model: M.buildAnakin({ outfit: 'robe' }), dirs: 16, frame: [170, 160, 85, 120], anims: A.ANAKIN_ANIMS, markers: SABER, ss: 2 }),
-};
+export { CHARACTERS, DUELS, DUEL_CHARACTERS, SKINS } from './specs.js';
 
 const nextFrame = () => new Promise((r) => setTimeout(r, 0));
 
@@ -103,7 +49,9 @@ export async function bakeAssets(onProgress) {
     return cached;
   }
   const baker = new Baker();
-  const specs = Object.fromEntries(Object.entries(CHARACTERS).map(([k, f]) => [k, f()]));
+  // characters with a Blender sprite sheet are loaded instead (main.js), not baked
+  const idx = await sheetIndex();
+  const specs = Object.fromEntries(Object.entries(CHARACTERS).filter(([k]) => !idx[k]).map(([k, f]) => [k, f()]));
   const propNames = Object.keys(PROPS);
   let total = frameCost(specs) + 8;
   for (const n of propNames) total += PROPS[n].variants * (PROPS[n].angles || [0]).length;
@@ -133,55 +81,28 @@ export async function bakeAssets(onProgress) {
   return assets;
 }
 
-/**
- * Remaster graphics: world props baked at 2× density with soft edges. Star
- * Wars vehicles, wrecks and bodies keep the frames they have in both modes.
- */
-const HD_SKIP = new Set(['atte', 'laat', 'skiff', 'aatWreck', 'droidDebris', 'sepBody']);
-
-export async function bakeHDProps(onProgress) {
-  const cached = await loadBundle('props-hd');
-  if (cached) return cached.props;
-  const baker = new Baker();
-  const names = Object.keys(PROPS).filter((n) => !HD_SKIP.has(n));
-  let total = 0;
-  for (const n of names) total += PROPS[n].variants * (PROPS[n].angles || [0]).length;
-  const tick = progress(onProgress, total);
-  const props = {};
-  for (const name of names) {
-    const def = PROPS[name];
-    const frames = [];
-    for (const m of buildPropVariants(name)) {
-      for (const f of baker.bakeStatic(m, { angles: def.angles || [0], hd: true })) {
-        frames.push(f);
-        await tick(`리마스터 오브젝트: ${name}`);
-      }
-    }
-    props[name] = frames;
-  }
-  onProgress(1, '완료');
-  saveBundle('props-hd', { props });
-  baker.dispose();
-  return props;
-}
-
 /** Sprites for one Movie Duel, baked on demand. */
 export async function bakeDuelAssets(onProgress, duel = 'geonosis') {
   const key = duel === 'geonosis' ? 'duel' : 'duel-' + duel;
+  // the cast with a Blender sprite sheet loads it; the rest is baked (and cached)
+  const sheets = await loadSheets(Object.keys(DUELS[duel]), onProgress);
+  const rest = Object.entries(DUELS[duel]).filter(([k]) => !sheets[k]);
+  if (!rest.length) return { sprites: sheets };
   const cached = await loadBundle(key);
-  if (cached) return cached;
+  if (cached) return { sprites: { ...cached.sprites, ...sheets } };
   const baker = new Baker();
-  const specs = Object.fromEntries(Object.entries(DUELS[duel]).map(([k, f]) => [k, f()]));
+  const specs = Object.fromEntries(rest.map(([k, f]) => [k, f()]));
   const tick = progress(onProgress, frameCost(specs));
   const sprites = await bakeCharacters(baker, specs, tick);
-  const assets = { sprites };
-  saveBundle(key, assets);
+  saveBundle(key, { sprites });
   baker.dispose();
-  return assets;
+  return { sprites: { ...sprites, ...sheets } };
 }
 
 /** Sprites for one of Anakin's appearances; cached on the device like the rest. */
 export async function bakeSkin(name, onProgress) {
+  const sheet = (await loadSheets([name], onProgress))[name];
+  if (sheet) return sheet;
   const cached = await loadBundle(name);
   if (cached) return cached.sprites[name];
   const baker = new Baker();

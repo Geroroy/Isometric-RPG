@@ -4,11 +4,13 @@
 // any change to how sprites look invalidates it automatically.
 import charSrc from './models/characters.js?raw';
 import animSrc from './models/anims.js?raw';
+import anakinAnimSrc from './models/anakinAnims.js?raw';
 import rigSrc from './models/rig.js?raw';
 import partSrc from './models/parts.js?raw';
 import propSrc from './models/props.js?raw';
 import bakerSrc from './baker.js?raw';
 import assetSrc from './assets.js?raw';
+import specSrc from './specs.js?raw';
 
 const DB = 'cw-sprites';
 const STORE = 'bundles';
@@ -22,7 +24,7 @@ function fnv(str) {
   return (h >>> 0).toString(36);
 }
 
-export const SOURCE_HASH = fnv([charSrc, animSrc, rigSrc, partSrc, propSrc, bakerSrc, assetSrc].join('\u0000'));
+export const SOURCE_HASH = fnv([charSrc, animSrc, anakinAnimSrc, rigSrc, partSrc, propSrc, bakerSrc, assetSrc, specSrc].join('\u0000'));
 
 function open() {
   return new Promise((resolve, reject) => {

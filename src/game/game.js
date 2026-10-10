@@ -2,6 +2,7 @@
 import { World } from '../world/worldgen.js';
 import { PathFinder } from '../world/pathfind.js';
 import { Effects } from '../gfx/fx.js';
+import { HITFEEL, feelFor, applyFeel } from './hitfeel.js';
 import { Player, Soldier, R2Unit } from './units.js';
 import { SKILLS } from './skills.js';
 import { dist, rand, chance, angleDiff } from '../core/math.js';
@@ -9,7 +10,7 @@ import { LINES } from './lines.js';
 import { NPC, NPC_DEFS, TALK_RANGE } from './npc.js';
 import { QuestLog } from './quests.js';
 import { BASE_POS, Arena, ARENA, MustafarArena, CityHub, CITY } from '../world/worldgen.js';
-import { Citizen, CROWD } from './citizens.js';
+import { CityLife } from './cityLife.js';
 import { Duel } from './duel.js';
 import { Cinema } from './cinema.js';
 import { MustafarDuel } from './duelMustafar.js';
@@ -37,6 +38,7 @@ export class Game {
     this.hover = null;
     this.listeners = {};
     this.cheats = { god: false, force: false, cd: false }; // debug panel toggles
+    this.bubbles = []; // speech bubbles over people { u, text, t, life }
     this.region = '';
     this.exploreT = 0;
     this.campT = 0;
@@ -71,6 +73,7 @@ export class Game {
     this.savePlace('christophsis');
     this.loadPlace(hub);
     this.populateHub();
+    this.player.saberLit = false; // a Jedi walks the city with his blade off
     this.updateActive();
   }
 
@@ -95,7 +98,7 @@ export class Game {
 
   /** The Christophsis world (camps, the droid war), wherever Anakin is. */
   get front() {
-    return this.places.christophsis ? this.places.christophsis.world : this.world;
+    return this.places && this.places.christophsis ? this.places.christophsis.world : this.world;
   }
 
   populateChristophsis() {
@@ -106,10 +109,13 @@ export class Game {
     // the small camp just west of the base is the tutorial target
     const tut = this.world.camps.filter((c) => !c.boss).sort((a, b) => dist(a.x, a.y, BASE_POS.x, BASE_POS.y) - dist(b.x, b.y, BASE_POS.x, BASE_POS.y))[0];
     if (tut) tut.tutorial = true;
-    // Anakin's starfighter, parked inside the base
-    const f = this.pathfinder.nearestFree(Math.floor(BASE_POS.x + 9), Math.floor(BASE_POS.y - 8), 6);
-    this.units.push(this.makeFighter(f[0] + 0.5, f[1] + 0.5, Math.PI * 0.75));
-    this.world.landing = { x: f[0] - 1.5, y: f[1] + 2 };
+    // Anakin's starfighter: its own clear spot east of the plaza, away from
+    // the gunship's pad, nose towards the east gate; he steps out on a free
+    // tile beside it
+    const f = this.pathfinder.nearestFree(Math.floor(BASE_POS.x + 9), Math.floor(BASE_POS.y + 1), 4);
+    this.units.push(this.makeFighter(f[0] + 0.5, f[1] + 0.5, -Math.PI / 4));
+    const land = this.pathfinder.nearestFree(f[0] - 3, f[1] + 2, 4);
+    this.world.landing = { x: land[0] + 0.5, y: land[1] + 0.5 };
   }
 
   populateHub() {
@@ -117,28 +123,9 @@ export class Game {
     for (const [id, d] of Object.entries(NPC_DEFS)) if (d.hub) this.units.push(new NPC(this, id, d.hub[0], d.hub[1]));
     this.units.push(this.makeFighter(CITY.pad.x, CITY.pad.y, Math.PI));
     w.landing = { x: CITY.pad.x - 3.5, y: CITY.pad.y + 1.5 };
-    for (const c of CROWD) {
-      for (let k = 0; k < c.n; k++) {
-        const pts = w.walk[c.level];
-        const at = pts[Math.floor(Math.random() * pts.length)];
-        const u = new Citizen(this, c, at.x + (Math.random() - 0.5), at.y + (Math.random() - 0.5));
-        this.units.push(u);
-      }
-    }
-    // vendors at the market stalls, drifters against the walls
-    for (const u of this.units) {
-      if (!(u instanceof Citizen) || !u.anchored) continue;
-      const kind = u.def2.stay ? 'stall' : 'slumBlock';
-      const props = w.props.filter((pr) => pr.type === kind);
-      const pr = props[Math.floor(Math.random() * props.length)];
-      if (!pr) continue;
-      const spot = kind === 'stall' ? { x: pr.x - 0.2, y: pr.y - 0.9 } : { x: pr.x + (Math.random() - 0.5) * 3, y: pr.y + 2.4 };
-      const f = this.pathfinder.nearestFree(Math.floor(spot.x), Math.floor(spot.y), 3);
-      if (!f) continue;
-      u.x = f[0] + 0.5;
-      u.y = f[1] + 0.5;
-      u.facing = kind === 'stall' ? -Math.PI / 2 : Math.PI / 2 + (Math.random() - 0.5);
-    }
+    // the city's people, each on a routine (data/cityLife.json), and its random events
+    this.life = new CityLife(this);
+    this.life.populate();
   }
 
   /** Turbolifts between the hub's levels: step in, fade, step out. */
@@ -245,6 +232,10 @@ export class Game {
     p.action = null;
     this.region = '';
     this.hover = null;
+    if (id === 'hub' && p.saberLit) {
+      p.saberLit = false; // back in the city: the blade goes off
+      p.setAnim('idle');
+    }
     this.updateActive();
     this.emit('world', id);
     if (id === 'christophsis' && !this.arrivedFront) {
@@ -278,7 +269,13 @@ export class Game {
     this.talkingTo = null;
   }
 
-  on(evt, fn) {
+  /** A speech bubble over someone (replaces the one they had). */
+  bubble(u, text, dur = 3) {
+    this.bubbles = this.bubbles.filter((b) => b.u !== u);
+    this.bubbles.push({ u, text, t: 0, life: dur });
+  }
+
+    on(evt, fn) {
     (this.listeners[evt] ||= []).push(fn);
   }
   emit(evt, ...args) {
@@ -449,15 +446,20 @@ export class Game {
     }
     amount = Math.max(1, Math.round(amount));
     tgt.hp -= amount;
-    tgt.flash = 0.12;
+    const feel = feelFor(opts, crit);
+    tgt.flash = Math.max(tgt.flash, feel.flash);
+    applyFeel(this, feel, !opts.quiet && (tgt === p || src === p || (src && src.owner === p)));
     if (src && src !== tgt) {
       tgt.lastAttacker = src;
       if (tgt.camp) for (const u of tgt.camp.alive) u.alert = 6;
     }
     if (opts.stun) tgt.stun = Math.max(tgt.stun, opts.stun);
     if (opts.knock && !opts.noKnock) {
-      tgt.knock(opts.knock.ang, opts.knock.power);
+      tgt.knock(opts.knock.ang, opts.knock.power * feel.knock);
       if (opts.wallBonus) tgt.wallBonus = { src, amount: amount * opts.wallBonus };
+    } else if (feel.push && !opts.noKnock && src && src !== tgt && !tgt.anchored) {
+      // the hit shoves the target back a little, away from the attacker
+      tgt.knock(Math.atan2(tgt.y - src.y, tgt.x - src.x), feel.push);
     }
     if (opts.type === 'saber') {
       this.fx.sparks(tgt.x, tgt.y, 1.0, tgt.def.droid ? '#ffcf70' : '#ff9a6a', crit ? 12 : 6);
@@ -530,7 +532,7 @@ export class Game {
     b.dmg = b.dmg * 1.3 + p.weaponDamage() * 0.25;
     b.life = 1.2;
     b.deflected = true;
-    this.fx.sparks(b.x, b.y, b.z, '#bfe8ff', 6, 3);
+    this.clash(b.x, b.y, b.z, 7, 'deflect');
     this.audio.play('deflect', p, { heavy: redirect });
     p.deflectFlash = 0.15;
     if (Math.random() < 0.2) this.fx.text(p.x, p.y, redirect ? '반격!' : '반사', '#9fd8ff', 0.8, 2.2);
@@ -593,6 +595,12 @@ export class Game {
   }
 
   update(dt) {
+    if (this.hitstopT > 0) {
+      // hitstop: the fight freezes for a few frames; sparks, flashes and shake play on
+      this.hitstopT -= dt;
+      this.fx.update(dt);
+      return;
+    }
     if (this.slowT > 0) {
       // brief slow motion after a perfect parry
       this.slowT -= dt;
@@ -629,6 +637,10 @@ export class Game {
         }
       }
     }
+
+    if (this.place === 'hub' && this.life) this.life.update(dt);
+    for (const b of this.bubbles) b.t += dt;
+    this.bubbles = this.bubbles.filter((b) => b.t < b.life && !b.u.dead && !b.u.remove);
 
     this.updateBolts(dt);
     this.updateThrows(dt);
@@ -738,7 +750,7 @@ export class Game {
         }
         if (w.blocked[ty * w.w + tx] === 1 && Math.random() < 0.6) {
           b.life = 0;
-          this.fx.sparks(b.x, b.y, b.z, b.color === 'red' ? '#ff9080' : '#90c0ff', 4, 2);
+          this.boltScorch(b);
           break;
         }
         for (const u of this.activeUnits) {
@@ -750,6 +762,7 @@ export class Game {
           } else {
             this.damage(b.owner, u, b.dmg, { type: 'blaster' });
             this.fx.sparks(b.x, b.y, b.z, b.color === 'red' ? '#ff9080' : '#90c0ff', 4, 2);
+            this.fx.flash(b.x, b.y, b.z, b.color === 'red' ? [255, 90, 70] : [110, 170, 255], 10, 0.07);
             b.life = 0;
           }
           break;
@@ -757,6 +770,32 @@ export class Game {
       }
     }
     this.bolts = this.bolts.filter((b) => b.life > 0);
+  }
+
+  /** A bolt hits a wall: a scorch mark on the face it struck, sorted just in front of that wall. */
+  boltScorch(b) {
+    const rgb = b.color === 'red' ? [255, 70, 50] : [80, 150, 255];
+    const x = b.x - Math.cos(b.ang) * 0.12;
+    const y = b.y - Math.sin(b.ang) * 0.12;
+    this.fx.scorch(x, y, b.z, rgb);
+    const m = this.fx.scorches[this.fx.scorches.length - 1];
+    let best = null;
+    let bd = 3.5;
+    for (const pr of this.world.props) {
+      if (pr.flat || pr.hidden || pr.sortDepth === undefined) continue;
+      const d = Math.hypot(pr.x - x, pr.y - y);
+      if (d < bd) {
+        bd = d;
+        best = pr;
+      }
+    }
+    m.depth = best ? Math.max(x + y, best.sortDepth + 0.01) : x + y;
+  }
+
+  /** Blade meets blade (or turns a bolt): the clash effect and its hitstop/shake. */
+  clash(x, y, z, n = 14, feel = 'clash') {
+    this.fx.clash(x, y, z, n);
+    applyFeel(this, HITFEEL[feel], true);
   }
 
   updateThrows(dt) {

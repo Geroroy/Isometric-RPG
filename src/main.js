@@ -1,19 +1,24 @@
 // Entry point: bake sprites, build the world, then run the game loop.
 import './style.css';
 import { applySkin } from './ui/skin.js';
-import { bakeAssets, bakeDuelAssets, bakeSkin, bakeHDProps } from './gfx/assets.js';
-import { isHD, setGfxMode, onGfxMode, GFX_LABEL } from './core/gfx.js';
+import { bakeAssets, bakeDuelAssets, bakeSkin, CHARACTERS } from './gfx/assets.js';
+import { loadSheets } from './gfx/sheet.js';
+import { loadCitySprites } from './gfx/citySprites.js';
+import { setCityFootprints } from './world/cityProps.js';
+import { setFloorTexture } from './gfx/terrain.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
 import { Game } from './game/game.js';
 import { Renderer } from './gfx/renderer.js';
+import { Post } from './gfx/post.js';
 import { Portrait } from './gfx/portrait.js';
 import { HUD } from './ui/hud.js';
 import { Input } from './core/input.js';
 import { Audio } from './core/audio.js';
 import { Music } from './core/music.js';
 import { Speech } from './core/speech.js';
+import { Ambience } from './core/ambience.js';
 import { JukeboxUI } from './ui/jukebox.js';
 import { DebugUI } from './ui/debug.js';
 import { TouchControls, isTouchDevice, hasMouse } from './ui/touch.js';
@@ -59,9 +64,15 @@ async function boot() {
     label.textContent = text;
   };
   const assets = await bakeAssets(onProgress);
-  assets.propsSD = assets.props;
-  // remaster frames over the original set (franchise vehicles keep theirs)
-  if (isHD()) assets.propsHD = { ...assets.propsSD, ...(await bakeHDProps(onProgress)) };
+  // characters rendered in Blender: sprite sheet + frame JSON (after the bake
+  // has been cached — the cache stores baked canvases only)
+  Object.assign(assets.sprites, await loadSheets(Object.keys(CHARACTERS), onProgress));
+  // the Coruscant undercity's Blender-rendered buildings and street
+  if (MODE === 'campaign') {
+    assets.city = await loadCitySprites(onProgress);
+    setCityFootprints(assets.city);
+    setFloorTexture(assets.city.floor);
+  }
   if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, DUEL)).sprites);
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
@@ -91,6 +102,7 @@ async function boot() {
   const canvas = document.getElementById('world');
   const overlay = document.getElementById('overlay');
   const renderer = (game.renderer = new Renderer(game, assets, canvas, overlay));
+  const post = (renderer.post = new Post(canvas, game)); // LUT, bloom, vignette, grain (options)
   const portrait = new Portrait();
   const photo = new PortraitPhoto(portrait);
   await photo.init();
@@ -103,31 +115,6 @@ async function boot() {
   const fullscreen = new Fullscreen();
   input.onFullscreen = () => fullscreen.toggle();
   const zoom = new ZoomControl(renderer, touch);
-  // Original / Remaster graphics (F5 or Settings), switched in place
-  let gfxBusy = false;
-  onGfxMode(async (m) => {
-    if (m === 'remaster' && !assets.propsHD) {
-      if (gfxBusy) return;
-      gfxBusy = true;
-      hud.log('리마스터 그래픽 준비 중… (처음 한 번만)', 'sys');
-      let shown = 0;
-      const hd = await bakeHDProps((k) => {
-        if (k - shown >= 0.25 && k < 1) hud.log(`리마스터 그래픽 준비 중… ${Math.round(k * 100)}%`, 'sys');
-        if (k - shown >= 0.25) shown = k;
-      });
-      assets.propsHD = { ...assets.propsSD, ...hd };
-      gfxBusy = false;
-      if (!isHD()) return; // switched back meanwhile
-    }
-    renderer.applyMode();
-    measure();
-    hud.log(`그래픽: ${GFX_LABEL[m]}`, 'sys');
-  });
-  window.addEventListener('keydown', (e) => {
-    if (e.key !== 'F5') return;
-    e.preventDefault(); // F5 switches graphics like StarCraft: Remastered, never reloads
-    setGfxMode(isHD() ? 'original' : 'remaster');
-  });
   input.onZoom = (dir) => (dir === 0 ? zoom.reset() : zoom.step(dir));
   touch.onEnable = () => zoom.restore();
 
@@ -160,6 +147,7 @@ async function boot() {
   const help = document.getElementById('help');
   // music starts with the first touch / key (browsers block autoplay)
   const music = (game.music = new Music(audio));
+  const ambience = new Ambience(audio);
   new CinemaUI(game);
   game.on('cinema', (on) => on || zoom.restore()); // back to the player's zoom after a cutscene
   const jukebox = (hud.jukeUI = new JukeboxUI(hud, music, audio));
@@ -229,8 +217,9 @@ async function boot() {
   window.__music = music;
   let last = performance.now();
   let titleT = 0;
+  const reported = new Set();
   const loop = (now) => {
-    const dt = Math.min(0.05, (now - last) / 1000);
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); // the first frame can stamp before `last`
     last = now;
     input.update(dt);
     touch.update(dt);
@@ -249,14 +238,18 @@ async function boot() {
     dr.y += (ty - dr.y) * Math.min(1, dt * (onTitle ? 1 : 3));
     // menus pause the action (the map does not)
     const paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
-    if (!paused) game.update(dt);
-    renderer.render(dt);
-    hud.update(dt);
-    dialogue.update(dt);
-    music.update();
-    jukebox.update();
-    if (duelHud) duelHud.update(dt);
+    // one failing system must not freeze the whole game: report it once, keep running
     requestAnimationFrame(loop);
+    for (const step of [() => paused || game.update(dt), () => renderer.render(dt), () => post.render(dt), () => hud.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update(), () => duelHud && duelHud.update(dt)]) {
+      try {
+        step();
+      } catch (err) {
+        if (!reported.has(err.message)) {
+          reported.add(err.message);
+          console.error(err);
+        }
+      }
+    }
   };
   requestAnimationFrame(loop);
   window.__ready = true;

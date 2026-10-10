@@ -1,35 +1,48 @@
-// Movie Duel #2 — Anakin vs Obi-Wan, Mustafar (Episode III), told the way
-// the film tells it. Cutscenes run on the film's own audio (a fan edit of the
-// duel, see tools/cut_music.py) with Korean subtitles timed to its voices:
+// Movie Duel #2 — Anakin vs Obi-Wan, Mustafar (Episode III), rebuilt to
+// follow the film's duel set by set. The fight is one continuous walk
+// through the mining facility (worldgen.js MUSTAFAR); Obi-Wan's health
+// decides when the film moves on, and each move is a short scene staged the
+// way the film stages it:
 //
-//   opening   the landing platform: Anakin chokes Padmé, lets her fall,
-//             lowers his hood and faces Obi-Wan ("You will try."); both
-//             throw off their robes, ignite, and Anakin backflips into the
-//             fight as Battle of the Heroes begins
-//   fight     Obi-Wan fights Soresu — patient guard, sharp ripostes, a Force
-//             push to break Anakin's rhythm. Like the Movie Duels of Jedi
-//             Academy, the fight travels through the film's sets in order,
-//             each reached by a short scene (Obi-Wan's health):
-//   85%       the Separatist conference room — their Force pushes collide
-//   70%       the control room — a console bursts, lava sprays in
-//   55%       the collector arm — "From my point of view the Jedi are evil!"
-//   35%       the arm collapses: the lava river
-//   25%       the blades lock over the lava
-//   ending    Obi-Wan leaps onto the bank: the high ground. The film's
-//             ending plays out on its audio.
+//   opening    the landing platform (on the film's audio): Padmé, the
+//              choke, "You will try."; robes off, both ignite, the backflip
+//   100–88%    the landing platform
+//   88%        they fight down the hallway into the facility, cutting pipes
+//   88–76%     the conference room, among the Separatist leaders
+//   76%        up on the council table and off it; in the control room their
+//              Force pushes meet and throw them apart; a blade opens the
+//              shield controls — the alarm, lava sprays in through the window
+//   76–62%     the control room (lava sprays: watch the glow)
+//   62%        out onto the balcony: "I have failed you, Anakin." … "From my
+//              point of view the Jedi are evil!" … "This is the end for you,
+//              my master."
+//   62–50%     the balcony catwalk
+//   50%        over the rail onto the collector arm
+//   50–38%     the collector arm (the lava falls pour down on it)
+//   38%        the blades lock; the arm gives way, Obi-Wan swings clear on a
+//              cable, the tower falls into the river
+//   38–12%     the lava river: Obi-Wan on the collector platform, Anakin on a
+//              mining droid's hover platform, both drifting downstream
+//   ending     Obi-Wan leaps onto the bank: the high ground. The film's
+//              ending plays out on its audio.
 import { Dooku, Duel, Extra } from './duel.js';
 import { Cinema } from './cinema.js';
 import { MUSTAFAR } from '../world/worldgen.js';
+import { dist, rand } from '../core/math.js';
 
-const { deck, raft, bank, hall, control, arm } = MUSTAFAR;
+const M = MUSTAFAR;
+const { deck, hallway, hall, control, balcony, arm, river, bank } = M;
 
-// the film's sets in order, reached at these fractions of Obi-Wan's health
-const STAGES = [
-  { at: 0.85, zone: hall, place: '분리주의 회의실', beat: 'pushes' },
-  { at: 0.7, zone: control, place: '제어실', beat: 'console' },
-  { at: 0.55, zone: arm, place: '용암 집하기 팔', beat: 'talk' },
-  { at: 0.35, zone: raft, place: '용암 강', beat: 'collapse' },
+/** The film's beats, reached at these fractions of Obi-Wan's health. */
+const BEATS = [
+  { at: 0.88, run: 'toHall', phase: 1 },
+  { at: 0.76, run: 'toControl', phase: 2 },
+  { at: 0.62, run: 'toBalcony', phase: 2 },
+  { at: 0.5, run: 'toArm', phase: 2 },
+  { at: 0.38, run: 'toRiver', phase: 3 },
 ];
+const END_AT = 0.12;
+const DRIFT = 0.45; // tiles per second down the river
 
 // ----------------------------------------------------------------------------
 
@@ -60,18 +73,25 @@ const LINES = {
 };
 const SPEAKERS = { anakin: '아나킨', obiwan: '오비완', padme: '파드메' };
 const S = (who) => SPEAKERS[who];
+const say = (t, who, text, d) => ({ t, say: [S(who), text, d] });
+const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
 
 export class MustafarDuel extends Duel {
   constructor(game) {
     super(game);
     this.lines = LINES;
     this.speakers = SPEAKERS;
+    this.ch = 0; // beats passed
+    this.hazards = [];
+    this.hazard = null; // what the current set throws at Anakin: 'spray' | 'fall' | 'splash'
+    this.hazardT = 3;
+    this.drift = null; // the river platforms while they float
     this.hud = {
       kicker: 'MOVIE DUEL · EPISODE III',
       title: '무스타파의 결투',
       name: '오비완 케노비',
       sub: '제다이 마스터 · 소레수',
-      marks: [0.85, 0.7, 0.55, 0.35, 0.25],
+      marks: [...BEATS.map((b) => b.at), END_AT],
       win: '오비완은 높은 곳에서 아나킨을 내려다보았다. 선택받은 자는 무스타파의 용암 강가에 쓰러졌고, 그 불길 속에서 다스 베이더가 태어난다.',
       lose: '아나킨은 끝내 스승의 수비를 뚫지 못했다. 오비완은 쓰러진 제자를 두고 파드메를 실은 우주선으로 걸어간다.',
     };
@@ -105,6 +125,45 @@ export class MustafarDuel extends Duel {
     this.intro().then(() => this.fight());
   }
 
+  /** Put both duellists somewhere, facing each other. */
+  place(px, py, ox, oy) {
+    const p = this.game.player;
+    const ob = this.foe;
+    p.x = px;
+    p.y = py;
+    ob.x = ox;
+    ob.y = oy;
+    p.z = ob.z = 0;
+    p.airborne = ob.airborne = false;
+    p.kx = p.ky = ob.kx = ob.ky = 0;
+    p.faceTo(ob.x, ob.y);
+    ob.faceTo(p.x, p.y);
+    p.setAnim('idle');
+    ob.setAnim('idle');
+  }
+
+  /** A trade of blows for a scene: alternating swings, clashes and sparks. */
+  exchange(c, t0, n, gap = 0.42) {
+    const g = this.game;
+    const p = g.player;
+    const ob = this.foe;
+    const cues = [];
+    for (let i = 0; i < n; i++) {
+      const t = t0 + i * gap;
+      const a = i % 2 ? p : ob;
+      cues.push({
+        t,
+        do: () => {
+          a.setAnim('attack' + (1 + (i % 3)), 1.15, true);
+          (a === p ? ob : p).setAnim('parry', 1, true);
+          g.clash((p.x + ob.x) / 2, (p.y + ob.y) / 2, 1.2, 10);
+          g.audio.play('clash', ob);
+        },
+      });
+    }
+    return cues;
+  }
+
   // --- the opening (on the film's audio: 0:00 – 1:11) ---------------------
 
   intro() {
@@ -116,8 +175,6 @@ export class MustafarDuel extends Duel {
     p.setAnim('idle');
     ob.setAnim('idle');
     pd.setAnim('talk');
-    const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
-    const say = (t, who, text, d) => ({ t, say: [S(who), text, d] });
     const anim = (u, name) => () => u.setAnim(name, 1, true);
     const cues = [
       { t: 0, fade: 1, fadeDur: 0 },
@@ -165,7 +222,6 @@ export class MustafarDuel extends Duel {
       { t: 69.0, do: () => this.ignite(ob) },
       { t: 69.4, do: () => this.ignite(p) },
       { t: 69.9, do: (c) => (p.setAnim('backflip', 1, true), c.move(p, p.x - 1.6, p.y + 1.2, 0.8)) },
-      { t: 70.5, do: () => (this.introMusicDone = true) },
       { t: 70.8, do: () => p.setAnim('idle'), cam: { x: p.x - 1.6, y: p.y + 1.2, dur: 0.6 } },
     ];
     return new Cinema(g, { track: 'mustafarIntro', length: 71.4, cues }).play();
@@ -184,110 +240,349 @@ export class MustafarDuel extends Duel {
   }
 
   ignite(u) {
-    const g = this.game;
     u.saberLit = true;
-    g.audio.play('ignite', u);
+    this.game.audio.play('ignite', u);
   }
 
-  // --- phase changes ---------------------------------------------------------
+  // --- the film's beats -------------------------------------------------------
 
   phases(k) {
-    if (this.game.cinema) return; // one scene at a time
-    const next = STAGES[this.stage || 0];
+    const g = this.game;
+    if (g.cinema || this.lock || this.over || this.afterLock) return;
+    const next = BEATS[this.ch];
     if (next && k <= next.at) {
-      this.stage = (this.stage || 0) + 1;
-      this.phase = this.stage >= 3 ? 3 : 2; // Obi-Wan presses harder as the film goes on
-      this.toStage(next);
-    } else if (!this.lockDone && this.stage >= STAGES.length && k <= 0.25) {
-      this.lockDone = true;
-      this.startLock(true);
-    } else if (k <= 0.1 && !this.over && !this.lock) {
+      this.ch++;
+      this.phase = next.phase; // Obi-Wan presses harder as the film goes on
+      this.hazard = null;
+      this.hazards = [];
+      this[next.run]();
+    } else if (!next && k <= END_AT) {
       this.over = true;
       this.ending();
     }
   }
 
-  /** A short scene carrying the fight to the next set of the film. */
-  toStage(st) {
+  /** Obi-Wan never drops below the next beat before the film reaches it. */
+  filter(src, tgt, amount, opts) {
+    const a = this.filterHit(src, tgt, amount, opts);
+    if (tgt !== this.foe) return a;
+    const floor = (this.ch < BEATS.length ? BEATS[this.ch].at - 0.004 : END_AT - 0.02) * this.foe.maxHp;
+    return Math.min(a, Math.max(0, this.foe.hp - floor));
+  }
+
+  /** Run a scene, then back to the fight with the set's hazard. */
+  scene(cues, length, hazard = null, track = null) {
+    this.hold();
+    this.foe.set('circle', 99);
+    this.game.player.airborne = this.foe.airborne = true; // the scene sets their heights
+    return new Cinema(this.game, { length, cues, track }).play().then(() => {
+      for (const u of [this.game.player, this.foe]) {
+        u.airborne = false;
+        u.z = 0;
+      }
+      this.hazard = hazard;
+      this.hazardT = 2.5;
+      this.fight();
+    });
+  }
+
+  /** 88%: down the hallway into the facility, into the conference room. */
+  toHall() {
     const g = this.game;
     const p = g.player;
     const ob = this.foe;
-    this.hold();
-    ob.set('circle', 99);
-    const z = st.zone;
-    const say = (t, who, text, d) => ({ t, say: [S(who), text, d] });
-    const narrow = z.hh < 2;
-    const d = narrow ? 2 : Math.min(z.hw, 3) * 0.7;
-    const pre = st.beat === 'collapse' ? 1.4 : 0;
-    const cues = [];
-    if (st.beat === 'collapse') {
-      // the collector arm gives way under them
-      cues.push({ t: 0, do: () => (g.fx.shake(10), g.audio.play('explode', p), g.fx.sparks(p.x, p.y, 0.5, '#ffb040', 24, 5)) });
-      cues.push({ t: 0.6, do: () => g.fx.sparks(ob.x, ob.y, 0.5, '#ff7a30', 20, 5) });
-    }
-    cues.push(
-      { t: pre, fade: 1, fadeDur: 0.6 },
+    const hx0 = hallway.x - hallway.hw + 0.8;
+    const hx1 = hall.x - hall.hw + 2.2;
+    const cues = [
+      { t: 0, fade: 1, fadeDur: 0.4 },
+      { t: 0.45, do: () => this.place(hx0 - 1.3, hallway.y + 0.3, hx0 + 0.2, hallway.y - 0.3), cam: { follow: ob, x: hx0, y: hallway.y, zoom: 1.5 } },
+      { t: 0.5, fade: 0, fadeDur: 0.5 },
+      // Obi-Wan gives ground step by step down the hallway; Anakin drives on
+      { t: 0.8, do: (c) => (c.move(ob, hx1, hallway.y - 0.3, 4.2), c.move(p, hx1 - 1.4, hallway.y + 0.3, 4.2)) },
+      ...this.exchange(null, 0.9, 10, 0.4),
+      // a wild cut opens the pipes along the wall
+      ...[1.6, 2.7, 3.8].map((t, i) => ({ t, do: () => (g.fx.sparks(hallway.x - 4 + i * 4, hallway.y - hallway.hh, 1.6, '#ffd27a', 16, 4), g.fx.smoke(hallway.x - 4 + i * 4, hallway.y - hallway.hh + 0.3, 1.2, 3), g.audio.play('zap')) })),
+      { t: 5.2, do: (c) => (c.move(ob, hall.x - 2, hall.y + 1.5, 1.0), c.move(p, hall.x - 4.6, hall.y + 2.2, 1.0)), cam: { x: hall.x - 3, y: hall.y + 1.5, dur: 1.0 } },
+      { t: 5.6, do: () => g.emit('place', '무스타파 · 분리주의 회의실') },
+      { t: 6.3, do: () => this.place(hall.x - 4.6, hall.y + 2.2, hall.x - 2, hall.y + 1.5) },
+    ];
+    return this.scene(cues, 6.6);
+  }
+
+  /** 76%: the council table, the Force pushes, the shield controls. */
+  toControl() {
+    const g = this.game;
+    const p = g.player;
+    const ob = this.foe;
+    const tx = hall.x;
+    const ty = hall.y - 0.5;
+    const sc = g.world.shieldConsole;
+    const cues = [
+      { t: 0, fade: 1, fadeDur: 0.4 },
+      { t: 0.45, do: () => this.place(tx - 3.5, ty + 1.8, tx + 1.5, ty + 1.6), cam: { x: tx - 0.5, y: ty, zoom: 1.5 } },
+      { t: 0.5, fade: 0, fadeDur: 0.5 },
+      // up onto the table, Obi-Wan first
+      { t: 0.9, do: (c) => (ob.setAnim('leap', 1, true), c.move(ob, tx + 1.2, ty, 0.5)) },
+      { t: 1.0, do: (c) => (c.onFrame = () => (ob.z = Math.min(0.85, ob.z + 0.06))) },
+      { t: 1.4, do: (c) => (p.setAnim('leap', 1, true), c.move(p, tx - 1.2, ty, 0.5)) },
+      { t: 1.5, do: (c) => (c.onFrame = () => ((ob.z = Math.min(0.85, ob.z + 0.06)), (p.z = Math.min(0.85, p.z + 0.06)))) },
+      ...this.exchange(null, 2.1, 6, 0.38),
+      // a kick throws Anakin off the table; Obi-Wan drops after him
+      { t: 4.5, do: (c) => (ob.setAnim('attack1', 1, true), p.setAnim('hurt', 0.7, true), c.move(p, tx - 3.6, ty + 2.4, 0.45), (c.onFrame = (dt) => (p.z = Math.max(0, p.z - dt * 3)))) },
+      { t: 5.2, do: (c) => (ob.setAnim('leap', 1, true), c.move(ob, tx - 1.2, ty + 2, 0.5), (c.onFrame = (dt) => ((p.z = Math.max(0, p.z - dt * 3)), (ob.z = Math.max(0, ob.z - dt * 2.5))))) },
+      { t: 6.0, fade: 1, fadeDur: 0.4 },
+      // the control room: both reach for the Force at once
       {
-        t: pre + 0.7,
-        do: () => {
-          p.x = z.x - d;
-          p.y = z.y + (narrow ? 0 : d * 0.5);
-          ob.x = z.x + d;
-          ob.y = z.y - (narrow ? 0 : d * 0.5);
-          p.faceTo(ob.x, ob.y);
-          ob.faceTo(p.x, p.y);
-          p.setAnim('idle');
-          ob.setAnim('idle');
-          p.kx = p.ky = ob.kx = ob.ky = 0;
-          g.emit('place', `무스타파 · ${st.place}`);
+        t: 6.5,
+        do: (c) => {
+          c.onFrame = null;
+          this.place(control.x - 2.6, control.y + 1.2, control.x + 1.8, control.y - 0.4);
+          g.emit('place', '무스타파 · 제어실');
         },
-        cam: { x: z.x, y: z.y, zoom: 1.4 },
+        cam: { x: control.x, y: control.y, zoom: 1.4 },
       },
-      { t: pre + 0.8, fade: 0, fadeDur: 0.9 },
-    );
-    const t0 = pre + 1.6;
-    let len = t0 + 1.6;
-    if (st.beat === 'pushes') {
-      // both reach for the Force at once; the pushes meet and throw them apart
-      cues.push(
-        { t: t0, do: () => (p.setAnim('cast', 1, true), ob.setAnim('cast', 1, true)) },
-        {
-          t: t0 + 0.45,
-          do: (c) => {
-            g.fx.shockwave((p.x + ob.x) / 2, (p.y + ob.y) / 2, 1.8, '#bfe0ff', 0.5);
-            g.fx.shake(8);
-            g.audio.play('push', p);
-            c.move(p, p.x - 1.2, p.y + 0.6, 0.4);
-            c.move(ob, ob.x + 1.2, ob.y - 0.6, 0.4);
-          },
+      { t: 6.6, fade: 0, fadeDur: 0.5 },
+      ...this.exchange(null, 7.1, 4, 0.36),
+      { t: 8.7, do: () => (p.setAnim('cast', 1, true), ob.setAnim('cast', 1, true)) },
+      {
+        t: 9.2,
+        do: (c) => {
+          g.fx.shockwave((p.x + ob.x) / 2, (p.y + ob.y) / 2, 2.2, '#bfe0ff', 0.6);
+          g.fx.shake(10);
+          g.audio.play('push', p);
+          c.move(p, control.x - 4.2, control.y + 2.4, 0.4);
+          c.move(ob, sc.x + 0.6, sc.y + 1.3, 0.4);
+          p.setAnim('hurt', 0.6, true);
+          ob.setAnim('hurt', 0.6, true);
         },
-        { t: t0 + 1.2, do: () => (p.setAnim('idle'), ob.setAnim('idle')) },
-      );
-      len = t0 + 2.2;
-    } else if (st.beat === 'console') {
-      // a stray cut opens a console; the shield fails and lava sprays in
-      const cx = control.x + 1.5;
-      const cy = control.y - 4.2;
-      cues.push(
-        { t: t0, do: () => ob.setAnim('attack2', 1, true) },
-        { t: t0 + 0.3, do: () => (g.fx.sparks(cx, cy, 1, '#9fd8ff', 18, 4), g.audio.play('zap')) },
-        { t: t0 + 1.0, do: () => (g.fx.shake(6), g.audio.play('explode', p)) },
-        { t: t0 + 1.0, do: (c) => (c.onFrame = () => Math.random() < 0.7 && g.fx.sparks(control.x + control.hw - Math.random(), control.y + (Math.random() - 0.5) * control.hh * 2, 0.4 + Math.random(), Math.random() < 0.5 ? '#ffb040' : '#ff6020', 2, 3)) },
-        { t: t0 + 2.4, do: (c) => (c.onFrame = null, ob.setAnim('idle')) },
-      );
-      len = t0 + 2.6;
-    } else if (st.beat === 'talk') {
-      cues.push(
-        say(t0, 'obiwan', '아나킨, 이건 네가 아니야. 돌아와.', 3.2),
-        say(t0 + 3.4, 'anakin', '돌아갈 곳 같은 건 없어요. 제다이는 날 믿은 적이 없으니까.', 3.0),
-        say(t0 + 6.6, 'obiwan', '의장이 널 이용하고 있다는 걸 왜 모르는 거냐!', 2.6),
-        say(t0 + 9.4, 'anakin', '내가 보는 건 당신들이 감춰 온 진실이에요.', 2.6),
-        say(t0 + 12.2, 'obiwan', '그 길 끝엔 아무것도 남지 않는다.', 2.4),
-        say(t0 + 14.8, 'anakin', '그럼 그 끝을 보여 드리죠, 마스터.', 2.4),
-      );
-      len = t0 + 17.4;
+      },
+      // Obi-Wan crashes into the shield controls: sparks, then the alarm
+      { t: 9.6, do: () => (g.fx.sparks(sc.x, sc.y, 1, '#9fd8ff', 20, 4), g.audio.play('zap')) },
+      { t: 10.2, do: () => (g.fx.explosion(sc.x, sc.y, 0.6), g.audio.play('explode', ob)) },
+      {
+        t: 10.6,
+        do: (c) => {
+          g.fx.text(control.x, control.y, '경고 · 집하기 보호막 해제', '#ff5040', 1.2, 2.6, 2.4);
+          let k = 0;
+          c.onFrame = (dt) => {
+            k += dt;
+            if ((k * 2) % 1 < dt * 2) g.fx.light(control.x, control.y, 2.5, [255, 40, 30], 260, 0.25); // the red alarm light
+            if (Math.random() < 0.5) this.spray(control.x + control.hw - Math.random() * 1.5, control.y + rand(-control.hh, control.hh), true);
+          };
+        },
+        cam: { x: control.x + 3, y: control.y, dur: 1.2 },
+      },
+      { t: 12.8, do: (c) => ((c.onFrame = null), p.setAnim('idle'), ob.setAnim('idle')) },
+      { t: 12.9, do: () => this.place(control.x - 3, control.y + 1.5, control.x + 0.5, control.y - 1) },
+    ];
+    return this.scene(cues, 13.2, 'spray');
+  }
+
+  /** 62%: out onto the balcony — the words before the end. */
+  toBalcony() {
+    const g = this.game;
+    const p = g.player;
+    const ob = this.foe;
+    const bx = balcony.x;
+    const by0 = balcony.y - balcony.hh + 1;
+    const cues = [
+      { t: 0, fade: 1, fadeDur: 0.4 },
+      { t: 0.45, do: () => this.place(bx - 0.3, by0, bx + 0.3, by0 + 2.2), cam: { x: bx, y: by0 + 1.5, zoom: 1.5 } },
+      { t: 0.5, do: () => g.emit('place', '무스타파 · 발코니') },
+      { t: 0.5, fade: 0, fadeDur: 0.5 },
+      { t: 0.9, do: (c) => (c.move(ob, bx + 0.3, by0 + 4.4, 1.6), c.move(p, bx - 0.3, by0 + 2.6, 1.6)) },
+      ...this.exchange(null, 0.9, 4, 0.4),
+      { t: 2.7, do: () => (p.setAnim('idle'), ob.setAnim('idle')), cam: { x: bx, y: by0 + 3.5, dur: 0.8 } },
+      say(3.0, 'obiwan', '내가 너를 저버렸구나, 아나킨… 내가 실패했어.', 3.0),
+      { t: 3.0, do: () => ob.setAnim('cast', 0.4) },
+      say(6.2, 'anakin', '제다이가 권력을 노린다는 걸 진작 알았어야 했어!', 3.0),
+      { t: 6.2, do: () => (ob.setAnim('idle'), p.setAnim('cast', 0.4)) },
+      say(9.4, 'obiwan', '아나킨, 팰퍼틴 의장은 악이야!', 2.4),
+      { t: 9.4, do: () => (p.setAnim('idle'), ob.setAnim('cast', 0.4)) },
+      say(12.0, 'anakin', '내가 보기엔 제다이가 악이야!', 2.4),
+      { t: 12.0, do: () => (ob.setAnim('idle'), p.setAnim('cast', 0.4)), cam: () => ({ x: p.x + 0.2, y: p.y - 0.3, dur: 0.6 }) },
+      say(14.6, 'obiwan', '그렇다면 넌 길을 잃은 거다!', 2.2),
+      { t: 14.6, do: () => (p.setAnim('idle'), ob.setAnim('cast', 0.4)), cam: () => ({ x: ob.x, y: ob.y - 0.3, dur: 0.6 }) },
+      say(17.0, 'anakin', '이걸로 끝이에요, 마스터.', 2.4),
+      { t: 17.0, do: () => (ob.setAnim('idle'), p.setAnim('cast', 0.4)), cam: () => ({ ...mid(p, ob), dur: 0.8 }) },
+      { t: 19.5, do: () => (p.setAnim('attack3', 1, true), ob.setAnim('parry', 1, true), g.audio.play('clash', ob), g.clash((p.x + ob.x) / 2, (p.y + ob.y) / 2, 1.3, 14)) },
+    ];
+    return this.scene(cues, 20.0);
+  }
+
+  /** 50%: over the rail onto the collector arm. */
+  toArm() {
+    const g = this.game;
+    const p = g.player;
+    const ob = this.foe;
+    const ax = arm.x - arm.hw + 2;
+    const cues = [
+      { t: 0, do: (c) => (ob.setAnim('leap', 1, true), c.move(ob, ax + 3.5, arm.y, 0.8)), cam: { x: ax + 1, y: arm.y - 1, dur: 0.8, zoom: 1.4 } },
+      { t: 0.1, do: (c) => (c.onFrame = (dt) => (ob.z = c.t < 0.5 ? ob.z + dt * 3 : Math.max(0, ob.z - dt * 3))) },
+      { t: 0.9, do: (c) => (p.setAnim('leap', 1, true), c.move(p, ax + 0.8, arm.y, 0.8), (c.onFrame = (dt) => ((ob.z = 0), (p.z = c.t < 1.3 ? p.z + dt * 3 : Math.max(0, p.z - dt * 3))))) },
+      { t: 1.8, do: (c) => ((c.onFrame = null), this.place(ax + 0.8, arm.y, ax + 3.5, arm.y)) },
+      { t: 1.9, do: () => g.emit('place', '무스타파 · 집하기 팔') },
+      ...this.exchange(null, 2.0, 4, 0.4),
+      // the falls hammer the arm
+      ...[2.4, 3.1].map((t) => ({ t, do: () => this.fall(ax + rand(0, 6), arm.y + rand(-0.6, 0.6), true) })),
+    ];
+    return this.scene(cues, 3.8, 'fall');
+  }
+
+  /** 38%: the blades lock on the arm; it gives way under them. */
+  toRiver() {
+    this.hold();
+    this.afterLock = () => this.collapse();
+    this.fight();
+    this.startLock(true);
+  }
+
+  collapse() {
+    const g = this.game;
+    const p = g.player;
+    const ob = this.foe;
+    const w = g.world;
+    const tw = w.armTower;
+    const r0 = river.x0;
+    const cues = [
+      { t: 0, do: () => (g.fx.shake(12), g.audio.play('explode', p), g.fx.explosion(arm.x + arm.hw - 3, arm.y, 1)) },
+      { t: 0.5, do: () => g.fx.explosion(p.x + 2, p.y, 0.8) },
+      { t: 0.9, do: () => g.fx.explosion(p.x - 2, p.y, 0.8), cam: () => ({ x: p.x, y: p.y, dur: 0.6 }) },
+      // the arm tilts and slides; they ride it down towards the falls
+      { t: 1.0, do: (c) => (p.setAnim('hurt', 0.5, true), ob.setAnim('hurt', 0.5, true), (c.onFrame = (dt) => Math.random() < dt * 8 && g.fx.sparks(p.x + rand(-2, 2), p.y + rand(-1, 1), 0.3, '#ffb040', 4, 4))) },
+      { t: 1.0, do: (c) => (c.move(p, p.x + 3, p.y + 1, 1.6), c.move(ob, ob.x + 3, ob.y + 1, 1.6)) },
+      // Obi-Wan swings clear on a cable; the tower topples into the river
+      { t: 2.0, do: (c) => (ob.setAnim('leap', 1, true), c.move(ob, ob.x + 4, ob.y + 4, 1.4)) },
+      { t: 2.2, do: () => (g.fx.explosion(tw.x, tw.y, 1.2), g.fx.shake(14), g.audio.play('explode', ob)) },
+      { t: 2.6, fade: 1, fadeDur: 0.6 },
+      {
+        t: 3.3,
+        do: (c) => {
+          c.onFrame = null;
+          tw.hidden = true; // gone into the lava
+          this.startRiver();
+          // Obi-Wan on the collector platform, Anakin falling with the tower
+          this.place(r0 + 0.8, river.y + M.droid.hh, r0 - 0.6, river.y - M.raft.hh - 0.3);
+          p.z = 3;
+          p.setAnim('leap', 1, true);
+          ob.setAnim('idle');
+          g.emit('place', '무스타파 · 용암 강');
+        },
+        cam: { x: r0 + 1.5, y: river.y, zoom: 1.3 },
+      },
+      { t: 3.4, fade: 0, fadeDur: 0.9 },
+      { t: 3.4, do: (c) => (c.onFrame = (dt) => ((p.z = Math.max(0, p.z - dt * 4)), g.fx.sparks(p.x, p.y, p.z + 0.3, '#ff8030', 1, 2))) },
+      // a mining droid sweeps under him: he lands on its platform
+      { t: 4.3, do: (c) => ((c.onFrame = null), (p.z = 0), p.setAnim('idle'), g.fx.dust(p.x, p.y, 6), p.faceTo(ob.x, ob.y)) },
+    ];
+    return this.scene(cues, 5.0, 'splash');
+  }
+
+  // --- the river platforms ----------------------------------------------------
+
+  /** Show the two platforms at the head of the river and start them drifting. */
+  startRiver() {
+    const w = this.game.world;
+    for (const pr of [w.raft, w.droid, w.raftTower]) pr.hidden = false;
+    this.drift = { x: river.x0, lights: [] };
+    for (const dx of [-2, 2]) {
+      const l = { x: 0, y: river.y, z: 0.4, r: 255, g: 120, b: 40, rad: 150, flicker: 0.15, dx };
+      w.lights.push(l);
+      this.drift.lights.push(l);
     }
-    new Cinema(g, { length: len, cues }).play().then(() => this.fight());
+    this.moveRiver(0);
+  }
+
+  /** Move the platforms (and whoever stands on them) to drift.x + dx. */
+  moveRiver(dx) {
+    const g = this.game;
+    const w = g.world;
+    const d = this.drift;
+    d.x += dx;
+    const x = d.x;
+    const raft = { x, y: river.y - M.raft.hh, hw: M.raft.hw, hh: M.raft.hh };
+    const droid = { x: x + 0.6, y: river.y + M.droid.hh, hw: M.droid.hw, hh: M.droid.hh };
+    for (const [pr, r] of [[w.raft, raft], [w.droid, droid], [w.raftTower, { x: x - 2, y: raft.y - 1.4 }]]) {
+      pr.x = r.x;
+      pr.y = r.y;
+      if (g.renderer) g.renderer.placeProp(pr);
+    }
+    for (const l of d.lights) l.x = x + l.dx;
+    if (dx) for (const u of [g.player, this.foe]) if (Math.abs(u.y - river.y) < 4 && Math.abs(u.x - x) < 4) u.x += dx;
+    w.setFloating([raft, droid]);
+  }
+
+  // --- the sets' dangers --------------------------------------------------------
+
+  /** Lava spraying in through the control room's open window. */
+  spray(x, y, quiet = false) {
+    this.addHazard(x, y, quiet ? 0 : 0.85, 1.0, 11, '#ff8a30');
+  }
+
+  /** A gout from the lava falls landing on the arm. */
+  fall(x, y, quiet = false) {
+    this.addHazard(x, y, quiet ? 0 : 1.0, 1.2, 15, '#ffb040');
+  }
+
+  addHazard(x, y, warn, r, dmg, color) {
+    this.hazards.push({ x, y, warn, r, dmg, color, t: 0 });
+  }
+
+  /** Telegraphed danger: a growing glow, then the blast. Only Anakin is hurt. */
+  updateHazards(dt) {
+    const g = this.game;
+    const p = g.player;
+    if (this.hazard && !this.cine && !this.lock) {
+      this.hazardT -= dt;
+      if (this.hazardT <= 0) {
+        this.hazardT = rand(1.6, 2.8) * (this.phase === 3 ? 0.85 : 1);
+        // near Anakin most of the time, so standing still is never safe
+        const near = Math.random() < 0.7;
+        if (this.hazard === 'spray') {
+          const x = near ? p.x + rand(-1.5, 1.5) : control.x + rand(0, control.hw - 0.5);
+          this.spray(Math.min(control.x + control.hw - 0.5, x), near ? p.y + rand(-1.2, 1.2) : control.y + rand(-control.hh, control.hh));
+        } else if (this.hazard === 'fall') {
+          this.fall(near ? p.x + rand(-1.5, 1.5) : arm.x + rand(-arm.hw, arm.hw), arm.y + rand(-0.5, 0.5));
+        } else if (this.hazard === 'splash' && this.drift) {
+          const edge = Math.random() < 0.5 ? -1 : 1;
+          this.addHazard(near ? p.x + rand(-1.2, 1.2) : this.drift.x + edge * M.raft.hw, near ? p.y : river.y + edge * 2.2, 1.0, 1.1, 12, '#ff7a20');
+        }
+      }
+    }
+    for (const h of this.hazards) {
+      h.t += dt;
+      if (h.t < h.warn) {
+        // the warning: a glow on the floor that grows until it bursts
+        if (Math.random() < dt * 14) g.fx.sparks(h.x + rand(-h.r, h.r) * 0.6, h.y + rand(-h.r, h.r) * 0.3, 0.1, h.color, 1, 1.2);
+        if ((h.t * 6) % 1 < dt * 6) g.fx.ring(h.x, h.y, h.r * (0.4 + (h.t / h.warn) * 0.6), h.color, 0.25);
+        continue;
+      }
+      if (h.done) continue;
+      h.done = true;
+      g.fx.explosion(h.x, h.y, 0.5);
+      g.fx.sparks(h.x, h.y, 0.6, h.color, 14, 5);
+      if (!this.cine && !p.dead && dist(p.x, p.y, h.x, h.y) < h.r + 0.3) {
+        g.damage(null, p, h.dmg, { type: 'duel', knock: { ang: Math.atan2(p.y - h.y, p.x - h.x), power: 2.5 } });
+        p.stun = Math.max(p.stun, 0.3);
+        p.setAnim('hurt', 0.8, true);
+      }
+    }
+    this.hazards = this.hazards.filter((h) => !h.done);
+  }
+
+  update(dt) {
+    super.update(dt);
+    const g = this.game;
+    if (this.drift && !this.over && !g.cinema && !this.lock) {
+      const left = river.x1 - this.drift.x;
+      if (left > 0) this.moveRiver(Math.min(left, DRIFT * dt));
+    }
+    if (this.afterLock && !this.lock) {
+      const next = this.afterLock;
+      this.afterLock = null;
+      next();
+    }
+    if (!this.over) this.updateHazards(dt);
   }
 
   // --- the ending (on the film's audio: 7:42 – 9:06) ------------------------
@@ -297,37 +592,40 @@ export class MustafarDuel extends Duel {
     const p = g.player;
     const ob = this.foe;
     this.lock = null;
+    this.hazard = null;
+    this.hazards = [];
     g.emit('lock', false);
     this.hold();
-    const say = (t, who, text, d) => ({ t, say: [S(who), text, d] });
-    const foot = { x: bank.x - 0.4, y: bank.y - 3.4 }; // where Anakin falls, at the edge of the bank
+    p.airborne = ob.airborne = true;
+    const hg = { x: bank.x - 1.8, y: bank.y - 2.2 }; // the high ground
+    const foot = { x: bank.x - 3.6, y: bank.y - 4.6 }; // where Anakin falls, at the edge of the bank
     const cues = [
       { t: 0, fade: 1, fadeDur: 0.5 },
       {
         t: 0.6,
         do: () => {
-          ob.x = bank.x + 0.6;
-          ob.y = bank.y - 0.6;
-          p.x = raft.x;
-          p.y = raft.y + 2.6;
-          p.faceTo(ob.x, ob.y);
-          ob.faceTo(p.x, p.y);
-          p.setAnim('idle');
-          ob.setAnim('idle');
-          p.kx = p.ky = ob.kx = ob.ky = 0;
+          // the platforms reach the bend of the river by the bank
+          if (this.drift) this.moveRiver(river.x1 - this.drift.x);
+          this.place(river.x1 + 0.6, river.y + M.droid.hh, river.x1 - 0.4, river.y - M.raft.hh);
         },
-        cam: { x: (raft.x + bank.x) / 2, y: (raft.y + 2.6 + bank.y) / 2, zoom: 1.3 },
+        cam: { x: river.x1 + 1, y: river.y + 2, zoom: 1.3 },
       },
       { t: 0.7, fade: 0, fadeDur: 1.6 },
+      // Obi-Wan leaps from the platform onto the bank
+      { t: 3.2, do: (c) => (ob.setAnim('leap', 1, true), c.move(ob, hg.x, hg.y, 0.9)) },
+      { t: 3.3, do: (c) => (c.onFrame = (dt) => (ob.z = c.t < 3.75 ? ob.z + dt * 4 : Math.max(0, ob.z - dt * 4))) },
+      { t: 4.3, do: (c) => ((c.onFrame = null), (ob.z = 0), ob.setAnim('idle'), ob.faceTo(p.x, p.y), p.faceTo(ob.x, ob.y)), cam: () => ({ ...mid(p, hg), dur: 1.5 }) },
       say(8.7, 'obiwan', '끝났다, 아나킨. 내가 더 높은 곳에 있다.', 3.2),
       say(12.2, 'anakin', '내 힘을 얕보지 마!', 2.8),
       say(17.5, 'obiwan', '그러지 마라.', 2.2),
       // the leap and the cut
       { t: 21.6, do: (c) => (p.setAnim('leap', 1, true), c.move(p, foot.x, foot.y, 0.7)) },
+      { t: 21.7, do: (c) => (c.onFrame = (dt) => (p.z = c.t < 22.0 ? p.z + dt * 5 : Math.max(0, p.z - dt * 6))) },
       { t: 22.1, do: () => ob.setAnim('attack2', 1.2, true) },
       {
         t: 22.4,
-        do: () => {
+        do: (c) => {
+          c.onFrame = (dt) => (p.z = Math.max(0, p.z - dt * 6));
           g.fx.sparks(p.x, p.y, 1.1, '#ffe0b0', 22, 4);
           g.fx.shake(10);
           g.audio.play('clash', p, { heavy: true });
@@ -337,27 +635,27 @@ export class MustafarDuel extends Duel {
       },
       { t: 22.6, fade: 0.85, fadeDur: 0.05 },
       { t: 22.8, fade: 0, fadeDur: 1.2, cam: { x: foot.x, y: foot.y - 0.4, zoom: 1.6, dur: 3 } },
-      { t: 26, do: () => ob.setAnim('idle') },
+      { t: 26, do: (c) => ((c.onFrame = null), (p.z = 0), ob.setAnim('idle')) },
       say(43.3, 'obiwan', '넌 선택받은 자였다!', 3.2),
-      { t: 43.3, cam: { x: (foot.x + ob.x) / 2, y: (foot.y + ob.y) / 2, dur: 2 } },
+      { t: 43.3, cam: { ...mid(foot, hg), dur: 2 } },
       say(47.5, 'obiwan', '시스를 멸할 거라 했지, 그들과 손잡는 게 아니라!', 4.0),
       say(53.0, 'obiwan', '포스에 균형을 가져와야 했다… 어둠 속에 버려두는 게 아니라!', 4.6),
       say(70.8, 'anakin', '당신이 미워!', 2.6),
       { t: 70.8, cam: { x: foot.x, y: foot.y - 0.3, dur: 0.4 } },
       say(76.0, 'obiwan', '넌 내 형제였다, 아나킨… 널 사랑했다.', 4.2),
-      { t: 76.0, cam: { x: ob.x, y: ob.y, dur: 1.5 } },
+      { t: 76.0, cam: { x: hg.x, y: hg.y, dur: 1.5 } },
       // the lava catches him; Obi-Wan takes his saber and walks away
       {
         t: 79.4,
         do: (c) => {
           c.onFrame = () => {
-            if (Math.random() < 0.6) g.fx.sparks(p.x + (Math.random() - 0.5) * 0.6, p.y + (Math.random() - 0.5) * 0.6, 0.4 + Math.random() * 0.6, Math.random() < 0.5 ? '#ffb040' : '#ff5a20', 2, 1.6);
+            if (Math.random() < 0.6) g.fx.sparks(p.x + rand(-0.3, 0.3), p.y + rand(-0.3, 0.3), 0.4 + Math.random() * 0.6, Math.random() < 0.5 ? '#ffb040' : '#ff5a20', 2, 1.6);
           };
           g.world.lights.push({ x: p.x, y: p.y, z: 0.5, r: 255, g: 120, b: 40, rad: 160, flicker: 0.3 });
         },
         cam: { x: foot.x, y: foot.y, dur: 2 },
       },
-      { t: 81.4, do: (c) => (ob.setAnim('walk'), ob.faceTo(bank.x + 6, bank.y + 2), c.move(ob, bank.x + 6, bank.y + 2, 3)) },
+      { t: 81.4, do: (c) => (ob.setAnim('walk'), ob.faceTo(bank.x + 6, bank.y + 3), c.move(ob, bank.x + 6, bank.y + 3, 3)) },
       { t: 83.0, fade: 1, fadeDur: 1.4 },
     ];
     new Cinema(g, { track: 'mustafarEnd', length: 84.5, cues }).play().then(() => {
@@ -367,13 +665,14 @@ export class MustafarDuel extends Duel {
   }
 
   /** Force push (Obi-Wan's "cast"): pushes Anakin back, can't be blocked. */
-  lightning(dk, dt) {
+  lightning(dk) {
     if (dk.pushed || dk.stateT > 0.45) return;
     dk.pushed = true;
     const g = this.game;
     const p = g.player;
     const a = Math.atan2(p.y - dk.y, p.x - dk.x);
     g.fx.shockwave(dk.x + Math.cos(a) * 0.8, dk.y + Math.sin(a) * 0.8, 1.3, '#bfe0ff', 0.4);
+    g.fx.ripple(dk.x, dk.y, 4.5, 0.4, 3.5, a, 0.7);
     g.audio.play('push', dk);
     if (Math.hypot(p.x - dk.x, p.y - dk.y) > 4.5) return;
     p.knock(a, 7);

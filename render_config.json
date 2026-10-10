@@ -1,0 +1,82 @@
+{
+  "_doc": "Every render script (tools/sprites/render_sprites.py, render_characters.py, render_anakin.py, render_city.py, render_building.py) reads its settings from this file; command-line options only pick the asset, a preview or a forced re-render. See CLAUDE.md for the rules.",
+  "device": {
+    "_doc": "auto: Cycles on the GPU when Blender finds one (OptiX, CUDA, HIP, oneAPI, Metal), else the CPU; cpu / gpu force it. This container has no GPU: 4 CPU cores, EEVEE only as a slow software renderer.",
+    "prefer": "auto",
+    "threads": 0
+  },
+  "character": {
+    "_doc": "Sprite sheets of characters (one Blender run per character, every direction of a frame in one tiled render, colour + shadow (+ optional passes) out of that one render).",
+    "engine": { "cpu": "cycles", "gpu": "cycles" },
+    "_engine_doc": "cycles everywhere: EEVEE has no shadow catcher, so its shadow needs a second render (against the one-render rule), and without a GPU it is a slow software renderer (27.5 s a frame vs 4.7 s; with hair over 20 min). On a GPU machine eevee can be tried here; the script then renders the shadow separately.",
+    "samples": { "cycles_cpu": 12, "cycles_gpu": 64, "eevee": 16 },
+    "adaptive_threshold": 0.05,
+    "denoiser": "none",
+    "_denoiser_doc": "none: measured — OIDN costs 1.2 s of a 4 s frame and makes no visible difference after the 2x downscale (mean |diff| < 0.25/255 at 128 px). OPENIMAGEDENOISE to turn it back on.",
+    "persistent_data": false,
+    "hair_shape": "RIBBONS",
+    "size": 128,
+    "render_scale": 2.0,
+    "sharpen": 0.5,
+    "view": "standard",
+    "passes": ["color", "shadow", "normal"],
+    "optional_passes": ["normal", "depth"],
+    "_passes_doc": "color and shadow are what the game draws; normal (camera space, RGB = n·0.5+0.5) lights the characters by transient lights (src/gfx/relight.js: sabers, bolts, clashes, explosions). depth (8 bit, ±depth_range units round the feet) comes out of the same render when listed; the game does not use it yet. Each extra pass adds a sheet per character.",
+    "depth_range": 1.5,
+    "shadow_threshold": 10,
+    "shadow_gain": 1.45,
+    "_shadow_doc": "the shadow is the Shadow Catcher pass of the same render, on a disc under each direction (shadow_patch_radius units); the dim sky fills it a little, shadow_gain brings it back to the darkness of the old separate key-light-only shadow render",
+    "shadow_patch_radius": 1.7,
+    "mirror_default": false,
+    "_mirror_doc": "Mirror: render only the directions that are not a left-right mirror of another and flip them for the rest (about half the renders). It swaps the model's sides, so the saber hand changes: only for sprites listed in mirror_sprites (symmetric, nothing held in one hand).",
+    "mirror_sprites": ["r2"],
+    "dirs_default": 8
+  },
+  "sprites": {
+    "_doc": "Sprites modelled in Blender (tools/sprites/build_anakin.py outfits); the other characters' directions come from src/gfx/specs.js.",
+    "anakin": { "glb": "tools/sprites/out/anakin.glb", "dirs": 16 },
+    "anakin_tunic": { "glb": "tools/sprites/out/anakin_tunic.glb", "dirs": 16, "hair": "tools/sprites/out/anakin_hair.blend" },
+    "anakin_robe": { "glb": "tools/sprites/out/anakin_robe.glb", "dirs": 16, "hair": "tools/sprites/out/anakin_hair.blend" },
+    "anakin_vader": { "glb": "tools/sprites/out/anakin_vader.glb", "dirs": 16, "hair": "tools/sprites/out/anakin_hair_hood.blend" }
+  },
+  "building": {
+    "_doc": "City assets baked once (body / neon / reflection layers): Cycles, more samples on a GPU.",
+    "engine": "cycles",
+    "samples": { "cpu": 24, "gpu": 96 },
+    "denoiser": "OPENIMAGEDENOISE",
+    "render_scale": 2.5,
+    "light": 2.4
+  },
+  "ui": {
+    "_doc": "The console's UI pieces (tools/ui/render_ui.py): one atlas render, cut into 9-slice PNGs in public/ui. rig: the characters' lights in camera space (right, up, toward the camera), ART_GUIDE.md §3.",
+    "samples": { "cpu": 64, "gpu": 256 },
+    "denoiser": "OPENIMAGEDENOISE",
+    "render_scale": 3.0,
+    "sharpen": 0.3,
+    "estimate_seconds_per_mpx": 12,
+    "rig": {
+      "lights": {
+        "key": { "dir": [-0.9, 1.35, 0.55], "strength": 4.2, "color": [1.0, 0.95, 0.88], "angle": 6 },
+        "rim": { "dir": [0.7, 0.55, -1.0], "strength": 3.0, "color": [0.72, 0.84, 1.0], "angle": 6 },
+        "fill": { "dir": [0.6, 0.3, 1.0], "strength": 0.7, "color": [0.85, 0.9, 1.0], "shadow": false }
+      },
+      "sky": { "color": [0.198, 0.209, 0.242], "strength": 1.0 }
+    }
+  },
+  "preview": {
+    "_doc": "--preview: a quick look at a new feature instead of a full render — one direction (front: facing the camera), two frames of each animation, written to tools/sprites/out/preview.",
+    "dir": "front",
+    "frames": 2,
+    "out": "tools/sprites/out/preview"
+  },
+  "parallel": {
+    "_doc": "Characters rendered side by side. CPU: two keep 4 cores busier than one (a render's fixed costs are partly single-threaded). GPU: two share one GPU (one syncs the scene while the other renders).",
+    "jobs_cpu": 2,
+    "jobs_gpu": 2
+  },
+  "estimate": {
+    "_doc": "Before rendering, the scripts print the number of images and the expected time (seconds per frame from tools/sprites/out/render_times.json, measured on earlier runs, else these defaults per tiled frame); above ask_minutes they stop unless run with --yes.",
+    "ask_minutes": 30,
+    "default_seconds_per_frame": { "16": 5.0, "8": 2.5, "4": 1.4, "1": 0.8 }
+  }
+}
