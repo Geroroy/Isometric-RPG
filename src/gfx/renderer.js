@@ -11,6 +11,7 @@ import { neonLevel } from './citySprites.js';
 import { glowSprite } from './fx.js';
 import { transientLights, relightUnits } from './relight.js';
 import { SIG } from '../game/units.js';
+import { SABER, TRAILS, paletteFor, drawBlade, drawTrail, record } from './saberStyle.js';
 
 const AMBIENT = [150, 146, 178];
 const byDepth = (a, b) => a.depth - b.depth;
@@ -689,6 +690,20 @@ export class Renderer {
         const tx = s.x + e[0] - cam.x;
         const ty = s.y + e[1] - cam.y;
         const segs = f.blades ? f.blades[k] : [[0, 1]];
+        const pal = SABER.lab ? paletteFor(u.saberColor) : null;
+        if (pal) {
+          // the test scene's looks (saberStyle.js): trail by style, colours by palette
+          const hist = ((u.saberHist ||= {})[k] ||= []);
+          record(hist, bx + cam.x, by + cam.y, tx + cam.x, ty + cam.y, this.time);
+          if (swinging) u.trailUntil = this.time + TRAILS[SABER.trail].window;
+          if (this.time <= (u.trailUntil || 0)) drawTrail(ctx, hist, this.time, cam, pal);
+          const flash = u.deflectFlash > 0 ? 1.6 : u.clashFlash > 0 ? 1.8 : 1;
+          for (const [s0, s1] of segs) {
+            if (s1 - s0 < 0.02) continue;
+            drawBlade(ctx, bx + (tx - bx) * s0, by + (ty - by) * s0, bx + (tx - bx) * s1, by + (ty - by) * s1, pal, flash, this.time);
+          }
+          continue;
+        }
         // swing trail (world-anchored so it survives camera motion)
         const trail = (u.saberTrail ||= []);
         if (swinging) trail.push({ k, bx: bx + cam.x, by: by + cam.y, tx: tx + cam.x, ty: ty + cam.y, t: 0 });

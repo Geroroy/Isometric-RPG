@@ -12,6 +12,7 @@ import { AppearanceUI } from './appearance.js';
 import { QUESTS } from '../game/quests.js';
 import { VOLUMES } from '../core/audio.js';
 import { setText, setHTML, setClass } from './dom.js';
+import { SABER, setSaberOpt, TRAIL_NAMES, PALETTE_NAMES } from '../gfx/saberStyle.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (tag, cls, html) => {
@@ -426,6 +427,13 @@ export class HUD {
         <p class="set-note" id="postNote">이 기기에 저장됩니다. 느린 기기에서는 끄면 가벼워집니다.</p>
       </section>
       <section class="set-card">
+        <h4>광선검 (테스트)</h4>
+        <label class="set-toggle"><input type="checkbox" id="saberLab"> 새 광선검 표현 미리보기</label>
+        <label class="set-select">잔상 스타일 <select id="saberTrail">${Object.entries(TRAIL_NAMES).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></label>
+        <label class="set-select">색상 <select id="saberPalette">${Object.entries(PALETTE_NAMES).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></label>
+        <p class="set-note">레퍼런스 영상에서 잰 두 잔상 스타일과 두 색상표. 승인 전까지는 미리보기를 켰을 때만 적용됩니다. 이 기기에 저장됩니다.</p>
+      </section>
+      <section class="set-card">
         <h4>개발자</h4>
         <p class="set-note">스킬 · 음악 해금, 무적, 순간 이동 같은 테스트용 기능입니다. 언제든 <kbd>\`</kbd> 키로도 열 수 있습니다.</p>
         <button type="button" class="btn-ghost" id="openDebug">디버그 모드</button>
@@ -477,6 +485,14 @@ export class HUD {
       if (!post.ok && cb.dataset.post !== 'fps') cb.disabled = true;
       cb.addEventListener('change', () => post.set(cb.dataset.post, cb.checked));
     });
+    const lab = $('#saberLab');
+    lab.checked = SABER.lab;
+    lab.addEventListener('change', () => setSaberOpt('lab', lab.checked));
+    for (const [id, key] of [['saberTrail', 'trail'], ['saberPalette', 'palette']]) {
+      const sel = $('#' + id);
+      sel.value = SABER[key];
+      sel.addEventListener('change', () => setSaberOpt(key, sel.value));
+    }
     if (!post.ok) $('#postNote').textContent = '이 기기에서는 WebGL을 쓸 수 없어 화면 효과가 꺼져 있습니다.';
     $('#openDebug').addEventListener('click', () => this.toggle('debug', true));
     $('#openHelp').addEventListener('click', () => {
