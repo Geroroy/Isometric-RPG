@@ -317,7 +317,8 @@ export class Game {
       const f = this.pathfinder.nearestFree(Math.floor(camp.x), Math.floor(camp.y), 8);
       return f ? { x: f[0] + 0.5, y: f[1] + 0.5 } : { x: camp.x, y: camp.y };
     };
-    const eliteIdx = camp.level >= 2 || camp.boss ? Math.floor(Math.random() * (camp.b1 + camp.b2)) : -1;
+    // the factory's guardian is always its last B2 (an elite B1 would have a third of the health)
+    const eliteIdx = camp.boss ? camp.b1 + camp.b2 - 1 : camp.level >= 2 ? Math.floor(Math.random() * (camp.b1 + camp.b2)) : -1;
     let n = 0;
     for (const [kind, count] of [['b1', camp.b1], ['b2', camp.b2]]) {
       for (let i = 0; i < count; i++) {
