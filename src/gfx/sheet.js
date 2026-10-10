@@ -3,7 +3,7 @@
 // markers and visible blade stretches. Loaded into the same sprite-set shape
 // the baker produces, so units draw them like any other set:
 //   { dirs, anims: { name: { frames, fps, loop, hit, data: [dir][frame] } } }
-// Each frame: { page, sx, sy, w, h, ox, oy, markers, blades?, shadow, k? }.
+// Each frame: { page, sx, sy, w, h, ox, oy, markers, blades?, shadow, normal?, k? }.
 
 /**
  * Characters drawn from a sheet instead of being baked at load time: Anakin
@@ -43,7 +43,11 @@ export async function loadSheet(url) {
   if (!res.ok) throw new Error('스프라이트 JSON을 불러오지 못했습니다: ' + url);
   const meta = await res.json();
   const dir = url.replace(/[^/]*$/, '');
-  const [pages, shadowPages] = await Promise.all([Promise.all(meta.pages.map((p) => loadImg(dir + p))), Promise.all(meta.shadowPages.map((p) => loadImg(dir + p)))]);
+  const [pages, shadowPages, normalPages] = await Promise.all([
+    Promise.all(meta.pages.map((p) => loadImg(dir + p))),
+    Promise.all(meta.shadowPages.map((p) => loadImg(dir + p))),
+    Promise.all((meta.normalPages || []).map((p) => loadImg(dir + p))), // the normal pass: same rects as the colour
+  ]);
   // sheet px -> game px (1 at the native 128 px size; drawn smoothly otherwise)
   const k = meta.k !== 1 ? meta.k : undefined;
   const anims = {};
@@ -65,6 +69,7 @@ export async function loadSheet(url) {
           shadow: { page: shadowPages[s.p], sx: s.x, sy: s.y, w: s.w, h: s.h, ox: s.ox, oy: s.oy },
         };
         if (r.b && Object.keys(r.b).length) fr.blades = r.b;
+        if (normalPages.length) fr.normal = { page: normalPages[r.p], sx: r.x, sy: r.y }; // relight.js
         if (k) fr.k = fr.shadow.k = k;
         data[d].push(fr);
       }

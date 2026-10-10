@@ -12,7 +12,7 @@
   `render_characters.py`, `render_anakin.py`, `render_city.py`, `render_building.py`)가 렌더 엔진·샘플 수·해상도·
   패스 목록·방향 수·병렬 작업 수·예상 시간 기준을 이 파일에서 읽는다. 설정은 명령줄 옵션이 아니라 이 파일에서 바꾼다.
 - **렌더 전에 총 장수와 예상 시간을 먼저 계산해서 보여준다.** 스크립트가 `ESTIMATE …` 줄을 출력한다
-  (`tools/sprites/out/render_times.json`에 쌓인 실측 프레임당 시간 기준). **30분(`estimate.ask_minutes`)이 넘으면
+  (`tools/sprites/out/render_times.json`에 쌓인 실측 프레임당 시간 기준; `--estimate`는 계산만 하고 렌더하지 않는다). **30분(`estimate.ask_minutes`)이 넘으면
   진행 전에 사용자에게 묻는다** — 스크립트는 `ASK:`를 출력하고 멈추며, 사용자가 동의한 뒤에만 `--yes`로 다시 실행한다.
 - **새 기능을 테스트할 땐 전체 렌더 말고 미리보기 모드로 먼저 확인한다:** `--preview` = 방향 1개(카메라를 보는 방향),
   애니메이션마다 프레임 2장, 결과는 `tools/sprites/out/preview`.

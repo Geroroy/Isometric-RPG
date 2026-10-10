@@ -29,6 +29,7 @@ META = os.path.join(HERE, 'anakin_anims.json')
 args = sys.argv[1:]
 FORCE, YES, PREVIEW = '--force' in args, '--yes' in args, '--preview' in args
 ADOPT = '--adopt' in args  # stamp existing sheets as current instead of rendering
+ESTIMATE_ONLY = '--estimate' in args  # print what would render and how long, render nothing
 SPRITES = {k: v for k, v in CFG['sprites'].items() if not k.startswith('_')}
 names = [a for a in args if not a.startswith('--')] or list(SPRITES)
 GPU = CFG['device']['prefer'] == 'gpu' or (CFG['device']['prefer'] == 'auto' and (os.path.exists('/dev/nvidia0') or os.path.exists('/dev/kfd')))
@@ -70,6 +71,8 @@ for n in todo:
     total += (h['seconds_per_frame'] if h.get('tiles') == dirs else table.get(str(dirs), 5.0)) * f
 minutes = total / max(1, min(jobs, len(todo))) / 60
 print(f'ESTIMATE {len(todo)} outfit(s), {len(todo) * frames * (1 if PREVIEW else 16)} sprites, about {minutes:.0f} min with {jobs} jobs', flush=True)
+if ESTIMATE_ONLY:
+    sys.exit(0)
 if minutes > CFG['estimate']['ask_minutes'] and not YES:
     print(f'ASK: over {CFG["estimate"]["ask_minutes"]} min — confirm first, then run again with --yes', flush=True)
     sys.exit(3)

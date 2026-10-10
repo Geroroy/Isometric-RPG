@@ -39,6 +39,7 @@ FORCE = '--force' in args
 ADOPT = '--adopt' in args  # stamp existing sheets as current instead of rendering
 YES = '--yes' in args
 PREVIEW = '--preview' in args
+ESTIMATE_ONLY = '--estimate' in args  # print what would render and how long, render nothing
 names = [a for a in args if not a.startswith('--')]
 HAS_GPU = CFG['device']['prefer'] == 'gpu' or (CFG['device']['prefer'] == 'auto' and (os.path.exists('/dev/nvidia0') or os.path.exists('/dev/kfd')))
 jobs = CFG['parallel']['jobs_gpu' if HAS_GPU else 'jobs_cpu']
@@ -135,6 +136,8 @@ for n in todo:
     sprites += frames * dirs
 minutes = total_s / max(1, min(jobs, len(todo))) / 60
 print(f'ESTIMATE {len(todo)} characters, {sprites} sprites, about {minutes:.0f} min with {jobs} jobs', flush=True)
+if ESTIMATE_ONLY:
+    sys.exit(0)
 if minutes > CFG['estimate']['ask_minutes'] and not YES:
     print(f'ASK: over {CFG["estimate"]["ask_minutes"]} min — confirm first, then run again with --yes', flush=True)
     sys.exit(3)

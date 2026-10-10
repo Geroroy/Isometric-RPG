@@ -9,6 +9,7 @@ import { dist } from '../core/math.js';
 import { SHEET_PROPS } from '../world/cityProps.js';
 import { neonLevel } from './citySprites.js';
 import { glowSprite } from './fx.js';
+import { transientLights, relightUnits } from './relight.js';
 
 const AMBIENT = [150, 146, 178];
 const TRAIL_LIFE = 0.13; // seconds a saber swing's afterimage lasts
@@ -270,6 +271,13 @@ export class Renderer {
 
     // --- lighting
     this.drawLighting(cam);
+    // transient lights on the characters' normal maps (sheets rendered with the normal pass)
+    if (this.relight !== false) {
+      ctx.globalCompositeOperation = 'lighter';
+      this.smooth(true);
+      relightUnits(ctx, g, cam, transientLights(g, cam), W, H);
+      ctx.globalCompositeOperation = 'source-over';
+    }
     this.drawHitFlashes(ctx);
     // --- the Force bending space (refraction of the lit picture)
     this.drawRipples(ctx, cam);
