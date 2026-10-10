@@ -63,5 +63,6 @@ export const DUEL_CHARACTERS = Object.assign({}, ...Object.values(DUELS));
 export const SKINS = {
   anakin_tunic: () => ({ model: M.buildAnakin({ outfit: 'tunic' }), dirs: 16, frame: [170, 160, 85, 120], anims: A.ANAKIN_ANIMS, markers: SABER, ss: 2 }),
   anakin_robe: () => ({ model: M.buildAnakin({ outfit: 'robe' }), dirs: 16, frame: [170, 160, 85, 120], anims: A.ANAKIN_ANIMS, markers: SABER, ss: 2 }),
+  anakin_vader: () => ({ model: M.buildAnakin({ outfit: 'vader' }), dirs: 16, frame: [170, 160, 85, 120], anims: A.ANAKIN_ANIMS, markers: SABER, ss: 2 }),
 };
 

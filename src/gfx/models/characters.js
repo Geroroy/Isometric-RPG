@@ -117,6 +117,7 @@ export function addSkirt(rig, { outer, inner, len = 0.62, innerLen = 0.5, gap = 
 }
 
 export function buildAnakin({ dual = false, outfit = 'armor' } = {}) {
+  if (outfit === 'vader') return armAnakin(buildAnakinEp3(true, { K: VADER, hoodUp: true }), dual, 0.2);
   if (outfit !== 'armor') return armAnakin(buildAnakinEp3(outfit === 'robe' || outfit === 'hood', { hood: outfit === 'hood' }), dual, 0.2);
   const K = ANAKIN_COL;
   const rig = new Rig({ shW: 0.2, uarm: 0.29, farm: 0.27, chest: 0.31 });
@@ -256,8 +257,26 @@ const EP3 = {
   robe: 0x5a3426,
   robeDark: 0x3a2018,
 };
+// 'Lord Vader' — the night of Order 66, marching on the Jedi Temple: the same
+// costume gone dark (black leather tunic and tabards, black sash, near-black
+// brown cloak with the hood raised), only the brown belt and its buckle lighter.
+const VADER = {
+  ...EP3,
+  tunic: 0x2a211d,
+  tunicDark: 0x1b1513,
+  under: 0x151112,
+  leather: 0x26262a,
+  obi: 0x1c1819,
+  belt: 0x5e3a28,
+  pouch: 0x3e2a20,
+  pants: 0x1e1a19,
+  boot: 0x141213,
+  strap: 0x2a2220,
+  robe: 0x2e1d16,
+  robeDark: 0x1c110c,
+};
 
-/** `o.K` palette, `o.hood` adds a hood that poses raise / lower (toggles hoodUp / hoodDown), `o.obiwan` = Obi-Wan's face, hair and bare hands. */
+/** `o.K` palette, `o.hood` adds a hood that poses raise / lower (toggles hoodUp / hoodDown), `o.hoodUp` a hood that is always raised, `o.obiwan` = Obi-Wan's face, hair and bare hands. */
 function buildAnakinEp3(robe, o = {}) {
   const K = o.K || EP3;
   const rig = new Rig({ shW: 0.2, uarm: 0.29, farm: 0.27, chest: 0.31 });
@@ -332,23 +351,33 @@ function buildAnakinEp3(robe, o = {}) {
     // hood lying folded on the back, cowl round the neck
     j.chest.add(scl(sector(0.11, 0.135, 0.07, F + 0.9, F + 2 * Math.PI - 0.9, rm, 0, 0.34, 0, 10), 0.95, 1, 1.05));
     const down = group(scl(sph(0.12, rd, -0.165, 0.27, 0, 9, 6), 0.42, 0.95, 1.05), scl(sph(0.1, rm, -0.17, 0.3, 0, 9, 6), 0.45, 0.85, 1.0));
-    j.chest.add(down);
-    if (o.hood) {
-      // raised hood: a deep cowl over the head, open at the face, its shadow inside
+    if (!o.hoodUp) j.chest.add(down);
+    if (o.hood || o.hoodUp) {
+      // raised hood: a deep cowl over the head, open at the face, its shadow
+      // inside (`hoodUp`: larger and pulled further forward, its drape a cowl
+      // open at the throat over the shoulders and upper chest)
+      const k = o.hoodUp ? 1.12 : 1;
+      const open = o.hoodUp ? 1.45 : 1.7;
+      const deep = o.hoodUp ? 0.66 : 0.62;
       const up = new THREE.Group();
-      const shell = new THREE.Mesh(new THREE.SphereGeometry(0.155, 12, 9, Math.PI + 0.85, 2 * Math.PI - 1.7, 0, Math.PI * 0.62), rm);
-      shell.position.set(-0.01, 0.13, 0);
-      shell.scale.set(1.08, 1.2, 1.02);
+      const shell = new THREE.Mesh(new THREE.SphereGeometry(0.155 * k, 12, 9, Math.PI + open / 2, 2 * Math.PI - open, 0, Math.PI * deep), rm);
+      shell.position.set(o.hoodUp ? 0.0 : -0.01, 0.13, 0);
+      shell.scale.set(1.08, o.hoodUp ? 1.26 : 1.2, 1.02);
       up.add(shell);
-      const inner = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8, Math.PI + 0.85, 2 * Math.PI - 1.7, 0, Math.PI * 0.62), mat(0x0d0806, { tex: 'none', side: THREE.BackSide }));
+      const inner = new THREE.Mesh(new THREE.SphereGeometry(0.14 * k, 10, 8, Math.PI + open / 2, 2 * Math.PI - open, 0, Math.PI * deep), mat(0x0d0806, { tex: 'none', side: THREE.BackSide }));
       inner.position.copy(shell.position);
       inner.scale.copy(shell.scale);
       up.add(inner);
-      up.add(scl(sph(0.06, rm, -0.1, 0.24, 0, 7, 5), 0.8, 1, 0.9)); // peak at the back
-      up.add(scl(cyl(0.14, 0.2, 0.16, rm, -0.02, -0.04, 0, 10), 1, 1, 1.05)); // drape onto the shoulders
+      if (!o.hoodUp) up.add(scl(sph(0.06, rm, -0.1, 0.24, 0, 7, 5), 0.8, 1, 0.9)); // peak at the back
+      if (o.hoodUp) {
+        up.add(scl(sector(0.15, 0.25, 0.22, F + 0.45, F + 2 * Math.PI - 0.45, rm, -0.02, -0.06, 0, 12), 1, 1, 1.08)); // cowl
+        up.add(scl(sector(0.155, 0.255, 0.012, F + 0.45, F + 2 * Math.PI - 0.45, rd, -0.02, -0.17, 0, 12), 1, 1, 1.08)); // its hem
+      } else up.add(scl(cyl(0.14, 0.2, 0.16, rm, -0.02, -0.04, 0, 10), 1, 1, 1.05)); // drape onto the shoulders
       j.head.add(up);
-      rig.toggles.hoodUp = up;
-      rig.toggles.hoodDown = down;
+      if (o.hood) {
+        rig.toggles.hoodUp = up;
+        rig.toggles.hoodDown = down;
+      }
     }
     // long skirt to the ankles, open in front
     addSkirt(rig, { outer: rm, len: 0.86, gap: 0.75, rTop: 0.2, rBot: 0.4, follow: 0.4 });
@@ -369,7 +398,8 @@ function buildAnakinEp3(robe, o = {}) {
   const eye = mat(o.obiwan ? 0x6f8fa0 : 0x5d7f86, { tex: 'none' });
   for (const zs of [1, -1]) {
     j.head.add(box(0.006, 0.01, 0.022, eye, 0.094, 0.115, 0.033 * zs));
-    j.head.add(box(0.008, 0.008, 0.032, brow, 0.095, 0.133, 0.033 * zs));
+    // brows: level, or drawn down into a scowl at the inner ends (Lord Vader)
+    j.head.add(rot(box(0.008, 0.008, 0.032, brow, 0.095, o.hoodUp ? 0.13 : 0.133, 0.033 * zs), o.hoodUp ? -0.4 * zs : 0, 0, 0));
   }
   if (o.obiwan) {
     obiWanHair(j.head);
@@ -377,7 +407,7 @@ function buildAnakinEp3(robe, o = {}) {
   }
   j.head.add(rot(box(0.006, 0.05, 0.005, mat(0x8a3a2e, { tex: 'none' }), 0.093, 0.122, 0.052), 0.25, 0, 0)); // scar
   j.head.add(box(0.006, 0.007, 0.03, mat(0x9b5a4e, { tex: 'none' }), 0.093, 0.05, 0)); // mouth
-  movieHair(j.head);
+  movieHair(j.head, !!o.hoodUp);
   return rig;
 }
 
@@ -387,11 +417,20 @@ function buildAnakinEp3(robe, o = {}) {
  * the jaw, and the back falling to the collar with the ends flicking out.
  * Lighter streaks keep it readable against the dark costume at sprite size.
  */
-function movieHair(head) {
+function movieHair(head, hooded = false) {
   const hm = mat(0x8c5d34, { tex: 'cloth' });
   const hl = mat(0xb88752, { tex: 'cloth' });
   const hd = mat(0x5a3820, { tex: 'cloth' });
   head.add(scl(sph(0.108, hm, -0.025, 0.15, 0, 10, 7), 1.0, 0.85, 1.08)); // crown, hairline above the forehead
+  if (hooded) {
+    // under a raised hood only the parting and the curtains round the face show
+    for (const zs of [1, -1]) {
+      head.add(rot(scl(sph(0.055, hl, 0.012, 0.2, 0.046 * zs, 8, 5), 1.0, 0.6, 1.05), 0, 0, -0.3));
+      head.add(scl(sph(0.04, hm, 0.058, 0.13, 0.08 * zs, 7, 5), 0.6, 1.7, 0.6));
+      head.add(scl(sph(0.036, hd, 0.045, 0.06, 0.085 * zs, 7, 5), 0.7, 1.5, 0.6));
+    }
+    return;
+  }
   head.add(scl(sph(0.105, hm, -0.08, 0.07, 0, 9, 7), 0.85, 1.45, 1.2)); // back, to the collar
   for (const zs of [1, -1]) {
     head.add(rot(scl(sph(0.055, hl, 0.012, 0.2, 0.046 * zs, 8, 5), 1.0, 0.6, 1.05), 0, 0, -0.3)); // sweep off the centre parting
