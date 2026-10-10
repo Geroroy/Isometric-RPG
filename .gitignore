@@ -5,7 +5,7 @@ dist
 tools/sprites/out/
 __pycache__/
 .bvenv/
-references/
+reference/
 tools/qa/out/
 dist-perf
 dist-before

@@ -3,11 +3,11 @@ Reference loop: put the game's screenshots next to reference images and
 measure where they differ — lighting, colour, detail density, contrast and
 effects — then list what to improve first.
 
-  python3 tools/qa/compare.py [--shots tools/qa/out/shots] [--refs references] [--out docs/qa]
+  python3 tools/qa/compare.py [--shots tools/qa/out/shots] [--refs reference] [--out docs/qa]
 
-references/<place>/*.(png|jpg|webp) are compared with the shot of that place
+reference/<place>/*.(png|jpg|webp) are compared with the shot of that place
 (christophsis, coruscant, undercity, geonosis, mustafar); images directly in
-references/ are compared with every shot. references/ is not committed
+reference/ are compared with every shot. reference/ is not committed
 (film stills and concept art are someone else's work): each machine keeps
 its own.
 
@@ -25,7 +25,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--shots', default='tools/qa/out/shots')
-ap.add_argument('--refs', default='references')
+ap.add_argument('--refs', default='reference')
 ap.add_argument('--out', default='docs/qa')
 A = ap.parse_args()
 EXT = ('.png', '.jpg', '.jpeg', '.webp')
