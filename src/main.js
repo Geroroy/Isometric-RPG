@@ -228,6 +228,10 @@ async function boot() {
   let acc = FRAME_MS;
   let prev = performance.now();
   let hiddenTab = false;
+  // the frame's systems, made once (not a fresh array of closures every frame)
+  let dt = 0;
+  let paused = false;
+  const steps = [() => paused || game.update(dt), () => renderer.render(dt), () => post.render(dt), () => hud.update(dt), () => touch.enabled && mobile.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update(), () => duelHud && duelHud.update(dt)];
   const loop = (now) => {
     if (hiddenTab) return; // restarted when the tab shows again
     requestAnimationFrame(loop);
@@ -236,7 +240,7 @@ async function boot() {
     prev = now;
     if (acc < FRAME_MS - 1.5) return;
     acc = Math.min(acc - FRAME_MS, FRAME_MS);
-    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); // the first frame can stamp before `last`
+    dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); // the first frame can stamp before `last`
     last = now;
     input.update(dt);
     touch.update(dt);
@@ -254,9 +258,9 @@ async function boot() {
     dr.x += (tx - dr.x) * Math.min(1, dt * (onTitle ? 1 : 3));
     dr.y += (ty - dr.y) * Math.min(1, dt * (onTitle ? 1 : 3));
     // menus pause the action (the map does not)
-    const paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
+    paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
     // one failing system must not freeze the whole game: report it once, keep running
-    for (const step of [() => paused || game.update(dt), () => renderer.render(dt), () => post.render(dt), () => hud.update(dt), () => touch.enabled && mobile.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update(), () => duelHud && duelHud.update(dt)]) {
+    for (const step of steps) {
       try {
         step();
       } catch (err) {

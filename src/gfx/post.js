@@ -50,13 +50,63 @@ function buildLut(g) {
   return out;
 }
 
+const RIPPLE = `// Force ripples (renderer.drawRipples): per ring cx, cy, R, band | amp, k, cone angle, cone half-width (<0: full ring),
+// in canvas pixels from the top left. Highp where the GPU has it: pixel positions need more than mediump's 10 bits.
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+#define HP highp
+#else
+#define HP mediump
+#endif
+uniform HP vec4 ripA[4];
+uniform HP vec4 ripB[4];
+uniform float nRip;
+uniform HP vec2 res;
+// the CPU version's maths for canvas pixel px: where to pull its colour from (along the ring's
+// radius) and how much to brighten it (the leading edge)
+HP vec3 ripple(HP vec2 px){
+  HP vec2 from = px;
+  float lum = 1.0;
+  for (int i = 0; i < 4; i++) {
+    if (float(i) >= nRip) break;
+    HP vec4 a = ripA[i];
+    HP vec4 b = ripB[i];
+    HP vec2 dv = vec2(px.x - a.x, (px.y - a.y) * 2.0);
+    HP float d = max(length(dv), 1.0);
+    HP float e = (d - a.z) / a.w;
+    if (abs(e) > 1.6) continue;
+    HP float m = exp(-e * e * 2.0);
+    if (b.w >= 0.0) {
+      HP float da = abs(atan(dv.y, dv.x) - b.z);
+      if (da > 3.14159265) da = 6.2831853 - da;
+      if (da > b.w) continue;
+      m *= min(1.0, (b.w - da) * 4.0);
+    }
+    HP float off = b.x * 1.6 * m * -e / 0.3;
+    from -= vec2(dv.x / d * off, dv.y / d * off * 0.5);
+    lum *= 1.0 + 0.32 * m * (1.0 - b.y) * (e > 0.0 ? 1.0 : 0.25);
+  }
+  return vec3(from, lum);
+}
+`;
+
 const VS = `attribute vec2 p; varying vec2 uv; void main(){ uv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }`;
 const FS_BRIGHT = `precision mediump float; varying vec2 uv; uniform sampler2D src; uniform vec2 texel;
+#ifdef RIPPLES
+${RIPPLE}
+#endif
 void main(){
+  vec2 at = uv;
+  float lum = 1.0;
+#ifdef RIPPLES
+  // the ripple bends and brightens the picture before it blooms, as when the CPU drew it in
+  HP vec3 r = ripple(vec2(uv.x * res.x, (1.0 - uv.y) * res.y));
+  at = vec2(r.x / res.x, 1.0 - r.y / res.y);
+  lum = r.z;
+#endif
   vec3 c = vec3(0.0);
-  c += texture2D(src, uv + texel * vec2(-0.5, -0.5)).rgb; c += texture2D(src, uv + texel * vec2(0.5, -0.5)).rgb;
-  c += texture2D(src, uv + texel * vec2(-0.5, 0.5)).rgb;  c += texture2D(src, uv + texel * vec2(0.5, 0.5)).rgb;
-  c *= 0.25;
+  c += texture2D(src, at + texel * vec2(-0.5, -0.5)).rgb; c += texture2D(src, at + texel * vec2(0.5, -0.5)).rgb;
+  c += texture2D(src, at + texel * vec2(-0.5, 0.5)).rgb;  c += texture2D(src, at + texel * vec2(0.5, 0.5)).rgb;
+  c *= 0.25 * lum;
   float l = max(c.r, max(c.g, c.b));
   float k = smoothstep(0.62, 0.95, l); // only the bright parts: blades, neon, flashes, lava
   gl_FragColor = vec4(c * k, 1.0);
@@ -69,6 +119,9 @@ void main(){
   gl_FragColor = vec4(c, 1.0);
 }`;
 const FS_FINAL = `precision mediump float; varying vec2 uv;
+#ifdef RIPPLES
+${RIPPLE}
+#endif
 uniform sampler2D src; uniform sampler2D bloom; uniform sampler2D lutA; uniform sampler2D lutB;
 uniform float mixAB, useLut, bloomK, vig, grain, seed, aspect;
 vec3 lut(sampler2D t, vec3 c){
@@ -82,7 +135,12 @@ vec3 lut(sampler2D t, vec3 c){
 }
 float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233)) + seed) * 43758.5453); }
 void main(){
+#ifdef RIPPLES
+  HP vec3 r = ripple(vec2(gl_FragCoord.x - 0.5, res.y - gl_FragCoord.y - 0.5));
+  vec3 c = texture2D(src, vec2((floor(r.x + 0.5) + 0.5) / res.x, 1.0 - (floor(r.y + 0.5) + 0.5) / res.y)).rgb * r.z;
+#else
   vec3 c = texture2D(src, uv).rgb;
+#endif
   c += texture2D(bloom, uv).rgb * bloomK;
   c = clamp(c, 0.0, 1.0);
   if (useLut > 0.5) c = mixAB < 1.0 ? mix(lut(lutA, c), lut(lutB, c), mixAB) : lut(lutB, c); // one LUT once the cross-fade is over
@@ -108,6 +166,9 @@ export class Post {
     this.prevLut = null;
     this.mixT = 1;
     this.ms = 0; // CPU time of the last frame's passes, for the FPS readout
+    this.ripples = []; // this frame's Force ripples, filled by the renderer
+    this.ripA = new Float32Array(16);
+    this.ripB = new Float32Array(16);
     this.apply();
   }
 
@@ -138,6 +199,9 @@ export class Post {
       this.pBright = prog(FS_BRIGHT);
       this.pBlur = prog(FS_BLUR);
       this.pFinal = prog(FS_FINAL);
+      // the same two passes with the Force ripple, used only on frames that have one
+      this.pBrightR = prog('#define RIPPLES\n' + FS_BRIGHT);
+      this.pFinalR = prog('#define RIPPLES\n' + FS_FINAL);
     } catch (e) {
       console.warn('post-processing off:', e.message);
       return false;
@@ -227,6 +291,17 @@ export class Post {
     }
   }
 
+  /** This frame's Force ripples into a program's uniforms (the program in use). */
+  setRipples(P, W, H) {
+    const gl = this.gl;
+    const rips = this.ripples;
+    for (let i = 0; i < rips.length; i++) for (let j = 0; j < 4; j++) (this.ripA[i * 4 + j] = rips[i][j]), (this.ripB[i * 4 + j] = rips[i][j + 4]);
+    gl.uniform1f(P.u.nRip, rips.length);
+    gl.uniform4fv(P.u['ripA[0]'], this.ripA);
+    gl.uniform4fv(P.u['ripB[0]'], this.ripB);
+    gl.uniform2f(P.u.res, W, H);
+  }
+
   render(dt) {
     this.meter(dt);
     if (!this.active) return;
@@ -258,6 +333,7 @@ export class Post {
     this.mixT = Math.min(1, this.mixT + dt);
     const G = GRADES[g];
     const bloom = this.opts.bloom;
+    const rip = this.ripples.length > 0;
     const w2 = Math.max(1, W >> 1);
     const h2 = Math.max(1, H >> 1);
     if (bloom) for (const f of this.fbos) this.sizeFbo(f, w2, h2); // before the world texture is bound: sizing binds its own
@@ -272,9 +348,11 @@ export class Post {
     if (bloom) {
       const [a, b] = this.fbos;
       gl.viewport(0, 0, w2, h2);
-      gl.useProgram(this.pBright.p);
-      gl.uniform1i(this.pBright.u.src, 0);
-      gl.uniform2f(this.pBright.u.texel, 1 / W, 1 / H);
+      const PB = rip ? this.pBrightR : this.pBright;
+      gl.useProgram(PB.p);
+      gl.uniform1i(PB.u.src, 0);
+      gl.uniform2f(PB.u.texel, 1 / W, 1 / H);
+      if (rip) this.setRipples(PB, W, H);
       gl.bindFramebuffer(gl.FRAMEBUFFER, a.fb);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       gl.useProgram(this.pBlur.p);
@@ -292,7 +370,7 @@ export class Post {
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, W, H);
-    const P = this.pFinal;
+    const P = rip ? this.pFinalR : this.pFinal;
     gl.useProgram(P.p);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.src);
@@ -313,6 +391,7 @@ export class Post {
     gl.uniform1f(P.u.grain, this.opts.grain ? 0.035 : 0);
     gl.uniform1f(P.u.seed, (performance.now() % 1000) * 0.001);
     gl.uniform1f(P.u.aspect, W / H);
+    if (rip) this.setRipples(P, W, H);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.activeTexture(gl.TEXTURE0);
     this.ms = performance.now() - t0;

@@ -13,6 +13,7 @@ import { transientLights, relightUnits } from './relight.js';
 import { SIG } from '../game/units.js';
 
 const AMBIENT = [150, 146, 178];
+const byDepth = (a, b) => a.depth - b.depth;
 const TRAIL_LIFE = 0.13; // seconds a saber swing's afterimage lasts
 const SHADOW_ALPHA = 0.75; // a sheet's rendered shadow (the shadow catcher's own alpha)
 export const ZOOM_MIN = 0.5;
@@ -185,13 +186,24 @@ export class Renderer {
     const inView = (x, y, w, h) => x + w > cam.x - 4 && x < cam.x + W + 4 && y + h > cam.y - 4 && y < cam.y + H + 4;
 
     // --- flat layer: pads, debris, corpses
-    const standing = [];
+    // the depth-sorted list reuses its entries from frame to frame (no garbage per object per frame)
+    const standing = this.standing || (this.standing = []);
+    let ns = 0;
+    const put = (depth, prop, unit, pickup, scorch) => {
+      const e = standing[ns] || (standing[ns] = { depth: 0, prop: null, unit: null, pickup: null, scorch: null });
+      e.depth = depth;
+      e.prop = prop;
+      e.unit = unit;
+      e.pickup = pickup;
+      e.scorch = scorch;
+      ns++;
+    };
     for (const pr of g.world.props) {
       if (pr.hidden) continue; // placed but not shown yet (scripted)
-      const [rx, ry, rw, rh] = pr.rect;
-      if (!inView(rx, ry, rw, rh)) continue;
+      const r = pr.rect;
+      if (!inView(r[0], r[1], r[2], r[3])) continue;
       if (pr.flat) this.drawFrame(pr.frame, pr.sx, pr.sy);
-      else standing.push({ depth: pr.sortDepth, prop: pr });
+      else put(pr.sortDepth, pr, null, null, null);
     }
     for (const u of g.activeUnits) {
       if (!u.dead) continue;
@@ -233,10 +245,11 @@ export class Renderer {
     }
 
     // --- depth-sorted standing objects
-    for (const u of g.activeUnits) if (!u.dead && !u.hidden) standing.push({ depth: u.x + u.y, unit: u });
-    for (const pk of g.pickups) standing.push({ depth: pk.x + pk.y, pickup: pk });
-    for (const m of g.fx.scorches) standing.push({ depth: m.depth ?? m.x + m.y, scorch: m });
-    standing.sort((a, b) => a.depth - b.depth);
+    for (const u of g.activeUnits) if (!u.dead && !u.hidden) put(u.x + u.y, null, u, null, null);
+    for (const pk of g.pickups) put(pk.x + pk.y, null, null, pk, null);
+    for (const m of g.fx.scorches) put(m.depth ?? m.x + m.y, null, null, null, m);
+    standing.length = ns;
+    standing.sort(byDepth);
     const pDepth = p.x + p.y;
     for (const d of standing) {
       if (d.prop) {
@@ -244,8 +257,8 @@ export class Renderer {
         // Diablo-style: fade structures that hide the player.
         let alpha = 1;
         if (d.depth > pDepth && !p.dead) {
-          const [rx, ry, rw, rh] = pr.rect;
-          if (ps.x > rx + 4 && ps.x < rx + rw - 4 && ps.y - 30 > ry && ps.y - 20 < ry + rh && rh > 30) alpha = 0.45;
+          const r = pr.rect;
+          if (ps.x > r[0] + 4 && ps.x < r[0] + r[2] - 4 && ps.y - 30 > r[1] && ps.y - 20 < r[1] + r[3] && r[3] > 30) alpha = 0.45;
         }
         ctx.globalAlpha = alpha;
         // parked speeders hover: a slow bob of a pixel or so
@@ -386,6 +399,8 @@ export class Renderer {
    */
   drawRipples(ctx, cam) {
     const rips = this.game.fx.ripples;
+    const post = this.post;
+    const gpu = post && post.active ? (post.ripples.length = 0, post.ripples) : null;
     if (!rips.length) return;
     const W = this.w;
     const H = this.h;
@@ -410,8 +425,17 @@ export class Renderer {
         const e = worldToScreen(r.x + Math.cos(r.ang), r.y + Math.sin(r.ang), 0.6);
         ca = Math.atan2((e.y - c.y) * 2, e.x - c.x);
       }
+      // with post-processing the shader bends the picture on the GPU (post.js, same maths);
+      // reading pixels back to the CPU stalls the GPU, so this loop is only the fallback
+      if (gpu) {
+        if (gpu.length < 4) gpu.push([cx, cy, R, band, amp, k, ca, r.ang !== null ? r.half : -1]);
+        continue;
+      }
       const img = ctx.getImageData(x0, y0, w, h);
-      const src = new Uint8ClampedArray(img.data);
+      // a copy of the untouched pixels to pull from, in a buffer kept between frames
+      if (!this.ripSrc || this.ripSrc.length < img.data.length) this.ripSrc = new Uint8ClampedArray(img.data.length * 2);
+      const src = this.ripSrc;
+      src.set(img.data);
       const out = img.data;
       for (let y = 0; y < h; y++) {
         const dy = (y + y0 - cy) * 2;
@@ -453,8 +477,8 @@ export class Renderer {
     const H = this.h;
     for (const pr of this.game.world.props) {
       if (!pr.sheet || pr.hidden) continue;
-      const [rx, ry, rw, rh] = pr.rect;
-      if (rx + rw < cam.x || rx > cam.x + W || ry + rh < cam.y || ry > cam.y + H + 60) continue;
+      const r = pr.rect;
+      if (r[0] + r[2] < cam.x || r[0] > cam.x + W || r[1] + r[3] < cam.y || r[1] > cam.y + H + 60) continue;
       const L = pr.layers;
       const level = neonLevel(pr.neon, L.meta.neon, this.time, dt);
       ctx.globalAlpha = Math.min(1, level) * 0.85;
