@@ -221,7 +221,21 @@ async function boot() {
   let last = performance.now();
   let titleT = 0;
   const reported = new Set();
+  // At most 60 frames a second: a 120/144 Hz screen would otherwise draw (and heat) twice as
+  // often. Frames are skipped by an accumulator so 144 Hz still gives an even ~60. All game
+  // logic runs on `dt`, so speeds and timings are the same at any frame rate.
+  const FRAME_MS = 1000 / 60;
+  let acc = FRAME_MS;
+  let prev = performance.now();
+  let hiddenTab = false;
   const loop = (now) => {
+    if (hiddenTab) return; // restarted when the tab shows again
+    requestAnimationFrame(loop);
+    if (prev === null) prev = last = now; // first frame after the tab came back: no catch-up jump
+    acc += now - prev;
+    prev = now;
+    if (acc < FRAME_MS - 1.5) return;
+    acc = Math.min(acc - FRAME_MS, FRAME_MS);
     const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); // the first frame can stamp before `last`
     last = now;
     input.update(dt);
@@ -242,7 +256,6 @@ async function boot() {
     // menus pause the action (the map does not)
     const paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
     // one failing system must not freeze the whole game: report it once, keep running
-    requestAnimationFrame(loop);
     for (const step of [() => paused || game.update(dt), () => renderer.render(dt), () => post.render(dt), () => hud.update(dt), () => touch.enabled && mobile.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update(), () => duelHud && duelHud.update(dt)]) {
       try {
         step();
@@ -255,6 +268,21 @@ async function boot() {
     }
   };
   requestAnimationFrame(loop);
+  // a hidden tab: no frames, no sound (the music and ambience stop with the audio clock)
+  const pausedEls = [];
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      hiddenTab = true;
+      if (audio.ctx && audio.ctx.state === 'running') audio.ctx.suspend();
+      for (const t of music.tracks.values()) if (!t.el.paused) (t.el.pause(), pausedEls.push(t.el));
+    } else if (hiddenTab) {
+      hiddenTab = false;
+      if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
+      for (const el of pausedEls.splice(0)) el.play().catch(() => {});
+      prev = null;
+      requestAnimationFrame(loop);
+    }
+  });
   window.__ready = true;
 }
 

@@ -8,3 +8,4 @@ __pycache__/
 references/
 tools/qa/out/
 dist-perf
+dist-before
