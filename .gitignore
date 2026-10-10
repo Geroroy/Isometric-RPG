@@ -5,3 +5,5 @@ dist
 tools/sprites/out/
 __pycache__/
 .bvenv/
+references/
+tools/qa/out/

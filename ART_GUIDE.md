@@ -113,3 +113,15 @@ Blender 카메라는 같은 값으로 맞춘다(`render_sprites.py`, `render_bui
 → 비네팅 → 그레인 순으로 그린다. 장소별 보정은 `GRADES` 표(화이트 밸런스, 대비, 채도, 그림자/하이라이트 틴트, 블룸 양)에서
 LUT를 만들어 쓰고, 장소가 바뀌면 1초 동안 교차 페이드한다. 월드의 `grade`: 크리스토프시스(기본), `coruscant`(y > 90이면
 `undercity`), `geonosis`, `mustafar`. 옵션 → 화면 효과에서 각 효과와 FPS 표시를 켜고 끈다(이 기기에 저장).
+
+## 11. 레퍼런스 비교 루프
+
+1. 레퍼런스 이미지(영화 스틸 · 콘셉트 아트 · 다른 게임 스크린샷)를 `references/<장소>/`(christophsis, coruscant,
+   undercity, geonosis, mustafar) 또는 `references/`에 넣는다. 이 폴더는 커밋하지 않는다(남의 저작물).
+2. `npm run dev` 상태에서 `node tools/qa/capture.mjs` — 장소마다 HUD 없이 같은 줌(1.5)·창(1280×720)으로 게임 샷.
+3. `python3 tools/qa/compare.py` → `docs/qa/reference_sheet.png`(게임 샷 옆에 레퍼런스, 사진마다 수치)와
+   `docs/qa/reference_report.md`: 조명(밝기 · 그림자 p5 · 하이라이트 p95 · 검은 영역), 색감(채도 · 온도 · 녹/마젠타),
+   대비(전체 · 국부), 디테일 밀도(엣지 밀도 · 잔디테일), 이펙트(발광 · 밝은 면 비율)를 재고, "눈에 띄는 차이" 단위로
+   환산해 가중치(조명 1.3 · 대비 1.2 · 색감 1.0 · 이펙트 0.9 · 디테일 0.8) 순으로 개선 목록을 만든다. 항목마다
+   이 프로젝트에서 고칠 곳(ambient, `GRADES`, 주광, `SHADOW_ALPHA`…)을 적는다.
+4. 고친 뒤 2~3을 다시 돌려 차이가 줄었는지 본다.
