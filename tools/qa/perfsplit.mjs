@@ -58,6 +58,15 @@ await page.waitForFunction(() => window.__ready, null, { timeout: 900000 });
 if (device === 'phone') await page.tap('#startBtn');
 else await page.click('#startBtn');
 await page.waitForTimeout(3000);
+// WALK=1: Anakin walks a square the whole time (the world under the HUD keeps changing)
+if (process.env.WALK)
+  await page.evaluate(() => {
+    const p = __game.player;
+    const dirs = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+    let i = 0;
+    p.steer(...dirs[0]);
+    setInterval(() => p.steer(...dirs[(i = (i + 1) % 4)]), 2500);
+  });
 
 const CASES = (process.env.CASES ? (x) => x.filter((c, i) => process.env.CASES.split(',').includes(String(i))) : (x) => x)([
   ['baseline (as shipped)', () => {}],
@@ -113,6 +122,37 @@ const CASES = (process.env.CASES ? (x) => x.filter((c, i) => process.env.CASES.s
     s.textContent = '*,*::before,*::after{animation-play-state:paused!important;transition:none!important}';
     document.head.append(s);
   }],
+  ['no mix-blend-mode anywhere', () => {
+    const s = document.createElement('style');
+    s.id = '__noanim';
+    s.textContent = '*,*::before,*::after{mix-blend-mode:normal!important}';
+    document.head.append(s);
+  }],
+  ['no box-shadow / text-shadow on the HUD', () => {
+    const s = document.createElement('style');
+    s.id = '__noanim';
+    s.textContent = '#hud *,#hud *::before,#hud *::after{box-shadow:none!important;text-shadow:none!important}';
+    document.head.append(s);
+  }],
+  ['no canvas CSS filters', () => {
+    const s = document.createElement('style');
+    s.id = '__noanim';
+    s.textContent = 'canvas{filter:none!important}';
+    document.head.append(s);
+  }],
+  ['hologram face hidden (phone)', () => {
+    const s = document.createElement('style');
+    s.id = '__noanim';
+    s.textContent = '.m-face,.cn-portrait{visibility:hidden!important}';
+    document.head.append(s);
+  }],
+  ['saber light on characters off', () => (__renderer.drawSaberLight = () => {})],
+  ['saber light + blades off (drawSabers noop)', () => ((__renderer.drawSaberLight = () => {}), (__renderer.drawSabers = () => {}))],
+  ['phone scanner not redrawn', () => (__mobile.drawRadar = () => {})],
+  ['HUD updates off (hud + phone + touch)', () => ((__hud.update = () => {}), (__mobile.update = () => {}))],
+  ['PC radar not redrawn', () => (__hud.drawRadar = () => {})],
+  ['portrait not drawn (PC + phone canvases)', () => (__hud.portrait.draw = () => {})],
+  ['PC radar + portrait off', () => ((__hud.drawRadar = () => {}), (__hud.portrait.draw = () => {}))],
   ['world canvas display:none (post shows it)', () => (document.getElementById('world').style.display = 'none')],
   ['post canvas only, 2D canvas work skipped', () => (__renderer.render = () => {})],
 ]);

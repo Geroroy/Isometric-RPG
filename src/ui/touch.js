@@ -8,6 +8,7 @@ import { iconURL } from './icons.js';
 import { screenVecToWorldAngle } from '../core/iso.js';
 import { dist, angleDiff } from '../core/math.js';
 import { setText } from './dom.js';
+import { setFraction } from './theme.js';
 
 // how far a dragged skill is aimed (world units) when the skill targets a point
 const AIM_RANGE = { throw: 7, push: 3.5, leap: 7.5, clones: 3, gunship: 9, fury: 3, rex: 2 };
@@ -397,7 +398,8 @@ export class TouchControls {
       b.classList.toggle('empty', !id);
       const cd = id ? p.cooldowns[id] || 0 : 0;
       const total = id && SKILLS[id].cd ? SKILLS[id].cd(p.skillLevel(id)) || 1 : 1;
-      b.children[1].style.background = cd > 0 ? `conic-gradient(rgba(0,0,0,0.72) ${(cd / total) * 360}deg, transparent 0)` : 'none';
+      setFraction(b.children[1], 'cd', cd > 0 ? 1 - cd / total : 1);
+      b.classList.toggle('cooling', cd > 0);
       const cost = id && SKILLS[id].cost ? SKILLS[id].cost(p.skillLevel(id)) : 0;
       b.classList.toggle('nofp', !!id && p.force < cost);
       setText(b.children[2], id ? p.skillLevel(id) : '');

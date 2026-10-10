@@ -1,0 +1,955 @@
+/* ============================================================================
+   UI design system — "clone visor" (docs/UI_SYSTEM.md)
+   Prequel-era Republic HUD: Kamino white / chrome visor frame, holo-blue
+   tactical glass, LED gauges. Borrowed from Republic Commando (the visor
+   frame and gauges), Hades (the slim diagonal action deck), XCOM and Galactic
+   Battlegrounds (the round scanner and the hologram portrait).
+
+   Loaded after style.css: it restyles the HUD's existing structure (ui/hud.js,
+   ui/mobileHud.js, ui/touch.js keep their DOM and hooks) and remaps the old
+   colour tokens, so the menus follow the palette too. Canvas drawing reads
+   the --c-* tokens through ui/theme.js.
+
+   Rules: no endless animations (an animation that never stops keeps the
+   compositor redrawing the screen — tools/qa/perfsplit.mjs); the scanline
+   sweeps run once, on open or hover. No backdrop-filter on the always-on HUD.
+   ============================================================================ */
+
+:root {
+  /* --- palette (the source of truth; theme.js reads these) */
+  --c-holo: #00c8ff; /* Republic holo-blue: primary, Force, allies */
+  --c-holo-rgb: 0, 200, 255;
+  --c-emerald: #00ff87; /* Jedi emerald: health / shield */
+  --c-emerald-rgb: 0, 255, 135;
+  --c-gold: #ffd700; /* Naboo royal gold: XP, level, accents */
+  --c-gold-rgb: 255, 215, 0;
+  --c-red: #ff0033; /* Separatist red: enemies, warnings, low health */
+  --c-red-rgb: 255, 0, 51;
+  --c-base: #1e293b; /* Kamino dark metal */
+  --c-base-rgb: 30, 41, 59;
+  --c-chrome: #f1f5f9; /* Kamino white / chrome */
+  --c-chrome-rgb: 241, 245, 249;
+
+  /* --- surfaces */
+  --ui-glass: rgba(15, 23, 42, 0.74);
+  --ui-glass-strong: rgba(15, 23, 42, 0.92);
+  --ui-plate: linear-gradient(180deg, rgba(var(--c-chrome-rgb), 0.1), rgba(var(--c-base-rgb), 0.88) 38%, rgba(15, 23, 42, 0.94));
+  --ui-chrome-line: linear-gradient(90deg, rgba(var(--c-chrome-rgb), 0.15), rgba(var(--c-chrome-rgb), 0.95) 25%, #fff 50%, rgba(var(--c-chrome-rgb), 0.95) 75%, rgba(var(--c-chrome-rgb), 0.15));
+  --ui-scan: repeating-linear-gradient(180deg, rgba(var(--c-holo-rgb), 0.07) 0 1px, transparent 1px 3px);
+  --ui-grid: linear-gradient(rgba(var(--c-holo-rgb), 0.16) 1px, transparent 1px) 0 0 / 100% 9px, linear-gradient(90deg, rgba(var(--c-holo-rgb), 0.12) 1px, transparent 1px) 0 0 / 9px 100%;
+  --ui-glow: 0 0 10px rgba(var(--c-holo-rgb), 0.45);
+  --ui-radius: 8px;
+  --font-hud: 'Pretendard Variable', Pretendard, var(--font-ui);
+
+  /* --- the old tokens, remapped so every panel follows the palette */
+  --ink: #c9f1ff;
+  --ink-rgb: 201, 241, 255;
+  --ink-dim: #6fc6e8;
+  --ink-faint: rgba(201, 241, 255, 0.42);
+  --glass: rgba(15, 23, 42, 0.86);
+  --glass-strong: rgba(15, 23, 42, 0.95);
+  --line: rgba(var(--c-holo-rgb), 0.24);
+  --line-strong: rgba(var(--c-holo-rgb), 0.55);
+  --force: var(--c-holo);
+  --chip: var(--c-red);
+  --gold: var(--c-gold);
+  --gold-rgb: var(--c-gold-rgb);
+  --dark: var(--c-red);
+  --red: var(--c-red);
+  --digit: var(--c-emerald);
+  --metal-edge: #0f172a;
+}
+
+/* one-shot scanline sweep: a popup, a hovered key */
+@keyframes uiScan {
+  from {
+    transform: translateY(-100%);
+    opacity: 0.9;
+  }
+  to {
+    transform: translateY(800%);
+    opacity: 0;
+  }
+}
+@keyframes uiGlowIn {
+  from {
+    box-shadow: 0 0 0 rgba(var(--c-holo-rgb), 0);
+  }
+}
+
+/* ============================================================ visor frame (PC console) */
+.console {
+  height: calc(128px + env(safe-area-inset-bottom, 0px));
+  padding: 14px max(22px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(22px, env(safe-area-inset-left, 0px));
+  gap: 12px;
+  font-family: var(--font-hud);
+  border: 0;
+  border-image: none;
+  border-top: 2px solid rgba(var(--c-chrome-rgb), 0.85);
+  border-radius: 46px 46px 0 0 / 30px 30px 0 0;
+  background: var(--ui-scan), var(--ui-plate);
+  background-blend-mode: normal;
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 3px 0 rgba(var(--c-holo-rgb), 0.35),
+    inset 0 0 44px rgba(var(--c-holo-rgb), 0.07),
+    0 -8px 28px rgba(0, 0, 0, 0.6);
+}
+/* the visor's cheek curves: chrome arcs at both ends of the frame */
+.console::before,
+.console::after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: -2px;
+  width: 150px;
+  height: 100%;
+  border-radius: 46px 0 0 0 / 30px 0 0 0;
+  border-top: 2px solid var(--c-chrome);
+  border-left: 2px solid rgba(var(--c-chrome-rgb), 0.55);
+  background: linear-gradient(90deg, rgba(var(--c-chrome-rgb), 0.08), transparent 70%);
+  box-shadow: inset 2px 2px 0 rgba(var(--c-holo-rgb), 0.3);
+  pointer-events: none;
+}
+.console::before {
+  left: -2px;
+}
+.console::after {
+  left: auto;
+  right: -2px;
+  transform: scaleX(-1);
+}
+
+/* ---- hologram portrait: blue scanline hologram on a projector base */
+.cn-portrait,
+.cn-portrait.monitor {
+  width: 102px;
+  border: 1px solid rgba(var(--c-holo-rgb), 0.45);
+  border-image: none;
+  border-radius: var(--ui-radius);
+  background: radial-gradient(ellipse at 50% 85%, rgba(var(--c-holo-rgb), 0.28), rgba(15, 23, 42, 0.95) 70%);
+  box-shadow: inset 0 -3px 0 rgba(var(--c-holo-rgb), 0.7), inset 0 0 18px rgba(var(--c-holo-rgb), 0.12), var(--ui-glow);
+}
+.cn-portrait canvas {
+  filter: grayscale(1) sepia(1) hue-rotate(165deg) saturate(2.8) brightness(1.1) contrast(1.15);
+  opacity: 0.88;
+  mix-blend-mode: screen;
+}
+.cn-portrait.monitor::after {
+  /* the wireframe: a fine holo grid instead of glass glare */
+  background: var(--ui-grid);
+  mix-blend-mode: screen;
+  opacity: 0.9;
+}
+.cn-portrait .aure,
+.cn-log .aure,
+.cn-radar .aure,
+.plate-h,
+.cn-menu::before {
+  display: none; /* the chrome visor has no Aurebesh plaques */
+}
+.ps-eq i {
+  background: var(--c-holo);
+  box-shadow: 0 0 4px var(--c-holo);
+}
+
+/* ---- LED gauges: segmented light bars along the frame */
+.cn-stats {
+  width: 172px;
+  gap: 6px;
+  justify-content: center;
+}
+.gauge,
+.gauge.hp-bar {
+  height: 15px;
+  border: 0;
+  border-image: none;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(var(--c-chrome-rgb), 0.22), inset 0 1px 3px #000;
+}
+.gauge::before {
+  /* the LED segments */
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: repeating-linear-gradient(90deg, transparent 0 9px, rgba(15, 23, 42, 0.95) 9px 11px);
+  pointer-events: none;
+}
+.gauge::after {
+  display: none;
+}
+.gauge .g-fill,
+.gauge .g-chip {
+  border-radius: 8px 2px 2px 8px;
+}
+.gauge.hp .g-fill {
+  background: linear-gradient(180deg, #b8ffdc, var(--c-emerald) 45%, #00a858);
+  box-shadow: 0 0 10px rgba(var(--c-emerald-rgb), 0.8);
+}
+.gauge.hp.low .g-fill,
+.hp-bar.low .hp-fill {
+  background: linear-gradient(180deg, #ffb3c0, var(--c-red) 45%, #a3001f);
+  box-shadow: 0 0 10px rgba(var(--c-red-rgb), 0.8);
+}
+.gauge.hp .g-chip {
+  background: rgba(var(--c-chrome-rgb), 0.55);
+}
+.gauge.fp .g-fill {
+  background: linear-gradient(180deg, #c8f2ff, var(--c-holo) 45%, #0077a8);
+  box-shadow: 0 0 10px rgba(var(--c-holo-rgb), 0.8);
+}
+.gauge label,
+.gauge b {
+  z-index: 2;
+  text-shadow: 0 0 3px #000, 0 1px 0 #000;
+}
+.gauge label {
+  left: 8px;
+  font-family: var(--font-tech);
+  font-weight: 600;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: var(--c-chrome);
+}
+.gauge b {
+  right: 8px;
+  font-family: var(--font-tech);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.cn-sub {
+  gap: 8px;
+  padding: 0 2px;
+  font-family: var(--font-tech);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--c-gold);
+}
+.dark-meter .dm {
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--c-holo), rgba(var(--c-base-rgb), 1) 50%, var(--c-red));
+}
+.dark-meter i {
+  top: -2px;
+  height: 7px;
+  background: var(--c-chrome);
+  box-shadow: 0 0 4px #fff;
+}
+
+/* ---- ether core: level, XP ring (gold) and the Force's glow */
+.ether {
+  --xp: 0;
+  --fp: 1;
+  position: relative;
+  flex: none;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle, rgba(var(--c-holo-rgb), calc(0.12 + var(--fp) * 0.5)) 0, rgba(var(--c-holo-rgb), 0.1) 38%, transparent 58%),
+    conic-gradient(var(--c-gold) calc(var(--xp) * 360deg), rgba(var(--c-chrome-rgb), 0.18) 0);
+  box-shadow: inset 0 0 0 4px rgba(15, 23, 42, 0.95), 0 0 0 1px rgba(var(--c-chrome-rgb), 0.35), 0 0 14px rgba(var(--c-holo-rgb), calc(var(--fp) * 0.6));
+}
+.ether::before {
+  /* the core's glass */
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, rgba(var(--c-chrome-rgb), 0.18), rgba(15, 23, 42, 0.9) 60%);
+  box-shadow: inset 0 0 0 1px rgba(var(--c-holo-rgb), 0.5), inset 0 0 12px rgba(var(--c-holo-rgb), calc(var(--fp) * 0.9));
+}
+.ether small,
+.ether b {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-tech);
+  line-height: 1;
+  text-shadow: 0 0 6px rgba(var(--c-holo-rgb), 0.8);
+}
+.ether small {
+  font-size: 7px;
+  letter-spacing: 0.2em;
+  color: var(--c-gold);
+}
+.ether b {
+  font-size: 18px;
+  color: #fff;
+}
+.xp-line,
+.fp-lights {
+  display: none;
+}
+
+/* ---- action deck: a slim diagonal panel (Hades), scanline cooldowns */
+.cn-center {
+  flex: none;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+.abilities {
+  padding: 6px 16px;
+  transform: skewX(-14deg);
+  border-top: 2px solid var(--c-chrome);
+  border-bottom: 1px solid rgba(var(--c-holo-rgb), 0.5);
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(var(--c-chrome-rgb), 0.14), rgba(var(--c-base-rgb), 0.86) 10%, rgba(var(--c-base-rgb), 0.86) 90%, rgba(var(--c-chrome-rgb), 0.14));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), var(--ui-glow);
+}
+.ab-row {
+  transform: skewX(14deg);
+  gap: 8px;
+}
+.ab {
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border: 1px solid rgba(var(--c-chrome-rgb), 0.38);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(var(--c-chrome-rgb), 0.12), rgba(15, 23, 42, 0.92) 40%);
+  box-shadow: inset 0 0 0 1px rgba(var(--c-holo-rgb), 0.22), 0 2px 6px rgba(0, 0, 0, 0.6);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.ab img {
+  inset: 6px;
+  width: 36px;
+  height: 36px;
+}
+.ab .cd {
+  --cd: 1; /* 0 = just used (covered), 1 = ready; the scan line sits at the edge */
+  border-radius: 0;
+  background: none;
+  pointer-events: none;
+}
+.ab.cooling .cd {
+  background:
+    linear-gradient(180deg, transparent calc(var(--cd) * 100% - 9px), rgba(var(--c-holo-rgb), 0.4) calc(var(--cd) * 100% - 1px), #fff calc(var(--cd) * 100%), rgba(var(--c-holo-rgb), 0.4) calc(var(--cd) * 100% + 1px), transparent calc(var(--cd) * 100% + 3px)),
+    linear-gradient(180deg, transparent calc(var(--cd) * 100%), rgba(15, 23, 42, 0.8) 0),
+    repeating-linear-gradient(180deg, rgba(var(--c-holo-rgb), 0.16) 0 1px, transparent 1px 3px);
+}
+.ab .cdt {
+  font-family: var(--font-tech);
+  font-size: 13px;
+  color: var(--c-chrome);
+  text-shadow: 0 0 6px var(--c-holo), 0 1px 0 #000;
+}
+.ab-key {
+  left: 4px;
+  top: 2px;
+  font-size: 9px;
+  letter-spacing: 0;
+  color: var(--c-gold);
+  text-shadow: 0 0 4px rgba(var(--c-gold-rgb), 0.6), 0 1px 0 #000;
+}
+.ab-lv {
+  right: 4px;
+  bottom: 2px;
+  font-family: var(--font-tech);
+  font-size: 8px;
+  color: var(--c-holo);
+}
+.ab-rmb {
+  bottom: -8px;
+  color: #1a1400;
+  background: var(--c-gold);
+}
+.ab.rmb {
+  border-color: var(--c-gold);
+  box-shadow: inset 0 0 0 1px rgba(var(--c-gold-rgb), 0.4), 0 0 8px rgba(var(--c-gold-rgb), 0.45);
+}
+.ab:hover,
+.ab.pending {
+  border-color: var(--c-holo);
+  box-shadow: inset 0 0 0 1px rgba(var(--c-holo-rgb), 0.6), 0 0 12px rgba(var(--c-holo-rgb), 0.6);
+}
+.ab::after {
+  /* the hover sweep */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 12%;
+  background: linear-gradient(180deg, transparent, rgba(var(--c-holo-rgb), 0.35) 60%, rgba(255, 255, 255, 0.9) 98%, transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+.ab:hover::after {
+  animation: uiScan 0.45s ease-out;
+}
+.ab.nofp img {
+  opacity: 0.3;
+  filter: grayscale(1);
+}
+
+/* ---- keys: chrome caps with an LED lamp */
+.fo-btn,
+.ab-menu button {
+  position: relative;
+  padding: 3px 9px 3px 7px;
+  gap: 6px;
+  font-family: var(--font-tech);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--c-chrome);
+  text-shadow: 0 1px 0 #000;
+  border: 1px solid rgba(var(--c-chrome-rgb), 0.35);
+  border-image: none;
+  border-top-color: rgba(var(--c-chrome-rgb), 0.75);
+  border-radius: 5px;
+  background: linear-gradient(180deg, rgba(var(--c-chrome-rgb), 0.16), rgba(var(--c-base-rgb), 0.9) 55%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  transition: box-shadow 0.12s, border-color 0.12s, color 0.12s;
+  filter: none;
+}
+.fo-btn > i,
+.ab-menu button > i {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(var(--c-holo-rgb), 0.25);
+  box-shadow: inset 0 0 0 1px rgba(var(--c-holo-rgb), 0.5);
+}
+.fo-btn:hover,
+.ab-menu button:hover {
+  color: #fff;
+  border-color: var(--c-holo);
+  box-shadow: 0 0 10px rgba(var(--c-holo-rgb), 0.45);
+}
+.fo-btn:active,
+.ab-menu button:active,
+.fo-btn.down,
+.ab-menu button.down {
+  border-image: none;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(var(--c-holo-rgb), 0.35), rgba(var(--c-base-rgb), 0.9));
+  transform: translateY(1px);
+  filter: none;
+}
+.fo-btn:active > i,
+.ab-menu button:active > i,
+#saberBtn.on > i {
+  background: var(--c-holo);
+  box-shadow: 0 0 6px var(--c-holo);
+}
+#saberBtn.on {
+  border-image: none;
+  border-color: rgba(var(--c-holo-rgb), 0.8);
+  color: #fff;
+  filter: none;
+}
+.stims em b {
+  width: 5px;
+  height: 11px;
+  background: rgba(var(--c-emerald-rgb), 0.12);
+  box-shadow: inset 0 0 0 1px rgba(var(--c-emerald-rgb), 0.35);
+}
+.stims em b.on {
+  background: var(--c-emerald);
+  box-shadow: 0 0 5px var(--c-emerald);
+}
+.cn-btns {
+  gap: 6px;
+}
+.cn-menu {
+  gap: 4px 6px;
+}
+.ab-menu button small {
+  font-family: var(--font-tech);
+  font-size: 8px;
+  color: rgba(var(--c-chrome-rgb), 0.5);
+}
+.ab-menu .dot {
+  left: -4px;
+  top: -4px;
+  background: var(--c-gold);
+  box-shadow: 0 0 8px var(--c-gold);
+}
+
+/* ---- comms log: holo glass */
+.cn-log,
+.cn-log.monitor {
+  flex: 1 1 240px;
+  min-width: 170px;
+  max-width: 340px;
+  padding: 8px 12px;
+  border: 1px solid rgba(var(--c-holo-rgb), 0.32);
+  border-image: none;
+  border-radius: var(--ui-radius);
+  background: var(--ui-glass);
+  box-shadow: inset 0 0 18px rgba(var(--c-holo-rgb), 0.08), inset 0 1px 0 rgba(var(--c-chrome-rgb), 0.25);
+}
+.cn-log .log {
+  padding-top: 0;
+  font-family: var(--font-hud);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.log-line::before {
+  content: '▸';
+  color: var(--c-holo);
+}
+.log-line.gold {
+  color: var(--c-gold);
+}
+
+/* ---- scanner: the round Republic radar */
+.cn-radar,
+.cn-radar.monitor {
+  width: 102px;
+  border: 2px solid rgba(var(--c-chrome-rgb), 0.6);
+  border-image: none;
+  border-radius: 50%;
+  background: #0b1220;
+  box-shadow: 0 0 0 3px rgba(var(--c-base-rgb), 0.95), 0 0 0 4px rgba(var(--c-chrome-rgb), 0.18), 0 0 16px rgba(var(--c-holo-rgb), 0.35), inset 0 0 18px rgba(var(--c-holo-rgb), 0.2);
+}
+.cn-radar canvas,
+.m-radar canvas {
+  filter: none; /* drawn in the palette's colours (theme.js) */
+}
+.cn-radar.monitor::before {
+  background: var(--ui-scan);
+}
+.cn-radar.monitor::after {
+  background: radial-gradient(circle at 50% 30%, rgba(var(--c-chrome-rgb), 0.1), transparent 55%);
+}
+.radar-region {
+  bottom: 10px;
+  font-family: var(--font-tech);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  color: var(--c-holo);
+  text-shadow: 0 0 4px #000, 0 0 6px rgba(var(--c-holo-rgb), 0.6);
+}
+
+/* ---- plates over the world: buffs, objectives, target, banner */
+.buffs,
+.objectives,
+.target-info {
+  font-family: var(--font-hud);
+}
+.buffs {
+  bottom: calc(138px + env(safe-area-inset-bottom, 0px));
+}
+.buff {
+  padding: 2px 8px 2px 4px;
+  border: 1px solid rgba(var(--c-holo-rgb), 0.5);
+  border-radius: 4px;
+  background: var(--ui-glass);
+  box-shadow: inset 0 1px 0 rgba(var(--c-chrome-rgb), 0.2);
+}
+.buff.gold {
+  color: var(--c-gold);
+  border-color: rgba(var(--c-gold-rgb), 0.6);
+}
+.buff.dark {
+  color: #ff8aa0;
+  border-color: rgba(var(--c-red-rgb), 0.6);
+}
+.objectives {
+  padding: 8px 12px 10px;
+  border: 1px solid rgba(var(--c-holo-rgb), 0.3);
+  border-top: 2px solid rgba(var(--c-chrome-rgb), 0.8);
+  border-radius: 4px 4px 10px 10px;
+  background: var(--ui-scan), var(--ui-glass);
+  box-shadow: inset 0 0 16px rgba(var(--c-holo-rgb), 0.07);
+}
+.ob-h {
+  font-size: 10px;
+  color: var(--c-holo);
+}
+.ob-h::after {
+  background: linear-gradient(90deg, rgba(var(--c-holo-rgb), 0.6), transparent);
+}
+.objectives li i {
+  border-color: var(--c-holo);
+}
+.objectives li.done i {
+  background: rgba(var(--c-emerald-rgb), 0.6);
+}
+.ob-arrow {
+  color: var(--c-gold);
+}
+.ti-name {
+  color: #ffd0d8;
+}
+.target-info.elite .ti-name {
+  color: var(--c-gold);
+}
+.ti-bar {
+  background: rgba(var(--c-chrome-rgb), 0.15);
+}
+.ti-bar i {
+  background: var(--c-red);
+  box-shadow: 0 0 6px var(--c-red);
+}
+.target-info.ally .ti-bar i {
+  background: var(--c-holo);
+  box-shadow: 0 0 6px var(--c-holo);
+}
+.ti-sub {
+  color: var(--c-holo);
+}
+
+/* ============================================================ full-screen menus: popup sweep, hover glow */
+.overlay {
+  background: radial-gradient(ellipse at 30% 20%, rgba(var(--c-base-rgb), 0.75), rgba(2, 6, 12, 0.94) 70%), rgba(2, 6, 12, 0.6);
+}
+.overlay::after {
+  /* the scanline sweep on opening */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 12%;
+  z-index: 50;
+  background: linear-gradient(180deg, transparent, rgba(var(--c-holo-rgb), 0.22) 60%, rgba(var(--c-chrome-rgb), 0.85) 98%, transparent);
+  animation: uiScan 0.6s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  pointer-events: none;
+}
+.ov-head {
+  border-bottom: 1px solid rgba(var(--c-holo-rgb), 0.35);
+  box-shadow: 0 1px 0 rgba(var(--c-chrome-rgb), 0.12);
+}
+.ov-title {
+  font-family: var(--font-hud);
+  font-weight: 200;
+  letter-spacing: 0.1em;
+  color: var(--c-chrome);
+  text-shadow: 0 0 14px rgba(var(--c-holo-rgb), 0.5);
+}
+.ov-tab {
+  transition: color 0.12s, text-shadow 0.12s;
+}
+.ov-tab:hover,
+.ov-tab.on {
+  color: #fff;
+  text-shadow: 0 0 8px rgba(var(--c-holo-rgb), 0.8);
+}
+.ov-tab.on {
+  border-bottom-color: var(--c-holo);
+  box-shadow: 0 6px 12px -8px rgba(var(--c-holo-rgb), 0.9);
+}
+.ov-close,
+.btn-ghost,
+.btn-file,
+.dr-retry {
+  font-family: var(--font-hud);
+  color: var(--c-chrome);
+  border: 1px solid rgba(var(--c-chrome-rgb), 0.35);
+  border-radius: 5px;
+  background: linear-gradient(180deg, rgba(var(--c-chrome-rgb), 0.12), rgba(var(--c-base-rgb), 0.8));
+  transition: box-shadow 0.12s, border-color 0.12s;
+}
+.ov-close:hover,
+.btn-ghost:hover,
+.btn-file:hover,
+.dr-retry:hover {
+  color: #fff;
+  border-color: var(--c-holo);
+  box-shadow: 0 0 12px rgba(var(--c-holo-rgb), 0.5);
+}
+.set-card {
+  border: 1px solid rgba(var(--c-holo-rgb), 0.28);
+  border-top: 2px solid rgba(var(--c-chrome-rgb), 0.6);
+  border-radius: 4px 4px 10px 10px;
+  background: var(--ui-scan), var(--ui-glass);
+}
+.set-card h4 {
+  font-family: var(--font-tech);
+  letter-spacing: 0.16em;
+  color: var(--c-holo);
+}
+.set-toggle input {
+  accent-color: var(--c-holo);
+}
+.set-select select,
+.set-range input {
+  accent-color: var(--c-holo);
+  border-color: rgba(var(--c-holo-rgb), 0.45);
+}
+
+/* ============================================================ phone */
+.m-ui,
+.touch-ui {
+  font-family: var(--font-hud);
+}
+/* the vitals plate: a visor cheek with the hologram face */
+.m-vitals {
+  padding: 5px 12px 5px 5px;
+  border: 1px solid rgba(var(--c-chrome-rgb), 0.4);
+  border-top: 2px solid var(--c-chrome);
+  border-radius: 16px 8px 8px 16px / 14px 8px 8px 14px;
+  background: var(--ui-scan), var(--ui-plate);
+  box-shadow: inset 0 1px 0 #fff, inset 0 0 20px rgba(var(--c-holo-rgb), 0.08), 0 0 12px rgba(var(--c-holo-rgb), 0.3), 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+.m-face,
+.m-face.monitor {
+  border: 1px solid rgba(var(--c-holo-rgb), 0.5);
+  border-image: none;
+  border-radius: 10px;
+  background: radial-gradient(ellipse at 50% 85%, rgba(var(--c-holo-rgb), 0.3), rgba(15, 23, 42, 0.95) 70%);
+  box-shadow: inset 0 -2px 0 rgba(var(--c-holo-rgb), 0.7);
+}
+.m-face canvas {
+  filter: grayscale(1) sepia(1) hue-rotate(165deg) saturate(2.8) brightness(1.1) contrast(1.15);
+  opacity: 0.88;
+  mix-blend-mode: screen;
+}
+.m-face.monitor::after {
+  background: var(--ui-grid);
+  mix-blend-mode: screen;
+}
+.m-lv {
+  color: #1a1400;
+  background: var(--c-gold);
+  box-shadow: 0 0 0 1px #0f172a, 0 0 6px rgba(var(--c-gold-rgb), 0.6);
+}
+.m-bar {
+  height: 12px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(var(--c-chrome-rgb), 0.22), inset 0 1px 3px #000;
+}
+.m-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 7px, rgba(15, 23, 42, 0.95) 7px 9px);
+  pointer-events: none;
+}
+.m-bar i {
+  border-radius: 6px 2px 2px 6px;
+}
+.m-bar.hp .fill {
+  background: linear-gradient(180deg, #b8ffdc, var(--c-emerald) 45%, #00a858);
+  box-shadow: 0 0 8px rgba(var(--c-emerald-rgb), 0.7);
+}
+.m-vitals.low .m-bar.hp .fill {
+  background: linear-gradient(180deg, #ffb3c0, var(--c-red) 45%, #a3001f);
+  box-shadow: 0 0 8px rgba(var(--c-red-rgb), 0.7);
+}
+.m-bar.hp .chip {
+  background: rgba(var(--c-chrome-rgb), 0.55);
+}
+.m-bar.fp .fill {
+  background: linear-gradient(180deg, #c8f2ff, var(--c-holo) 45%, #0077a8);
+  box-shadow: 0 0 8px rgba(var(--c-holo-rgb), 0.7);
+}
+.m-bar.comp .fill {
+  background: linear-gradient(180deg, #fff1b0, var(--c-gold) 45%, #b08a00);
+}
+.m-bar b,
+.m-bar span {
+  z-index: 1;
+  line-height: 12px;
+  font-family: var(--font-tech);
+  font-size: 8px;
+}
+.m-dark {
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--c-holo), rgba(var(--c-base-rgb), 1) 50%, var(--c-red));
+}
+.m-dark i {
+  background: var(--c-chrome);
+}
+.m-chip {
+  border: 1px solid rgba(var(--c-holo-rgb), 0.5);
+  border-radius: 4px;
+  background: var(--ui-glass);
+}
+.m-chip.gold {
+  color: var(--c-gold);
+  border-color: rgba(var(--c-gold-rgb), 0.6);
+}
+/* menu keys: chrome caps */
+.m-key {
+  color: var(--c-chrome);
+  border: 1px solid rgba(var(--c-chrome-rgb), 0.35);
+  border-top-color: rgba(var(--c-chrome-rgb), 0.75);
+  border-radius: 7px;
+  background: linear-gradient(180deg, rgba(var(--c-chrome-rgb), 0.16), rgba(var(--c-base-rgb), 0.9) 55%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+.m-key:active {
+  background: linear-gradient(180deg, rgba(var(--c-holo-rgb), 0.35), rgba(var(--c-base-rgb), 0.9));
+  box-shadow: 0 0 10px rgba(var(--c-holo-rgb), 0.45);
+}
+.m-key span {
+  font-family: var(--font-hud);
+}
+.m-key .dot {
+  background: var(--c-gold);
+  box-shadow: 0 0 8px var(--c-gold);
+}
+.m-radar,
+.m-radar.monitor {
+  border: 2px solid rgba(var(--c-chrome-rgb), 0.6);
+  border-image: none;
+  border-radius: 50%;
+  background: #0b1220;
+  box-shadow: 0 0 0 3px rgba(var(--c-base-rgb), 0.95), 0 0 14px rgba(var(--c-holo-rgb), 0.35), inset 0 0 14px rgba(var(--c-holo-rgb), 0.2);
+}
+.m-radar.monitor::before {
+  background: var(--ui-scan);
+}
+.m-region {
+  font-family: var(--font-tech);
+  color: var(--c-holo);
+}
+/* the action cluster: chrome rings with a holo LED edge */
+.t-btn {
+  border: 1.5px solid rgba(var(--c-chrome-rgb), 0.6);
+  background: radial-gradient(circle at 50% 40%, rgba(var(--c-base-rgb), 0.78), rgba(15, 23, 42, 0.92));
+  box-shadow: 0 0 0 2px rgba(var(--c-holo-rgb), 0.22), 0 0 10px rgba(var(--c-holo-rgb), 0.22), inset 0 0 12px rgba(var(--c-holo-rgb), 0.1);
+}
+.t-btn.down {
+  background: radial-gradient(circle, rgba(var(--c-holo-rgb), 0.4), rgba(15, 23, 42, 0.92));
+  box-shadow: 0 0 0 2px rgba(var(--c-holo-rgb), 0.7), 0 0 16px rgba(var(--c-holo-rgb), 0.6);
+}
+.t-attack {
+  border: 2px solid var(--c-chrome);
+  box-shadow: 0 0 0 3px rgba(var(--c-holo-rgb), 0.3), 0 0 16px rgba(var(--c-holo-rgb), 0.4), inset 0 0 18px rgba(var(--c-holo-rgb), 0.15);
+}
+.t-attack span,
+.t-btn .lv {
+  font-family: var(--font-tech);
+  color: var(--c-chrome);
+  text-shadow: 0 0 4px rgba(var(--c-holo-rgb), 0.8), 0 1px 2px #000;
+}
+.t-btn .cd {
+  --cd: 1;
+  background: none;
+}
+.t-btn.cooling .cd {
+  background:
+    linear-gradient(180deg, transparent calc(var(--cd) * 100% - 9px), rgba(var(--c-holo-rgb), 0.4) calc(var(--cd) * 100% - 1px), #fff calc(var(--cd) * 100%), rgba(var(--c-holo-rgb), 0.4) calc(var(--cd) * 100% + 1px), transparent calc(var(--cd) * 100% + 3px)),
+    linear-gradient(180deg, transparent calc(var(--cd) * 100%), rgba(15, 23, 42, 0.78) 0),
+    repeating-linear-gradient(180deg, rgba(var(--c-holo-rgb), 0.16) 0 1px, transparent 1px 3px);
+}
+.t-bacta {
+  border-color: rgba(var(--c-emerald-rgb), 0.6);
+  box-shadow: 0 0 0 2px rgba(var(--c-emerald-rgb), 0.18), 0 0 10px rgba(var(--c-emerald-rgb), 0.2);
+}
+.t-saber.on {
+  border-color: var(--c-holo);
+  box-shadow: 0 0 0 2px rgba(var(--c-holo-rgb), 0.5), 0 0 14px rgba(var(--c-holo-rgb), 0.6);
+}
+.joy {
+  border-color: rgba(var(--c-chrome-rgb), 0.4);
+}
+.joy-knob {
+  background: rgba(var(--c-chrome-rgb), 0.85);
+  box-shadow: 0 0 14px rgba(var(--c-holo-rgb), 0.6);
+}
+
+/* ============================================================ menus: plates, tabs, datapads */
+.sd-learn,
+.sc-act,
+.at-row button,
+.dr-actions button,
+.death button,
+.sd-slots button,
+.ct-close,
+.ov-act,
+.ap-equip,
+.ov-tab {
+  font-family: var(--font-hud);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--c-chrome);
+  text-shadow: 0 1px 0 #000;
+  background: linear-gradient(180deg, rgba(var(--c-chrome-rgb), 0.12), rgba(var(--c-base-rgb), 0.82) 55%);
+  border: 1px solid rgba(var(--c-chrome-rgb), 0.3);
+  border-top-color: rgba(var(--c-chrome-rgb), 0.7);
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  transition: box-shadow 0.12s, border-color 0.12s, color 0.12s;
+}
+.sd-learn:hover,
+.sc-act:hover,
+.at-row button:hover,
+.dr-actions button:hover,
+.death button:hover,
+.ct-close:hover,
+.ov-act:hover,
+.ap-equip:hover {
+  color: #fff;
+  border-color: var(--c-holo);
+  box-shadow: 0 0 12px rgba(var(--c-holo-rgb), 0.5);
+}
+.sd-learn,
+.sc-act {
+  color: var(--c-gold);
+}
+.sd-learn small {
+  color: rgba(var(--c-chrome-rgb), 0.6);
+}
+.sd-learn:disabled,
+.sc-act:disabled,
+.at-row button:disabled {
+  color: rgba(var(--c-chrome-rgb), 0.35);
+  border-color: rgba(var(--c-chrome-rgb), 0.15);
+  box-shadow: none;
+}
+.sd-slots button.on {
+  color: #1a1400;
+  background: var(--c-gold);
+  border-color: var(--c-gold);
+}
+.ov-tab {
+  margin-right: 4px;
+  padding: 5px 14px 7px;
+  color: rgba(var(--c-chrome-rgb), 0.75);
+  border-bottom: 2px solid transparent;
+}
+.ov-tab small {
+  font-family: var(--font-tech);
+  color: rgba(var(--c-holo-rgb), 0.7);
+}
+.ov-tab.on {
+  color: #fff;
+  border-color: rgba(var(--c-holo-rgb), 0.6);
+  border-bottom-color: var(--c-holo);
+  background: linear-gradient(180deg, rgba(var(--c-holo-rgb), 0.22), rgba(var(--c-base-rgb), 0.86) 60%);
+}
+.ov-body {
+  border: 1px solid rgba(var(--c-holo-rgb), 0.3);
+  border-radius: var(--ui-radius);
+  background: var(--ui-scan), var(--ui-glass-strong);
+  box-shadow: inset 0 0 28px rgba(var(--c-holo-rgb), 0.07), inset 0 1px 0 rgba(var(--c-chrome-rgb), 0.18);
+}
+.st-detail,
+.sc-detail,
+.info-stats {
+  --tc: var(--c-holo);
+  border: 1px solid rgba(var(--c-holo-rgb), 0.35);
+  border-top: 2px solid rgba(var(--c-chrome-rgb), 0.6);
+  border-radius: 4px 4px 10px 10px;
+  background: var(--ui-scan), rgba(15, 23, 42, 0.8);
+  box-shadow: inset 0 0 18px rgba(var(--c-holo-rgb), 0.08);
+}
+.ov-points b,
+.sc-parts b {
+  color: var(--c-gold);
+  text-shadow: 0 0 8px rgba(var(--c-gold-rgb), 0.6);
+}
+.set-vol input,
+.set-crop input,
+input[type='range'] {
+  accent-color: var(--c-holo);
+}
+:focus-visible {
+  outline: 2px solid var(--c-holo);
+}

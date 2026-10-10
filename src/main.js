@@ -1,5 +1,6 @@
 // Entry point: bake sprites, build the world, then run the game loop.
 import './style.css';
+import './ui/theme.css'; // the UI design system (docs/UI_SYSTEM.md): restyles what style.css lays out
 import { applySkin } from './ui/skin.js';
 import { bakeAssets, bakeDuelAssets, bakeSkin, bakeCharacter, CHARACTERS } from './gfx/assets.js';
 import { loadSheets } from './gfx/sheet.js';
@@ -217,6 +218,7 @@ async function boot() {
   window.__game = game; // handy for debugging in the console
   window.__renderer = renderer;
   window.__hud = hud;
+  window.__mobile = mobile; // QA (tools/qa)
   window.__dialogue = dialogue;
   window.__music = music;
   let last = performance.now();

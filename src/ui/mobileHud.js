@@ -215,28 +215,6 @@ export class MobileHUD {
   }
 
   drawRadar() {
-    const ctx = this.rctx;
-    const p = this.game.player;
-    const S = 200;
-    const k = 1.9;
-    ctx.clearRect(0, 0, S, S);
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(S / 2, S / 2, S / 2 - 3, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.fillStyle = 'rgba(6,10,16,0.85)';
-    ctx.fillRect(0, 0, S, S);
-    this.hud.drawMap(ctx, k, S / 2 - (p.x - p.y) * k, S / 2 - (p.x + p.y) * k * 0.5, { markerScale: 1.3 });
-    ctx.strokeStyle = 'rgba(160,210,255,0.18)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(S / 2, S / 2, 50, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-    ctx.strokeStyle = 'rgba(235,242,250,0.5)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(S / 2, S / 2, S / 2 - 3, 0, Math.PI * 2);
-    ctx.stroke();
+    this.hud.drawScanner(this.rctx, 200, 1.9, 1.3);
   }
 }

@@ -13,6 +13,7 @@ import { QUESTS } from '../game/quests.js';
 import { VOLUMES } from '../core/audio.js';
 import { setText, setHTML, setClass } from './dom.js';
 import { SABER, setSaberOpt, TRAIL_NAMES, PALETTE_NAMES } from '../gfx/saberStyle.js';
+import { THEME, loadTheme, rgba, setFraction } from './theme.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (tag, cls, html) => {
@@ -31,6 +32,8 @@ const ATTR_INFO = {
 const KIND = { active: '액티브', passive: '패시브', buff: '버프', summon: '소환' };
 const FORCE_SEGMENTS = 10;
 
+// the PC scanner's canvas: shown at ~102 CSS px, 240 covers a 2x screen (it was 360: 3.5x, redrawn 12 times a second)
+const RADAR_PX = 240;
 export class HUD {
   constructor(game, renderer, portrait, audio, photo) {
     this.game = game;
@@ -50,6 +53,7 @@ export class HUD {
     this.fogCanvas = document.createElement('canvas');
     this.fogCanvas.width = game.world.w;
     this.fogCanvas.height = game.world.h;
+    loadTheme(); // the palette for the scanner and the map (ui/theme.css)
     this.buildHud();
     this.buildSkillTree();
     this.buildInfo();
@@ -81,22 +85,23 @@ export class HUD {
     const cn = el('div', 'console');
     cn.innerHTML = `
       <div class="cn-portrait monitor"><canvas id="portrait" width="240" height="240"></canvas><div class="ps-eq"><i></i><i></i><i></i><i></i><i></i></div><span class="aure" aria-hidden="true" data-aure="pilot"></span></div>
-      <div class="cn-log monitor"><span class="aure" aria-hidden="true" data-aure="comms"></span><div class="log" id="msgLog"></div></div>
-      <div class="cn-btns">
-        <button class="fo-btn stims" id="stims" type="button" title="박타 주사기 (Q)"></button>
-        <button class="fo-btn" id="saberBtn" type="button" title="광선검 켜기/끄기 (X)"><i></i><span>광선검</span></button>
+      <div class="cn-stats">
+        <div class="plate-h"><span class="aure" aria-hidden="true" data-aure="vitals"></span><small>생체 신호</small></div>
+        <div class="gauge hp hp-bar" title="체력"><span class="g-chip hp-chip"></span><span class="g-fill hp-fill"></span><label>HP</label><b id="hpText">0</b></div>
+        <div class="gauge fp" title="포스"><span class="g-fill" id="fpFill"></span><label>FORCE</label><b id="fpText">0</b></div>
+        <div class="cn-sub"><div class="dark-meter" title="빛과 어둠"><span>빛</span><div class="dm"><i id="dmMark"></i></div><span>어둠</span></div></div>
       </div>
       <div class="cn-center">
+        <div class="ether" id="ether" title="레벨 · 경험치(금) · 포스(빛)"><small>LV</small><b id="lvlText">1</b></div>
         <div class="fp-lights" id="forceSeg">${'<i></i>'.repeat(FORCE_SEGMENTS)}</div>
         <div class="abilities"><div class="ab-row"></div></div>
         <div class="xp-line" title="경험치"><i id="xpFill"></i></div>
       </div>
-      <div class="cn-stats">
-        <div class="plate-h"><span class="aure" aria-hidden="true" data-aure="vitals"></span><small>생체 신호</small></div>
-        <div class="gauge hp hp-bar" title="체력"><span class="g-chip hp-chip"></span><span class="g-fill hp-fill"></span><label>체력</label><b id="hpText">0</b></div>
-        <div class="gauge fp" title="포스"><span class="g-fill" id="fpFill"></span><label>포스</label><b id="fpText">0</b></div>
-        <div class="cn-sub"><span id="lvlText">LV 1</span><div class="dark-meter" title="빛과 어둠"><span>빛</span><div class="dm"><i id="dmMark"></i></div><span>어둠</span></div></div>
+      <div class="cn-btns">
+        <button class="fo-btn stims" id="stims" type="button" title="박타 주사기 (Q)"></button>
+        <button class="fo-btn" id="saberBtn" type="button" title="광선검 켜기/끄기 (X)"><i></i><span>광선검</span></button>
       </div>
+      <div class="cn-log monitor"><span class="aure" aria-hidden="true" data-aure="comms"></span><div class="log" id="msgLog"></div></div>
       <div class="cn-menu ab-menu">
         <button type="button" data-open="map"><i></i>지도<small>Tab</small></button>
         <button type="button" data-open="char"><i></i>정보<small>C</small><b class="dot"></b></button>
@@ -105,7 +110,7 @@ export class HUD {
         <button type="button" data-open="settings"><i></i>설정<small>O</small></button>
         <button type="button" data-open="help"><i></i>도움<small>F1</small></button>
       </div>
-      <div class="cn-radar monitor"><span class="aure" aria-hidden="true" data-aure="scan"></span><canvas id="radar" width="360" height="360"></canvas><div class="radar-region" id="regionText"></div></div>`;
+      <div class="cn-radar monitor"><span class="aure" aria-hidden="true" data-aure="scan"></span><canvas id="radar" width="${RADAR_PX}" height="${RADAR_PX}"></canvas><div class="radar-region" id="regionText"></div></div>`;
     r.appendChild(cn);
     this.pcanvas = $('#portrait');
     this.pctx = this.pcanvas.getContext('2d');
@@ -163,7 +168,7 @@ export class HUD {
       e.stopPropagation();
       if (e.button !== 0) return;
       const rect = this.radar.getBoundingClientRect();
-      const w = this.radarToWorld(((e.clientX - rect.left) / rect.width) * 360, ((e.clientY - rect.top) / rect.height) * 360);
+      const w = this.radarToWorld(((e.clientX - rect.left) / rect.width) * RADAR_PX, ((e.clientY - rect.top) / rect.height) * RADAR_PX);
       this.game.player.commandMove(w.x, w.y);
       this.renderer.addClickMark(w.x, w.y);
     });
@@ -721,7 +726,8 @@ export class HUD {
     // portrait + voice equaliser
     this.portrait.setScene(/드로이드 공장|격전지/.test(g.region) ? 'hangar' : 'corridor');
     this.portrait.update(dt, p.darkness, p.dead);
-    this.portrait.draw(this.pctx, this.pcanvas.width, this.pcanvas.height);
+    const pc = !this.renderer.touchMode; // the console is hidden on the phone: its canvases are not drawn
+    if (pc) this.portrait.draw(this.pctx, this.pcanvas.width, this.pcanvas.height);
     if (this.open.settings) this.portrait.draw(this.setCtx, 320, 320);
     const talking = this.sub && this.sub.speaker === '아나킨' && this.sub.t < this.sub.talk;
     this.eq.classList.toggle('on', !!talking);
@@ -742,7 +748,8 @@ export class HUD {
       b.classList.toggle('empty', !id);
       const cd = id ? p.cooldowns[id] || 0 : 0;
       const total = id && SKILLS[id].cd ? SKILLS[id].cd(p.skillLevel(id)) || 1 : 1;
-      b.children[1].style.background = cd > 0 ? `conic-gradient(rgba(6,8,12,0.78) ${(cd / total) * 360}deg, transparent 0)` : 'none';
+      setFraction(b.children[1], 'cd', cd > 0 ? 1 - cd / total : 1);
+      b.classList.toggle('cooling', cd > 0);
       setText(b.children[2], cd > 0 ? (cd < 1 ? cd.toFixed(1) : Math.ceil(cd)) : '');
       const cost = id && SKILLS[id].cost ? SKILLS[id].cost(p.skillLevel(id)) : 0;
       b.classList.toggle('nofp', !!id && p.force < cost);
@@ -768,8 +775,10 @@ export class HUD {
       this.textT = 0.12;
       setText($('#hpText'), Math.ceil(Math.max(0, p.hp)));
       setText($('#fpText'), Math.floor(p.force));
-      setText($('#lvlText'), `LV ${p.level}`);
-      $('#xpFill').style.width = (p.xp / p.xpNext) * 100 + '%';
+      setText($('#lvlText'), p.level);
+      const core = $('#ether');
+      setFraction(core, 'xp', Math.max(0, Math.min(1, p.xp / p.xpNext)));
+      setFraction(core, 'fp', Math.max(0, Math.min(1, p.force / p.maxForce)));
       $('#dmMark').style.left = p.darkness + '%';
       setHTML($('#stims'), `<i></i><span>박타</span><em>${[0, 1, 2, 3, 4].map((k) => `<b class="${k < p.bacta ? 'on' : ''}"></b>`).join('')}</em>`);
       $('#saberBtn').classList.toggle('on', p.saberLit && !p.saberOut);
@@ -794,7 +803,7 @@ export class HUD {
         this.fogT = 6;
         this.updateFog();
       }
-      this.drawRadar();
+      if (pc) this.drawRadar();
       if (this.open.map) this.drawMapView();
     }
   }
@@ -888,7 +897,7 @@ export class HUD {
       if (!w.explored[Math.floor(c.y) * w.w + Math.floor(c.x)] && !c.boss) continue;
       if (c.cleared) continue;
       const [x, y] = T(c.x, c.y);
-      ctx.strokeStyle = c.boss ? '#ff5a4a' : '#ff8a6a';
+      ctx.strokeStyle = c.boss ? THEME.red : rgba(THEME.red, 0.75);
       ctx.lineWidth = 2 * s;
       ctx.beginPath();
       ctx.moveTo(x, y - 6 * s);
@@ -899,13 +908,13 @@ export class HUD {
       ctx.stroke();
     }
     const [bx, by] = T(w.spawn.x, w.spawn.y);
-    ctx.fillStyle = '#5cc8ff';
+    ctx.fillStyle = THEME.holo;
     ctx.fillRect(bx - 4 * s, by - 4 * s, 8 * s, 8 * s);
     for (const u of g.units) {
       if (u.dead || u === p) continue;
       if (u.team === 'cis' && dist(u.x, u.y, p.x, p.y) > 26) continue;
       const [x, y] = T(u.x, u.y);
-      ctx.fillStyle = u.team === 'cis' ? '#ff4a3a' : '#6fd0ff';
+      ctx.fillStyle = u.team === 'cis' ? THEME.red : THEME.holo;
       ctx.beginPath();
       ctx.arc(x, y, 2.2 * s, 0, Math.PI * 2);
       ctx.fill();
@@ -918,7 +927,7 @@ export class HUD {
     ctx.save();
     ctx.translate(px, py);
     ctx.rotate(a);
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = THEME.chrome;
     ctx.beginPath();
     ctx.moveTo(7 * s, 0);
     ctx.lineTo(-5 * s, -5 * s);
@@ -930,60 +939,99 @@ export class HUD {
   }
 
   radarScale() {
-    return 2.6;
+    return 2.6 * (RADAR_PX / 360);
   }
 
   radarToWorld(cx, cy) {
     const p = this.game.player;
     const k = this.radarScale();
-    const a = (cx - 180) / k; // x - y
-    const b = (cy - 180) / (k * 0.5); // x + y
+    const a = (cx - RADAR_PX / 2) / k; // x - y
+    const b = (cy - RADAR_PX / 2) / (k * 0.5); // x + y
     return { x: p.x + (a + b) / 2, y: p.y + (b - a) / 2 };
   }
 
   drawRadar() {
-    const ctx = this.rctx;
+    this.drawScanner(this.rctx, RADAR_PX, this.radarScale(), 1.2);
+  }
+
+  /**
+   * The Republic scanner: a round tactical holo — explored ground, an iso grid that moves with
+   * Anakin, range rings, a sweep, blue (ally) and red (enemy) dots, a chrome bezel with ticks.
+   * `S`: the canvas's size, `k`: world units to px, `ms`: marker scale.
+   */
+  drawScanner(ctx, S, k, ms) {
     const p = this.game.player;
-    const k = this.radarScale();
-    ctx.clearRect(0, 0, 360, 360);
+    const c = S / 2;
+    const R = c - 8;
+    const ox = c - (p.x - p.y) * k;
+    const oy = c - (p.x + p.y) * k * 0.5;
+    ctx.clearRect(0, 0, S, S);
     ctx.save();
     ctx.beginPath();
-    ctx.arc(180, 180, 172, 0, Math.PI * 2);
+    ctx.arc(c, c, R, 0, Math.PI * 2);
     ctx.clip();
-    ctx.fillStyle = 'rgba(6,10,16,0.85)';
-    ctx.fillRect(0, 0, 360, 360);
-    this.drawMap(ctx, k, 180 - (p.x - p.y) * k, 180 - (p.x + p.y) * k * 0.5, { markerScale: 1.6 });
-    // rings + sweep
-    ctx.strokeStyle = 'rgba(160,210,255,0.18)';
-    ctx.lineWidth = 2;
-    for (const r of [60, 120]) {
+    ctx.fillStyle = rgba(THEME.base, 0.9);
+    ctx.fillRect(0, 0, S, S);
+    ctx.globalAlpha = 0.7;
+    this.drawMap(ctx, k, ox, oy, { markerScale: ms });
+    ctx.globalAlpha = 1;
+    // the tactical grid, in world space (it slides under Anakin as he walks)
+    ctx.save();
+    ctx.setTransform(k, k * 0.5, -k, k * 0.5, ox, oy);
+    ctx.strokeStyle = rgba(THEME.holo, 0.2);
+    ctx.lineWidth = 1 / k;
+    ctx.beginPath();
+    const G = 4;
+    const reach = (R / k) * 1.5;
+    for (let x = Math.floor((p.x - reach) / G) * G; x <= p.x + reach; x += G) {
+      ctx.moveTo(x, p.y - reach);
+      ctx.lineTo(x, p.y + reach);
+    }
+    for (let y = Math.floor((p.y - reach) / G) * G; y <= p.y + reach; y += G) {
+      ctx.moveTo(p.x - reach, y);
+      ctx.lineTo(p.x + reach, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+    // range rings and the sweep
+    ctx.strokeStyle = rgba(THEME.holo, 0.28);
+    ctx.lineWidth = S / 180;
+    for (const r of [R / 3, (R * 2) / 3]) {
       ctx.beginPath();
-      ctx.arc(180, 180, r, 0, Math.PI * 2);
+      ctx.arc(c, c, r, 0, Math.PI * 2);
       ctx.stroke();
     }
     const sw = (this.game.time * 1.4) % (Math.PI * 2);
-    const grd = ctx.createConicGradient ? ctx.createConicGradient(sw, 180, 180) : null;
+    const grd = ctx.createConicGradient ? ctx.createConicGradient(sw, c, c) : null;
     if (grd) {
-      grd.addColorStop(0, 'rgba(120,200,255,0.18)');
-      grd.addColorStop(0.12, 'rgba(120,200,255,0)');
-      grd.addColorStop(1, 'rgba(120,200,255,0)');
+      grd.addColorStop(0, rgba(THEME.holo, 0.28));
+      grd.addColorStop(0.14, rgba(THEME.holo, 0));
+      grd.addColorStop(1, rgba(THEME.holo, 0));
       ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, 360, 360);
+      ctx.fillRect(0, 0, S, S);
     }
-    ctx.restore();
-    ctx.strokeStyle = 'rgba(235,242,250,0.55)';
-    ctx.lineWidth = 3;
+    // the sweep's leading edge
+    ctx.strokeStyle = rgba(THEME.holo, 0.9);
+    ctx.lineWidth = S / 180;
     ctx.beginPath();
-    ctx.arc(180, 180, 172, 0, Math.PI * 2);
+    ctx.moveTo(c, c);
+    ctx.lineTo(c + Math.cos(sw) * R, c + Math.sin(sw) * R);
     ctx.stroke();
-    // ticks
-    ctx.strokeStyle = 'rgba(235,242,250,0.5)';
+    ctx.restore();
+    // chrome bezel with ticks
+    ctx.strokeStyle = rgba(THEME.chrome, 0.85);
+    ctx.lineWidth = S / 120;
+    ctx.beginPath();
+    ctx.arc(c, c, R, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = rgba(THEME.chrome, 0.55);
+    ctx.lineWidth = S / 180;
     for (let i = 0; i < 24; i++) {
       const a = (i / 24) * Math.PI * 2;
-      const r0 = i % 6 === 0 ? 156 : 164;
+      const r0 = R - (i % 6 === 0 ? S / 22 : S / 45);
       ctx.beginPath();
-      ctx.moveTo(180 + Math.cos(a) * r0, 180 + Math.sin(a) * r0);
-      ctx.lineTo(180 + Math.cos(a) * 172, 180 + Math.sin(a) * 172);
+      ctx.moveTo(c + Math.cos(a) * r0, c + Math.sin(a) * r0);
+      ctx.lineTo(c + Math.cos(a) * R, c + Math.sin(a) * R);
       ctx.stroke();
     }
   }
