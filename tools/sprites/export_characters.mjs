@@ -135,6 +135,11 @@ async function exportOne(name) {
   }
   const scene = new THREE.Scene();
   scene.add(root);
+  // userData holding objects (a blade kept for the game) would be written as extras with
+  // fresh random UUIDs, so every export would differ: the render's change detection needs the same bytes
+  scene.traverse((o) => {
+    for (const k of Object.keys(o.userData)) if (o.userData[k]?.isObject3D) delete o.userData[k];
+  });
   const glb = await new GLTFExporter().parseAsync(scene, { binary: true, animations: clips, onlyVisible: false });
   fs.writeFileSync(`${out}/${name}.glb`, Buffer.from(glb));
   const meta = { dirs: spec.dirs, frame: spec.frame, markers: spec.markers, anims: Object.fromEntries(Object.entries(anims).map(([k, a]) => [k, { fps: a.fps, loop: !!a.loop, hit: a.hit ?? null, frames: a.frames }])) };

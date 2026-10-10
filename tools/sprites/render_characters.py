@@ -6,14 +6,18 @@ one image, two renders per frame), and the sheets land in public/sprites/chars
 with an index.json the game reads — a character listed there is drawn from
 its sheet instead of being baked in the browser at load time.
 
-  python render_characters.py [name …] [--jobs 2] [--engine cycles]
+  python render_characters.py [name …] [--force] [--yes] [--preview]
 
-Two renders run side by side by default (a render's fixed costs are partly
-single-threaded, so two keep the CPU busier). The frame window and the feet
-come from the spec's frame [width, height, feet x, feet y]; a tile renders at
-twice the window (1.75× for the 16-direction duellists; windows capped at 136 px — the game draws the blades), downscaled to
-one pixel per game pixel and sharpened. Prints the time per character and
-the total.
+Settings come from render_config.json (engine, samples, render scale,
+passes, parallel jobs). Characters whose sheets are up to date (the hash of
+their model, timing, settings and the render script, stored in the sheet)
+are skipped; before rendering the rest it prints how many sprites that is
+and how long it should take, and above render_config's ask_minutes it stops
+unless run with --yes. --preview renders one direction, two frames each, to
+tools/sprites/out/preview. The frame window and the feet come from the
+spec's frame [width, height, feet x, feet y] (windows capped at 136 px — the
+game draws the blades); a tile renders at render_scale × the window,
+downscaled to one pixel per game pixel and sharpened.
 """
 import json
 import os
@@ -29,25 +33,15 @@ GLB = os.path.join(HERE, 'out', 'chars')
 OUT = os.path.join(ROOT, 'public', 'sprites', 'chars')
 PY = sys.executable
 
+CFG = json.load(open(os.path.join(ROOT, 'render_config.json')))
 args = sys.argv[1:]
-jobs = 2
-FORCE = False
-engine = 'cycles'
-names = []
-i = 0
-while i < len(args):
-    if args[i] == '--jobs':
-        jobs = int(args[i + 1])
-        i += 2
-    elif args[i] == '--force':
-        FORCE = True
-        i += 1
-    elif args[i] == '--engine':
-        engine = args[i + 1]
-        i += 2
-    else:
-        names.append(args[i])
-        i += 1
+FORCE = '--force' in args
+ADOPT = '--adopt' in args  # stamp existing sheets as current instead of rendering
+YES = '--yes' in args
+PREVIEW = '--preview' in args
+names = [a for a in args if not a.startswith('--')]
+HAS_GPU = CFG['device']['prefer'] == 'gpu' or (CFG['device']['prefer'] == 'auto' and (os.path.exists('/dev/nvidia0') or os.path.exists('/dev/kfd')))
+jobs = CFG['parallel']['jobs_gpu' if HAS_GPU else 'jobs_cpu']
 
 CAP = 136  # largest window for a character whose blade the game draws
 UNCAPPED = {'fighter'}  # vehicles fill their frame
@@ -57,35 +51,40 @@ t0 = time.time()
 os.makedirs(OUT, exist_ok=True)
 subprocess.run(['node', os.path.join(HERE, 'export_characters.mjs'), GLB, *names], check=True, cwd=ROOT,
                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-metas = {n[:-5]: json.load(open(os.path.join(GLB, n))) for n in os.listdir(GLB) if n.endswith('.json') and not n.endswith('.meta.json') and (not names or n[:-5] in names)}
+BLENDER = {k for k in CFG['sprites'] if not k.startswith('_')}  # modelled in Blender: render_anakin.py
+metas = {n[:-5]: json.load(open(os.path.join(GLB, n))) for n in os.listdir(GLB)
+         if n.endswith('.json') and not n.endswith('.meta.json') and n[:-5] not in BLENDER and (not names or n[:-5] in names)}
 print(f'exported {len(metas)} characters in {time.time() - t0:.0f}s', flush=True)
 
 
-def render(name):
+def window(name):
     m = metas[name]
     fw, fh, ax, ay = m['frame']
     win = max(fw, fh)
     AX = ax + (win - fw) / 2
     AY = ay + (win - fh)
-    # the baker's frames leave room for the saber blade, which the game draws
-    # itself: the body fits a smaller window (rendering empty pixels costs);
-    # the feet keep their distance from the bottom edge
     if win > CAP and fh < 200 and name not in UNCAPPED:
         AY = CAP - (win - AY)
         AX = CAP / 2
         win = CAP
-    scale = 1.75 if m['dirs'] > 8 else 2.0
-    res = int(round(win * scale / 4)) * 4
-    timing = os.path.join(GLB, name + '.meta.json')
-    json.dump({'anims': m['anims']}, open(timing, 'w'))
+    return win, AX, AY
+
+
+def args_of(name):
+    """render_sprites.py's options for a character: its directions, frame window and feet."""
+    m = metas[name]
+    win, AX, AY = window(name)
+    return ['--dirs', str(m['dirs']), '--window', str(win), '--anchor', f'{AX},{AY}', '--sizes', str(win), '--meta', os.path.join(GLB, name + '.meta.json')]
+
+
+def render(name):
+    win = window(name)[0]
     ts = time.time()
-    r = subprocess.run([PY, os.path.join(HERE, 'render_sprites.py'), os.path.join(GLB, name + '.glb'), OUT,
-                        '--engine', engine, '--dirs', str(m['dirs']), '--window', str(win), '--anchor', f'{AX},{AY}',
-                        '--render', str(res), '--shadow-render', str(win), '--sizes', str(win), '--samples', '8',
-                        '--meta', timing], capture_output=True, text=True)
-    line = next((ln for ln in r.stdout.splitlines() if ln.startswith('TIMING setup')), r.stderr[-400:])
+    r = subprocess.run([PY, os.path.join(HERE, 'render_sprites.py'), os.path.join(GLB, name + '.glb'), OUT, *args_of(name), '--yes',
+                        *(['--force'] if FORCE else []), *(['--preview'] if PREVIEW else [])], capture_output=True, text=True)
+    line = next((ln for ln in r.stdout.splitlines() if ln.startswith(('TIMING setup', 'UNCHANGED'))), r.stderr[-400:])
     print(f'{name}: {time.time() - ts:.0f}s — {line}', flush=True)
-    if r.returncode == 0:
+    if r.returncode == 0 and not PREVIEW:
         with LOCK:
             index = json.load(open(IDX)) if os.path.exists(IDX) else {}
             index[name] = f'{name}_{win}.json'
@@ -93,10 +92,52 @@ def render(name):
     return name, win, r.returncode == 0
 
 
-# 8-direction characters first (the city and the field), then the duellists;
-# what the index already lists is skipped unless named (or --force)
-done = json.load(open(IDX)) if os.path.exists(IDX) else {}
-order = sorted((n for n in metas if FORCE or names or n not in done), key=lambda n: (metas[n]['dirs'], sum(a['frames'] for a in metas[n]['anims'].values())))
+for n, m in metas.items():  # each character's timing, for render_sprites.py
+    json.dump({'anims': m['anims']}, open(os.path.join(GLB, n + '.meta.json'), 'w'))
+
+
+def changed(name):
+    if FORCE or PREVIEW:
+        return True
+    r = subprocess.run([PY, os.path.join(HERE, 'render_sprites.py'), os.path.join(GLB, name + '.glb'), OUT, *args_of(name), '--check'],
+                       capture_output=True, text=True)
+    return 'UNCHANGED' not in r.stdout
+
+
+# only what changed since its sheet was rendered (8-direction characters first)
+with ThreadPoolExecutor(4) as ex:
+    todo = [n for n, c in zip(metas, ex.map(changed, metas)) if c]
+todo.sort(key=lambda n: (metas[n]['dirs'], sum(a['frames'] for a in metas[n]['anims'].values())))
+skipped = sorted(set(metas) - set(todo))
+if todo:
+    print(f'changed: {", ".join(todo)}', flush=True)
+if skipped:
+    print(f'up to date, skipped: {", ".join(skipped)}', flush=True)
+
+if ADOPT:  # the existing sheets become the current inputs' result, nothing is rendered
+    for n in todo:
+        r = subprocess.run([PY, os.path.join(HERE, 'render_sprites.py'), os.path.join(GLB, n + '.glb'), OUT, *args_of(n), '--adopt'], capture_output=True, text=True)
+        print((r.stdout.strip().splitlines() or [r.stderr[-300:]])[-1], flush=True)
+    sys.exit(0)
+# the estimate: frames x directions, seconds per frame measured before (or the defaults)
+TIMES = os.path.join(HERE, 'out', 'render_times.json')
+hist = json.load(open(TIMES)) if os.path.exists(TIMES) else {}
+table = CFG['estimate']['default_seconds_per_frame']
+total_s = sprites = 0
+for n in todo:
+    frames = sum(a['frames'] for a in metas[n]['anims'].values())
+    dirs = metas[n]['dirs']
+    if PREVIEW:
+        frames, dirs = sum(min(2, a['frames']) for a in metas[n]['anims'].values()), 1
+    h = hist.get(n, {})
+    per = h['seconds_per_frame'] if h.get('tiles') == dirs else table.get(str(dirs), table['16'] * dirs / 16)
+    total_s += per * frames
+    sprites += frames * dirs
+minutes = total_s / max(1, min(jobs, len(todo))) / 60
+print(f'ESTIMATE {len(todo)} characters, {sprites} sprites, about {minutes:.0f} min with {jobs} jobs', flush=True)
+if minutes > CFG['estimate']['ask_minutes'] and not YES:
+    print(f'ASK: over {CFG["estimate"]["ask_minutes"]} min — confirm first, then run again with --yes', flush=True)
+    sys.exit(3)
 with ThreadPoolExecutor(jobs) as ex:
-    results = list(ex.map(render, order))
+    results = list(ex.map(render, todo))
 print(f'TOTAL {time.time() - t0:.0f}s for {sum(ok for *_, ok in results)}/{len(results)} characters', flush=True)

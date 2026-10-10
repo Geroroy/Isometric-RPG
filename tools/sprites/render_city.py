@@ -10,15 +10,20 @@ Each asset's window (game px the image covers) and anchor (where its ground
 centre sits) are set so the model fits with a small margin; small blinking
 parts get faster flicker settings.
 """
+import json
 import os
 import subprocess
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 GLB = os.path.join(HERE, 'out', 'city')
 OUT = os.path.join(ROOT, 'public', 'sprites', 'city')
 PY = sys.executable
+sys.path.insert(0, HERE)
+import render_cfg  # noqa: E402
+B = render_cfg.CFG['building']  # render scale, samples, light (render_config.json)
 
 # name: (window, anchor x, anchor y, neon settings)
 ASSETS = {
@@ -26,9 +31,6 @@ ASSETS = {
     'tenement0': (500, 250, 438, None),
     'tenement1': (500, 250, 438, None),
     'tenement2': (500, 250, 438, None),
-    'stall0': (128, 70, 100, None),
-    'stall1': (128, 70, 100, None),
-    'stall2': (128, 70, 100, None),
     'billboard': (160, 80, 140, None),
     'speeder0': (96, 50, 76, '{"rate": 0.05}'),
     'speeder1': (96, 50, 76, '{"rate": 0.05}'),
@@ -65,18 +67,43 @@ ASSETS = {
     'seatsB': (128, 64, 96, '{"rate": 0.1, "hum": 0.1, "speed": 2}'),
 }
 
-only = sys.argv[1:]
+flags = [a for a in sys.argv[1:] if a in ('--force', '--adopt')]  # passed on; up-to-date assets are skipped
+YES = '--yes' in sys.argv
+only = [a for a in sys.argv[1:] if not a.startswith('--')]
 names = [n for n in ASSETS if not only or n in only]
 models = sorted({n[:-2] if n.endswith('_r') else n for n in names})
-subprocess.run([PY, os.path.join(HERE, 'build_city_assets.py'), GLB, *models], check=True)
-for n in names:
+subprocess.run([PY, os.path.join(HERE, 'build_city_assets.py'), GLB, *models], check=True, stdout=subprocess.DEVNULL)
+
+
+def args_of(n):
     win, ax, ay, neon = ASSETS[n]
     turned = n.endswith('_r')
     args = [PY, os.path.join(HERE, 'render_building.py'), os.path.join(GLB, (n[:-2] if turned else n) + '.glb'), OUT, '--name', n,
-            '--window', str(win), '--anchor', f'{ax},{ay}', '--render', str(min(1200, int(win * 2.5))), '--samples', '24', '--light', '2.4']
+            '--window', str(win), '--anchor', f'{ax},{ay}', '--render', str(min(1200, int(win * B['render_scale'])))]  # samples, light: render_config.json
     if turned:
         args += ['--rotate', '90']
     if neon:
         args += ['--neon', neon]
-    subprocess.run(args, check=True, stdout=subprocess.DEVNULL)
+    return args
+
+
+if '--adopt' in flags:  # the existing sprites become the current inputs' result (those that exist)
+    for n in names:
+        if os.path.exists(os.path.join(OUT, f'{n}_{ASSETS[n][0]}.json')):
+            print(subprocess.run(args_of(n) + ['--adopt'], capture_output=True, text=True).stdout.strip().splitlines()[-1], flush=True)
+    sys.exit(0)
+# only what changed; first the estimate (seconds per asset measured before, else 30 s)
+todo = names if '--force' in flags else [n for n in names if 'UNCHANGED' not in subprocess.run(args_of(n) + ['--check'], capture_output=True, text=True).stdout]
+TIMES = os.path.join(HERE, 'out', 'render_times.json')
+hist = json.load(open(TIMES)) if os.path.exists(TIMES) else {}
+minutes = sum(hist.get('city:' + n, {}).get('seconds', 30) for n in todo) / 60
+print(f'ESTIMATE {len(todo)} of {len(names)} city assets, about {minutes:.0f} min', flush=True)
+if minutes > render_cfg.CFG['estimate']['ask_minutes'] and not YES:
+    print(f'ASK: over {render_cfg.CFG["estimate"]["ask_minutes"]} min — confirm first, then run again with --yes', flush=True)
+    sys.exit(3)
+for n in todo:
+    t = time.time()
+    subprocess.run(args_of(n) + flags, check=True, stdout=subprocess.DEVNULL)
+    hist['city:' + n] = {'seconds': round(time.time() - t, 1)}
+    json.dump(hist, open(TIMES, 'w'), indent=1, sort_keys=True)
     print('rendered', n, flush=True)

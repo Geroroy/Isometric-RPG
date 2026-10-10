@@ -76,7 +76,14 @@ def parse(argv):
     return pos, opt
 
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import render_cfg  # noqa: E402
+B = render_cfg.CFG['building']  # samples, light, denoiser (render_config.json)
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
+force = '--force' in argv
+adopt = '--adopt' in argv  # stamp the existing sprite as made from the current inputs (no render)
+check = '--check' in argv  # only print UNCHANGED / CHANGED
+argv = [a for a in argv if a not in ('--force', '--adopt', '--check')]
 pos, opt = parse(argv)
 GLB, OUT = pos[0], pos[1]
 NAME = opt.get('name', os.path.splitext(os.path.basename(GLB))[0])
@@ -84,14 +91,32 @@ RES = int(opt.get('render', 1024))
 WINDOW = float(opt.get('window', 260))
 SIZES = [int(x) for x in opt.get('sizes', str(int(WINDOW))).split(',')]
 NEON_OPT = json.loads(opt.get('neon', '{}'))
-LIGHT = float(opt.get('light', 1.0))
+LIGHT = float(opt.get('light', B['light']))
 ROTATE = math.radians(float(opt.get('rotate', 0)))
 AX, AY = [float(x) for x in opt.get('anchor', '130,210').split(',')]
-SAMPLES = int(opt.get('samples', 48))
 GLOW = float(opt.get('neon-glow', 6))
 os.makedirs(OUT, exist_ok=True)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
+GPU = render_cfg.setup_gpu(bpy)
+SAMPLES = int(opt.get('samples', B['samples']['gpu' if GPU else 'cpu']))
+# change detection: the model, these options, the settings (+ the pipeline version)
+SOURCE = render_cfg.source_hash([GLB],
+                                [render_cfg.effective(B, ('samples',)), opt, SAMPLES, GPU])
+if check:
+    print('UNCHANGED' if render_cfg.up_to_date([os.path.join(OUT, f'{NAME}_{s_}.json') for s_ in SIZES], SOURCE) else 'CHANGED', NAME, flush=True)
+    sys.exit(0)
+if adopt:
+    for s_ in SIZES:
+        p_ = os.path.join(OUT, f'{NAME}_{s_}.json')
+        m_ = json.load(open(p_))
+        m_['source'] = SOURCE
+        json.dump(m_, open(p_, 'w'), indent=1)
+    print('ADOPTED', NAME, SOURCE, flush=True)
+    sys.exit(0)
+if not force and render_cfg.up_to_date([os.path.join(OUT, f'{NAME}_{s}.json') for s in SIZES], SOURCE):
+    print(f'UNCHANGED {NAME}: up to date (source {SOURCE})', flush=True)
+    sys.exit(0)
 scene = bpy.context.scene
 bpy.ops.import_scene.gltf(filepath=GLB)
 model = [o for o in scene.objects if o.type == 'MESH']
@@ -199,9 +224,10 @@ world.use_nodes = True
 world.node_tree.nodes['Background'].inputs['Color'].default_value = (0.2, 0.22, 0.3, 1)
 world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.6 * LIGHT
 scene.render.engine = 'CYCLES'
-scene.cycles.device = 'CPU'
+scene.cycles.device = 'GPU' if GPU else 'CPU'
 scene.cycles.samples = SAMPLES
 scene.cycles.use_denoising = True
+scene.cycles.denoiser = B['denoiser']
 scene.cycles.max_bounces = 4
 
 # ambient occlusion in every non-neon material, as for the characters
@@ -351,6 +377,7 @@ for size in SIZES:
         'footprint': footprint,
         'layers': layers,
         'neon': {'base': 1.0, 'hum': 0.05, 'speed': 9, 'flicker': {'rate': 0.12, 'dur': [0.04, 0.22], 'level': 0.12, **NEON_OPT}},
+        'source': SOURCE,
     }
     with open(os.path.join(OUT, prefix + '.json'), 'w') as fh:
         json.dump(meta, fh, indent=1)
