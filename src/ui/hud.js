@@ -11,6 +11,7 @@ import { StarCardsUI } from './starCards.js';
 import { AppearanceUI } from './appearance.js';
 import { QUESTS } from '../game/quests.js';
 import { VOLUMES } from '../core/audio.js';
+import { setText, setHTML, setClass } from './dom.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (tag, cls, html) => {
@@ -690,7 +691,7 @@ export class HUD {
     // Force as a bar of indicator segments
     const fpK = Math.max(0, p.force / p.maxForce) * FORCE_SEGMENTS;
     const segs = $('#forceSeg').children;
-    for (let i = 0; i < FORCE_SEGMENTS; i++) segs[i].className = fpK >= i + 1 ? 'on' : fpK > i ? 'half' : '';
+    for (let i = 0; i < FORCE_SEGMENTS; i++) setClass(segs[i], fpK >= i + 1 ? 'on' : fpK > i ? 'half' : '');
 
     // portrait + voice equaliser
     this.portrait.setScene(/드로이드 공장|격전지/.test(g.region) ? 'hangar' : 'corridor');
@@ -717,12 +718,12 @@ export class HUD {
       const cd = id ? p.cooldowns[id] || 0 : 0;
       const total = id && SKILLS[id].cd ? SKILLS[id].cd(p.skillLevel(id)) || 1 : 1;
       b.children[1].style.background = cd > 0 ? `conic-gradient(rgba(6,8,12,0.78) ${(cd / total) * 360}deg, transparent 0)` : 'none';
-      b.children[2].textContent = cd > 0 ? (cd < 1 ? cd.toFixed(1) : Math.ceil(cd)) : '';
+      setText(b.children[2], cd > 0 ? (cd < 1 ? cd.toFixed(1) : Math.ceil(cd)) : '');
       const cost = id && SKILLS[id].cost ? SKILLS[id].cost(p.skillLevel(id)) : 0;
       b.classList.toggle('nofp', !!id && p.force < cost);
       b.classList.toggle('rmb', p.rmbSlot === i && !!id);
       b.classList.toggle('pending', this.pendingSkill === id && !!id);
-      b.lastChild.textContent = id ? p.skillLevel(id) : '';
+      setText(b.lastChild, id ? p.skillLevel(id) : '');
     }
     this.menuTree.classList.toggle('alert', p.skillPoints > 0);
     this.menuChar.classList.toggle('alert', p.attrPoints > 0);
@@ -730,33 +731,31 @@ export class HUD {
     // target info (hovered / engaged unit)
     const h = g.hover;
     if (h && !h.dead) {
-      this.target.classList.remove('hidden');
-      const nm = $('.ti-name', this.target);
-      nm.textContent = h.name;
-      this.target.className = 'target-info' + (h.elite ? ' elite' : h.team === 'rep' ? ' ally' : '');
+      setText($('.ti-name', this.target), h.name);
+      setClass(this.target, 'target-info' + (h.elite ? ' elite' : h.team === 'rep' ? ' ally' : ''));
       $('.ti-bar i', this.target).style.width = Math.max(0, (h.hp / h.maxHp) * 100) + '%';
-      $('.ti-sub', this.target).textContent = h.npc ? `${h.title} · 대화 ${this.renderer.touchMode ? '(대화 버튼)' : '(E / 클릭)'}` : h.team === 'cis' ? `LV ${h.level}${h.elite ? ' · 정예' : ''}` : h.owner ? '아군 · 지휘 중' : '아군';
-    } else this.target.classList.add('hidden');
+      setText($('.ti-sub', this.target), h.npc ? `${h.title} · 대화 ${this.renderer.touchMode ? '(대화 버튼)' : '(E / 클릭)'}` : h.team === 'cis' ? `LV ${h.level}${h.elite ? ' · 정예' : ''}` : h.owner ? '아군 · 지휘 중' : '아군');
+    } else if (!this.target.classList.contains('hidden')) this.target.classList.add('hidden');
 
     // throttled text
     this.textT -= dt;
     if (this.textT <= 0) {
       this.textT = 0.12;
-      $('#hpText').textContent = `${Math.ceil(Math.max(0, p.hp))}`;
-      $('#fpText').textContent = `${Math.floor(p.force)}`;
-      $('#lvlText').textContent = `LV ${p.level}`;
+      setText($('#hpText'), Math.ceil(Math.max(0, p.hp)));
+      setText($('#fpText'), Math.floor(p.force));
+      setText($('#lvlText'), `LV ${p.level}`);
       $('#xpFill').style.width = (p.xp / p.xpNext) * 100 + '%';
       $('#dmMark').style.left = p.darkness + '%';
-      $('#stims').innerHTML = `<i></i><span>박타</span><em>${[0, 1, 2, 3, 4].map((k) => `<b class="${k < p.bacta ? 'on' : ''}"></b>`).join('')}</em>`;
+      setHTML($('#stims'), `<i></i><span>박타</span><em>${[0, 1, 2, 3, 4].map((k) => `<b class="${k < p.bacta ? 'on' : ''}"></b>`).join('')}</em>`);
       $('#saberBtn').classList.toggle('on', p.saberLit && !p.saberOut);
-      $('#regionText').textContent = g.region;
+      setText($('#regionText'), g.region);
       const buffs = [];
       for (const [k, b] of Object.entries(p.buffs)) buffs.push(`<span class="buff"><img src="${iconURL(k)}" alt="">${Math.ceil(b.t)}s</span>`);
       if (p.saberOut) buffs.push('<span class="buff info">광선검 회수 중</span>');
       if (p.darkness >= 60) buffs.push('<span class="buff dark">어둠의 유혹</span>');
       if (p.skillPoints) buffs.push(`<span class="buff gold">스킬 포인트 ${p.skillPoints} <kbd>K</kbd></span>`);
       if (p.attrPoints) buffs.push(`<span class="buff gold">능력치 포인트 ${p.attrPoints} <kbd>C</kbd></span>`);
-      $('#buffs').innerHTML = buffs.join('');
+      setHTML($('#buffs'), buffs.join(''));
       this.updateObjectives();
       if (this.open.char) this.refreshChar();
     }
@@ -806,10 +805,10 @@ export class HUD {
       .tracked()
       .map(({ id, q, s }) => `<li class="ob-quest ${s.state === 'ready' ? 'ready' : ''}"><i></i>${q.title} <b>${s.state === 'ready' ? '보고하기' : g.quests.progress(id)}</b></li>`)
       .join('');
-    this.objectives.innerHTML = `<div class="ob-h">목표</div><ul>
+    setHTML(this.objectives, `<div class="ob-h">목표</div><ul>
       <li class="${cleared === camps.length ? 'done' : ''}"><i></i>드로이드 거점 소탕 <b>${cleared} / ${camps.length}</b></li>
       <li class="${boss && boss.cleared ? 'done' : ''}"><i></i>북쪽의 드로이드 공장 파괴</li>
-      ${quests}${arrow}${away ? '<li class="ob-near"><i></i>제다이 착륙장의 스타파이터로 크리스토프시스 출격</li>' : ''}</ul>`;
+      ${quests}${arrow}${away ? '<li class="ob-near"><i></i>제다이 착륙장의 스타파이터로 크리스토프시스 출격</li>' : ''}</ul>`);
   }
 
   // ================================================================== map drawing

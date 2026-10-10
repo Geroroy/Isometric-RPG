@@ -32,6 +32,21 @@ function procCpu() {
 const browser = await chromium.launch({ executablePath: findChrome('/opt/pw-browsers'), args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const ctxOpts = device === 'phone' ? { ...devices['iPhone 13'], viewport: { width: 844, height: 390 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true } : { viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 };
 const page = await (await browser.newContext(ctxOpts)).newPage();
+// PACE=12: the game gets 12 frames a second, so the (software) GPU process isn't saturated
+// and its CPU per frame shows what each layer costs
+if (process.env.PACE)
+  await page.addInitScript((fps) => {
+    const raf = window.requestAnimationFrame.bind(window);
+    let next = 0;
+    window.requestAnimationFrame = (cb) => {
+      const tick = (t) => {
+        if (t < next) return raf(tick);
+        next = Math.max(next + 1000 / fps, t - 1000 / fps);
+        cb(t);
+      };
+      return raf(tick);
+    };
+  }, +process.env.PACE);
 await page.addInitScript(() => {
   const raf = window.requestAnimationFrame.bind(window);
   window.__frames = 0;
@@ -98,6 +113,8 @@ const CASES = (process.env.CASES ? (x) => x.filter((c, i) => process.env.CASES.s
     s.textContent = '*,*::before,*::after{animation-play-state:paused!important;transition:none!important}';
     document.head.append(s);
   }],
+  ['world canvas display:none (post shows it)', () => (document.getElementById('world').style.display = 'none')],
+  ['post canvas only, 2D canvas work skipped', () => (__renderer.render = () => {})],
 ]);
 const undo = () => {
   window.__stop = false;
@@ -122,7 +139,7 @@ for (const [name, fn] of CASES) {
   const p1 = procCpu();
   const f1 = await page.evaluate(() => window.__frames);
   const pct = (k) => +((100 * ((p1[k] || 0) - (p0[k] || 0))) / wall).toFixed(0);
-  const row = { case: name, fps: +((f1 - f0) / wall).toFixed(1), gpuProcess: pct('gpu-process'), renderer: pct('renderer'), total: Object.keys(p1).reduce((s, k) => s + pct(k), 0) };
+  const row = { case: name, fps: +((f1 - f0) / wall).toFixed(1), gpuProcess: pct('gpu-process'), gpuMsPerFrame: +((10 * pct('gpu-process')) / Math.max(0.1, (f1 - f0) / wall)).toFixed(0), renderer: pct('renderer'), total: Object.keys(p1).reduce((s, k) => s + pct(k), 0) };
   rows.push(row);
   console.log(JSON.stringify(row));
 }

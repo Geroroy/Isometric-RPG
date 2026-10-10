@@ -11,6 +11,7 @@
 // are shared with the PC layout.
 import { iconURL } from './icons.js';
 import { dist } from '../core/math.js';
+import { setText } from './dom.js';
 
 const el = (tag, cls, html) => {
   const e = document.createElement(tag);
@@ -185,11 +186,11 @@ export class MobileHUD {
     this.textT -= dt;
     if (this.textT <= 0) {
       this.textT = 0.15;
-      this.hpText.textContent = Math.ceil(Math.max(0, p.hp));
-      this.fpText.textContent = Math.floor(p.force);
-      this.lvEl.textContent = p.level;
+      setText(this.hpText, Math.ceil(Math.max(0, p.hp)));
+      setText(this.fpText, Math.floor(p.force));
+      setText(this.lvEl, p.level);
       if (this.darkMark) this.darkMark.style.left = p.darkness + '%';
-      if (this.regionEl) this.regionEl.textContent = g.region;
+      if (this.regionEl) setText(this.regionEl, g.region);
       const chips = [];
       for (const [k, b] of Object.entries(p.buffs)) chips.push(`<span class="m-chip"><img src="${iconURL(k)}" alt="">${Math.ceil(b.t)}s</span>`);
       if (p.saberOut) chips.push('<span class="m-chip info">광선검 회수 중</span>');

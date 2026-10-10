@@ -105,6 +105,22 @@ const SCENARIOS = {
 };
 
 const page = await (await browser.newContext(ctxOpts)).newPage();
+// PACE=12: hand the game a frame only 12 times a second. The container has no GPU, so at full rate the
+// software compositor is saturated and every build reads ~350%; at a fixed low rate the GPU process's
+// CPU per frame (gpuMsPerFrame) shows what each frame really costs to composite.
+if (process.env.PACE)
+  await page.addInitScript((fps) => {
+    const raf = window.requestAnimationFrame.bind(window);
+    let next = 0;
+    window.requestAnimationFrame = (cb) => {
+      const tick = (t) => {
+        if (t < next) return raf(tick);
+        next = Math.max(next + 1000 / fps, t - 1000 / fps);
+        cb(t);
+      };
+      return raf(tick);
+    };
+  }, +process.env.PACE);
 await page.addInitScript(INIT);
 const errs = [];
 page.on('pageerror', (e) => errs.push(e.message));
@@ -206,6 +222,7 @@ for (const [name, setup] of Object.entries(SCENARIOS)) {
     callbackMs: { avg: +avg(durs).toFixed(2), p50: +pct(durs, 0.5).toFixed(2), p95: +pct(durs, 0.95).toFixed(2), max: +(durs.at(-1) || 0).toFixed(2) },
     cpuPct: +((100 * (m1.TaskDuration - m0.TaskDuration)) / wall).toFixed(1),
     procCpuPct: Object.fromEntries(Object.keys(p1).map((k) => [k, +((100 * (p1[k] - (p0[k] || 0))) / wall).toFixed(1)])),
+    gpuMsPerFrame: +((1000 * ((p1['gpu-process'] || 0) - (p0['gpu-process'] || 0))) / Math.max(1, frames.length)).toFixed(1),
     procCpuTotalPct: +Object.keys(p1).reduce((s, k) => s + (100 * (p1[k] - (p0[k] || 0))) / wall, 0).toFixed(1),
     scriptPct: +((100 * (m1.ScriptDuration - m0.ScriptDuration)) / wall).toFixed(1),
     layoutStylePct: +((100 * (m1.LayoutDuration - m0.LayoutDuration + m1.RecalcStyleDuration - m0.RecalcStyleDuration)) / wall).toFixed(1),

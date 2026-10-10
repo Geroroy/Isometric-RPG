@@ -7,6 +7,7 @@ import { SKILLS } from '../game/skills.js';
 import { iconURL } from './icons.js';
 import { screenVecToWorldAngle } from '../core/iso.js';
 import { dist, angleDiff } from '../core/math.js';
+import { setText } from './dom.js';
 
 // how far a dragged skill is aimed (world units) when the skill targets a point
 const AIM_RANGE = { throw: 7, push: 3.5, leap: 7.5, clones: 3, gunship: 9, fury: 3, rex: 2 };
@@ -399,10 +400,10 @@ export class TouchControls {
       b.children[1].style.background = cd > 0 ? `conic-gradient(rgba(0,0,0,0.72) ${(cd / total) * 360}deg, transparent 0)` : 'none';
       const cost = id && SKILLS[id].cost ? SKILLS[id].cost(p.skillLevel(id)) : 0;
       b.classList.toggle('nofp', !!id && p.force < cost);
-      b.children[2].textContent = id ? p.skillLevel(id) : '';
+      setText(b.children[2], id ? p.skillLevel(id) : '');
     }
     if (!g.duel) {
-      this.bactaBtn.lastChild.textContent = p.bacta;
+      setText(this.bactaBtn.lastChild, p.bacta);
       this.bactaBtn.classList.toggle('empty', p.bacta <= 0);
       this.saberBtn.classList.toggle('on', p.saberLit && !p.saberOut);
     }

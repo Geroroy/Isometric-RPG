@@ -115,8 +115,11 @@ export class Renderer {
     this.canvas.style.height = this.h * this.scale + 'px';
     this.light.width = this.w;
     this.light.height = this.h;
-    this.overlay.width = Math.round(W * dpr);
-    this.overlay.height = Math.round(H * dpr);
+    // labels and numbers: at most 1.5× CSS px — still sharp text, a quarter of the pixels of 3×
+    this.odpr = Math.min(dpr, 1.5);
+    this.overlay.width = Math.round(W * this.odpr);
+    this.overlay.height = Math.round(H * this.odpr);
+    this.overlayUsed = true;
     this.overlay.style.width = W + 'px';
     this.overlay.style.height = H + 'px';
     this.ctx.imageSmoothingEnabled = false;
@@ -809,12 +812,15 @@ export class Renderer {
 
   drawOverlay() {
     const o = this.octx;
-    o.setTransform(1, 0, 0, 1, 0, 0);
-    o.clearRect(0, 0, this.overlay.width, this.overlay.height);
-    o.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     const g = this.game;
     const cam = this.cam;
     const S = this.scale;
+    let n = 0; // things drawn; an empty overlay stays untouched so the compositor needn't re-upload it
+    if (this.overlayUsed) {
+      o.setTransform(1, 0, 0, 1, 0, 0);
+      o.clearRect(0, 0, this.overlay.width, this.overlay.height);
+    }
+    o.setTransform(this.odpr, 0, 0, this.odpr, 0, 0);
     // small health bars for damaged units near the player
     for (const u of g.activeUnits) {
       if (u.dead || u === g.player || u.hp >= u.maxHp) continue;
@@ -824,6 +830,7 @@ export class Renderer {
       const x = (s.x - cam.x) * S;
       const y = (s.y - cam.y - top) * S;
       const w = 34;
+      n++;
       o.fillStyle = 'rgba(0,0,0,0.55)';
       o.fillRect(x - w / 2 - 1, y - 1, w + 2, 4);
       o.fillStyle = u.team === 'cis' ? '#e2483d' : '#5cc8ff';
@@ -838,6 +845,7 @@ export class Renderer {
       const s = worldToScreen(u.x, u.y);
       const x = (s.x - cam.x) * S;
       const y = (s.y - cam.y - (u.sprite === 'r2' ? 30 : 56)) * S;
+      n++;
       o.textAlign = 'center';
       o.font = '12px Galmuri11, sans-serif';
       o.fillStyle = 'rgba(0,0,0,0.6)';
@@ -860,12 +868,15 @@ export class Renderer {
       o.textAlign = 'start';
     }
     g.fx.drawText(o, cam, S);
-    this.drawBubbles(o, cam, S);
+    n += g.fx.texts.length;
+    n += this.drawBubbles(o, cam, S);
+    this.overlayUsed = n > 0;
   }
 
-  /** Speech bubbles over people's heads, at screen resolution. */
+  /** Speech bubbles over people's heads, at screen resolution. Returns how many were drawn. */
   drawBubbles(o, cam, S) {
     const g = this.game;
+    let n = 0;
     o.font = '12px Galmuri11, sans-serif';
     o.textAlign = 'center';
     o.textBaseline = 'middle';
@@ -884,6 +895,7 @@ export class Renderer {
       const bx = Math.round(x - w / 2);
       const by = Math.round(y - h - 8 + lift);
       const guard = u.kind === 'patrol';
+      n++;
       o.globalAlpha = a;
       o.fillStyle = guard ? 'rgba(40,14,16,0.88)' : 'rgba(14,18,26,0.85)';
       o.strokeStyle = guard ? 'rgba(230,90,80,0.9)' : 'rgba(200,220,240,0.55)';
@@ -901,6 +913,7 @@ export class Renderer {
     }
     o.textAlign = 'start';
     o.textBaseline = 'alphabetic';
+    return n;
   }
 }
 
