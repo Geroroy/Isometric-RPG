@@ -56,3 +56,23 @@ PC 콘솔은 flex 한 줄(로그가 `flex: 1`로 늘고 줄며, 170~340 px). 휴
 - 끝없는 CSS 애니메이션 금지(합성기가 매 프레임 다시 그린다, `tools/qa/perfsplit.mjs`). 스캔 스윕은 열릴 때·호버 때 한 번만.
 - 항상 보이는 HUD에는 `backdrop-filter` 없음. 글로우는 `box-shadow`/그라데이션(정적).
 - 쿨다운·경험치는 매 프레임 문자열을 만들지 않고 값이 바뀔 때만 CSS 변수를 쓴다(`setFraction`).
+
+## 타이포그래피 (`src/ui/fonts.js`, `theme.css` 끝의 typography 절)
+
+| 역할 | 토큰 | 글꼴 | 쓰임 · 스타일 |
+|---|---|---|---|
+| Display | `--font-display` | **Orbitron** 600/700 (대체 Bank Gothic, Michroma) | HUD 타이틀, 스킬 이름, 팝업 제목, 라벨. `letter-spacing .08em`, 대문자 |
+| Data | `--font-data` | **Share Tech Mono** (2순위 Chakra Petch 500/600) | 체력·포스 수치, 쿨다운, 레벨, 스캐너 좌표, 버프·단축키. 고정폭 숫자 + 전술 글로우 |
+| Body | `--font-body` | **Rajdhani** 500/600 (영문) → GmarketSans → Pretendard (한글) | 본문, 로그, 대화, 설명, 툴팁 |
+| Body-KO | `--font-body-ko` | **GmarketSans** 500/700 → Pretendard → Rajdhani | 한글이 앞서는 곳(지역 배너 등) |
+| Decorative | `--font-aurebesh` | Aurebesh (라이선스 파일을 `public/fonts/`에 넣고 `@font-face` 주석 해제) | `.aure-text`: opacity .22 장식. 그 전까지는 `ui/skin.js`가 그리는 오레베시풍 글리프 |
+
+- Google Fonts 계열은 **번들**한다(`@fontsource/*`, Vite가 woff2를 묶음): 오프라인 PWA·비공개 페이지에서 `@import`는 네트워크가 없으면
+  대체 글꼴로 남는다. GmarketSans는 noonnu CDN `@font-face`(`font-display: swap`), 없으면 Pretendard.
+- `fontsReady()`를 첫 프레임 전에 기다린다(캔버스 글자는 그릴 때의 글꼴로 남으므로). 캔버스는 `canvasFont(weight, px, role)`로
+  같은 스택을 쓴다(NPC 이름·대사 말풍선 = body, 임무 표시 `!` `?` = display, 피해 숫자·지도 지명 = data/body).
+- 예전 역할 토큰은 재매핑: `--font-tech` → display, `--font-ui` → body-ko, `--font-hud` → body.
+- 글로우 유틸리티: `.holo-text-blue`(#00C8FF), `.holo-text-green`(#00FF87), `.warning-text-red`(#FF0033), `.naboo-gold-text`(#FFD700),
+  `.glow-text`, `.glow-text-strong`; 역할 클래스 `.t-display` `.t-data` `.t-body`. 토큰 `--glow-blue/green/red/gold`.
+- 매핑: 체력 수치 = data + 초록 글로우(낮으면 흰 글자 + 빨간 글로우), 포스 = data + 파란 글로우, 쿨다운 = data 15 px + 파란 글로우,
+  레벨·단축키·경험치 = data + 금 글로우, 게이지 라벨 `HP` `FORCE`·스캐너 지역명·메뉴 키 = display, 본문·로그·대화 = body.

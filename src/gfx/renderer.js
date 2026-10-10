@@ -11,6 +11,7 @@ import { neonLevel } from './citySprites.js';
 import { glowSprite } from './fx.js';
 import { transientLights, relightUnits } from './relight.js';
 import { SIG } from '../game/units.js';
+import { canvasFont } from '../ui/fonts.js';
 import { SABER, PALETTES, trailWindow, paletteFor, drawBlade, drawTrail, drawClash, record } from './saberStyle.js';
 import { preset, tintFor, drawLight, drawGround, sweepOf, lightCharacter } from './saberLight.js';
 
@@ -965,7 +966,7 @@ export class Renderer {
       const y = (s.y - cam.y - (u.sprite === 'r2' ? 30 : 56)) * S;
       n++;
       o.textAlign = 'center';
-      o.font = '12px Galmuri11, sans-serif';
+      o.font = canvasFont(600, 12, 'body');
       o.fillStyle = 'rgba(0,0,0,0.6)';
       o.fillText(u.name, x + 1, y + 1);
       o.fillStyle = '#e8eef4';
@@ -974,12 +975,12 @@ export class Renderer {
       const giver = u.npcId;
       const mark = q.readyFrom(giver) ? '?' : q.offerFrom(giver) ? '!' : '';
       if (mark) {
-        o.font = '20px Michroma, sans-serif';
+        o.font = canvasFont(700, 20, 'display');
         o.fillStyle = '#e9c47a';
         o.fillText(mark, x, y - 16);
       }
       if (d < 2.6 && !g.talkingTo) {
-        o.font = '11px Galmuri11, sans-serif';
+        o.font = canvasFont(500, 11, 'body');
         o.fillStyle = 'rgba(233,196,122,0.95)';
         o.fillText(this.touchMode ? '대화 버튼으로 말 걸기' : '[E] 대화', x, y + 16);
       }
@@ -995,7 +996,7 @@ export class Renderer {
   drawBubbles(o, cam, S) {
     const g = this.game;
     let n = 0;
-    o.font = '12px Galmuri11, sans-serif';
+    o.font = canvasFont(500, 12, 'body');
     o.textAlign = 'center';
     o.textBaseline = 'middle';
     for (const b of g.bubbles) {

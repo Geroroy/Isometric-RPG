@@ -4,6 +4,7 @@
 import { worldToScreen } from '../core/iso.js';
 import { rand } from '../core/math.js';
 import { SABER } from './saberStyle.js';
+import { canvasFont } from '../ui/fonts.js';
 
 // a soft round puff (steam), drawn scaled
 const PUFF = (() => {
@@ -430,7 +431,7 @@ export class Effects {
       const x = (s.x - cam.x) * scale;
       const y = (s.y - cam.y) * scale;
       const size = Math.round(13 * t.scale * (k < 0.15 ? 1 + (0.15 - k) * 3 : 1));
-      ctx.font = `700 ${size + 2}px Galmuri11, sans-serif`;
+      ctx.font = canvasFont(400, size + 3, 'data'); // the damage numbers: the data font
       ctx.globalAlpha = k > 0.7 ? (1 - k) / 0.3 : 1;
       ctx.fillStyle = '#000';
       ctx.fillText(t.str, x + 1, y + 1);

@@ -14,6 +14,7 @@ import { VOLUMES } from '../core/audio.js';
 import { setText, setHTML, setClass } from './dom.js';
 import { SABER, setSaberOpt, TRAIL_NAMES, PALETTE_NAMES } from '../gfx/saberStyle.js';
 import { THEME, loadTheme, rgba, setFraction } from './theme.js';
+import { canvasFont } from './fonts.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (tag, cls, html) => {
@@ -1055,7 +1056,7 @@ export class HUD {
     const ox = W / 2 - 0 * k;
     const oy = (H - w.h * k) / 2;
     this.drawMap(ctx, k, ox, oy, { markerScale: 1.2 });
-    ctx.font = '12px Galmuri11, sans-serif';
+    ctx.font = canvasFont(600, 12, 'body'); // the map's place names
     ctx.textAlign = 'center';
     for (const poi of w.pois) {
       if (!w.explored[Math.floor(poi.y) * w.w + Math.floor(poi.x)]) continue;

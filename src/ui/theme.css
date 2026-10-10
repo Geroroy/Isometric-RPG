@@ -953,3 +953,247 @@ input[type='range'] {
 :focus-visible {
   outline: 2px solid var(--c-holo);
 }
+
+/* ============================================================ typography (ui/fonts.js loads the files) */
+/* GmarketSans (Korean body): the noonnu CDN, swapped in when it arrives; Pretendard until then */
+@font-face {
+  font-family: 'GmarketSans';
+  font-weight: 500;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+}
+@font-face {
+  font-family: 'GmarketSans';
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
+}
+/* Aurebesh (decoration): drop a licensed file into public/fonts/Aurebesh.woff2 and enable this
+@font-face {
+  font-family: 'Aurebesh';
+  font-display: swap;
+  src: url('./fonts/Aurebesh.woff2') format('woff2');
+}
+*/
+:root {
+  --font-display: 'Orbitron', 'Bank Gothic', 'Michroma', sans-serif;
+  --font-data: 'Share Tech Mono', 'Chakra Petch', ui-monospace, monospace;
+  --font-body: 'Rajdhani', 'GmarketSans', 'Pretendard Variable', Pretendard, sans-serif;
+  --font-body-ko: 'GmarketSans', 'Pretendard Variable', Pretendard, 'Rajdhani', sans-serif;
+  --font-aurebesh: 'Aurebesh', 'Aurebesh AF', 'Orbitron', sans-serif;
+  /* the roles the components use */
+  --font-hud: var(--font-body);
+  --font-tech: var(--font-display); /* the old "cockpit lettering" role: titles and labels */
+  --font-ui: var(--font-body-ko); /* the old pixel-font role: Korean body everywhere */
+  --glow-blue: 0 0 6px rgba(var(--c-holo-rgb), 0.6);
+  --glow-green: 0 0 6px rgba(var(--c-emerald-rgb), 0.6);
+  --glow-red: 0 0 6px rgba(var(--c-red-rgb), 0.65);
+  --glow-gold: 0 0 6px rgba(var(--c-gold-rgb), 0.55);
+}
+/* --- utility classes */
+.font-display,
+.t-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.font-data,
+.t-data {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.font-body,
+.t-body {
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+.aure-text {
+  font-family: var(--font-aurebesh);
+  letter-spacing: 0.2em;
+  opacity: 0.22;
+  pointer-events: none;
+  user-select: none;
+}
+.holo-text-blue {
+  color: var(--c-holo);
+  text-shadow: var(--glow-blue);
+}
+.holo-text-green {
+  color: var(--c-emerald);
+  text-shadow: var(--glow-green);
+}
+.warning-text-red {
+  color: var(--c-red);
+  text-shadow: var(--glow-red);
+}
+.naboo-gold-text {
+  color: var(--c-gold);
+  text-shadow: var(--glow-gold);
+}
+.glow-text {
+  text-shadow: var(--glow-blue);
+}
+.glow-text-strong {
+  text-shadow: 0 0 6px rgba(var(--c-holo-rgb), 0.8), 0 0 14px rgba(var(--c-holo-rgb), 0.45);
+}
+
+/* --- display: titles and names */
+.ov-title,
+.ob-h,
+.set-card h4,
+.sd-name,
+.dr-title,
+.death-title,
+.bn-kicker,
+.dr-kicker,
+.ether small,
+.plate-h small {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ov-title {
+  font-weight: 600;
+  font-size: 24px;
+  letter-spacing: 0.12em;
+}
+.sd-name {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.sd-en,
+.st-name,
+.ov-tab,
+.ov-tab small,
+.ab-menu button,
+.fo-btn,
+.m-key span,
+.t-attack span,
+.gauge label,
+.radar-region,
+.m-region,
+.cn-sub,
+.ti-sub {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.st-name,
+.m-key span,
+.t-attack span,
+.ab-menu button,
+.fo-btn {
+  text-transform: none; /* Korean labels: the spacing alone */
+  letter-spacing: 0.06em;
+}
+
+/* --- data: every readout */
+.gauge b,
+.m-bar b,
+.ab .cdt,
+.ab-key,
+.ab-lv,
+.t-btn .lv,
+.ether b,
+.m-lv,
+.objectives li b,
+.ov-points b,
+.sc-parts b,
+.info-level b,
+.counter b,
+.st-lv,
+.sd-slots button,
+.ab-menu button small,
+.ov-tab small,
+.dr-stats b,
+.buff,
+.m-chip,
+#fps {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+.gauge.hp b {
+  color: var(--c-emerald);
+  text-shadow: var(--glow-green), 0 1px 0 #000;
+}
+.gauge.hp.low b {
+  color: #fff;
+  text-shadow: var(--glow-red), 0 1px 0 #000;
+}
+.gauge.fp b {
+  color: #d8f6ff;
+  text-shadow: var(--glow-blue), 0 1px 0 #000;
+}
+.m-bar.hp b {
+  color: #d8ffe9;
+  text-shadow: var(--glow-green), 0 1px 1px #000;
+}
+.m-bar.fp b {
+  color: #d8f6ff;
+  text-shadow: var(--glow-blue), 0 1px 1px #000;
+}
+.ab .cdt {
+  font-size: 15px;
+  color: #e6faff;
+  text-shadow: var(--glow-blue), 0 1px 0 #000;
+}
+.ab-key,
+.m-lv,
+.ether small {
+  text-shadow: var(--glow-gold), 0 1px 0 #000;
+}
+.ether b {
+  font-size: 19px;
+  text-shadow: var(--glow-blue), 0 0 12px rgba(var(--c-holo-rgb), 0.4);
+}
+.ab-lv,
+.t-btn .lv {
+  text-shadow: var(--glow-blue), 0 1px 1px #000;
+}
+.objectives li b,
+.ov-points b {
+  text-shadow: var(--glow-gold);
+}
+.radar-region,
+.m-region {
+  font-family: var(--font-data);
+  text-transform: none;
+  letter-spacing: 0.04em;
+  text-shadow: var(--glow-blue), 0 0 3px #000;
+}
+
+/* --- body */
+.console,
+.m-ui,
+.touch-ui,
+.overlay,
+.tooltip,
+.dialogue,
+.buffs,
+.objectives,
+.target-info,
+.banner {
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+.log,
+.dl-text,
+.sd-lore,
+.set-note,
+.m-line,
+.objectives li,
+.tooltip {
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+.bn-name {
+  font-family: var(--font-body-ko);
+  font-weight: 700;
+}
+.ti-name {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}

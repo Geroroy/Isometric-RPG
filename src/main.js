@@ -1,6 +1,7 @@
 // Entry point: bake sprites, build the world, then run the game loop.
 import './style.css';
 import './ui/theme.css'; // the UI design system (docs/UI_SYSTEM.md): restyles what style.css lays out
+import { fontsReady } from './ui/fonts.js'; // the HUD's fonts (Orbitron, Share Tech Mono, Rajdhani…), bundled
 import { applySkin } from './ui/skin.js';
 import { bakeAssets, bakeDuelAssets, bakeSkin, bakeCharacter, CHARACTERS } from './gfx/assets.js';
 import { loadSheets } from './gfx/sheet.js';
@@ -65,6 +66,7 @@ async function boot() {
     bar.style.width = Math.round(k * 100) + '%';
     label.textContent = text;
   };
+  await fontsReady(); // the HUD's fonts in before the first frame (canvas text keeps what it is drawn with)
   const assets = await bakeAssets(onProgress);
   // characters rendered in Blender: sprite sheet + frame JSON (after the bake
   // has been cached — the cache stores baked canvases only)
