@@ -18,7 +18,7 @@ f18 = ImageFont.truetype(FONT, 18)
 BG = (18, 20, 26)
 PAL = {
     'tcw': [('blue', ['#f8fafe', '#3475e1', '#0946bb', '#0c3295', '#09287c']), ('red', ['#fefbfa', '#d92c42', '#a40738', '#790e35', '#621234'])],
-    'rots': [('blue', ['#fcfefe', '#a7bbf8', '#8294f4', '#5963dc', '#423ca6']), ('red', None)],
+    'rots': [('blue', ['#fcdefe', '#a7bbf8', '#8294f4', '#5963dc', '#423ca6']), ('red', None)],
 }
 
 

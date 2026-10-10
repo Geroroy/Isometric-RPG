@@ -32,7 +32,8 @@ export const PALETTES = {
     red: { core: '#fefbfa', rim: '#d92c42', inner: '#a40738', glow: '#790e35', halo: '#621234' },
   },
   rots: {
-    blue: { core: '#fcfefe', rim: '#a7bbf8', inner: '#8294f4', glow: '#5963dc', halo: '#423ca6' },
+    // core: '#fcdefe' as specified by the user (measured from the footage: '#fcfefe', without the pink)
+    blue: { core: '#fcdefe', rim: '#a7bbf8', inner: '#8294f4', glow: '#5963dc', halo: '#423ca6' },
     red: null, // not in the reference: the Clone Wars red is used
   },
 };
