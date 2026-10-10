@@ -428,10 +428,13 @@ export class HUD {
       </section>
       <section class="set-card">
         <h4>광선검 (테스트)</h4>
-        <label class="set-toggle"><input type="checkbox" id="saberLab"> 새 광선검 표현 미리보기</label>
+        <label class="set-toggle"><input type="checkbox" id="saberLab"> 새 광선검 표현 켜기 (끄면 지금 게임 그대로)</label>
         <label class="set-select">잔상 스타일 <select id="saberTrail">${Object.entries(TRAIL_NAMES).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></label>
         <label class="set-select">색상 <select id="saberPalette">${Object.entries(PALETTE_NAMES).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></label>
-        <p class="set-note">레퍼런스 영상에서 잰 두 잔상 스타일과 두 색상표. 승인 전까지는 미리보기를 켰을 때만 적용됩니다. 이 기기에 저장됩니다.</p>
+        <label class="set-toggle"><input type="checkbox" id="saberSlow"> 슬로 모션 (1/4 속도, 실험용)</label>
+        <label class="set-select">잔상 길이 <span class="set-range"><input type="range" id="saberLen" min="0.5" max="4" step="0.25"><b></b></span></label>
+        <label class="set-select">글로우 세기 <span class="set-range"><input type="range" id="saberGlow" min="0.3" max="2" step="0.1"><b></b></span></label>
+        <p class="set-note">레퍼런스 영상에서 잰 두 잔상 스타일과 두 색상표. 이 카드에서 무엇이든 바꾸면 새 표현이 켜집니다. 실제 속도에선 잔상이 0.1초 안팎이라 슬로 모션으로 보면 차이가 잘 보입니다. 잔상은 칼을 휘두를 때(크리스토프시스 전투, 무비 듀얼), 칼 부딪힘은 블래스터 반사·듀얼에서 보입니다. 도시에서는 칼이 꺼져 있습니다. 이 기기에 저장됩니다.</p>
       </section>
       <section class="set-card">
         <h4>개발자</h4>
@@ -488,10 +491,27 @@ export class HUD {
     const lab = $('#saberLab');
     lab.checked = SABER.lab;
     lab.addEventListener('change', () => setSaberOpt('lab', lab.checked));
+    const turnOn = () => {
+      // any change on this card turns the new look on (otherwise it would show nothing)
+      if (!SABER.lab) {
+        setSaberOpt('lab', true);
+        lab.checked = true;
+      }
+    };
+    const slow = $('#saberSlow');
+    slow.checked = !!SABER.slow;
+    slow.addEventListener('change', () => (setSaberOpt('slow', slow.checked), turnOn()));
+    for (const [id, key] of [['saberLen', 'len'], ['saberGlow', 'glow']]) {
+      const r = $('#' + id);
+      const show = () => (r.nextElementSibling.textContent = '×' + (+r.value).toFixed(2).replace(/0$/, ''));
+      r.value = SABER[key] || 1;
+      show();
+      r.addEventListener('input', () => (setSaberOpt(key, +r.value), show(), turnOn()));
+    }
     for (const [id, key] of [['saberTrail', 'trail'], ['saberPalette', 'palette']]) {
       const sel = $('#' + id);
       sel.value = SABER[key];
-      sel.addEventListener('change', () => setSaberOpt(key, sel.value));
+      sel.addEventListener('change', () => (setSaberOpt(key, sel.value), turnOn()));
     }
     if (!post.ok) $('#postNote').textContent = '이 기기에서는 WebGL을 쓸 수 없어 화면 효과가 꺼져 있습니다.';
     $('#openDebug').addEventListener('click', () => this.toggle('debug', true));

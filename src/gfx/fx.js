@@ -3,6 +3,7 @@
 // for additive glow, and `drawText` on the full-resolution overlay.
 import { worldToScreen } from '../core/iso.js';
 import { rand } from '../core/math.js';
+import { SABER } from './saberStyle.js';
 
 // a soft round puff (steam), drawn scaled
 const PUFF = (() => {
@@ -69,6 +70,7 @@ export class Effects {
     this.cones = [];
     this.lights = []; // transient lights {x,y,z,r,g,b,rad,t,life}
     this.flashes = []; // short bright bursts where blades clash or bolts hit
+    this.saberClashes = []; // the saber-look preview's clashes (saberStyle.js)
     this.scorches = []; // blaster marks on walls (depth-sorted with the walls)
     this.ripples = []; // Force: a refraction ring that bends the picture behind it
     this.shakeAmt = 0;
@@ -94,7 +96,8 @@ export class Effects {
       }
     }
     this.parts = this.parts.filter((p) => p.t < p.life);
-    for (const arr of [this.waves, this.texts, this.bolts, this.cones, this.lights, this.flashes, this.scorches, this.ripples]) for (const w of arr) w.t += dt;
+    for (const arr of [this.waves, this.texts, this.bolts, this.cones, this.lights, this.flashes, this.scorches, this.ripples, this.saberClashes]) for (const w of arr) w.t += dt;
+    if (this.saberClashes.length) this.saberClashes = this.saberClashes.filter((w) => w.t < w.life);
     this.flashes = this.flashes.filter((w) => w.t < w.life);
     this.scorches = this.scorches.filter((w) => w.t < w.life);
     this.ripples = this.ripples.filter((w) => w.t < w.life);
@@ -133,6 +136,12 @@ export class Effects {
 
   /** Blade meets blade: a white-hot flash, a spray of sparks cooling from white to amber. */
   clash(x, y, z, n = 14, rgb = [255, 236, 200]) {
+    if (SABER.lab) {
+      // the saber-look preview draws its own clash (saberStyle.drawClash); the light stays
+      this.saberClashes.push({ x, y, z, t: 0, life: SABER.trail === 'movie' ? 0.1 : 0.14, big: n > 12 });
+      this.light(x, y, z, rgb, (n > 12 ? 24 : 18) * 6, 0.16);
+      return;
+    }
     this.flash(x, y, z, rgb, n > 12 ? 24 : 18, 0.1);
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;

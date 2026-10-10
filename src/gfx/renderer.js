@@ -11,7 +11,7 @@ import { neonLevel } from './citySprites.js';
 import { glowSprite } from './fx.js';
 import { transientLights, relightUnits } from './relight.js';
 import { SIG } from '../game/units.js';
-import { SABER, TRAILS, paletteFor, drawBlade, drawTrail, record } from './saberStyle.js';
+import { SABER, PALETTES, trailWindow, paletteFor, drawBlade, drawTrail, drawClash, record } from './saberStyle.js';
 
 const AMBIENT = [150, 146, 178];
 const byDepth = (a, b) => a.depth - b.depth;
@@ -304,6 +304,11 @@ export class Renderer {
     ctx.globalCompositeOperation = 'lighter';
     this.drawCityGlow(ctx, cam, dt);
     this.drawSabers(ctx, cam, dt);
+    for (const c of g.fx.saberClashes) {
+      // the saber-look preview's clashes, in the chosen style
+      const cp = worldToScreen(c.x, c.y, c.z);
+      drawClash(ctx, cp.x - cam.x, cp.y - cam.y, (1 - c.t / c.life) * (c.big ? 1 : 0.75), paletteFor(g.player.saberColor || [60, 130, 255]) || PALETTES.tcw.blue);
+    }
     this.drawBolts(ctx, cam);
     this.drawThrows(ctx, cam);
     g.fx.drawAdd(ctx, cam);
@@ -695,7 +700,7 @@ export class Renderer {
           // the test scene's looks (saberStyle.js): trail by style, colours by palette
           const hist = ((u.saberHist ||= {})[k] ||= []);
           record(hist, bx + cam.x, by + cam.y, tx + cam.x, ty + cam.y, this.time);
-          if (swinging) u.trailUntil = this.time + TRAILS[SABER.trail].window;
+          if (swinging) u.trailUntil = this.time + trailWindow() + 0.05;
           if (this.time <= (u.trailUntil || 0)) drawTrail(ctx, hist, this.time, cam, pal);
           const flash = u.deflectFlash > 0 ? 1.6 : u.clashFlash > 0 ? 1.8 : 1;
           for (const [s0, s1] of segs) {

@@ -5,9 +5,10 @@
 // PROTOTYPE: used only in the test scene (?saberLab) until the look is approved.
 
 const STORE = 'cw.saber';
-export const SABER = { trail: 'tcw', palette: 'tcw', lab: false };
+// len / glow: the test card's sliders (trail length, glow strength); slow: 1/4 game speed (test only)
+export const SABER = { trail: 'tcw', palette: 'tcw', lab: false, len: 1, glow: 1, slow: false };
 try {
-  Object.assign(SABER, JSON.parse(localStorage.getItem(STORE) || '{}'));
+  Object.assign(SABER, JSON.parse(localStorage.getItem(STORE) || '{}'), { slow: false });
 } catch {}
 if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('saberLab')) SABER.lab = true;
 
@@ -15,7 +16,7 @@ if (typeof location !== 'undefined' && new URLSearchParams(location.search).has(
 export function setSaberOpt(key, value) {
   SABER[key] = value;
   try {
-    localStorage.setItem(STORE, JSON.stringify(SABER));
+    localStorage.setItem(STORE, JSON.stringify({ ...SABER, slow: false })); // slow motion is not kept
   } catch {}
 }
 
@@ -53,6 +54,11 @@ export const TRAILS = {
   tcw: { window: 0.11, taper: 0.8, glowW: 7, glowA: 0.9, outline: 0.55, flicker: 0, clash: 'star' },
   movie: { window: 0.07, taper: 0.55, glowW: 13, glowA: 0.85, outline: 0.3, flicker: 0.06, clash: 'bloom' },
 };
+
+/** Seconds of sweep a trail keeps (the style's, times the test card's length slider). */
+export function trailWindow() {
+  return (TRAILS[SABER.trail] || TRAILS.tcw).window * (SABER.len || 1);
+}
 
 /** The palette entry for a unit's saber colour (blue or red); null: draw it the old way. */
 export function paletteFor(rgb) {
@@ -142,7 +148,7 @@ export function drawBlade(ctx, x1, y1, x2, y2, pal, k, time) {
   const c = dx / len;
   const s = dy / len;
   ctx.globalCompositeOperation = 'screen';
-  ctx.globalAlpha = Math.min(1, st.glowA * k * fl);
+  ctx.globalAlpha = Math.min(1, st.glowA * k * fl * (SABER.glow || 1));
   ctx.setTransform(c, s, -s, c, x1, y1);
   ctx.drawImage(glowSprite(pal, SABER.trail), -w / 2, -w / 2, len + w, w);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -225,14 +231,15 @@ export function drawTrail(ctx, hist, now, cam, pal) {
   if (hist.length < 2) return;
   const st = TRAILS[SABER.trail] || TRAILS.tcw;
   const last = hist[hist.length - 1].t;
-  const t0 = now - st.window;
+  const win = trailWindow();
+  const t0 = now - win;
   if (last <= t0) return; // still for the whole window: the trail has caught up
   for (let i = 0; i <= N; i++) at(hist, t0 + ((now - t0) * i) / N, pts[i]);
   if (Math.hypot(pts[N].tx - pts[0].tx, pts[N].ty - pts[0].ty) < 2) return; // nothing swept
   // the swing's phase: full while the blade moves, then (end) thinner and fainter as the tail
   // catches up — `e` 1 -> 0 over the window after the last move
   // (a sprite frame lasts ~45 ms: the gap between two poses is still "moving")
-  const e = Math.max(0, Math.min(1, 1 - Math.max(0, now - last - HOLD) / st.window));
+  const e = Math.max(0, Math.min(1, 1 - Math.max(0, now - last - HOLD) / win));
   const cx = cam.x;
   const cy = cam.y;
   const tp = st.taper;

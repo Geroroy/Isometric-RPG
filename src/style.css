@@ -1591,6 +1591,16 @@ body.touch .radar-region {
   font-size: 14px;
   margin-bottom: 8px;
 }
+.set-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.set-range b {
+  min-width: 42px;
+  font-weight: 400;
+  text-align: right;
+}
 .set-select select {
   font: inherit;
   color: inherit;

@@ -28,6 +28,7 @@ import { PortraitPhoto } from './ui/portraitPhoto.js';
 import { DialogueUI } from './ui/dialogue.js';
 import { CinemaUI } from './ui/cinemaUI.js';
 import { startDialogue } from './game/dialogue.js';
+import { SABER } from './gfx/saberStyle.js';
 
 applySkin();
 const loading = document.getElementById('loading');
@@ -241,6 +242,7 @@ async function boot() {
     if (acc < FRAME_MS - 1.5) return;
     acc = Math.min(acc - FRAME_MS, FRAME_MS);
     dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); // the first frame can stamp before `last`
+    if (SABER.lab && SABER.slow) dt *= 0.25; // the saber test card's slow motion
     last = now;
     input.update(dt);
     touch.update(dt);
