@@ -1,8 +1,8 @@
 // Lightsaber looks, measured from the reference footage (docs/SABER_STYLE.md, tools/qa/saberprofile.py):
 // two trail styles (Clone Wars / the films) and two palettes (Clone Wars / Revenge of the Sith),
 // picked separately. Glows are pre-drawn sprites (no shadowBlur); trails are polygons.
-// Every blue or red saber in the game is drawn here (renderer.drawSabers); the light the blades
-// throw on the floor and on characters is renderer.drawLighting (light map) and spill below.
+// Every saber in the game is drawn here (renderer.drawSabers); the light the blades throw on the
+// floor and on characters is saberLight.js.
 
 const STORE = 'cw.saber';
 // len / glow: the settings card's sliders (trail length, glow strength); slow: 1/4 game speed
@@ -413,57 +413,5 @@ export function drawClash(ctx, x, y, k, pal = PALETTES.tcw.blue) {
 
 // ---------------------------------------------------------------------------- the blades' light
 
-// A sheet without a normal pass: the blade's light on it is its own colours times the blade's
-// colour (albedo x light, like the normal-mapped relight but without the direction), fading
-// pixel by pixel with the distance from the blade — the near side lit, the far side not — added
-// with 'lighter'. One reused canvas; no allocation per frame but the falloff gradient.
-let spillC = null;
-let spillX = null;
-export function spill(ctx, f, x, y, col, a, lx, ly, lr) {
-  const k = f.k || 1;
-  const w = Math.ceil(f.w * k);
-  const h = Math.ceil(f.h * k);
-  if (!spillC) {
-    spillC = document.createElement('canvas');
-    spillX = spillC.getContext('2d');
-  }
-  if (spillC.width < w || spillC.height < h) {
-    spillC.width = Math.max(spillC.width, w);
-    spillC.height = Math.max(spillC.height, h);
-    spillX = spillC.getContext('2d');
-  }
-  const X = spillX;
-  X.imageSmoothingEnabled = !!f.k;
-  X.globalCompositeOperation = 'copy';
-  X.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, w, h);
-  X.globalCompositeOperation = 'multiply'; // the sprite's colours lit by the blade's colour
-  X.fillStyle = col;
-  X.fillRect(0, 0, w, h);
-  X.globalCompositeOperation = 'destination-in'; // back to the sprite's shape
-  X.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, w, h);
-  const cx = lx - x;
-  const cy = ly - y;
-  const grd = X.createRadialGradient(cx, cy, 0, cx, cy, lr);
-  grd.addColorStop(0, 'rgba(0,0,0,1)');
-  grd.addColorStop(0.5, 'rgba(0,0,0,0.45)');
-  grd.addColorStop(1, 'rgba(0,0,0,0)');
-  X.fillStyle = grd; // fading away from the blade
-  X.fillRect(0, 0, w, h);
-  X.globalCompositeOperation = 'source-over';
-  ctx.globalAlpha = Math.min(1, a);
-  ctx.drawImage(spillC, 0, 0, w, h, x, y, w, h);
-  ctx.globalAlpha = 1;
-}
-
-/** The light a blade throws on a character: its rim colour, brighter (multiplied into the sprite). */
-const lights = new Map();
-export function lightColor(pal) {
-  let c = lights.get(pal.rim);
-  if (!c) {
-    c = '#' + hex(pal.rim).map((v) => Math.round(Math.min(255, v * 1.6 + 20)).toString(16).padStart(2, '0')).join('');
-    lights.set(pal.rim, c);
-  }
-  return c;
-}
 // QA (tools/qa/saberlab.mjs): the clash drawing and the settings, from the page
 if (typeof window !== 'undefined') window.__saberStyle = { SABER, TRAILS, setSaberOpt, drawClash };

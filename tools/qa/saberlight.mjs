@@ -15,8 +15,9 @@ for (const [label, url] of builds) {
   const page = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message));
-  await page.addInitScript(() => {
-    localStorage.setItem('cw.saber', JSON.stringify({ trail: 'tcw', palette: 'tcw', len: 1, glow: 1 }));
+  await page.addInitScript(({ TRAIL, PALETTE }) => {
+    process = { env: { TRAIL, PALETTE } };
+    localStorage.setItem('cw.saber', JSON.stringify({ trail: process.env.TRAIL || 'tcw', palette: process.env.PALETTE || 'tcw', len: 1, glow: 1 }));
     const raf = window.requestAnimationFrame.bind(window);
     window.__stop = false;
     window.requestAnimationFrame = (cb) => raf((t) => (window.__stop ? raf(() => window.requestAnimationFrame(cb)) : cb(t)));
@@ -24,7 +25,7 @@ for (const [label, url] of builds) {
       let s = 5;
       return () => (s = (s * 16807) % 2147483647) / 2147483647;
     })();
-  });
+  }, { TRAIL: process.env.TRAIL, PALETTE: process.env.PALETTE });
   await page.goto(url);
   await page.waitForFunction(() => window.__ready, null, { timeout: 900000 });
   await page.click('#startBtn');

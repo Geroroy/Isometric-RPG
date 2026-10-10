@@ -11,17 +11,11 @@ import { neonLevel } from './citySprites.js';
 import { glowSprite } from './fx.js';
 import { transientLights, relightUnits } from './relight.js';
 import { SIG } from '../game/units.js';
-import { SABER, PALETTES, trailWindow, paletteFor, drawBlade, drawTrail, drawClash, spill, lightColor, hex, record } from './saberStyle.js';
+import { SABER, PALETTES, trailWindow, paletteFor, drawBlade, drawTrail, drawClash, record } from './saberStyle.js';
+import { preset, tintFor, drawLight, drawGround, sweepOf, lightCharacter } from './saberLight.js';
 
 const AMBIENT = [150, 146, 178];
 const byDepth = (a, b) => a.depth - b.depth;
-const prefixes = new Map(); // 'rgba(r,g,b,' per colour, made once
-const rgbaPrefix = (rgb) => {
-  const key = (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
-  let p = prefixes.get(key);
-  if (!p) prefixes.set(key, (p = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},`));
-  return p;
-};
 const TRAIL_LIFE = 0.13; // seconds a saber swing's afterimage lasts
 const SHADOW_ALPHA = 0.75; // a sheet's rendered shadow (the shadow catcher's own alpha)
 export const ZOOM_MIN = 0.5;
@@ -649,38 +643,36 @@ export class Renderer {
       const fl = 1 + Math.sin(this.time * 3 + L.x * 7) * L.flicker;
       spot(L.x, L.y, L.z, L.r, L.g, L.b, L.rad * fl, 0.55);
     }
-    // a lit blade lights its surroundings along its length (middle and tip) and the floor under it,
-    // in the palette's colour, a little brighter while it swings
-    const spotAt = (sx, sy, pre, rad, a) => {
-      if (sx < -rad || sy < -rad || sx > W + rad || sy > H + rad) return;
-      const grd = l.createRadialGradient(sx, sy, 0, sx, sy, rad);
-      grd.addColorStop(0, pre + a.toFixed(2) + ')');
-      grd.addColorStop(1, pre + '0)');
-      l.fillStyle = grd;
-      l.fillRect(sx - rad, sy - rad, rad * 2, rad * 2);
-    };
+    // a lit blade lights its surroundings (saberLight.js: inverse-square falloff with a hot core, the
+    // palette's reflected tints): along the blade, and the floor under it as an iso ellipse that
+    // stretches along a swing
     for (const u of g.activeUnits) {
       if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) continue;
       const pal = paletteFor(u.saberColor);
-      const rgb = pal ? hex(pal.rim) : u.saberColor;
-      const pre = rgbaPrefix(rgb);
-      const a = (this.time <= (u.trailUntil || 0) ? 0.8 : 0.62) + (u.deflectFlash > 0 ? 0.4 : 0);
       const f = u.frame();
       const s = worldToScreen(u.x, u.y, u.z);
       const sx = s.x - cam.x;
       const sy = s.y - cam.y;
-      let lit = false;
-      for (const k of ['saber', 'saber2']) {
-        const b = f.markers[k + 'Base'];
-        const e = f.markers[k + 'Tip'];
-        if (!b || !e) continue;
-        lit = true;
-        const mx = sx + (b[0] + e[0]) / 2;
-        const my = sy + (b[1] + e[1]) / 2;
-        spotAt(mx + (e[0] - b[0]) * 0.15, my + (e[1] - b[1]) * 0.15, pre, 78, a); // along the blade, towards the tip
-        spotAt(sx + (mx - sx) * 0.6, sy - 2, pre, 66, a); // the floor under the blade
+      const b = f.markers.saberBase;
+      const e = f.markers.saberTip;
+      if (!pal || !b || !e) {
+        const [r, gg, bl] = u.saberColor;
+        spot(u.x, u.y, 1.2 + u.z, r, gg, bl, 70, 0.6);
+        continue;
       }
-      if (!lit) spot(u.x, u.y, 1.2 + u.z, rgb[0], rgb[1], rgb[2], 70, a);
+      const t = tintFor(pal);
+      const p = preset();
+      const sweep = sweepOf(u, this.time);
+      const a = (0.75 + (sweep ? 0.3 * sweep.fresh : 0) + (u.deflectFlash > 0 ? 0.4 : 0)) * p.mapA;
+      for (const k of ['saber', 'saber2']) {
+        const bb = f.markers[k + 'Base'];
+        const ee = f.markers[k + 'Tip'];
+        if (!bb || !ee) continue;
+        // the blade's middle, a little towards the tip
+        drawLight(l, sx + (bb[0] + ee[0]) * 0.5 + (ee[0] - bb[0]) * 0.15, sy + (bb[1] + ee[1]) * 0.5 + (ee[1] - bb[1]) * 0.15, t, p, a);
+      }
+      const g0 = worldToScreen(u.x, u.y, 0);
+      drawGround(l, g0.x - cam.x + (b[0] + e[0]) * 0.3, g0.y - cam.y, t, p, sweep, a * 0.6, 'lighter');
     }
     for (const t of g.throws) spot(t.x, t.y, t.z, 90, 160, 255, 60, 0.6);
     for (const b of g.bolts) spot(b.x, b.y, b.z, b.color === 'red' ? 255 : 90, b.color === 'red' ? 70 : 140, b.color === 'red' ? 60 : 255, 26, 0.6);
@@ -788,7 +780,6 @@ export class Renderer {
    */
   drawSaberLight(ctx, cam) {
     const g = this.game;
-    const R = 2.6; // world units a blade's light reaches on a character
     for (const u of g.activeUnits) {
       if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) continue;
       const pal = paletteFor(u.saberColor);
@@ -797,30 +788,33 @@ export class Renderer {
       const b = f.markers.saberBase;
       const e = f.markers.saberTip;
       if (!b || !e) continue;
+      const t = tintFor(pal);
+      const p = preset();
+      const sweep = sweepOf(u, this.time);
       const s = worldToScreen(u.x, u.y, u.z);
-      const swing = this.time <= (u.trailUntil || 0) ? 1.25 : 1;
       const lx = s.x - cam.x + (b[0] + e[0]) / 2; // the blade's middle: where its light comes from
       const ly = s.y - cam.y + (b[1] + e[1]) / 2;
-      // (the floor under the blade is lit by the light map: multiplied in, so it takes the blade's
-      // colour in proportion to the floor's own — on a bright pad as on dark ground)
+      // the floor: the light's ellipse added over the lit picture (the light map only darkens or
+      // tints; this is the glow that punches through on a dark floor), wider while swinging
+      const g0 = worldToScreen(u.x, u.y, 0);
+      drawGround(ctx, g0.x - cam.x + (b[0] + e[0]) * 0.3, g0.y - cam.y, t, p, sweep, SABER.glow || 1);
+      // the characters it reaches (itself and the nearest others, at most four)
       ctx.globalCompositeOperation = 'lighter';
-      // the characters it lights: itself and the nearest others in reach (at most three)
+      const R = (p.r0 * p.reach) / PX_PER_UNIT; // world units the light reaches
       const near = this.saberNear || (this.saberNear = []);
       near.length = 0;
       for (const v of g.activeUnits) {
         if (v.dead || v.hidden || v.frame().normal) continue; // normal-mapped sheets: relightUnits
-        const d = Math.hypot(v.x - u.x, v.y - u.y);
-        if (d <= R) near.push(v);
+        if (Math.hypot(v.x - u.x, v.y - u.y) <= R) near.push(v);
       }
       if (near.length > 4) near.sort((a, c) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(c.x - u.x, c.y - u.y)).length = 4;
-      const col = lightColor(pal);
+      const boost = 1 + (sweep ? 0.35 * sweep.fresh : 0);
       for (const v of near) {
-        const d = Math.hypot(v.x - u.x, v.y - u.y);
         const vf = v.frame();
         const vs = worldToScreen(v.x, v.y, v.z);
         const k = vf.k || 1;
         // the wielder: the arm and side by the blade catch it, the rest little
-        spill(ctx, vf, Math.round(vs.x - vf.ox * k - cam.x), Math.round(vs.y - vf.oy * k - cam.y), col, (v === u ? 0.75 : 1) * (1 - (d / R) * 0.7) * swing * (SABER.glow || 1), lx, ly, v === u ? 36 : 72);
+        lightCharacter(ctx, vf, Math.round(vs.x - vf.ox * k - cam.x), Math.round(vs.y - vf.oy * k - cam.y), t, p, (v === u ? 0.7 : 1) * boost * (SABER.glow || 1), lx, ly);
       }
     }
   }
