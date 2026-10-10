@@ -571,7 +571,7 @@ body.targeting #world {
   border-radius: 50%;
   background: var(--gold);
   box-shadow: 0 0 8px var(--gold);
-  animation: pulse 0.8s infinite alternate;
+  animation: pulse 0.8s 7 alternate forwards; /* a few pulses, then steady (an endless one keeps the screen redrawing) */
 }
 .ab-menu button.alert .dot {
   display: block;
@@ -4081,13 +4081,9 @@ body.touch .cn-skip kbd {
   z-index: 2;
   pointer-events: none;
   background: repeating-linear-gradient(180deg, rgba(80, 230, 255, 0.06) 0 1px, transparent 1px 3px);
-  animation: holo-drift 6s linear infinite;
+  /* static scanlines: a never-ending drift kept the compositor redrawing the whole screen
+     every refresh even with the game paused (tools/qa/perfsplit.mjs) */
   mix-blend-mode: screen;
-}
-@keyframes holo-drift {
-  to {
-    background-position: 0 30px;
-  }
 }
 .cn-log .log {
   padding-top: 10px;
@@ -4520,7 +4516,7 @@ body.duel .m-menu {
   border-radius: 50%;
   background: var(--gold);
   box-shadow: 0 0 6px var(--gold);
-  animation: pulse 0.8s infinite alternate;
+  animation: pulse 0.8s 7 alternate forwards; /* a few pulses, then steady */
 }
 .m-key.alert .dot {
   display: block;
