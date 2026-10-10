@@ -111,17 +111,7 @@ export class HUD {
     this.logEl = $('#msgLog');
     this.pcanvas.addEventListener('mousedown', (e) => {
       e.stopPropagation();
-      this.pokes = (this.pokes || 0) + 1;
-      clearTimeout(this.pokeReset);
-      this.pokeReset = setTimeout(() => (this.pokes = 0), 4000);
-      // his own recorded voice (audio/voice/anakin), else a subtitled line
-      const a = this.game.audio;
-      const clip = a.voice('portrait');
-      if (clip) {
-        if (a.speech) a.speech.stop();
-        this.portrait.talk(clip.duration);
-        this.sub = { t: 0, talk: clip.duration, speaker: '아나킨' };
-      } else this.game.say(this.pokes > 4 ? 'pokeAnnoyed' : 'poke');
+      this.pokePortrait();
     });
     cn.addEventListener('mousedown', (e) => e.stopPropagation());
     $('#stims').addEventListener('click', (e) => {
@@ -183,6 +173,21 @@ export class HUD {
     r.appendChild(this.objectives);
     this.target = el('div', 'target-info hidden', '<div class="ti-name"></div><div class="ti-bar"><i></i></div><div class="ti-sub"></div>');
     r.appendChild(this.target);
+  }
+
+  /** Poking the portrait: Anakin answers (the phone HUD's face too). */
+  pokePortrait() {
+    this.pokes = (this.pokes || 0) + 1;
+    clearTimeout(this.pokeReset);
+    this.pokeReset = setTimeout(() => (this.pokes = 0), 4000);
+    // his own recorded voice (audio/voice/anakin), else a subtitled line
+    const a = this.game.audio;
+    const clip = a.voice('portrait');
+    if (clip) {
+      if (a.speech) a.speech.stop();
+      this.portrait.talk(clip.duration);
+      this.sub = { t: 0, talk: clip.duration, speaker: '아나킨' };
+    } else this.game.say(this.pokes > 4 ? 'pokeAnnoyed' : 'poke');
   }
 
   /** Add a line to the console's message display. */
@@ -743,7 +748,7 @@ export class HUD {
       nm.textContent = h.name;
       this.target.className = 'target-info' + (h.elite ? ' elite' : h.team === 'rep' ? ' ally' : '');
       $('.ti-bar i', this.target).style.width = Math.max(0, (h.hp / h.maxHp) * 100) + '%';
-      $('.ti-sub', this.target).textContent = h.npc ? `${h.title} · 대화 (E / 클릭)` : h.team === 'cis' ? `LV ${h.level}${h.elite ? ' · 정예' : ''}` : h.owner ? '아군 · 지휘 중' : '아군';
+      $('.ti-sub', this.target).textContent = h.npc ? `${h.title} · 대화 ${this.renderer.touchMode ? '(대화 버튼)' : '(E / 클릭)'}` : h.team === 'cis' ? `LV ${h.level}${h.elite ? ' · 정예' : ''}` : h.owner ? '아군 · 지휘 중' : '아군';
     } else this.target.classList.add('hidden');
 
     // throttled text

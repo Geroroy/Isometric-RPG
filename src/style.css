@@ -1721,20 +1721,7 @@ body.touch .bn-name {
 }
 body.touch .hud-btn,
 body.touch #fsBtn {
-  width: 40px;
-  height: 40px;
-}
-body.touch #zoomOut {
-  top: calc(104px + env(safe-area-inset-top, 0px));
-  right: calc(170px + env(safe-area-inset-right, 0px));
-}
-body.touch #zoomIn {
-  top: calc(104px + env(safe-area-inset-top, 0px));
-  right: calc(122px + env(safe-area-inset-right, 0px));
-}
-body.touch #fsBtn {
-  top: calc(150px + env(safe-area-inset-top, 0px));
-  right: calc(122px + env(safe-area-inset-right, 0px));
+  display: none;
 }
 body.touch .overlay {
   padding: calc(10px + env(safe-area-inset-top, 0px)) calc(14px + env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) calc(14px + env(safe-area-inset-left, 0px));
@@ -1897,6 +1884,9 @@ body.overlay-open .touch-ui {
   opacity: 0.35;
   border-style: dashed;
 }
+.t-skill.empty {
+  display: none; /* an empty socket: nothing to press */
+}
 .t-btn.empty img {
   display: none;
 }
@@ -1928,53 +1918,52 @@ body.overlay-open .touch-ui {
 .t-skill.s3 { right: 171px; bottom: 42px; }
 .t-skill.s4 { right: 127px; bottom: 127px; }
 .t-skill.s5 { right: 42px; bottom: 171px; }
+.t-bacta,
+.t-saber {
+  width: 46px;
+  height: 46px;
+}
 .t-bacta {
-  right: 234px;
-  bottom: 4px;
-  width: 44px;
-  height: 44px;
+  right: 236px;
+  bottom: 6px;
   border-color: rgba(255, 140, 130, 0.6);
 }
-.t-menu {
-  position: absolute;
-  top: calc(8px + env(safe-area-inset-top, 0px));
-  right: calc(122px + env(safe-area-inset-right, 0px));
-  display: grid;
-  grid-template-columns: repeat(3, 44px);
-  gap: 4px;
+.t-bacta.empty {
+  opacity: 0.4;
 }
-.t-mbtn {
-  height: 44px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  background: rgba(8, 12, 18, 0.62);
-  border: 1px solid var(--line-strong);
-  border-radius: 6px;
-  pointer-events: auto;
-  touch-action: none;
+.t-bacta.empty img {
+  display: block;
 }
-.t-mbtn img {
-  width: 22px;
-  height: 22px;
-  image-rendering: auto;
+.t-saber {
+  right: 236px;
+  bottom: 62px;
+  border-color: rgba(143, 211, 255, 0.45);
 }
-.t-mbtn b {
-  font-size: 18px;
-  line-height: 22px;
-  font-weight: 400;
-  color: var(--ink);
+.t-saber.on {
+  border-color: var(--force);
+  box-shadow: 0 0 0 2px #101316, 0 0 12px rgba(92, 200, 255, 0.55);
 }
-.t-mbtn span {
-  font-size: 9px;
-  color: var(--ink-dim);
+/* the duel: the guard key is the second big key, the skill arc sits above both */
+body.duel .t-bacta {
+  right: 100px;
+  bottom: 6px;
+  width: 66px;
+  height: 66px;
+  border-color: rgba(143, 211, 255, 0.7);
 }
-.t-mbtn.glow {
-  border-color: var(--gold);
-  box-shadow: 0 0 10px rgba(233, 196, 122, 0.5);
+body.duel .t-bacta .lv {
+  right: 0;
+  left: 0;
+  bottom: 7px;
+  text-align: center;
+  font-size: 11px;
 }
+body.duel .t-skill.s0 { right: 118px; bottom: 96px; }
+body.duel .t-skill.s1 { right: 60px; bottom: 118px; }
+body.duel .t-skill.s2 { right: 2px; bottom: 112px; }
+body.duel .t-skill.s3 { right: 176px; bottom: 124px; }
+body.duel .t-skill.s4 { right: 118px; bottom: 156px; }
+body.duel .t-skill.s5 { right: 60px; bottom: 178px; }
 
 #rotate {
   display: none;
@@ -2153,9 +2142,7 @@ body.duel .dark-meter,
 body.duel .ab-menu [data-open='tree'],
 body.duel .ab-menu [data-open='char'],
 body.duel .ab-menu [data-open='map'],
-body.duel .ab-menu [data-open='cards'],
-body.duel .t-menu .t-mbtn:nth-child(-n + 4),
-body.duel .t-menu .t-mbtn:nth-child(6) {
+body.duel .ab-menu [data-open='cards'] {
   display: none;
 }
 .boss-bar {
@@ -2403,10 +2390,12 @@ body.cine .touch-ui {
   color: var(--ink);
 }
 body.touch.duel .boss-bar {
-  left: 310px;
-  right: 230px;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: 250px;
+  right: 150px;
   width: auto;
   transform: none;
+  padding: 4px 12px 6px;
 }
 body.touch .bb-name span {
   display: none;
@@ -3185,82 +3174,18 @@ body.duel .boss-bar {
   border-radius: 6px;
 }
 
-/* touch: a slim console; the action cluster sits above it ---------------- */
-body.touch .console {
-  height: calc(84px + env(safe-area-inset-bottom, 0px));
-  padding-top: 8px;
-  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
-  gap: 10px;
-  justify-content: flex-start;
-}
-body.touch .cn-portrait,
-body.touch .cn-radar {
-  width: 68px;
-}
-body.touch .cn-log {
-  flex: 0 1 240px;
-  max-width: 260px;
-  min-width: 140px;
-  padding: 5px 7px;
-}
-body.touch .log {
-  font-size: 10px;
-}
-body.touch .cn-btns,
-body.touch .abilities,
-body.touch .cn-menu,
-body.touch .xp-line {
+/* touch: no console — the phone has its own chrome (ui/mobileHud.js) ----- */
+body.touch .console,
+body.touch .objectives,
+body.touch .buffs {
   display: none;
-}
-body.touch .cn-center {
-  justify-content: center;
-}
-body.touch .fp-lights {
-  gap: 4px;
-}
-body.touch .fp-lights i {
-  width: 8px;
-  height: 8px;
-}
-body.touch .cn-stats {
-  width: 120px;
-}
-body.touch .counter b {
-  font-size: 15px;
-}
-body.touch .cn-radar {
-  margin-left: auto;
-  margin-right: calc(var(--touch-cluster, 0px));
 }
 body.touch .t-cluster {
-  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
 }
 body.touch .joy-zone {
-  top: 60px;
-  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
-}
-body.touch .objectives {
-  display: none;
-}
-body.touch .buffs {
-  bottom: calc(92px + env(safe-area-inset-bottom, 0px));
-  right: auto;
-  left: calc(10px + env(safe-area-inset-left, 0px));
-  justify-content: flex-start;
-}
-body.touch .dialogue {
-  bottom: calc(92px + env(safe-area-inset-bottom, 0px));
-  max-height: calc(100vh - 100px);
-  padding: 8px;
-  gap: 6px;
-}
-body.touch .dl-text {
-  font-size: 13px;
-  padding: 6px 8px;
-}
-body.touch .dl-choice {
-  min-height: 34px;
-  font-size: 13px;
+  top: 96px;
+  bottom: 0;
 }
 .t-btn {
   background: radial-gradient(circle at 50% 45%, #18202a, #06080b 75%);
@@ -3278,17 +3203,6 @@ body.touch .dl-choice {
 }
 .t-btn.down {
   background: radial-gradient(circle at 50% 55%, #3a0a06, #06080b 75%);
-}
-.t-mbtn {
-  background: var(--tex-hull), #474c52;
-  border: 2px solid #14171a;
-  border-radius: 4px;
-  box-shadow: inset 1px 1px 0 rgba(235, 245, 255, 0.2);
-}
-.t-mbtn span {
-  font-family: var(--font-ui);
-  color: var(--gold);
-  text-shadow: 1px 1px 0 #000;
 }
 .joy {
   border-color: rgba(var(--gold-rgb), 0.6);
@@ -4342,4 +4256,374 @@ body.touch .cn-stats {
 }
 body.touch .gauge {
   height: 22px;
+}
+
+/* ============================================================ phone HUD (ui/mobileHud.js)
+   The phone's own chrome: vitals plate top left, radar + menu keys top right,
+   fading console lines at the bottom. Shown only with body.touch. */
+.m-ui {
+  display: none;
+}
+body.touch .m-ui {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none !important;
+}
+body.overlay-open .m-ui,
+body.cine .m-ui,
+body.talking .m-ui,
+body.title .m-ui {
+  visibility: hidden;
+}
+.m-vitals {
+  position: absolute;
+  left: calc(10px + env(safe-area-inset-left, 0px));
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 5px;
+  background: var(--tex-hull) repeat, #5b6066;
+  border: 2px solid #15181b;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(235, 245, 255, 0.18), inset 0 -2px 4px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.6);
+  pointer-events: auto;
+}
+.m-face {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 5px;
+  flex: none;
+}
+.m-face canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: auto;
+  filter: contrast(1.05) saturate(0.92);
+}
+.m-lv {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  z-index: 1;
+  min-width: 20px;
+  padding: 1px 3px;
+  font-family: var(--font-tech);
+  font-weight: 700;
+  font-size: 9px;
+  line-height: 14px;
+  letter-spacing: 0;
+  text-align: center;
+  color: #000;
+  background: var(--gold);
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px #15181b;
+}
+.m-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 128px;
+}
+.m-bar {
+  position: relative;
+  height: 13px;
+  background: #0a0806;
+  border: 1px solid #14171a;
+  border-radius: 2px;
+  box-shadow: inset 0 0 5px #000;
+  overflow: hidden;
+}
+.m-bar i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  transition: width 0.1s;
+}
+.m-bar.hp .chip {
+  background: #ffd0a0;
+}
+.m-bar.hp .fill {
+  background: linear-gradient(180deg, #ff9a66, var(--digit) 55%, #b23c12);
+  box-shadow: 0 0 6px rgba(255, 106, 42, 0.6);
+}
+.m-bar.fp .fill {
+  background: linear-gradient(180deg, #a8ecff, #57e0ff 55%, #1f8cb0);
+  box-shadow: 0 0 6px rgba(87, 224, 255, 0.5);
+}
+.m-bar.comp .fill {
+  background: linear-gradient(180deg, #ffe9b0, var(--gold) 55%, #b07a1a);
+}
+.m-bar b,
+.m-bar span {
+  position: absolute;
+  right: 4px;
+  top: 0;
+  line-height: 13px;
+  font-family: var(--font-tech);
+  font-weight: 700;
+  font-size: 9px;
+  color: #fff;
+  text-shadow: 0 0 2px #000, 0 1px 1px #000;
+}
+.m-bar span {
+  right: auto;
+  left: 4px;
+  font-family: var(--font-ui);
+}
+.m-vitals.low .m-bar.hp .fill {
+  animation: pulse 0.7s infinite alternate;
+}
+.m-vitals.comp-low .m-bar.comp .fill {
+  animation: pulse 0.5s infinite alternate;
+}
+.m-dark {
+  position: relative;
+  height: 3px;
+  margin-top: 1px;
+  background: linear-gradient(90deg, #57c8ff, #6a5a8a 50%, var(--dark));
+  opacity: 0.85;
+}
+.m-dark i {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 7px;
+  background: #fff;
+  transform: translateX(-1px);
+}
+.m-chips {
+  position: absolute;
+  left: calc(10px + env(safe-area-inset-left, 0px));
+  top: calc(78px + env(safe-area-inset-top, 0px));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 230px;
+}
+.m-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px 1px 3px;
+  font-size: 10px;
+  color: var(--ink);
+  background: rgba(8, 14, 9, 0.85);
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+}
+.m-chip img {
+  width: 14px;
+  height: 14px;
+  image-rendering: auto;
+}
+.m-chip.info {
+  color: #57e0ff;
+}
+.m-chip.dark {
+  color: #ff8a6d;
+  border-color: rgba(226, 72, 42, 0.6);
+}
+.m-chip.gold {
+  color: var(--gold);
+  border-color: rgba(var(--gold-rgb), 0.6);
+}
+.m-obj {
+  position: absolute;
+  left: 50%;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 44vw;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--ink);
+  text-shadow: 0 1px 3px #000, 0 0 6px rgba(0, 0, 0, 0.8);
+}
+.m-obj:empty {
+  display: none;
+}
+.m-obj small {
+  color: var(--ink-dim);
+}
+.m-arrow {
+  display: inline-block;
+  color: var(--gold);
+}
+.m-top {
+  position: absolute;
+  right: calc(10px + env(safe-area-inset-right, 0px));
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.m-menu {
+  display: grid;
+  grid-template-columns: repeat(3, 40px);
+  gap: 4px;
+  pointer-events: auto;
+}
+body.duel .m-menu {
+  grid-template-columns: repeat(2, 40px);
+}
+.m-key {
+  position: relative;
+  height: 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--gold);
+  background: var(--tex-hull), #474c52;
+  border: 2px solid #14171a;
+  border-radius: 4px;
+  box-shadow: inset 1px 1px 0 rgba(235, 245, 255, 0.2);
+  touch-action: manipulation;
+}
+.m-key:active {
+  background: var(--tex-hull), #2d3136;
+}
+.m-key img {
+  width: 20px;
+  height: 20px;
+  image-rendering: auto;
+}
+.m-key b {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 400;
+  color: var(--ink);
+}
+.m-key span {
+  font-size: 8px;
+  line-height: 10px;
+  text-shadow: 1px 1px 0 #000;
+}
+.m-key .dot {
+  display: none;
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 6px var(--gold);
+  animation: pulse 0.8s infinite alternate;
+}
+.m-key.alert .dot {
+  display: block;
+}
+.m-key.alert {
+  box-shadow: inset 1px 1px 0 rgba(235, 245, 255, 0.2), 0 0 8px rgba(var(--gold-rgb), 0.55);
+}
+.m-radar {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  pointer-events: auto;
+}
+.m-radar canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: auto;
+  filter: sepia(1) hue-rotate(165deg) saturate(2.4) brightness(1.05);
+}
+.m-region {
+  position: absolute;
+  left: -20px;
+  right: -20px;
+  top: 100%;
+  margin-top: 3px;
+  text-align: center;
+  font-size: 9px;
+  white-space: nowrap;
+  color: var(--ink);
+  text-shadow: 0 1px 3px #000, 0 0 5px #000;
+}
+.m-log {
+  position: absolute;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 44vw;
+  max-width: 420px;
+}
+.m-line {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--ink);
+  text-shadow: 0 1px 3px #000, 0 0 6px #000;
+  transition: opacity 0.4s;
+}
+.m-line.other {
+  color: #c4e8ff;
+}
+.m-line.gold {
+  color: var(--gold);
+}
+.m-line.sys {
+  color: var(--ink-dim);
+}
+body.touch .target-info {
+  top: calc(34px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  width: 200px;
+}
+/* the phone's dialogue: a compact datapad so the choices stay on screen */
+body.touch .dialogue {
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  max-height: calc(100vh - 16px);
+  width: min(640px, calc(100vw - 110px));
+  gap: 6px;
+  padding: 8px;
+}
+body.touch .dl-face {
+  height: 58px;
+  min-height: 58px;
+  flex: none;
+}
+body.touch .dl-head {
+  bottom: 6px;
+}
+body.touch .dl-name {
+  font-size: 14px;
+}
+body.touch .dl-text {
+  min-height: 0;
+  margin: 0;
+  padding: 6px 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+body.touch .dl-choices {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 3px;
+}
+body.touch .dl-choice {
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: 13px;
 }

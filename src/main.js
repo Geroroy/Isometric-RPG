@@ -22,6 +22,7 @@ import { Ambience } from './core/ambience.js';
 import { JukeboxUI } from './ui/jukebox.js';
 import { DebugUI } from './ui/debug.js';
 import { TouchControls, isTouchDevice, hasMouse } from './ui/touch.js';
+import { MobileHUD } from './ui/mobileHud.js';
 import { Fullscreen } from './ui/fullscreen.js';
 import { ZoomControl } from './ui/zoom.js';
 import { PortraitPhoto } from './ui/portraitPhoto.js';
@@ -112,8 +113,9 @@ async function boot() {
   input.dialogue = dialogue;
   const duelHud = game.duel ? new DuelHUD(game) : null;
   const touch = new TouchControls(game, renderer, hud, input, audio);
+  const mobile = (hud.mobile = new MobileHUD(game, hud, audio)); // the phone's own chrome (shown with body.touch)
   const fullscreen = new Fullscreen();
-  input.onFullscreen = () => fullscreen.toggle();
+  input.onFullscreen = mobile.onFullscreen = () => fullscreen.toggle();
   const zoom = new ZoomControl(renderer, touch);
   input.onZoom = (dir) => (dir === 0 ? zoom.reset() : zoom.step(dir));
   touch.onEnable = () => zoom.restore();
@@ -240,7 +242,7 @@ async function boot() {
     const paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
     // one failing system must not freeze the whole game: report it once, keep running
     requestAnimationFrame(loop);
-    for (const step of [() => paused || game.update(dt), () => renderer.render(dt), () => post.render(dt), () => hud.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update(), () => duelHud && duelHud.update(dt)]) {
+    for (const step of [() => paused || game.update(dt), () => renderer.render(dt), () => post.render(dt), () => hud.update(dt), () => touch.enabled && mobile.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update(), () => duelHud && duelHud.update(dt)]) {
       try {
         step();
       } catch (err) {

@@ -31,7 +31,7 @@ export class DuelHUD {
        <div class="bb-comp"><i></i></div>`,
     );
     this.comp = el('ps-comp', '<span>평정</span><div><i></i></div>');
-    document.querySelector('.cn-stats').appendChild(this.comp);
+    document.querySelector('.cn-stats').appendChild(this.comp); // the PC console (the phone plate has its own, ui/mobileHud.js)
     this.lockEl = el('lock-meter hidden', '<div class="lm-label">칼날 겨루기</div><div class="lm-bar"><i></i></div><div class="lm-hint"></div>');
     this.bars = el('letterbox', '<i></i><i></i>');
     this.result = el('duel-result hidden');
