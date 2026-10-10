@@ -21,6 +21,7 @@ downscaled to one pixel per game pixel and sharpened.
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -40,6 +41,15 @@ ADOPT = '--adopt' in args  # stamp existing sheets as current instead of renderi
 YES = '--yes' in args
 PREVIEW = '--preview' in args
 ESTIMATE_ONLY = '--estimate' in args  # print what would render and how long, render nothing
+# --passes color,shadow: the passes of sheets made before the normal pass, so an animation merged into
+# them matches the rest (passed on to render_sprites.py)
+PASS_OPT = ['--passes', args[args.index('--passes') + 1]] if '--passes' in args else []
+if PASS_OPT:
+    args = [a for i, a in enumerate(args) if a != '--passes' and (i == 0 or args[i - 1] != '--passes')]
+if '--only-anims' in args:  # render just these animations into the existing sheets (render_sprites.py --only-anims)
+    PASS_OPT += ['--only-anims', args[args.index('--only-anims') + 1]]
+    args = [a for i, a in enumerate(args) if a != '--only-anims' and (i == 0 or args[i - 1] != '--only-anims')]
+VERIFY = '--verify' in args  # compare the sheets with a render of each animation's middle frame (render_sprites.py --verify)
 names = [a for a in args if not a.startswith('--')]
 HAS_GPU = CFG['device']['prefer'] == 'gpu' or (CFG['device']['prefer'] == 'auto' and (os.path.exists('/dev/nvidia0') or os.path.exists('/dev/kfd')))
 jobs = CFG['parallel']['jobs_gpu' if HAS_GPU else 'jobs_cpu']
@@ -75,7 +85,7 @@ def args_of(name):
     """render_sprites.py's options for a character: its directions, frame window and feet."""
     m = metas[name]
     win, AX, AY = window(name)
-    return ['--dirs', str(m['dirs']), '--window', str(win), '--anchor', f'{AX},{AY}', '--sizes', str(win), '--meta', os.path.join(GLB, name + '.meta.json')]
+    return ['--dirs', str(m['dirs']), '--window', str(win), '--anchor', f'{AX},{AY}', '--sizes', str(win), '--meta', os.path.join(GLB, name + '.meta.json'), *PASS_OPT]
 
 
 def render(name):
@@ -107,17 +117,38 @@ if '--blades-only' in args:  # no render: rewrite the blade stretches of the she
     sys.exit(0)
 
 
+if VERIFY:
+    def verify(n):
+        r = subprocess.run([PY, os.path.join(HERE, 'render_sprites.py'), os.path.join(GLB, n + '.glb'), OUT, *args_of(n), '--verify'], capture_output=True, text=True)
+        return '\n'.join(ln for ln in r.stdout.splitlines() if ln.startswith('VERIF')) or f'{n}: ' + r.stderr[-600:]
+    with ThreadPoolExecutor(jobs) as ex:
+        for out in ex.map(verify, list(metas)):
+            print(out, flush=True)
+    sys.exit(0)
+
+
 def changed(name):
+    """Frames a render of this character would do (0: up to date) — only the changed
+    animations when its model is the same (render_sprites.py keeps the rest of the sheet)."""
+    allf = sum(a['frames'] for a in metas[name]['anims'].values())
     if FORCE or PREVIEW:
-        return True
+        return allf
     r = subprocess.run([PY, os.path.join(HERE, 'render_sprites.py'), os.path.join(GLB, name + '.glb'), OUT, *args_of(name), '--check'],
                        capture_output=True, text=True)
-    return 'UNCHANGED' not in r.stdout
+    if 'UNCHANGED' in r.stdout:
+        return 0
+    m = re.search(r'frames=(\d+) anims=(\S+)', r.stdout)
+    if os.environ.get('HASH_DEBUG'):
+        print(r.stdout.strip())
+    if m:
+        print(f'{name}: {"every animation" if m[2] == "all" else "only " + m[2]} ({m[1]} frames)', flush=True)
+    return int(m[1]) if m else allf
 
 
 # only what changed since its sheet was rendered (8-direction characters first)
 with ThreadPoolExecutor(4) as ex:
-    todo = [n for n, c in zip(metas, ex.map(changed, metas)) if c]
+    need = dict(zip(metas, ex.map(changed, metas)))
+todo = [n for n in metas if need[n]]
 todo.sort(key=lambda n: (metas[n]['dirs'], sum(a['frames'] for a in metas[n]['anims'].values())))
 skipped = sorted(set(metas) - set(todo))
 if todo:
@@ -136,7 +167,7 @@ hist = json.load(open(TIMES)) if os.path.exists(TIMES) else {}
 table = CFG['estimate']['default_seconds_per_frame']
 total_s = sprites = 0
 for n in todo:
-    frames = sum(a['frames'] for a in metas[n]['anims'].values())
+    frames = need[n]
     dirs = metas[n]['dirs']
     if PREVIEW:
         frames, dirs = sum(min(2, a['frames']) for a in metas[n]['anims'].values()), 1

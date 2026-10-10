@@ -21,12 +21,19 @@ asset and override a setting only for experiments.
   --preview            one direction (facing the camera), two frames of each
                        animation, to render_config's preview folder
   --force              render even if the sheets are up to date
-  --check              only print UNCHANGED / CHANGED
+  --check              only print UNCHANGED / CHANGED (frames=N anims=all or a,b)
   --adopt              stamp the existing sheets as made from the current inputs
   --blades-only        no render: recompute only the saber markers' visible blade
                        stretches and write them into the existing sheets (a fix to
                        blade_segments without re-rendering); the sheets' source stamp is
                        left alone (use --adopt when the rest of the inputs are unchanged)
+  --only-anims a,b     render just these animations and merge them into the existing sheets even
+                       though the rest of the sheet is out of date (its record stays out of date:
+                       the next check still asks for a full render)
+  --verify             for sheets made before the per-animation hashes: render the middle frame of
+                       each animation the sheet has, compare it with the sheet's sprites, and record
+                       the animations that match as made from the current inputs (no pixel of the
+                       sheet changes); the next run then renders only the others
   --yes                go ahead even if the estimate is over ask_minutes
   (experiments: --engine, --samples, --render, --frames, --only-dirs, --mirror,
    --passes, --sharpen, --view, --hide)
@@ -35,7 +42,14 @@ Before rendering it prints the number of sprites and the expected time
 (ESTIMATE), and stops (exit 3, ASK) above render_config's ask_minutes unless
 --yes. Each sheet's JSON carries `source`: a hash of the model, the hair, the
 timing, the settings and render_cfg.PIPELINE_VERSION; when it matches, the
-render is skipped.
+render is skipped. It also carries `baseSource` (all of that but the
+animations) and `animSource` (one hash per animation: its keyframes and
+timing). When only animations changed — one added, or one's poses or timing
+edited — only those are rendered, and the other animations' frames are
+carried over from the existing sheet pixel for pixel (PARTIAL); anything
+else (model, hair, settings, PIPELINE_VERSION) renders every animation.
+Sheets from before the split are stamped with it (MIGRATED) when their
+`source` matches the current inputs.
 
 Camera: orthographic, 30° above the ground, looking along the game's view
 diagonal — the projection the game's tiles use (28.28 px per unit, 2:1). The
@@ -104,7 +118,7 @@ from PIL import Image, ImageFilter, ImageOps  # noqa: E402
 ELEV = math.radians(30)
 
 
-FLAGS = {'preview', 'force', 'yes', 'check', 'adopt', 'blades-only'}  # options without a value
+FLAGS = {'preview', 'force', 'yes', 'check', 'adopt', 'blades-only', 'verify'}  # options without a value
 
 
 def parse(argv):
@@ -166,27 +180,92 @@ os.makedirs(OUT, exist_ok=True)
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-# what the output depends on: the model, the hair, the timing, these settings and the pipeline version
-SOURCE = render_cfg.source_hash(
-    [GLB, opt.get('hair'), opt.get('meta')],  # (+ render_cfg.PIPELINE_VERSION)
-    [render_cfg.effective(C, ('engine', 'samples', 'mirror_sprites', 'mirror_default', 'dirs_default', 'optional_passes')),
-     ENGINE, DIRS, MIRROR, SIZES, WINDOW, RES, AX, AY, ONLY, SAMPLES, SHARPEN, VIEW, PASSES, HIDE, ONLY_DIRS, MAXF])
-if opt.get('adopt'):  # accept the existing sheets as rendered from these inputs (no render)
-    for size in SIZES:
-        p = os.path.join(OUT, f'{NAME}_{size}.json')
+# what the output depends on: the model, the hair, the timing, these settings and the pipeline version —
+# split into the model's part (`BASE_SRC`) and one hash per animation, so a new or changed animation is
+# rendered on its own and merged into the sheets (render_cfg.sheet_hashes)
+SETTINGS = [render_cfg.effective(C, ('engine', 'samples', 'mirror_sprites', 'mirror_default', 'dirs_default', 'optional_passes')),
+            ENGINE, DIRS, MIRROR, SIZES, WINDOW, RES, AX, AY, ONLY, SAMPLES, SHARPEN, VIEW, PASSES, HIDE, ONLY_DIRS, MAXF]
+BASE_SRC, ANIM_SRC, SOURCE = render_cfg.sheet_hashes(GLB, [opt.get('hair')], opt.get('meta'), SETTINGS, ONLY)
+# the one hash of sheets made before the split; LEGACY_PIPELINE: the PIPELINE_VERSION they were made with, when the
+# change since only touched what --blades-only already rewrote (2 -> 3: the blade stretches)
+LEGACY = render_cfg.source_hash([GLB, opt.get('hair'), opt.get('meta')], SETTINGS, os.environ.get('LEGACY_PIPELINE'))
+SHEETS = [os.path.join(OUT, f'{NAME}_{size}.json') for size in SIZES]
+if os.environ.get('HASH_DEBUG'):
+    print('HASHES', NAME, 'legacy', LEGACY, 'source', SOURCE, 'base', BASE_SRC, flush=True)
+
+
+def stamp(d):
+    d['source'], d['baseSource'], d['animSource'] = SOURCE, BASE_SRC, ANIM_SRC
+
+
+def plan():
+    """What the sheets need: None (up to date), 'all', or the list of animations
+    to render and merge into them (empty when animations were only removed)."""
+    olds = []
+    for p in SHEETS:
+        if not os.path.exists(p):
+            return 'all'
         d = json.load(open(p))
-        d['source'] = SOURCE
+        if 'animSource' not in d and d.get('source') == LEGACY:
+            # made before the per-animation hashes, from exactly these inputs: record them
+            stamp(d)
+            json.dump(d, open(p, 'w'), separators=(',', ':'))
+            print('MIGRATED', os.path.basename(p), flush=True)
+        olds.append(d)
+    if all(d.get('source') == SOURCE for d in olds):
+        return None
+    if any(d.get('baseSource') != BASE_SRC for d in olds):
+        return 'all'
+    for d in olds:  # the merge reads the existing pages
+        names = d['pages'] + d['shadowPages'] + [n for x in PASSES if x in ('normal', 'depth') for n in d.get(x + 'Pages', [None])]
+        if not all(n and os.path.exists(os.path.join(OUT, n)) for n in names):
+            return 'all'
+    return [n for n in ANIM_SRC if any(d['animSource'].get(n) != ANIM_SRC[n] or n not in d['anims'] for d in olds)]
+
+
+def frames_of(names):
+    """Frames to render, from the timing file (for the batch scripts' estimates)."""
+    t = META
+    return sum((len(t[n]['frames']) if isinstance(t[n].get('frames'), list) else int(t[n].get('frames', 0))) if n in t else 0 for n in names)
+
+
+if opt.get('adopt'):  # accept the existing sheets as rendered from these inputs (no render)
+    for p in SHEETS:
+        d = json.load(open(p))
+        stamp(d)
         json.dump(d, open(p, 'w'), separators=(',', ':'))
     print('ADOPTED', NAME, SOURCE, flush=True)
     sys.exit(0)
-if opt.get('check'):  # only say whether the sheets are up to date (for the batch scripts' estimates)
-    fresh = render_cfg.up_to_date([os.path.join(OUT, f'{NAME}_{size}.json') for size in SIZES], SOURCE)
-    print('UNCHANGED' if fresh and not FORCE else 'CHANGED', NAME, flush=True)
-    sys.exit(0)
-if not FORCE and not PREVIEW:
-    if render_cfg.up_to_date([os.path.join(OUT, f'{NAME}_{size}.json') for size in SIZES], SOURCE):
+PARTIAL = None  # the animations rendered and merged into the existing sheets (None: the whole sheet)
+FORCED = opt['only-anims'].split(',') if opt.get('only-anims') else None
+if FORCED and not PREVIEW and not opt.get('blades-only') and not opt.get('verify'):
+    if not all(os.path.exists(p) for p in SHEETS):
+        sys.exit(f'--only-anims: {NAME} has no sheet to merge into')
+    if opt.get('check'):
+        print('CHANGED', NAME, f'frames={frames_of(FORCED)}', 'anims=' + ','.join(FORCED), flush=True)
+        sys.exit(0)
+    PARTIAL = FORCED
+    print(f'PARTIAL {NAME}: rendering only {", ".join(FORCED)} (--only-anims); the rest of the sheet stays as it is', flush=True)
+if not FORCED and not FORCE and not PREVIEW and not opt.get('blades-only') and not opt.get('verify'):
+    todo = plan()
+    if opt.get('check'):  # only say whether the sheets are up to date, and what a render would do
+        if todo is None:
+            print('UNCHANGED', NAME, flush=True)
+        elif todo == 'all':
+            print('CHANGED', NAME, f'frames={frames_of(ANIM_SRC)}', 'anims=all', flush=True)
+        else:
+            print('CHANGED', NAME, f'frames={frames_of(todo)}', 'anims=' + ','.join(todo), flush=True)
+        sys.exit(0)
+    if todo is None:
         print(f'UNCHANGED {NAME}: its sheets are up to date (source {SOURCE}); --force renders anyway', flush=True)
         sys.exit(0)
+    if todo != 'all':
+        PARTIAL = todo
+        print(f'PARTIAL {NAME}: the model is unchanged; rendering only {", ".join(todo) or "(nothing: animations removed)"} '
+              'and keeping the other animations\' frames', flush=True)
+elif opt.get('check'):
+    print('CHANGED', NAME, f'frames={frames_of(ANIM_SRC)}', 'anims=all', flush=True)
+    sys.exit(0)
 
 # the game's projection: PX_PER_UNIT = HALF_W / √½ (src/core/iso.js, HALF_W = 20 → 28.28 px per unit)
 HALF_W = 20
@@ -466,7 +545,7 @@ else:
 
 
 def actions():
-    acts = [a for a in bpy.data.actions if (not ONLY or a.name in ONLY)]
+    acts = [a for a in bpy.data.actions if (not ONLY or a.name in ONLY) and (PARTIAL is None or a.name in PARTIAL)]
     return sorted(acts, key=lambda a: a.name)
 
 
@@ -644,7 +723,7 @@ def estimate_seconds():
 
 
 est = estimate_seconds()
-if not opt.get('blades-only'):
+if not opt.get('blades-only') and not opt.get('verify'):
     print(f'ESTIMATE {NAME}: {nframes} frames × {len(WANTED)} directions = {nframes * len(WANTED)} sprites '
           f'(+ {len(PASSES) - 1} pass(es) each), {nframes * (2 if EEVEE else 1)} renders, about {est / 60:.1f} min', flush=True)
     if est / 60 > CFG['estimate']['ask_minutes'] and not opt.get('yes') and not PREVIEW:
@@ -664,6 +743,9 @@ blades_out = {}  # anim -> frame -> dir -> blade stretches (--blades-only)
 done = 0
 t0 = time.time()
 meta = {}
+VERIFY = acts if opt.get('verify') else None  # --verify: these are compared below, nothing is rendered here
+if VERIFY:
+    acts = []
 for act in acts:
     play(act)
     n = int(round(act.frame_range[1])) + 1
@@ -829,12 +911,116 @@ def trimmed(img, size, sharpen=0.0):
     return small.crop((x0, y0, x1, y1)), int(x0), int(y0)
 
 
+if VERIFY:
+    # one render per animation (its middle frame, every direction), cropped the way the sheet's
+    # sprites were, against the sheet: the same picture means the sheet's frames of that animation
+    # are what the current inputs give
+    sheets = {size: json.load(open(os.path.join(OUT, f'{NAME}_{size}.json'))) for size in SIZES}
+    pages = {size: [Image.open(os.path.join(OUT, n)).convert('RGBA') for n in d['pages']] for size, d in sheets.items()}
+    spages = {size: [Image.open(os.path.join(OUT, n)).convert('RGBA') for n in d['shadowPages']] for size, d in sheets.items()}
+    same = []
+    for act in VERIFY:
+        if any(act.name not in d['anims'] for d in sheets.values()):
+            continue
+        play(act)
+        n = int(round(act.frame_range[1])) + 1
+        f = n // 2
+        scene.frame_set(f)
+        img = render(os.path.join(tmp, 'c.png'), SAMPLES, RES)
+        shp = read_pass('shadow')
+        worst = 0.0
+        worst_sh = 0.0
+        moved = 0.0
+        for size, d in sheets.items():
+            k = WINDOW / size
+            ax, ay = AX / k, AY / k
+            for dd in WANTED:
+                r = d['anims'][act.name]['frames'][f][dd]
+                src = dd if dd in RENDERED else mirror_of(dd)
+                ci = tile(img, src, RES)
+                if src != dd:
+                    ci = ImageOps.mirror(ci)
+                ci, cx, cy = trimmed(ci, size, SHARPEN)
+                old = pages[size][r['p']].crop((r['x'], r['y'], r['x'] + r['w'], r['y'] + r['h']))
+                fx = size - ax if src != dd else ax
+                moved = max(moved, abs(round(fx - cx, 2) - r['ox']), abs(round(ay - cy, 2) - r['oy']))
+                if os.environ.get('VERIFY_DUMP'):  # each direction's crop, and the images of each
+                    ci.save(os.path.join(os.environ['VERIFY_DUMP'], f'{NAME}_{act.name}_d{dd}_new.png'))
+                    old.save(os.path.join(os.environ['VERIFY_DUMP'], f'{NAME}_{act.name}_d{dd}_old.png'))
+                    print('DUMP', act.name, 'dir', dd, 'flipped' if src != dd else '', 'new', ci.size, round(fx - cx, 2), round(ay - cy, 2), 'old', old.size, r['ox'], r['oy'], flush=True)
+                if ci.size != old.size:
+                    worst = 255.0
+                    continue
+                a1 = np.asarray(ci).astype(np.float32)
+                a0 = np.asarray(old).astype(np.float32)
+                # colour weighted by coverage, plus the coverage itself
+                diff = np.abs(a1[..., :3] * a1[..., 3:] / 255 - a0[..., :3] * a0[..., 3:] / 255).mean() + np.abs(a1[..., 3] - a0[..., 3]).mean()
+                worst = max(worst, float(diff))
+                sa = (np.clip((1 - tile_arr(shp, dd, RES)[..., :3].mean(axis=2)) * C['shadow_gain'], 0, 1) * 255).astype(np.uint8)
+                sa[sa < C['shadow_threshold']] = 0
+                sa_arr = np.asarray(Image.fromarray(sa).resize((size, size), Image.LANCZOS)).astype(np.float32)
+                s0 = r['s']
+                old_s = np.zeros((size, size), np.float32)
+                if s0['w'] > 1:
+                    crop = np.asarray(spages[size][s0['p']].crop((s0['x'], s0['y'], s0['x'] + s0['w'], s0['y'] + s0['h'])))[..., 3]
+                    x0, y0 = int(round(ax - s0['ox'])), int(round(ay - s0['oy']))
+                    old_s[y0:y0 + s0['h'], x0:x0 + s0['w']] = crop[:max(0, size - y0), :max(0, size - x0)]
+                worst_sh = max(worst_sh, float(np.abs(sa_arr - old_s).mean()))
+        ok = worst < 1.0 and worst_sh < 1.0 and moved < 0.6
+        print(f'VERIFY {NAME} {act.name} f{f}: {"SAME" if ok else "DIFFERENT"} (colour {worst:.2f}, shadow {worst_sh:.2f}, anchor {moved:.2f} px)', flush=True)
+        if ok:
+            same.append(act.name)
+    for size, d in sheets.items():
+        d['baseSource'] = BASE_SRC
+        d['animSource'] = {n: ANIM_SRC[n] for n in same}
+        d['source'] = 'verified'  # not current: the animations not listed still need a render
+        json.dump(d, open(os.path.join(OUT, f'{NAME}_{size}.json'), 'w'), separators=(',', ':'))
+    print(f'VERIFIED {NAME}: {len(same)} animation(s) match the sheet: {", ".join(same)}', flush=True)
+    sys.exit(0)
+
+def carry(size, cp, sp, xp, anims):
+    """A partial render: the animations that did not change keep their frames,
+    cut pixel for pixel out of the sheet as it is and packed again with the
+    new ones (their rects, anchors, markers and blades unchanged)."""
+    d = json.load(open(os.path.join(OUT, f'{NAME}_{size}.json')))
+
+    def load(names):
+        return [Image.open(os.path.join(OUT, n)).convert('RGBA') for n in names]
+    pages, spages = load(d['pages']), load(d['shadowPages'])
+    xpages = {name: load(d[name + 'Pages']) for name in xp}
+
+    def crop(im, r):
+        return im.crop((r['x'], r['y'], r['x'] + r['w'], r['y'] + r['h']))
+    kept = 0
+    for an, A in d['anims'].items():
+        if an not in ANIM_SRC or an in PARTIAL:  # removed from the model, or rendered again now
+            continue
+        B = anims[an] = {**A, 'frames': []}
+        for fr in A['frames']:
+            row = []
+            for r in fr:
+                if r is None:
+                    row.append(None)
+                    continue
+                p, x, y = cp.add(crop(pages[r['p']], r))
+                s = r['s']
+                q, x2, y2 = sp.add(crop(spages[s['p']], s))
+                for name, pk in xp.items():  # the colour's rect on the pass's own pages
+                    pk.add(crop(xpages[name][r['p']], r))
+                row.append({**r, 'p': p, 'x': x, 'y': y, 's': {**s, 'p': q, 'x': x2, 'y': y2}})
+                kept += 1
+            B['frames'].append(row)
+    print(f'kept {kept} sprites of {len(anims)} unchanged animation(s) from {NAME}_{size}', flush=True)
+
+
 for size in SIZES:
     k = WINDOW / size  # game px per sheet px
     ax, ay = AX / k, AY / k  # the feet, in frame px
     cp, sp = Packer(), Packer()
     xp = {name: Packer() for name in PASSES if name in ('normal', 'depth')}  # same layout as the colour
     anims = {}
+    if PARTIAL is not None:
+        carry(size, cp, sp, xp, anims)
     for (an, f, d, img, sa, mk, bl, flipped, extra) in frames:
         tm = META.get(an, {})
         A = anims.setdefault(an, {'fps': tm.get('fps', 10), 'loop': tm.get('loop', True), 'hit': tm.get('hit'), 'frames': [[None] * DIRS for _ in range(meta[an])]})
@@ -857,8 +1043,13 @@ for size in SIZES:
     out = {
         'name': NAME, 'dirs': DIRS, 'size': size, 'window': WINDOW, 'k': k, 'anchor': [AX, AY],
         'pages': cp.save(prefix), 'shadowPages': sp.save(prefix + '_shadow'), 'anims': anims,
-        'source': SOURCE, 'passes': PASSES,
+        'source': SOURCE, 'baseSource': BASE_SRC, 'animSource': ANIM_SRC, 'passes': PASSES,
     }
+    if FORCED:  # the rest of the sheet was not checked: its record stays out of date, the new animations' added
+        old = json.load(open(os.path.join(OUT, prefix + '.json')))
+        out['baseSource'] = old.get('baseSource')
+        out['animSource'] = {**{n: h for n, h in (old.get('animSource') or {}).items() if n in ANIM_SRC}, **{n: ANIM_SRC[n] for n in FORCED}}
+        out['source'] = 'partial'
     for name, pk in xp.items():  # normal / depth: the colour's rects on their own pages
         out[name + 'Pages'] = pk.save(f'{prefix}_{name}')
     with open(os.path.join(OUT, prefix + '.json'), 'w') as fh:
