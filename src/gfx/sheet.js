@@ -7,12 +7,15 @@
 
 /**
  * Characters drawn from a sheet instead of being baked at load time: Anakin
- * (his own Blender model), and every character tools/sprites/render_characters.py
- * has rendered so far (listed in sprites/chars/index.json). The rest are
- * still baked in the browser.
+ * in the outfits of his own Blender model (tools/sprites/build_anakin.py),
+ * and every character tools/sprites/render_characters.py has rendered so far
+ * (listed in sprites/chars/index.json). The rest are still baked in the browser.
  */
 export const SHEETS = {
   anakin: 'sprites/anakin_128.json',
+  anakin_vader: 'sprites/anakin_vader_128.json', // the Order 66 cloak, hood raised
+  anakin_robe: 'sprites/anakin_robe_128.json', // the same cloak, hood down
+  anakin_tunic: 'sprites/anakin_tunic_128.json', // the Jedi Knight's tunic
 };
 const CHARS_DIR = 'sprites/chars/';
 
