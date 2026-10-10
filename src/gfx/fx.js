@@ -19,6 +19,46 @@ const PUFF = (() => {
   return c;
 })();
 
+// a soft additive glow (white core, fading edge), tinted per use by drawing it over a colour
+const GLOW = (() => {
+  if (typeof document === 'undefined') return null;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.18, 'rgba(255,255,255,0.55)');
+  g.addColorStop(0.5, 'rgba(255,255,255,0.12)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g;
+  x.fillRect(0, 0, 64, 64);
+  return c;
+})();
+
+const glowCache = new Map();
+/** The GLOW sprite in one colour (cached per colour). */
+export function glowSprite(rgb) {
+  const key = rgb.join(',');
+  let c = glowCache.get(key);
+  if (!c && GLOW) {
+    c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const x = c.getContext('2d');
+    x.drawImage(GLOW, 0, 0);
+    x.globalCompositeOperation = 'source-in';
+    x.fillStyle = `rgb(${key})`;
+    x.fillRect(0, 0, 64, 64);
+    // keep a white-hot centre
+    x.globalCompositeOperation = 'lighter';
+    x.globalAlpha = 0.6;
+    x.drawImage(GLOW, 16, 16, 32, 32);
+    glowCache.set(key, c);
+  }
+  return c;
+}
+
+const MAX_SCORCH = 60;
+
 export class Effects {
   constructor() {
     this.parts = [];
@@ -28,6 +68,9 @@ export class Effects {
     this.decals = []; // scorch marks on the ground
     this.cones = [];
     this.lights = []; // transient lights {x,y,z,r,g,b,rad,t,life}
+    this.flashes = []; // short bright bursts where blades clash or bolts hit
+    this.scorches = []; // blaster marks on walls (depth-sorted with the walls)
+    this.ripples = []; // Force: a refraction ring that bends the picture behind it
     this.shakeAmt = 0;
   }
 
@@ -51,7 +94,10 @@ export class Effects {
       }
     }
     this.parts = this.parts.filter((p) => p.t < p.life);
-    for (const arr of [this.waves, this.texts, this.bolts, this.cones, this.lights]) for (const w of arr) w.t += dt;
+    for (const arr of [this.waves, this.texts, this.bolts, this.cones, this.lights, this.flashes, this.scorches, this.ripples]) for (const w of arr) w.t += dt;
+    this.flashes = this.flashes.filter((w) => w.t < w.life);
+    this.scorches = this.scorches.filter((w) => w.t < w.life);
+    this.ripples = this.ripples.filter((w) => w.t < w.life);
     this.waves = this.waves.filter((w) => w.t < w.life);
     this.texts = this.texts.filter((w) => w.t < w.life);
     this.bolts = this.bolts.filter((w) => w.t < w.life);
@@ -77,6 +123,38 @@ export class Effects {
       this.parts.push({ kind: 'spark', x, y, z, vx: Math.cos(a) * s, vy: Math.sin(a) * s, vz: rand(1, 4), t: 0, life: rand(0.2, 0.5), color, add: true, grav: 12 });
     }
     this.light(x, y, z, [255, 200, 120], 30, 0.15);
+  }
+
+  /** A short bright burst (additive) that also lights its surroundings. */
+  flash(x, y, z, rgb = [255, 240, 210], size = 18, life = 0.09) {
+    this.flashes.push({ x, y, z, rgb, size, t: 0, life, rot: Math.random() * Math.PI });
+    this.light(x, y, z, rgb, size * 6, life * 1.6);
+  }
+
+  /** Blade meets blade: a white-hot flash, a spray of sparks cooling from white to amber. */
+  clash(x, y, z, n = 14, rgb = [255, 236, 200]) {
+    this.flash(x, y, z, rgb, n > 12 ? 24 : 18, 0.1);
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = rand(1.5, 5);
+      this.parts.push({ kind: 'spark', x, y, z, vx: Math.cos(a) * s, vy: Math.sin(a) * s, vz: rand(0.5, 4.5), t: 0, life: rand(0.25, 0.55), color: i % 3 ? '#ffd27a' : '#ffffff', add: true, grav: 12, cool: true });
+    }
+  }
+
+  /** A blaster bolt strikes a wall: sparks, a flash, and a scorch mark with a cooling ember. */
+  scorch(x, y, z, rgb) {
+    this.flash(x, y, z, rgb, 12, 0.08);
+    this.sparks(x, y, z, `rgb(${rgb.map((c) => Math.min(255, c + 80)).join(',')})`, 5, 2.5);
+    this.scorches.push({ x, y, z, r: rand(3, 4.5), t: 0, life: 25, rgb, rot: Math.random() * Math.PI });
+    if (this.scorches.length > MAX_SCORCH) this.scorches.shift();
+  }
+
+  /**
+   * The Force bends space: a ring of refraction that expands from (x, y) to
+   * radius r (world units). `ang`/`half` limit it to a cone (Force Push).
+   */
+  ripple(x, y, r, life = 0.45, amp = 3, ang = null, half = Math.PI) {
+    this.ripples.push({ x, y, r, life, amp, ang, half, t: 0 });
   }
 
   debris(x, y, n = 6, color = '#b39f74') {
@@ -123,6 +201,7 @@ export class Effects {
 
   forceCone(x, y, ang, range) {
     this.cones.push({ x, y, ang, range, t: 0, life: 0.35 });
+    this.ripple(x, y, range, 0.4, 3.5, ang, 0.75);
   }
 
   lightning(x1, y1, z1, x2, y2, z2, color = '#9fdcff') {
@@ -212,7 +291,7 @@ export class Effects {
       const k = p.t / p.life;
       if (p.kind === 'spark') {
         const e = worldToScreen(p.x - p.vx * 0.03, p.y - p.vy * 0.03, p.z - p.vz * 0.03);
-        ctx.strokeStyle = p.color;
+        ctx.strokeStyle = p.cool ? (k < 0.25 ? '#ffffff' : k < 0.6 ? '#ffd27a' : '#ff8a30') : p.color;
         ctx.globalAlpha = 1 - k;
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -225,6 +304,33 @@ export class Effects {
         ctx.fillStyle = k < 0.3 ? '#fff2b0' : k < 0.6 ? '#ffb040' : '#c04010';
         ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
       }
+    }
+    ctx.globalAlpha = 1;
+    for (const f of this.flashes) {
+      const k = f.t / f.life;
+      const s = worldToScreen(f.x, f.y, f.z);
+      const sx = s.x - cam.x;
+      const sy = s.y - cam.y;
+      const r = f.size * (0.6 + 0.6 * k);
+      ctx.globalAlpha = 1 - k * k;
+      ctx.drawImage(glowSprite(f.rgb), sx - r, sy - r, r * 2, r * 2);
+      // a four-point star: two thin crossed streaks
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(f.rot);
+      ctx.fillStyle = '#ffffff';
+      const L = f.size * (1.2 - k * 0.6);
+      ctx.fillRect(-L, -0.5, L * 2, 1);
+      ctx.fillRect(-0.5, -L * 0.6, 1, L * 1.2);
+      ctx.restore();
+    }
+    // embers in fresh scorch marks, cooling over two seconds
+    for (const m of this.scorches) {
+      if (m.t > 2) continue;
+      const s = worldToScreen(m.x, m.y, m.z);
+      const k = m.t / 2;
+      ctx.globalAlpha = (1 - k) * 0.9;
+      ctx.drawImage(glowSprite([255, 140, 60]), s.x - cam.x - 4, s.y - cam.y - 4, 8, 8);
     }
     ctx.globalAlpha = 1;
     for (const w of this.waves) {
@@ -286,6 +392,25 @@ export class Effects {
       }
     }
     ctx.globalAlpha = 1;
+  }
+
+  /** A scorch mark on a wall (drawn in depth order with the walls). */
+  drawScorch(ctx, cam, m) {
+    const s = worldToScreen(m.x, m.y, m.z);
+    const a = Math.min(1, (m.life - m.t) / 6) * 0.9;
+    ctx.save();
+    ctx.translate(Math.round(s.x - cam.x), Math.round(s.y - cam.y));
+    ctx.rotate(m.rot);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, m.r);
+    g.addColorStop(0, `rgba(12,10,8,${a})`);
+    g.addColorStop(0.6, `rgba(30,24,20,${a * 0.6})`);
+    g.addColorStop(1, 'rgba(30,24,20,0)');
+    ctx.fillStyle = g;
+    ctx.scale(1, 0.75);
+    ctx.beginPath();
+    ctx.arc(0, 0, m.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   drawText(ctx, cam, scale) {

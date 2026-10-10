@@ -156,7 +156,7 @@ export class MustafarDuel extends Duel {
         do: () => {
           a.setAnim('attack' + (1 + (i % 3)), 1.15, true);
           (a === p ? ob : p).setAnim('parry', 1, true);
-          g.fx.sparks((p.x + ob.x) / 2, (p.y + ob.y) / 2, 1.2, '#fff2c8', 8, 3);
+          g.clash((p.x + ob.x) / 2, (p.y + ob.y) / 2, 1.2, 10);
           g.audio.play('clash', ob);
         },
       });
@@ -405,7 +405,7 @@ export class MustafarDuel extends Duel {
       { t: 14.6, do: () => (p.setAnim('idle'), ob.setAnim('cast', 0.4)), cam: () => ({ x: ob.x, y: ob.y - 0.3, dur: 0.6 }) },
       say(17.0, 'anakin', '이걸로 끝이에요, 마스터.', 2.4),
       { t: 17.0, do: () => (ob.setAnim('idle'), p.setAnim('cast', 0.4)), cam: () => ({ ...mid(p, ob), dur: 0.8 }) },
-      { t: 19.5, do: () => (p.setAnim('attack3', 1, true), ob.setAnim('parry', 1, true), g.audio.play('clash', ob), g.fx.sparks((p.x + ob.x) / 2, (p.y + ob.y) / 2, 1.3, '#fff2c8', 12, 3)) },
+      { t: 19.5, do: () => (p.setAnim('attack3', 1, true), ob.setAnim('parry', 1, true), g.audio.play('clash', ob), g.clash((p.x + ob.x) / 2, (p.y + ob.y) / 2, 1.3, 14)) },
     ];
     return this.scene(cues, 20.0);
   }
@@ -672,6 +672,7 @@ export class MustafarDuel extends Duel {
     const p = g.player;
     const a = Math.atan2(p.y - dk.y, p.x - dk.x);
     g.fx.shockwave(dk.x + Math.cos(a) * 0.8, dk.y + Math.sin(a) * 0.8, 1.3, '#bfe0ff', 0.4);
+    g.fx.ripple(dk.x, dk.y, 4.5, 0.4, 3.5, a, 0.7);
     g.audio.play('push', dk);
     if (Math.hypot(p.x - dk.x, p.y - dk.y) > 4.5) return;
     p.knock(a, 7);

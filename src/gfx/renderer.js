@@ -8,8 +8,10 @@ import { PROPS } from './models/props.js';
 import { dist } from '../core/math.js';
 import { SHEET_PROPS } from '../world/cityProps.js';
 import { neonLevel } from './citySprites.js';
+import { glowSprite } from './fx.js';
 
 const AMBIENT = [150, 146, 178];
+const TRAIL_LIFE = 0.13; // seconds a saber swing's afterimage lasts
 const SHADOW_ALPHA = 0.75; // a sheet's rendered shadow (the shadow catcher's own alpha)
 export const ZOOM_MIN = 0.5;
 export const ZOOM_MAX = 2.5;
@@ -228,6 +230,7 @@ export class Renderer {
     // --- depth-sorted standing objects
     for (const u of g.activeUnits) if (!u.dead && !u.hidden) standing.push({ depth: u.x + u.y, unit: u });
     for (const pk of g.pickups) standing.push({ depth: pk.x + pk.y, pickup: pk });
+    for (const m of g.fx.scorches) standing.push({ depth: m.depth ?? m.x + m.y, scorch: m });
     standing.sort((a, b) => a.depth - b.depth);
     const pDepth = p.x + p.y;
     for (const d of standing) {
@@ -248,6 +251,8 @@ export class Renderer {
         ctx.globalAlpha = 1;
       } else if (d.unit) {
         this.drawUnit(d.unit);
+      } else if (d.scorch) {
+        g.fx.drawScorch(ctx, cam, d.scorch);
       } else if (d.pickup) {
         const pk = d.pickup;
         const s = worldToScreen(pk.x, pk.y, 0.15 + Math.sin(pk.t * 4) * 0.08);
@@ -265,6 +270,9 @@ export class Renderer {
 
     // --- lighting
     this.drawLighting(cam);
+    this.drawHitFlashes(ctx);
+    // --- the Force bending space (refraction of the lit picture)
+    this.drawRipples(ctx, cam);
 
     // --- additive glows
     ctx.globalCompositeOperation = 'lighter';
@@ -305,13 +313,7 @@ export class Renderer {
     const s = worldToScreen(u.x, u.y, u.z);
     const f = u.frame();
     this.drawFrame(f, s.x, s.y);
-    if (u.flash > 0) {
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = 0.55;
-      this.drawFrame(f, s.x, s.y);
-      ctx.globalAlpha = 1;
-      ctx.globalCompositeOperation = 'source-over';
-    }
+    if (u.flash > 0) (this.flashUnits ||= []).push(u); // white, after the light map (hitfeel.js)
     if (u.stun > 0 && !u.choke && u.kind !== 'player') {
       const t = this.time * 6;
       ctx.fillStyle = '#ffe680';
@@ -319,6 +321,100 @@ export class Renderer {
         const a = t + (i * Math.PI * 2) / 3;
         ctx.fillRect(Math.round(s.x - this.cam.x + Math.cos(a) * 7), Math.round(s.y - this.cam.y - 52 + Math.sin(a) * 3), 2, 2);
       }
+    }
+  }
+
+  /** Units just hit turn white for a moment (drawn after the light map so the white stays white). */
+  drawHitFlashes(ctx) {
+    const list = this.flashUnits;
+    if (!list || !list.length) return;
+    const c = (this.flashCanvas ||= document.createElement('canvas'));
+    const x2 = c.getContext('2d');
+    for (const u of list) {
+      const f = u.frame();
+      const k = f.k || 1;
+      const w = Math.ceil(f.w * k);
+      const h = Math.ceil(f.h * k);
+      if (c.width < w || c.height < h) {
+        c.width = Math.max(c.width, w);
+        c.height = Math.max(c.height, h);
+      }
+      x2.globalCompositeOperation = 'copy';
+      x2.imageSmoothingEnabled = !!f.k;
+      x2.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, w, h);
+      x2.globalCompositeOperation = 'source-in';
+      x2.fillStyle = '#ffffff';
+      x2.fillRect(0, 0, w, h);
+      const s = worldToScreen(u.x, u.y, u.z);
+      ctx.globalAlpha = Math.min(1, u.flash / 0.05) * 0.85;
+      this.smooth(false);
+      ctx.drawImage(c, 0, 0, w, h, Math.round(s.x - f.ox * k - this.cam.x), Math.round(s.y - f.oy * k - this.cam.y), w, h);
+    }
+    ctx.globalAlpha = 1;
+    list.length = 0;
+  }
+
+  /**
+   * Force ripples: a ring that bends the already-lit picture outward, like
+   * heat haze, with a faint bright leading edge. No colour of its own
+   * (ART_GUIDE.md §8). Works on the few pixels round each ring only.
+   */
+  drawRipples(ctx, cam) {
+    const rips = this.game.fx.ripples;
+    if (!rips.length) return;
+    const W = this.w;
+    const H = this.h;
+    for (const r of rips) {
+      const k = r.t / r.life;
+      const c = worldToScreen(r.x, r.y, 0.6);
+      const cx = c.x - cam.x;
+      const cy = c.y - cam.y;
+      const R = r.r * PX_PER_UNIT * (0.15 + 0.85 * Math.sqrt(k));
+      const band = 6 + 6 * k;
+      const amp = r.amp * (1 - k);
+      const x0 = Math.max(0, Math.floor(cx - R - band * 1.6));
+      const x1 = Math.min(W, Math.ceil(cx + R + band * 1.6));
+      const y0 = Math.max(0, Math.floor(cy - (R + band * 1.6) / 2));
+      const y1 = Math.min(H, Math.ceil(cy + (R + band * 1.6) / 2));
+      const w = x1 - x0;
+      const h = y1 - y0;
+      if (w <= 2 || h <= 2) continue;
+      // the cone's direction on screen (in unsquashed iso space)
+      let ca = 0;
+      if (r.ang !== null) {
+        const e = worldToScreen(r.x + Math.cos(r.ang), r.y + Math.sin(r.ang), 0.6);
+        ca = Math.atan2((e.y - c.y) * 2, e.x - c.x);
+      }
+      const img = ctx.getImageData(x0, y0, w, h);
+      const src = new Uint8ClampedArray(img.data);
+      const out = img.data;
+      for (let y = 0; y < h; y++) {
+        const dy = (y + y0 - cy) * 2;
+        for (let x = 0; x < w; x++) {
+          const dx = x + x0 - cx;
+          const d = Math.hypot(dx, dy) || 1;
+          const e = (d - R) / band;
+          if (e < -1.6 || e > 1.6) continue;
+          let m = Math.exp(-e * e * 2);
+          if (r.ang !== null) {
+            let da = Math.abs(Math.atan2(dy, dx) - ca);
+            if (da > Math.PI) da = Math.PI * 2 - da;
+            if (da > r.half) continue;
+            m *= Math.min(1, (r.half - da) * 4);
+          }
+          const off = (amp * 1.6 * m * -e) / 0.3; // peaks at ±amp; pulls from inside on the leading edge, outside behind it
+          const sx = Math.round(x - (dx / d) * off);
+          const sy = Math.round(y - ((dy / d) * off) / 2);
+          if (sx < 0 || sy < 0 || sx >= w || sy >= h) continue;
+          const si = (sy * w + sx) * 4;
+          const di = (y * w + x) * 4;
+          const lum = 1 + 0.32 * m * (1 - k) * (e > 0 ? 1 : 0.25);
+          out[di] = src[si] * lum;
+          out[di + 1] = src[si + 1] * lum;
+          out[di + 2] = src[si + 2] * lum;
+        }
+      }
+      ctx.putImageData(img, x0, y0);
     }
   }
 
@@ -527,7 +623,7 @@ export class Renderer {
       const tr = u.saberTrail;
       if (tr) {
         for (const t of tr) t.t += dt;
-        while (tr.length && tr[0].t > 0.09) tr.shift();
+        while (tr.length && tr[0].t > TRAIL_LIFE) tr.shift();
       }
       if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) continue;
       const f = u.frame();
@@ -547,11 +643,13 @@ export class Renderer {
         if (swinging) trail.push({ k, bx: bx + cam.x, by: by + cam.y, tx: tx + cam.x, ty: ty + cam.y, t: 0 });
         const pts = trail.filter((t) => t.k === k);
         if (pts.length > 1) {
+          // the swept band fades with age; its outer edge (the tip's path) stays bright longest
           const [r, g, bl] = u.saberColor;
-          ctx.fillStyle = `rgba(${r},${g},${bl},0.2)`;
           for (let i = 1; i < pts.length; i++) {
             const A = pts[i - 1];
             const B = pts[i];
+            const a = 1 - B.t / TRAIL_LIFE;
+            ctx.fillStyle = `rgba(${r},${g},${bl},${0.32 * a})`;
             ctx.beginPath();
             ctx.moveTo(A.bx - cam.x, A.by - cam.y);
             ctx.lineTo(A.tx - cam.x, A.ty - cam.y);
@@ -559,6 +657,12 @@ export class Renderer {
             ctx.lineTo(B.bx - cam.x, B.by - cam.y);
             ctx.closePath();
             ctx.fill();
+            ctx.strokeStyle = `rgba(${Math.min(255, r + 120)},${Math.min(255, g + 110)},${Math.min(255, bl + 60)},${0.7 * a * a})`;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(A.tx - cam.x, A.ty - cam.y);
+            ctx.lineTo(B.tx - cam.x, B.ty - cam.y);
+            ctx.stroke();
           }
         }
         const flash = u.deflectFlash > 0 ? 1.6 : u.clashFlash > 0 ? 1.8 : 1;
@@ -619,6 +723,10 @@ export class Renderer {
       const a = worldToScreen(b.x, b.y, b.z);
       const e = worldToScreen(b.x - Math.cos(b.ang) * 0.6, b.y - Math.sin(b.ang) * 0.6, b.z);
       const rgb = b.color === 'red' ? [255, 40, 30] : [60, 140, 255];
+      // a soft halo round the head, then the bolt itself
+      ctx.globalAlpha = 0.75;
+      ctx.drawImage(glowSprite(rgb), a.x - cam.x - 9, a.y - cam.y - 9, 18, 18);
+      ctx.globalAlpha = 1;
       this.glowLine(ctx, a.x - cam.x, a.y - cam.y, e.x - cam.x, e.y - cam.y, rgb, 1.3);
     }
   }

@@ -2,6 +2,7 @@
 import { World } from '../world/worldgen.js';
 import { PathFinder } from '../world/pathfind.js';
 import { Effects } from '../gfx/fx.js';
+import { HITFEEL, feelFor, applyFeel } from './hitfeel.js';
 import { Player, Soldier, R2Unit } from './units.js';
 import { SKILLS } from './skills.js';
 import { dist, rand, chance, angleDiff } from '../core/math.js';
@@ -445,15 +446,20 @@ export class Game {
     }
     amount = Math.max(1, Math.round(amount));
     tgt.hp -= amount;
-    tgt.flash = 0.12;
+    const feel = feelFor(opts, crit);
+    tgt.flash = Math.max(tgt.flash, feel.flash);
+    applyFeel(this, feel, !opts.quiet && (tgt === p || src === p || (src && src.owner === p)));
     if (src && src !== tgt) {
       tgt.lastAttacker = src;
       if (tgt.camp) for (const u of tgt.camp.alive) u.alert = 6;
     }
     if (opts.stun) tgt.stun = Math.max(tgt.stun, opts.stun);
     if (opts.knock && !opts.noKnock) {
-      tgt.knock(opts.knock.ang, opts.knock.power);
+      tgt.knock(opts.knock.ang, opts.knock.power * feel.knock);
       if (opts.wallBonus) tgt.wallBonus = { src, amount: amount * opts.wallBonus };
+    } else if (feel.push && !opts.noKnock && src && src !== tgt && !tgt.anchored) {
+      // the hit shoves the target back a little, away from the attacker
+      tgt.knock(Math.atan2(tgt.y - src.y, tgt.x - src.x), feel.push);
     }
     if (opts.type === 'saber') {
       this.fx.sparks(tgt.x, tgt.y, 1.0, tgt.def.droid ? '#ffcf70' : '#ff9a6a', crit ? 12 : 6);
@@ -526,7 +532,7 @@ export class Game {
     b.dmg = b.dmg * 1.3 + p.weaponDamage() * 0.25;
     b.life = 1.2;
     b.deflected = true;
-    this.fx.sparks(b.x, b.y, b.z, '#bfe8ff', 6, 3);
+    this.clash(b.x, b.y, b.z, 7, 'deflect');
     this.audio.play('deflect', p, { heavy: redirect });
     p.deflectFlash = 0.15;
     if (Math.random() < 0.2) this.fx.text(p.x, p.y, redirect ? '반격!' : '반사', '#9fd8ff', 0.8, 2.2);
@@ -589,6 +595,12 @@ export class Game {
   }
 
   update(dt) {
+    if (this.hitstopT > 0) {
+      // hitstop: the fight freezes for a few frames; sparks, flashes and shake play on
+      this.hitstopT -= dt;
+      this.fx.update(dt);
+      return;
+    }
     if (this.slowT > 0) {
       // brief slow motion after a perfect parry
       this.slowT -= dt;
@@ -738,7 +750,7 @@ export class Game {
         }
         if (w.blocked[ty * w.w + tx] === 1 && Math.random() < 0.6) {
           b.life = 0;
-          this.fx.sparks(b.x, b.y, b.z, b.color === 'red' ? '#ff9080' : '#90c0ff', 4, 2);
+          this.boltScorch(b);
           break;
         }
         for (const u of this.activeUnits) {
@@ -750,6 +762,7 @@ export class Game {
           } else {
             this.damage(b.owner, u, b.dmg, { type: 'blaster' });
             this.fx.sparks(b.x, b.y, b.z, b.color === 'red' ? '#ff9080' : '#90c0ff', 4, 2);
+            this.fx.flash(b.x, b.y, b.z, b.color === 'red' ? [255, 90, 70] : [110, 170, 255], 10, 0.07);
             b.life = 0;
           }
           break;
@@ -757,6 +770,32 @@ export class Game {
       }
     }
     this.bolts = this.bolts.filter((b) => b.life > 0);
+  }
+
+  /** A bolt hits a wall: a scorch mark on the face it struck, sorted just in front of that wall. */
+  boltScorch(b) {
+    const rgb = b.color === 'red' ? [255, 70, 50] : [80, 150, 255];
+    const x = b.x - Math.cos(b.ang) * 0.12;
+    const y = b.y - Math.sin(b.ang) * 0.12;
+    this.fx.scorch(x, y, b.z, rgb);
+    const m = this.fx.scorches[this.fx.scorches.length - 1];
+    let best = null;
+    let bd = 3.5;
+    for (const pr of this.world.props) {
+      if (pr.flat || pr.hidden || pr.sortDepth === undefined) continue;
+      const d = Math.hypot(pr.x - x, pr.y - y);
+      if (d < bd) {
+        bd = d;
+        best = pr;
+      }
+    }
+    m.depth = best ? Math.max(x + y, best.sortDepth + 0.01) : x + y;
+  }
+
+  /** Blade meets blade (or turns a bolt): the clash effect and its hitstop/shake. */
+  clash(x, y, z, n = 14, feel = 'clash') {
+    this.fx.clash(x, y, z, n);
+    applyFeel(this, HITFEEL[feel], true);
   }
 
   updateThrows(dt) {

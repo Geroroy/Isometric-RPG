@@ -239,6 +239,7 @@ export const SKILLS = {
       if (!spot) return false;
       p.leapTo(spot.x, spot.y, () => {
         game.fx.shockwave(p.x, p.y, 2.2, '#c9b5ff', 0.4);
+        game.fx.ripple(p.x, p.y, 2.6, 0.45, 3);
         game.fx.dust(p.x, p.y, 14);
         game.fx.shake(5);
         game.audio.play('slam');
@@ -297,6 +298,7 @@ export const SKILLS = {
         const r = this.radius(l);
         game.fx.shockwave(p.x, p.y, r, '#d4c0ff', 0.55);
         game.fx.shockwave(p.x, p.y, r * 0.6, '#ffffff', 0.35);
+        game.fx.ripple(p.x, p.y, r * 1.1, 0.55, 4.5);
         game.fx.shake(8);
         game.audio.play('repulse');
         game.clearBolts(p.x, p.y, r, p.team);

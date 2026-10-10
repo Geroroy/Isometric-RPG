@@ -178,7 +178,7 @@ export class Unit {
       c.acc += c.dps * dt;
       this.z += (0.9 - this.z) * Math.min(1, dt * 4);
       if (c.acc >= 4 || c.t <= 0) {
-        this.game.damage(c.src, this, c.acc, { type: 'force', noKnock: true, quiet: c.t > 0 });
+        this.game.damage(c.src, this, c.acc, { type: 'force', feel: 'choke', noKnock: true, quiet: c.t > 0 });
         c.acc = 0;
       }
       if (c.t <= 0 || this.dead) this.choke = null;
@@ -837,7 +837,7 @@ export class Player extends Unit {
             act.fired = true;
             const reach = this.radius + (t ? t.radius : 0) + 1.5;
             if (t && !t.dead && dist(this.x, this.y, t.x, t.y) <= reach) {
-              g.damage(this, t, this.weaponDamage() * hit.mult, { type: 'saber', stun: hit.stun, pressure: hit.pressure });
+              g.damage(this, t, this.weaponDamage() * hit.mult, { type: 'saber', heavy: hit.anim === 'attack3', stun: hit.stun, pressure: hit.pressure });
               if (hit.onHit) hit.onHit(t);
             }
           }
