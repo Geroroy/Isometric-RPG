@@ -11,7 +11,7 @@ import { neonLevel } from './citySprites.js';
 import { glowSprite } from './fx.js';
 import { transientLights, relightUnits } from './relight.js';
 import { SIG } from '../game/units.js';
-import { PALETTES, trailWindow, paletteFor, drawBlade, drawTrail, drawClash, drawLightPool, spill, hex, record } from './saberStyle.js';
+import { SABER, PALETTES, trailWindow, paletteFor, drawBlade, drawTrail, drawClash, spill, lightColor, hex, record } from './saberStyle.js';
 
 const AMBIENT = [150, 146, 178];
 const byDepth = (a, b) => a.depth - b.depth;
@@ -677,9 +677,8 @@ export class Renderer {
         lit = true;
         const mx = sx + (b[0] + e[0]) / 2;
         const my = sy + (b[1] + e[1]) / 2;
-        spotAt(mx, my, pre, 72, a);
-        spotAt(sx + e[0], sy + e[1], pre, 40, a * 0.7);
-        spotAt(sx + (mx - sx) * 0.6, sy - 2, pre, 64, a * 0.8); // the floor under the blade
+        spotAt(mx + (e[0] - b[0]) * 0.15, my + (e[1] - b[1]) * 0.15, pre, 78, a); // along the blade, towards the tip
+        spotAt(sx + (mx - sx) * 0.6, sy - 2, pre, 66, a); // the floor under the blade
       }
       if (!lit) spot(u.x, u.y, 1.2 + u.z, rgb[0], rgb[1], rgb[2], 70, a);
     }
@@ -783,10 +782,9 @@ export class Renderer {
   }
 
   /**
-   * The blades' light where the light map's multiply cannot reach: a pool of the blade's colour
-   * on the floor under it ('screen'), and the colour washed over characters near it ('lighter',
-   * fading with distance) — sheets with a normal pass get the directional version instead
-   * (relight.js).
+   * The blades' light on characters beyond what the light map gives: each sprite's own colours
+   * times the blade's light, fading from the blade ('lighter') — sheets with a normal pass get
+   * the directional version instead (relight.js).
    */
   drawSaberLight(ctx, cam) {
     const g = this.game;
@@ -801,19 +799,28 @@ export class Renderer {
       if (!b || !e) continue;
       const s = worldToScreen(u.x, u.y, u.z);
       const swing = this.time <= (u.trailUntil || 0) ? 1.25 : 1;
-      ctx.globalCompositeOperation = 'screen';
-      drawLightPool(ctx, s.x - cam.x + ((b[0] + e[0]) / 2) * 0.6, worldToScreen(u.x, u.y, 0).y - cam.y, pal, swing);
+      const lx = s.x - cam.x + (b[0] + e[0]) / 2; // the blade's middle: where its light comes from
+      const ly = s.y - cam.y + (b[1] + e[1]) / 2;
+      // (the floor under the blade is lit by the light map: multiplied in, so it takes the blade's
+      // colour in proportion to the floor's own — on a bright pad as on dark ground)
       ctx.globalCompositeOperation = 'lighter';
+      // the characters it lights: itself and the nearest others in reach (at most three)
+      const near = this.saberNear || (this.saberNear = []);
+      near.length = 0;
       for (const v of g.activeUnits) {
-        if (v.dead || v.hidden) continue;
+        if (v.dead || v.hidden || v.frame().normal) continue; // normal-mapped sheets: relightUnits
         const d = Math.hypot(v.x - u.x, v.y - u.y);
-        if (d > R) continue;
+        if (d <= R) near.push(v);
+      }
+      if (near.length > 4) near.sort((a, c) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(c.x - u.x, c.y - u.y)).length = 4;
+      const col = lightColor(pal);
+      for (const v of near) {
+        const d = Math.hypot(v.x - u.x, v.y - u.y);
         const vf = v.frame();
-        if (vf.normal) continue; // lit with its normals (relightUnits)
         const vs = worldToScreen(v.x, v.y, v.z);
         const k = vf.k || 1;
-        // the wielder catches less (the blade is beside, not facing, most of him)
-        spill(ctx, vf, Math.round(vs.x - vf.ox * k - cam.x), Math.round(vs.y - vf.oy * k - cam.y), pal.rim, (v === u ? 0.11 : 0.4) * (1 - d / R) * swing);
+        // the wielder: the arm and side by the blade catch it, the rest little
+        spill(ctx, vf, Math.round(vs.x - vf.ox * k - cam.x), Math.round(vs.y - vf.oy * k - cam.y), col, (v === u ? 0.75 : 1) * (1 - (d / R) * 0.7) * swing * (SABER.glow || 1), lx, ly, v === u ? 36 : 72);
       }
     }
   }

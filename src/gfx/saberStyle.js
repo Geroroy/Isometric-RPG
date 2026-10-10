@@ -2,7 +2,7 @@
 // two trail styles (Clone Wars / the films) and two palettes (Clone Wars / Revenge of the Sith),
 // picked separately. Glows are pre-drawn sprites (no shadowBlur); trails are polygons.
 // Every blue or red saber in the game is drawn here (renderer.drawSabers); the light the blades
-// throw on the floor and on characters is drawLightPool / spill below and in renderer.drawLighting.
+// throw on the floor and on characters is renderer.drawLighting (light map) and spill below.
 
 const STORE = 'cw.saber';
 // len / glow: the settings card's sliders (trail length, glow strength); slow: 1/4 game speed
@@ -60,12 +60,28 @@ export function trailWindow() {
   return (TRAILS[SABER.trail] || TRAILS.tcw).window * (SABER.len || 1);
 }
 
-/** The palette entry for a unit's saber colour (blue or red); null: draw it the old way. */
+/**
+ * The palette entry for a unit's saber colour: the measured blue or red, any other colour (green,
+ * purple…) a palette made from the colour itself the same way (white core, the colour as the rim,
+ * darker rings out) — so every blade, and the light it throws, is its own colour.
+ */
+const derived = new Map();
 export function paletteFor(rgb) {
-  const hue = rgb[2] > rgb[0] ? 'blue' : rgb[0] > rgb[2] + 40 ? 'red' : null;
-  if (!hue) return null;
-  const p = PALETTES[SABER.palette] || PALETTES.tcw;
-  return p[hue] || PALETTES.tcw[hue];
+  const [r, g, b] = rgb;
+  const blue = b > r + 40 && b >= g;
+  const red = r > g + 60 && r > b + 60;
+  if (blue || red) {
+    const p = PALETTES[SABER.palette] || PALETTES.tcw;
+    return p[blue ? 'blue' : 'red'] || PALETTES.tcw[blue ? 'blue' : 'red'];
+  }
+  const key = (r << 16) | (g << 8) | b;
+  let p = derived.get(key);
+  if (!p) {
+    const h = (k) => '#' + rgb.map((v) => Math.round(Math.min(255, v * k)).toString(16).padStart(2, '0')).join('');
+    const core = '#' + rgb.map((v) => Math.round(235 + (v / 255) * 20).toString(16).padStart(2, '0')).join('');
+    derived.set(key, (p = { core, rim: h(1), inner: h(0.72), glow: h(0.52), halo: h(0.4) }));
+  }
+  return p;
 }
 
 // ---------------------------------------------------------------------------- glow sprites
@@ -397,38 +413,13 @@ export function drawClash(ctx, x, y, k, pal = PALETTES.tcw.blue) {
 
 // ---------------------------------------------------------------------------- the blades' light
 
-// A pool of light on the floor: a soft disc per colour, drawn squashed 2:1 (the iso floor)
-const pools = new Map();
-function poolSprite(col) {
-  let c = pools.get(col);
-  if (c) return c;
-  c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const x = c.getContext('2d');
-  const [r, g, b] = hex(col);
-  const grd = x.createRadialGradient(32, 32, 0, 32, 32, 32);
-  grd.addColorStop(0, `rgba(${r},${g},${b},0.9)`);
-  grd.addColorStop(0.45, `rgba(${r},${g},${b},0.35)`);
-  grd.addColorStop(1, `rgba(${r},${g},${b},0)`);
-  x.fillStyle = grd;
-  x.fillRect(0, 0, 64, 64);
-  pools.set(col, c);
-  return c;
-}
-
-/** The blade's light on the floor round (gx, gy) — screen px of the ground under the blade. */
-export function drawLightPool(ctx, gx, gy, pal, k) {
-  const w = 44 * (0.8 + 0.3 * k);
-  ctx.globalAlpha = Math.min(1, 0.6 * k * (SABER.glow || 1));
-  ctx.drawImage(poolSprite(pal.rim), gx - w, gy - w / 2, w * 2, w);
-  ctx.globalAlpha = 1;
-}
-
-// A sheet without a normal pass gets the blade's colour washed over it (additive, fading with
-// distance): one reused canvas, the frame drawn into it and filled with the colour.
+// A sheet without a normal pass: the blade's light on it is its own colours times the blade's
+// colour (albedo x light, like the normal-mapped relight but without the direction), fading
+// pixel by pixel with the distance from the blade — the near side lit, the far side not — added
+// with 'lighter'. One reused canvas; no allocation per frame but the falloff gradient.
 let spillC = null;
 let spillX = null;
-export function spill(ctx, f, x, y, col, a) {
+export function spill(ctx, f, x, y, col, a, lx, ly, lr) {
   const k = f.k || 1;
   const w = Math.ceil(f.w * k);
   const h = Math.ceil(f.h * k);
@@ -441,16 +432,38 @@ export function spill(ctx, f, x, y, col, a) {
     spillC.height = Math.max(spillC.height, h);
     spillX = spillC.getContext('2d');
   }
-  spillX.globalCompositeOperation = 'copy';
-  spillX.imageSmoothingEnabled = !!f.k;
-  spillX.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, w, h);
-  spillX.globalCompositeOperation = 'source-in';
-  spillX.fillStyle = col;
-  spillX.fillRect(0, 0, w, h);
+  const X = spillX;
+  X.imageSmoothingEnabled = !!f.k;
+  X.globalCompositeOperation = 'copy';
+  X.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, w, h);
+  X.globalCompositeOperation = 'multiply'; // the sprite's colours lit by the blade's colour
+  X.fillStyle = col;
+  X.fillRect(0, 0, w, h);
+  X.globalCompositeOperation = 'destination-in'; // back to the sprite's shape
+  X.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, w, h);
+  const cx = lx - x;
+  const cy = ly - y;
+  const grd = X.createRadialGradient(cx, cy, 0, cx, cy, lr);
+  grd.addColorStop(0, 'rgba(0,0,0,1)');
+  grd.addColorStop(0.5, 'rgba(0,0,0,0.45)');
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  X.fillStyle = grd; // fading away from the blade
+  X.fillRect(0, 0, w, h);
+  X.globalCompositeOperation = 'source-over';
   ctx.globalAlpha = Math.min(1, a);
   ctx.drawImage(spillC, 0, 0, w, h, x, y, w, h);
   ctx.globalAlpha = 1;
 }
 
+/** The light a blade throws on a character: its rim colour, brighter (multiplied into the sprite). */
+const lights = new Map();
+export function lightColor(pal) {
+  let c = lights.get(pal.rim);
+  if (!c) {
+    c = '#' + hex(pal.rim).map((v) => Math.round(Math.min(255, v * 1.6 + 20)).toString(16).padStart(2, '0')).join('');
+    lights.set(pal.rim, c);
+  }
+  return c;
+}
 // QA (tools/qa/saberlab.mjs): the clash drawing and the settings, from the page
 if (typeof window !== 'undefined') window.__saberStyle = { SABER, TRAILS, setSaberOpt, drawClash };
