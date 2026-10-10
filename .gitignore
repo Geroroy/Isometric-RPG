@@ -3,3 +3,5 @@ dist
 .DS_Store
 *.log
 tools/sprites/out/
+__pycache__/
+.bvenv/

@@ -19,6 +19,9 @@ import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { CHARACTERS, DUELS, SKINS } from '../../src/gfx/specs.js';
 import { setDetail } from '../../src/gfx/models/parts.js';
 
+// sprites modelled in Blender by build_anakin.py (its outfits), not exported from the game's models
+const BLENDER_MODELS = new Set(['anakin', 'anakin_vader', 'anakin_robe', 'anakin_tunic']);
+
 // GLTFExporter reads its binary output through FileReader (not in Node)
 globalThis.FileReader = class {
   readAsArrayBuffer(blob) {
@@ -140,6 +143,6 @@ async function exportOne(name) {
 }
 
 for (const name of only.length ? only : Object.keys(ALL)) {
-  if (name === 'anakin') continue; // Anakin has his own Blender model (build_anakin.py)
+  if (BLENDER_MODELS.has(name)) continue; // these have their own Blender model (build_anakin.py)
   await exportOne(name);
 }

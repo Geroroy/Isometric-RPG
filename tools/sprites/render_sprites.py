@@ -28,6 +28,7 @@ Render a .glb character into isometric sprite sheets for the game.
   --sharpen 0.5        unsharp mask after the downscale (0 = off): crisp edges at 128 px
   --view standard      colour view transform: standard or agx (softer highlights)
   --bloom 1            EEVEE: a soft bloom on the brightest highlights (compositor glare)
+  --hair FILE.blend    hair curves from build_hair.py, attached to the head bone
   --meta FILE.json     timing per animation (fps, loop, hit frame) — e.g. the
                        export_rig_anims.mjs output; default 10 fps, looping
   --hide blade         objects whose name starts with these are not rendered
@@ -157,6 +158,10 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
 scene.render.fps = 24
 bpy.ops.import_scene.gltf(filepath=GLB)
+if opt.get('hair'):  # hair curves (build_hair.py) on the head bone: glTF has no hair
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from hair_attach import attach_hair
+    attach_hair(opt['hair'], scene)
 model_objs = list(scene.objects)
 hidden_names = {o.name for o in model_objs if any(o.name.startswith(h) for h in HIDE)}
 for o in model_objs:

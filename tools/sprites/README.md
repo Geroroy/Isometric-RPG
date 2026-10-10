@@ -92,3 +92,29 @@ JSON: `anchor`(모델 원점 = 바닥 중심의 이미지 좌표), `sort`(가장
 `--light`로 조명 밝기(게임은 조명 맵을 곱하므로 도시 에셋은 2.4), `--neon`으로 깜빡임 설정을 바꿉니다.
 
 검토 페이지: `npm run dev` 후 `/sprite-demo.html` (WASD/클릭 이동, F: 충돌 다각형).
+
+
+## 아나킨 외형 (Blender) · 헤어 커브
+
+`build_anakin.py`의 세 번째 인자로 외형을 고릅니다: `armor`(클론 전쟁, 기본), `tunic`(에피소드 III 제다이 기사),
+`robe`(짙은 두건 로브, 두건 내림), `vader`(같은 로브, 두건 씀 — 오더 66). 리그·얼굴·애니메이션은 모두 같습니다.
+
+에피소드 III 외형의 머리카락은 메시가 아니라 **Blender 헤어 커브**입니다(`build_hair.py`).
+두피 메시 위에 가이드 커브 약 180개를 깔고, Essentials 헤어 노드 그룹을 모디파이어로 쌓습니다:
+Interpolate Hair Curves(가이드 사이를 약 1만 가닥으로) → Clump(가닥 뭉치) → Curl(굵은 웨이브) → Frizz(아주 약하게)
+→ Set Hair Curve Profile(두께, 끝이 가늘게). 재질은 Principled Hair BSDF(멜라닌, 뿌리 어둡게, 세 가닥 중 하나는
+캐러멜 하이라이트)이고, EEVEE 출력에는 같은 규칙의 Principled BSDF 대체 재질이 붙어 있습니다.
+glTF는 헤어 커브를 담지 못하므로 렌더 때 붙입니다: `render_sprites.py --hair out/anakin_hair.blend`가 적용된 커브를
+머리 뼈에 부모로 연결해, 모든 애니메이션에서 머리를 따라 움직입니다.
+
+```
+.bvenv/bin/python tools/sprites/build_hair.py tools/sprites/out/anakin_hair.blend ep3        # 어깨 길이
+.bvenv/bin/python tools/sprites/build_hair.py tools/sprites/out/anakin_hair_hood.blend hood  # 두건 안
+.bvenv/bin/python tools/sprites/build_anakin.py tools/sprites/anakin_anims.json tools/sprites/out/anakin_robe.glb robe
+.bvenv/bin/python tools/sprites/render_sprites.py tools/sprites/out/anakin_robe.glb public/sprites --dirs 16 \
+    --meta tools/sprites/anakin_anims.json --hair tools/sprites/out/anakin_hair.blend
+.bvenv/bin/python tools/sprites/hair_preview.py tools/sprites/out/anakin_robe.glb tools/sprites/out/anakin_hair.blend /tmp/hair eevee
+```
+
+`hair_preview.py`는 머리 클로즈업(정면·측면·후면·아이소)과 전신 128px(정면·측면·아이소)을 Cycles/EEVEE로 렌더합니다.
+헤어가 붙으면 프레임당 렌더 시간이 약 10% 늘어납니다(16방향 4.7 → 5.2초).
