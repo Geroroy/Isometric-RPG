@@ -259,7 +259,11 @@ export class Post {
     const G = GRADES[g];
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.src);
+    // a canvas's first row is its top, GL's is the bottom: flip on upload or the
+    // whole picture comes out upside down (the LUTs below are built bottom-up already)
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.world);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     // bloom: bright parts at half size, blurred across and down
     const bloom = this.opts.bloom;
     if (bloom) {
