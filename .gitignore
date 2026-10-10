@@ -7,3 +7,4 @@ __pycache__/
 .bvenv/
 references/
 tools/qa/out/
+dist-perf
