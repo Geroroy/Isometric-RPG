@@ -181,14 +181,7 @@ export class HUD {
     this.pokes = (this.pokes || 0) + 1;
     clearTimeout(this.pokeReset);
     this.pokeReset = setTimeout(() => (this.pokes = 0), 4000);
-    // his own recorded voice (audio/voice/anakin), else a subtitled line
-    const a = this.game.audio;
-    const clip = a.voice('portrait');
-    if (clip) {
-      if (a.speech) a.speech.stop();
-      this.portrait.talk(clip.duration);
-      this.sub = { t: 0, talk: clip.duration, speaker: '아나킨' };
-    } else this.game.say(this.pokes > 4 ? 'pokeAnnoyed' : 'poke');
+    this.game.say(this.pokes > 4 ? 'pokeAnnoyed' : 'poke'); // a subtitled line
   }
 
   /** Add a line to the console's message display. */
@@ -419,7 +412,6 @@ export class HUD {
       <section class="set-card">
         <h4>소리</h4>
         <label class="set-toggle"><input type="checkbox" id="soundOn"> 소리 켜기 <kbd>M</kbd></label>
-        <label class="set-toggle"><input type="checkbox" id="speechOn"> 아나킨 대사 음성 <small id="speechVoice"></small></label>
         <div class="set-vol">${VOLUMES.map(([k, l]) => `<label><span>${l}</span><input type="range" min="0" max="100" step="1" data-vol="${k}"><b></b></label>`).join('')}</div>
         <p class="set-note">이 기기에 저장됩니다. 대사 음성·효과음 파일을 직접 넣는 방법은 <code>public/audio/README.md</code>를 참고하세요.</p>
       </section>
@@ -478,12 +470,6 @@ export class HUD {
         show();
       });
     });
-    const sp = this.audio.speech;
-    const spOn = $('#speechOn');
-    spOn.checked = !!(sp && sp.on);
-    spOn.disabled = !(sp && sp.available);
-    spOn.addEventListener('change', (e) => sp && sp.setOn(e.target.checked));
-    $('#speechVoice').textContent = !sp || !sp.available ? '(이 브라우저는 음성 합성을 지원하지 않음)' : '';
     const post = this.renderer.post;
     o.querySelectorAll('[data-post]').forEach((cb) => {
       cb.checked = !!post.opts[cb.dataset.post];

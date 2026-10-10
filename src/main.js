@@ -17,7 +17,6 @@ import { HUD } from './ui/hud.js';
 import { Input } from './core/input.js';
 import { Audio } from './core/audio.js';
 import { Music } from './core/music.js';
-import { Speech } from './core/speech.js';
 import { Ambience } from './core/ambience.js';
 import { JukeboxUI } from './ui/jukebox.js';
 import { DebugUI } from './ui/debug.js';
@@ -82,18 +81,7 @@ async function boot() {
   await new Promise((r) => setTimeout(r, 20));
 
   const audio = new Audio();
-  const speech = (audio.speech = new Speech(audio));
   const game = new Game(assets, audio, MODE, DUEL || undefined);
-  // Anakin's voice: barks, duel lines, cutscene subtitles and dialogue replies
-  const ANAKIN = '아나킨';
-  game.on('say', (text, key, dur, speaker) => {
-    if (dur == null && (!speaker || speaker === ANAKIN)) speech.anakin(text); // dur: a recorded clip already played
-  });
-  game.on('subtitle', (who, text) => {
-    if (!who) speech.stop();
-    else if (who === ANAKIN && !(game.cinema && game.cinema.track)) speech.anakin(text); // a film track carries its own voices
-  });
-  game.on('reply', (text) => speech.anakin(text));
   // the city hub ⇄ Christophsis: new ground, props and map
   game.on('world', () => {
     renderer.setWorld();
