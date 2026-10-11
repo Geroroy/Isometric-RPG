@@ -91,6 +91,7 @@ sc.render.image_settings.color_mode = 'RGBA'
 sc.render.image_settings.color_depth = '16'
 sc.render.image_settings.compression = 15
 sc.view_settings.view_transform = 'Standard'
+sc.view_settings.exposure = float(os.environ.get('PORTRAIT_EXPOSURE', 0))  # lighter outfits: PORTRAIT_EXPOSURE=-0.7
 w = bpy.data.worlds.new('w')
 sc.world = w
 w.use_nodes = True
@@ -140,8 +141,9 @@ area('key', (0.6, 0.55, 0.9), 1100, 4.5)
 area('fill', (0.5, -1.0, 0.25), 420, 5.0, (0.9, 0.94, 1.0))
 area('rim', (-0.9, 0.3, 0.6), 700, 3.0, (0.82, 0.9, 1.0))
 area('top', (0, 0, 1), 300, 4.0)
-# the tabards in dark blue-black (the Season 7 look; this render only)
-for o in sc.objects:
+# the Jedi Knight tunic's tabards in dark blue-black (the Season 7 look; this render only)
+TUNIC = 'tunic' in os.path.basename(glb)
+for o in sc.objects if TUNIC else ():
     if o.type == 'MESH' and o.name.startswith('tabard'):
         for m in o.data.materials:
             if m and m.use_nodes:
@@ -152,8 +154,8 @@ for o in sc.objects:
                     mix.inputs[6].default_value = navy
                 elif b:
                     b.inputs['Base Color'].default_value = navy
-# the hair a touch cooler and darker than the sprite palette: the studio key is far brighter than the game's sun
-for m in bpy.data.materials:
+# the S7 hair a touch cooler and darker than the sprite palette: the studio key is far brighter than the game's sun
+for m in bpy.data.materials if TUNIC else ():
     if m.name.startswith('hairV2') and m.use_nodes:
         nt = m.node_tree
         b = nt.nodes.get('Principled BSDF')

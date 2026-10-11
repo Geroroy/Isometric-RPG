@@ -3,8 +3,9 @@ Review renders for the hair (tools/sprites/hair/hair_v2.py): one model's head cl
 front, his right, his left, the back and 3/4, and the game's isometric view at the sprite's real
 size (the character ~56 px tall: rendered at 2x, Lanczos-downscaled, as the sprite pipeline
 does), front-on and 3/4 and from behind.
-  python hair_review.py model.glb out_dir [label] [hair.blend]
-(hair.blend: build_hair.py's curves, attached to the head bone as the sprite renders do)
+  python hair_review.py model.glb out_dir [label] [hair.blend|-] [body]
+(hair.blend: build_hair.py's curves, attached to the head bone as the sprite renders do; '-' for none.
+body: also the whole figure from the front, his right, his left, the back and 3/4 — for an outfit)
 writes out_dir/<label>_<view>.png
 """
 import builtins
@@ -20,7 +21,8 @@ print = functools.partial(builtins.print, flush=True)  # noqa: A001
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
 glb, out = argv[0], argv[1]
 label = argv[2] if len(argv) > 2 else os.path.splitext(os.path.basename(glb))[0]
-HAIR = argv[3] if len(argv) > 3 else None
+HAIR = argv[3] if len(argv) > 3 and argv[3] != '-' else None
+BODY = len(argv) > 4 and argv[4] == 'body'
 os.makedirs(out, exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 sc = bpy.context.scene
@@ -80,6 +82,9 @@ def shot(name, az, el, target, scale, res, dist=6):
 # close-ups: front (+X), his right (−Y), his left (+Y), back, 3/4 front-right of the image
 for name, az in (('front', 0), ('right', -90), ('left', 90), ('back', 180), ('q34', 35)):
     shot(name, az, 4, hc, 0.36, 420)
+if BODY:
+    for name, az in (('body_front', 0), ('body_right', -90), ('body_left', 90), ('body_back', 180), ('body_q34', 35)):
+        shot(name, az, 4, Vector((hc.x, hc.y, 0.93)), 2.05, 560)
 # the game's view: 30° elevation, the sprite's scale (~56 px for the whole figure), at 2x then downscaled
 body = Vector((hc.x, hc.y, 0.95))
 from PIL import Image  # noqa: E402

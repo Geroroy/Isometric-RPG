@@ -8,9 +8,13 @@ every game animation.
 
 outfit: armor (default, the Clone Wars look below), vader (Episode III, the
 night of Order 66: black leather tunic, sash and belt under the near-black
-cloak, the deep hood raised — after the studio photo) or robe (the same
-cloak with the hood lowered on the back). Every outfit shares the rig, the
-face and the animations.
+cloak, the deep hood raised — after the studio photo), robe (the same
+cloak with the hood lowered on the back), tunic (the Episode III Jedi Knight)
+or cw_s1 (The Clone Wars season 1, after the CG model in
+reference/color_clonewars/image.jpg: the armour's tunic, tabard, belt,
+gloves and boots without the plates, under a grey-teal leather yoke — see
+docs/prompts/anakin_cw_s1.md). Every outfit shares the rig, the face and the
+animations.
 
 The reference, top to bottom: light brown wavy hair with volume on top, swept
 back, over the tops of the ears and down to the collar; a scar over his right
@@ -266,6 +270,13 @@ def make_textures():
     worn = 1 + 0.3 * (grime - 0.5) + scr * 0.06
     col = (base[None, None, :] * (1 - crest[..., None]) + red[None, None, :] * crest[..., None] * (0.9 + 0.2 * (fbm(RES, 16, 2, 24)[..., None] - 0.5))) * worn[..., None]
     tex['pauldron'] = save_png('pauldron_c', col)
+    # painted (The Clone Wars' CG look): long soft brush strokes along V, broad mottling, grime in the folds;
+    # a faint normal so it stays matte and flat-shaded rather than woven
+    strokes = 0.5 + 0.5 * np.sin(yy * TAU * 18 + fbm(RES, 4, 3, 51) * 7 + xx * TAU * 2)
+    mott = fbm(RES, 3, 4, 52)
+    grime = fbm(RES, 8, 3, 53)
+    alb = 0.84 + 0.07 * (strokes - 0.5) + 0.2 * (mott - 0.5) - 0.1 * np.clip(grime - 0.6, 0, 1)
+    tex['painted'] = (save_png('painted_a', np.dstack([np.clip(alb, 0, 1)] * 3)), save_png('painted_n', normal_map(strokes * 0.25 + mott * 0.5, 0.6)))
     return tex
 
 
@@ -585,64 +596,72 @@ def torso_pt(u, z, grow=0.0, p=2.4, gap=0.0):
     return Vector((x + 0.004, y, z))
 
 
-def armor_garments():
-    """The Clone Wars look (the Hot Toys figure): tunic, tabard, plate, gloves, boots, belt."""
+def armor_garments(s1=False):
+    """The Clone Wars look (the Hot Toys figure): tunic, tabard, plate, gloves, boots, belt.
+    s1: season 1 (the CG model) — no plates; a leather yoke over the shoulders, the tabard
+    opening in a V up to it, a slim belt, darker gloves, ribbed boots over tan shoes."""
     surface('tunicTorso', M['crimson'], torso_w, 32, 18, lambda u, v: torso_pt(u, 0.96 + 0.64 * v), cap1=True, uvscale=5)
     # the tabard over the torso: open down the middle, the crimson tunic showing
+    # (season 1: the opening widens up the chest into a V that ends under the yoke)
     surface('tabardTorso', M['navy'], torso_w, 30, 14,
-            lambda u, v: torso_pt(u, 0.985 + 0.545 * v, grow=0.011, gap=0.024), closed=False, solidify=0.005, uvscale=5)
+            lambda u, v: torso_pt(u, 0.985 + 0.545 * v, grow=0.011, gap=0.018 + 0.05 * v ** 1.3 if s1 else 0.024), closed=False, solidify=0.005, uvscale=5)
+    if s1:
+        s1_yoke()
 
-    # --- the chest plate: a boxy bib to just under the chest, sloping in over the
-    # shoulders to a raised neck ring; its lower edge rises a little at the sides
-    PLATE = [
-        (1.31, 0.146, 0.188), (1.36, 0.151, 0.193), (1.44, 0.151, 0.199), (1.51, 0.139, 0.206),
-        (1.555, 0.115, 0.196), (1.59, 0.09, 0.13), (1.612, 0.079, 0.085),
-    ]
+    # the knit collar inside it (season 1: the tunic's short stand collar)
+    ch = 0.045 if s1 else 0.085
+    surface('collar', M['knit'], neck_w, 28, 6, lambda u, v: Vector((0.006 + math.cos(TAU * u) * 0.064, math.sin(TAU * u) * 0.066, 1.57 + ch * v)), cap1=False, uvscale=8)
+    surface('collarFold', M['knit'], neck_w, 28, 2, lambda u, v: Vector((0.006 + math.cos(TAU * u) * (0.066 + 0.005 * math.sin(v * math.pi)), math.sin(TAU * u) * (0.068 + 0.005 * math.sin(v * math.pi)), 1.57 + ch - 0.01 + 0.016 * v)), uvscale=8)
 
-
-    def plate_pt(u, v):
-        a = TAU * u
-        zb = 1.312 + 0.05 * math.sin(a) ** 2  # the lower edge, higher under the arms
-        z = zb + (1.612 - zb) * v
-        rx, ry = lerp_table(PLATE, z)
-        x, y = superellipse(a, rx, ry, 3.0)
-        # a soft centre ridge down the front, a slight bulge over the pectorals
-        x += 0.006 * math.exp(-(a if a < math.pi else a - TAU) ** 2 / 0.01) * (1 - v) + 0.004 * math.sin(v * math.pi) * max(0, math.cos(a))
-        return Vector((x + 0.004, y, z))
+    if not s1:
+        # --- the chest plate: a boxy bib to just under the chest, sloping in over the
+        # shoulders to a raised neck ring; its lower edge rises a little at the sides
+        PLATE = [
+            (1.31, 0.146, 0.188), (1.36, 0.151, 0.193), (1.44, 0.151, 0.199), (1.51, 0.139, 0.206),
+            (1.555, 0.115, 0.196), (1.59, 0.09, 0.13), (1.612, 0.079, 0.085),
+        ]
 
 
-    surface('plate', M['plate'], 'chest', 40, 14, plate_pt, solidify=0.012, subsurf=1, uvscale=3)
-    # the rolled lower rim and the raised neck ring
-    surface('plateRim', M['plateEdge'], 'chest', 40, 2, lambda u, v: plate_pt(u, 0) * 1.0 + Vector((0, 0, 0.012 * v)) + Vector((math.cos(TAU * u), math.sin(TAU * u), 0)) * 0.006 * math.sin(v * math.pi), uvscale=3)
-    surface('neckRing', M['plateEdge'], 'chest', 32, 4, lambda u, v: Vector((0.004 + math.cos(TAU * u) * (0.083 + 0.007 * math.sin(v * math.pi)), math.sin(TAU * u) * (0.088 + 0.007 * math.sin(v * math.pi)), 1.6 + 0.032 * v)), uvscale=3)
-    # the knit collar inside it
-    surface('collar', M['knit'], neck_w, 28, 6, lambda u, v: Vector((0.006 + math.cos(TAU * u) * 0.064, math.sin(TAU * u) * 0.066, 1.57 + 0.085 * v)), cap1=False, uvscale=8)
-    surface('collarFold', M['knit'], neck_w, 28, 2, lambda u, v: Vector((0.006 + math.cos(TAU * u) * (0.066 + 0.005 * math.sin(v * math.pi)), math.sin(TAU * u) * (0.068 + 0.005 * math.sin(v * math.pi)), 1.645 + 0.016 * v)), uvscale=8)
+        def plate_pt(u, v):
+            a = TAU * u
+            zb = 1.312 + 0.05 * math.sin(a) ** 2  # the lower edge, higher under the arms
+            z = zb + (1.612 - zb) * v
+            rx, ry = lerp_table(PLATE, z)
+            x, y = superellipse(a, rx, ry, 3.0)
+            # a soft centre ridge down the front, a slight bulge over the pectorals
+            x += 0.006 * math.exp(-(a if a < math.pi else a - TAU) ** 2 / 0.01) * (1 - v) + 0.004 * math.sin(v * math.pi) * max(0, math.cos(a))
+            return Vector((x + 0.004, y, z))
 
 
-    def cap_pt(cy, zc, r, rz, th0, th1, sector, out=1, grow=0.0):
-        """A rounded shoulder cap: part of an ellipsoid centred over the shoulder
-        (y = cy, height zc; radius r across, rz up), from polar angle th0 (0 = the
-        top) down to its rim at th1, over the outward-facing sector (half-angle)."""
-        def fn(u, v):
-            a = (u - 0.5) * 2 * sector
-            th = th0 + (th1 - th0) * v
-            s = math.sin(th) * (r + grow)
-            return Vector((math.sin(a) * s * 1.08, cy + out * math.cos(a) * s, zc + math.cos(th) * (rz + grow)))
-        return fn
+        surface('plate', M['plate'], 'chest', 40, 14, plate_pt, solidify=0.012, subsurf=1, uvscale=3)
+        # the rolled lower rim and the raised neck ring
+        surface('plateRim', M['plateEdge'], 'chest', 40, 2, lambda u, v: plate_pt(u, 0) * 1.0 + Vector((0, 0, 0.012 * v)) + Vector((math.cos(TAU * u), math.sin(TAU * u), 0)) * 0.006 * math.sin(v * math.pi), uvscale=3)
+        surface('neckRing', M['plateEdge'], 'chest', 32, 4, lambda u, v: Vector((0.004 + math.cos(TAU * u) * (0.083 + 0.007 * math.sin(v * math.pi)), math.sin(TAU * u) * (0.088 + 0.007 * math.sin(v * math.pi)), 1.6 + 0.032 * v)), uvscale=3)
 
 
-    R118, R100 = math.radians(118), math.radians(100)
-    # his right shoulder: the plate's own shoulder piece, a second step under it
-    surface('shoulderR0', M['plate'], lambda co: {'chest': 0.4, 'shR': 0.6}, 18, 10,
-            cap_pt(-0.198, 1.51, 0.074, 0.08, 0.0, R100, 1.7, out=-1), closed=False, solidify=0.01, subsurf=1)
-    surface('shoulderR1', M['plate'], lambda co: {'chest': 0.15, 'shR': 0.85}, 18, 4,
-            cap_pt(-0.2, 1.51, 0.08, 0.086, math.radians(92), R118, 1.6, out=-1), closed=False, solidify=0.01, subsurf=1)
-    # his left shoulder: the separate pauldron with the crest, strapped to the arm
-    surface('pauldron', M['pauldron'], 'shL', 22, 14, cap_pt(0.203, 1.505, 0.08, 0.098, 0.0, R118, 1.9), closed=False,
-            solidify=0.011, subsurf=1, uv=lambda bm: side_uv(bm, (0.0, 1.5), 0.16))
-    surface('pauldronRim', M['plateEdge'], 'shL', 22, 2, cap_pt(0.203, 1.505, 0.08, 0.098, R118 - 0.06, R118 + 0.02, 1.9, grow=0.006),
-            closed=False, solidify=0.004)
+        def cap_pt(cy, zc, r, rz, th0, th1, sector, out=1, grow=0.0):
+            """A rounded shoulder cap: part of an ellipsoid centred over the shoulder
+            (y = cy, height zc; radius r across, rz up), from polar angle th0 (0 = the
+            top) down to its rim at th1, over the outward-facing sector (half-angle)."""
+            def fn(u, v):
+                a = (u - 0.5) * 2 * sector
+                th = th0 + (th1 - th0) * v
+                s = math.sin(th) * (r + grow)
+                return Vector((math.sin(a) * s * 1.08, cy + out * math.cos(a) * s, zc + math.cos(th) * (rz + grow)))
+            return fn
+
+
+        R118, R100 = math.radians(118), math.radians(100)
+        # his right shoulder: the plate's own shoulder piece, a second step under it
+        surface('shoulderR0', M['plate'], lambda co: {'chest': 0.4, 'shR': 0.6}, 18, 10,
+                cap_pt(-0.198, 1.51, 0.074, 0.08, 0.0, R100, 1.7, out=-1), closed=False, solidify=0.01, subsurf=1)
+        surface('shoulderR1', M['plate'], lambda co: {'chest': 0.15, 'shR': 0.85}, 18, 4,
+                cap_pt(-0.2, 1.51, 0.08, 0.086, math.radians(92), R118, 1.6, out=-1), closed=False, solidify=0.01, subsurf=1)
+        # his left shoulder: the separate pauldron with the crest, strapped to the arm
+        surface('pauldron', M['pauldron'], 'shL', 22, 14, cap_pt(0.203, 1.505, 0.08, 0.098, 0.0, R118, 1.9), closed=False,
+                solidify=0.011, subsurf=1, uv=lambda bm: side_uv(bm, (0.0, 1.5), 0.16))
+        surface('pauldronRim', M['plateEdge'], 'shL', 22, 2, cap_pt(0.203, 1.505, 0.08, 0.098, R118 - 0.06, R118 + 0.02, 1.9, grow=0.006),
+                closed=False, solidify=0.004)
 
     # --- arms: crimson sleeves, long gloves with flared cuffs, fists ----------------
     SLEEVE = [(0.99, 0.038), (1.1, 0.044), (1.2, 0.051), (1.25, 0.053), (1.32, 0.057), (1.45, 0.061), (1.52, 0.063), (1.56, 0.05), (1.578, 0.02)]
@@ -653,7 +672,7 @@ def armor_garments():
                 lambda u, v, cy=cy: (lambda z, r: Vector((math.cos(TAU * u) * r, cy + math.sin(TAU * u) * r * (1 + 0.04 * math.sin(TAU * u * 3 + z * 30)), z)))(1.06 + 0.522 * v, lerp_table(SLEEVE, 1.06 + 0.522 * v)[0]),
                 cap1=True, uvscale=6)
         # the glove: soft creases round the wrist, the cuff flaring out
-        surface('glove' + s, M['glove'], arm_w(s), 20, 12,
+        surface('glove' + s, M.get('glove' + s, M['glove']), arm_w(s), 20, 12,
                 lambda u, v, cy=cy: (lambda z, r: Vector((math.cos(TAU * u) * r * 1.04, cy + math.sin(TAU * u) * r, z)))(0.985 + 0.21 * v, lerp_table(GLOVE, 0.985 + 0.21 * v)[0] * (1 + 0.03 * math.sin(TAU * u * 5 + v * 12) * (1 - v))),
                 closed=True, solidify=0.004, uvscale=6)
         surface('gloveCuff' + s, M['gloveDark'], arm_w(s), 20, 2,
@@ -662,8 +681,8 @@ def armor_garments():
             surface(f'wristBand{s}{i}', M['gloveDark'], arm_w(s), 20, 1,
                     lambda u, v, cy=cy, z=z: Vector((math.cos(TAU * u) * 0.0455 * 1.04, cy + math.sin(TAU * u) * 0.0455, z + 0.008 * v)), uvscale=6)
         # the fist: a rounded block of knuckles closed on the grip, the thumb over it
-        rbox('fist' + s, M['glove'], 'ha' + s, (0.085, 0.056, 0.088), (0.012, cy, 0.94), bevel=0.0, subsurf=2, uvscale=6)
-        ellipsoid('thumb' + s, M['glove'], 'ha' + s, (0.04, cy - sy * 0.03, 0.952), (0.03, 0.016, 0.018), segs=12, rings=8, uvscale=6)
+        rbox('fist' + s, M.get('glove' + s, M['glove']), 'ha' + s, (0.085, 0.056, 0.088), (0.012, cy, 0.94), bevel=0.0, subsurf=2, uvscale=6)
+        ellipsoid('thumb' + s, M.get('glove' + s, M['glove']), 'ha' + s, (0.04, cy - sy * 0.03, 0.952), (0.03, 0.016, 0.018), segs=12, rings=8, uvscale=6)
         ellipsoid('knuckles' + s, M['gloveDark'], 'ha' + s, (0.05, cy, 0.93), (0.012, 0.03, 0.04), segs=12, rings=8, uvscale=6)
 
     # --- legs: crimson trousers, tall strapped boots ----------------------------------
@@ -678,28 +697,32 @@ def armor_garments():
                 uvscale=6)
         # the boot shaft: calf bulging behind, a folded top, open at the top
         boot_pt = lambda u, z, grow=0.0, cy=cy: (lambda r: Vector((math.cos(TAU * u) * r * 1.06 - 0.008 * sstep(0.2, 0.33, z) * (1 - sstep(0.33, 0.45, z)), cy + math.sin(TAU * u) * r, z)))(lerp_table(BOOT, z)[0] + grow)
-        surface('boot' + s, M['boot'], leg_w(s), 22, 16, lambda u, v, bp=boot_pt: bp(u, 0.07 + 0.415 * v), solidify=0.006, uvscale=6)
-        surface('bootFold' + s, M['bootDark'], leg_w(s), 22, 3, lambda u, v, bp=boot_pt: bp(u, 0.425 + 0.06 * v, 0.008 + 0.004 * math.sin(v * math.pi)), solidify=0.005, uvscale=6)
+        if s1:
+            s1_boot(s, cy, boot_pt)
+        else:
+            surface('boot' + s, M['boot'], leg_w(s), 22, 16, lambda u, v, bp=boot_pt: bp(u, 0.07 + 0.415 * v), solidify=0.006, uvscale=6)
+            surface('bootFold' + s, M['bootDark'], leg_w(s), 22, 3, lambda u, v, bp=boot_pt: bp(u, 0.425 + 0.06 * v, 0.008 + 0.004 * math.sin(v * math.pi)), solidify=0.005, uvscale=6)
         # two straps round the shaft (sloping down towards the front) and one at the ankle, buckled outside
-        for i, (z, tilt) in enumerate(((0.37, 0.016), (0.27, 0.016), (0.115, 0.0))):
+        for i, (z, tilt) in enumerate(() if s1 else ((0.37, 0.016), (0.27, 0.016), (0.115, 0.0))):
             surface(f'strap{s}{i}', M['bootDark'], leg_w(s), 22, 1,
                     lambda u, v, bp=boot_pt, z=z, tilt=tilt: bp(u, z - tilt * math.cos(TAU * u) + 0.024 * v, 0.006), uvscale=6)
             r = lerp_table(BOOT, z)[0] + 0.009
             rbox(f'buckle{s}{i}', M['silver'], leg_w(s), (0.018, 0.006, 0.03), (0.0, cy + sy * r, z + 0.012), bevel=0.002)
         # the foot: a rounded toe box on a chunky sole with a heel
-        ellipsoid('foot' + s, M['boot'], 'an' + s, (0.045, cy, 0.03), (0.12, 0.052, 0.075), segs=20, rings=12, cut=lambda co: co.z < -0.001,
+        ellipsoid('foot' + s, M['bootTan'] if s1 else M['boot'], 'an' + s, (0.045, cy, 0.03), (0.12, 0.052, 0.075), segs=20, rings=12, cut=lambda co: co.z < -0.001,
                   deform=lambda co: Vector((co.x, co.y * (1 - 0.15 * max(0, co.x) / 0.12), co.z * (1 - 0.35 * max(0, co.x) / 0.12))), uvscale=6)
         rbox('sole' + s, M['sole'], 'an' + s, (0.25, 0.108, 0.026), (0.05, cy, 0.017), bevel=0.008)
         rbox('heel' + s, M['sole'], 'an' + s, (0.075, 0.1, 0.02), (-0.03, cy, 0.006), bevel=0.004)
 
     # --- below the belt: the crimson tunic skirt and the navy tabard over it ----------
+    hem = 0.07 if s1 else 0.0  # season 1: both skirts reach mid-shin
     surface('tunicSkirt', M['crimson'], skirt_w, 32, 14,
-            lambda u, v: (lambda z, t: (lambda xy: Vector((xy[0] + 0.004, xy[1], z)))(superellipse(TAU * u, 0.108 + 0.04 * t, 0.15 + 0.045 * t, 2.2)))(1.0 - 0.47 * v, v),
+            lambda u, v: (lambda z, t: (lambda xy: Vector((xy[0] + 0.004, xy[1], z)))(superellipse(TAU * u, 0.108 + 0.04 * t, 0.15 + 0.045 * t, 2.2)))(1.0 - (0.47 + hem) * v, v),
             closed=True, solidify=0.005, uvscale=5)
 
 
     def tabard_skirt(u, v):
-        z = 1.03 - 0.56 * v
+        z = 1.03 - (0.56 + hem) * v
         t = v
         rx, ry = 0.118 + 0.065 * t ** 0.9, 0.162 + 0.055 * t ** 0.9
         gap = 0.026 + 0.04 * t  # the front opening widens towards the hem
@@ -732,6 +755,17 @@ def armor_garments():
         return p, Quaternion(Vector((0, 0, 1)), math.atan2(p.y, p.x))
 
 
+    if s1:  # a small plain buckle in front, two brass bars on his right, tan pouches on the hips
+        p, q = on_belt(0.0, 0.008)
+        rbox('buckle', M['silver'], 'pelvis', (0.008, 0.034, 0.026), p, q, bevel=0.003)
+        for i, a in enumerate((-0.42, -0.5)):
+            p, q = on_belt(a, 0.008)
+            rbox(f'brassBar{i}', M['brass'], 'pelvis', (0.008, 0.012, 0.062), p, q, bevel=0.002)
+        for i, a in enumerate((1.25, -1.3)):
+            p, q = on_belt(a, 0.026)
+            rbox(f'pouch{i}', M['pouchTan'], 'pelvis', (0.046, 0.058, 0.078), p - Vector((0, 0, 0.008)), q, bevel=0.008)
+            rbox(f'pouchFlap{i}', M['beltDark'], 'pelvis', (0.05, 0.062, 0.022), p + q @ Vector((0.003, 0, 0.026)), q, bevel=0.005)
+        return
     p, q = on_belt(-0.3, 0.012)
     rbox('buckle', M['silver'], 'pelvis', (0.012, 0.075, 0.056), p, q, bevel=0.004)
     rbox('buckleBar', M['black'], 'pelvis', (0.014, 0.012, 0.042), p + q @ Vector((0.002, 0.012, 0)), q, bevel=0.002)
@@ -742,6 +776,83 @@ def armor_garments():
         p, q = on_belt(a, 0.026)
         rbox(f'pouch{i}', M['beltDark'], 'pelvis', (0.042, 0.064, 0.074), p - Vector((0, 0, 0.006)), q, bevel=0.009)
         rbox(f'pouchFlap{i}', M['belt'], 'pelvis', (0.046, 0.068, 0.024), p + q @ Vector((0.003, 0, 0.024)), q, bevel=0.006)
+
+# --- The Clone Wars season 1 (after the CG model): the measured colours of
+# docs/prompts/anakin_cw_s1.md, lifted a little so they hold at 128 px; matte, hand-painted
+# cloth (the 'painted' detail), leather with a faint grain; the right glove darker and
+# glossier over the mechanical hand.
+
+S1 = dict(
+    crimson=material('maroonS1', 0x6a2c33, 'painted', 0.78, nstrength=0.5),
+    navy=material('slateNavy', 0x2c3e52, 'painted', 0.75, nstrength=0.5),
+    knit=material('collarMaroon', 0x4a2026, 'painted', 0.8, nstrength=0.4),
+    yoke=material('yoke', 0x6b8789, 'painted', 0.68, nstrength=0.5),
+    yokeEdge=material('yokeEdge', 0x4d5f62, 'leather', 0.7, nstrength=0.4),
+    belt=material('beltS1', 0x3c2a26, 'leather', 0.68, nstrength=0.4),
+    beltDark=material('beltS1Dark', 0x2b1f1c, 'leather', 0.72, nstrength=0.4),
+    pouchTan=material('pouchTan', 0x6e5a3e, 'leather', 0.75, nstrength=0.4),
+    brass=material('brass', 0xb08a3e, 'metal', 0.4, 0.8),
+    glove=material('gloveS1', 0x2f2723, 'leather', 0.66, nstrength=0.4),
+    gloveR=material('gloveS1R', 0x1b1918, 'leather', 0.5, nstrength=0.3),
+    gloveDark=material('gloveS1Dark', 0x221c19, 'leather', 0.7, nstrength=0.4),
+    boot=material('bootS1', 0x3b2a20, 'leather', 0.72, nstrength=0.4),
+    bootDark=material('bootS1Dark', 0x2a1e17, 'leather', 0.75, nstrength=0.4),
+    bootTan=material('bootTan', 0x7a6046, 'leather', 0.8, nstrength=0.3),
+)
+
+
+def s1_yoke():
+    """The grey-teal leather yoke: a short mantle over both shoulders and the upper
+    chest, cut square across the front at mid-chest (the same behind), rising under
+    the arms; two panels standing proud on either side of the chest; rounded caps
+    over the shoulder ends. Rigid on the chest; only the caps share the upper arm."""
+    def yoke_pt(u, v, grow=0.024):
+        a = TAU * u
+        side = sstep(0.55, 0.92, abs(math.sin(a)))
+        zb = 1.352 + 0.11 * side  # square across the front and back, up under the arms
+        z = zb + (1.598 - zb) * v
+        p = torso_pt(u, z, grow=grow + 0.004 * math.sin(v * math.pi), p=2.7)
+        return p
+    surface('yoke', M['yoke'], 'chest', 44, 12, yoke_pt, solidify=0.008, subsurf=1, uvscale=4)
+    # the rolled lower edge
+    surface('yokeRim', M['yokeEdge'], 'chest', 44, 2, lambda u, v: yoke_pt(u, 0, 0.026 + 0.004 * math.sin(v * math.pi)) + Vector((0, 0, 0.008 * v)), uvscale=4)
+    # the panels over the chest, a step lower than the yoke and standing off it
+    for s, sy in SIDES:
+        a0 = sy * 0.5
+        def panel(u, v, a0=a0):
+            a = a0 + (u - 0.5) * 0.42
+            z = 1.33 + (1.56 - 1.33) * v
+            return torso_pt((a / TAU) % 1, z, grow=0.033 + 0.003 * math.sin(u * math.pi), p=2.7)
+        surface('yokePanel' + s, M['yoke'], 'chest', 8, 8, panel, closed=False, solidify=0.006, uvscale=4)
+        surface('yokePanelEdge' + s, M['yokeEdge'], 'chest', 8, 1, lambda u, v, pn=panel: pn(u, 0) + Vector((0, 0, 0.006 * v)), closed=False, uvscale=4)
+
+    # the rounded caps over the shoulder ends, standing a little proud of the arm
+    def cap(cy, out):
+        def fn(u, v):
+            a = (u - 0.5) * 2 * 1.75
+            th = math.radians(98) * v
+            r = 0.078 * math.sin(th)
+            return Vector((math.sin(a) * r * 1.12, cy + out * math.cos(a) * r, 1.508 + math.cos(th) * 0.074))
+        return fn
+    for s, sy in SIDES:
+        surface('yokeCap' + s, M['yoke'], lambda co, s=s: {'chest': 0.45, 'sh' + s: 0.55}, 18, 9, cap(sy * 0.19, sy), closed=False, solidify=0.008, subsurf=1)
+        surface('yokeCapRim' + s, M['yokeEdge'], lambda co, s=s: {'chest': 0.45, 'sh' + s: 0.55}, 18, 1,
+                lambda u, v, f=cap(sy * 0.19, sy): f(u, 1.0) * 1.0 + Vector((0, 0, 0.006 * v)), closed=False)
+
+
+def s1_boot(s, cy, boot_pt):
+    """Season 1's boots: a dark leather shaft in vertical ribs from the knee down to a
+    band round the calf, a ribbed gaiter flaring over the ankle, tan suede shoes."""
+    ribs = lambda u: 1 + 0.035 * max(0.0, math.sin(TAU * u * 16)) ** 0.6
+    surface('boot' + s, M['boot'], leg_w(s), 56, 14,
+            lambda u, v: (lambda z: (lambda p: Vector((p.x * ribs(u), cy + (p.y - cy) * ribs(u), z)))(boot_pt(u, z)))(0.255 + 0.225 * v), solidify=0.006, uvscale=6)
+    surface('bootFold' + s, M['bootDark'], leg_w(s), 22, 3, lambda u, v: boot_pt(u, 0.455 + 0.035 * v, 0.008 + 0.004 * math.sin(v * math.pi)), solidify=0.005, uvscale=6)
+    surface('bootBand' + s, M['bootDark'], leg_w(s), 22, 2, lambda u, v: boot_pt(u, 0.24 + 0.024 * v, 0.008 + 0.003 * math.sin(v * math.pi)), uvscale=6)
+    # the gaiter: ribbed, flaring towards its hem over the top of the shoe
+    surface('bootGaiter' + s, M['boot'], leg_w(s), 56, 8,
+            lambda u, v: (lambda z: (lambda p: Vector((p.x * ribs(u), cy + (p.y - cy) * ribs(u), z)))(boot_pt(u, z, 0.002 + 0.012 * (1 - v) ** 1.5)))(0.11 + 0.135 * v), solidify=0.005, uvscale=6)
+    surface('bootShoe' + s, M['bootTan'], leg_w(s), 22, 4, lambda u, v: boot_pt(u, 0.07 + 0.06 * v), uvscale=6)
+
 
 # --- Episode III, the night of Order 66 (after the studio photo): a black
 # leather tunic with a high collar and leather tabards down the front, a wide
@@ -1006,9 +1117,12 @@ def robe_garments(hood_up, cloak=True, K=DARK):
         ellipsoid('hoodDownFold', K['cloakDark'], 'chest', (-0.16, 0, 1.55), (0.05, 0.14, 0.035), segs=20, rings=8, uvscale=4)
 
 
-OUTFIT = argv[2] if len(argv) > 2 else 'armor'  # armor | vader (hood raised) | robe (hood down) | tunic
+OUTFIT = argv[2] if len(argv) > 2 else 'armor'  # armor | vader (hood raised) | robe (hood down) | tunic | cw_s1
 if OUTFIT == 'armor':
     armor_garments()
+elif OUTFIT == 'cw_s1':
+    M.update(S1)
+    armor_garments(s1=True)
 elif OUTFIT == 'tunic':
     robe_garments(False, cloak=False, K=KNIGHT)
 else:
@@ -1162,7 +1276,7 @@ belt_hilt = empty('beltHilt', arm)
 belt_hilt.parent_type = 'BONE'
 belt_hilt.parent_bone = 'pelvis'
 pel_tail = arm_data.bones['pelvis'].tail_local
-belt_hilt.location = REST['pelvis'] + (G(0.205, -0.07, -0.06) if OUTFIT == 'armor' else G(0.07, -0.08, 0.2)) - pel_tail  # relative to the bone's tail
+belt_hilt.location = REST['pelvis'] + (G(0.205, -0.07, -0.06) if OUTFIT in ('armor', 'cw_s1') else G(0.07, -0.08, 0.2)) - pel_tail  # relative to the bone's tail
 belt_hilt.rotation_quaternion = Quaternion(Vector((0, 1, 0)), math.pi / 2)  # the hilt's +X (emitter) points down
 bh = empty('beltHiltAxis', belt_hilt, (-0.13, 0, 0))
 bh.rotation_quaternion = Quaternion(Vector((0, 1, 0)), math.pi / 2)

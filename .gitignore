@@ -16,3 +16,5 @@ dist-art
 # hair review renders: only the comparison sheets and parameter snapshots are kept
 renders/**/old_*.png
 renders/**/new_*.png
+renders/cw_s1_iter_*/cw_s1_*.png
+!renders/cw_s1_iter_*/cw_s1_sheet.png
