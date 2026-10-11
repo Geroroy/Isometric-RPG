@@ -4,8 +4,10 @@
 // the deeper layers slide slower. The upper plaza looks out over a dusk haze with warm windows and
 // red aircraft beacons (Attack of the Clones' chase, Revenge of the Sith's skyline); the undercity
 // looks into smog, sparse windows and neon (The Clone Wars' lower levels). Each layer is one
-// pre-drawn tileable canvas: a frame costs a gradient fill and a few drawImage calls.
+// pre-drawn tileable canvas: a frame costs a gradient fill and a few drawImage calls. The sky
+// traffic (gfx/skylineTraffic.js) flies between the layers, each tier after the layer behind it.
 import { RNG } from '../core/math.js';
+import { SkylineTraffic, TIERS } from './skylineTraffic.js';
 
 const SIZE = 384;
 const PAL = {
@@ -125,8 +127,11 @@ function layerCanvas(mode, li) {
 
 let skyKey = '';
 let sky = null;
-/** The backdrop for the visible screen: `mode` 'up' (the plaza's dusk) or 'low' (the undercity's smog). */
-export function drawCityBackdrop(ctx, cam, W, H, mode) {
+const traffic = new SkylineTraffic();
+if (typeof window !== 'undefined') window.__traffic = traffic; // QA (tools/qa)
+/** The backdrop for the visible screen: `mode` 'up' (the plaza's dusk) or 'low' (the undercity's
+ * smog); `dt` advances its traffic (0: frozen, as for a still). */
+export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0) {
   const P = PAL[mode];
   if (skyKey !== mode + H) {
     sky = ctx.createLinearGradient(0, 0, 0, H);
@@ -137,11 +142,13 @@ export function drawCityBackdrop(ctx, cam, W, H, mode) {
   }
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
+  traffic.update(dt, cam, W, H, mode);
   for (let li = 0; li < LAYERS.length; li++) {
     const c = layerCanvas(mode, li);
     const f = LAYERS[li].f;
     const ox = -((((cam.x * f) % SIZE) + SIZE) % SIZE);
     const oy = -((((cam.y * f) % SIZE) + SIZE) % SIZE);
     for (let y = oy; y < H; y += SIZE) for (let x = ox; x < W; x += SIZE) ctx.drawImage(c, Math.round(x), Math.round(y));
+    for (let ti = 0; ti < TIERS.length; ti++) if (TIERS[ti].after === li) traffic.draw(ctx, ti, cam, mode, P.haze);
   }
 }

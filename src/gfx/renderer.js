@@ -189,7 +189,7 @@ export class Renderer {
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.smooth(false);
-    if (g.world.city) drawCityBackdrop(ctx, cam, W, H, p.y > 90 ? 'low' : 'up'); // the city beyond the rims
+    if (g.world.city) drawCityBackdrop(ctx, cam, W, H, p.y > 90 ? 'low' : 'up', dt); // the city beyond the rims, its sky traffic
     else {
       ctx.fillStyle = '#07070a';
       ctx.fillRect(0, 0, W, H);
