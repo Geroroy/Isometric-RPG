@@ -51,7 +51,7 @@ def HEAD_BVH(dg):
     return BVHTree.FromPolygons(vs, fs)
 
 
-BODY_PREFIX = ('neck', 'collar', 'yoke', 'tunicTorso', 'tabardTorso', 'tabardShoulder', 'tabardBack', 'tabardL', 'tabardR', 'lapel', 'sash', 'hood')
+BODY_PREFIX = ('neck', 'collar', 'yoke', 'tunicTorso', 'tabardTorso', 'tabardShoulder', 'tabardBack', 'tabardL', 'tabardR', 'lapel', 'sash', 'hood', 'cloak')
 BODY = [o for o in sc.objects if o.type == 'MESH' and o.name.startswith(BODY_PREFIX)]
 print('HAIR', [o.name for o in HAIR], 'BODY', len(BODY), [o.name for o in BODY][:12])
 

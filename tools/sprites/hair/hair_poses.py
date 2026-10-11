@@ -2,7 +2,7 @@
 The head and shoulders in the animations' extreme poses, for checking by eye that the hair stays on
 the head (no gap at the hairline, nothing lagging or floating, nothing cutting into the collar or
 shoulders): a 3/4 close-up per pose, framed on the head wherever the pose puts it, in one sheet.
-  python hair_poses.py model.glb out.png [anim:frame ...]
+  python hair_poses.py model.glb out.png [anim:frame[:azimuth°] ...]   (azimuth: -40 = his front-right, 180 = behind)
 """
 import builtins
 import functools
@@ -45,7 +45,7 @@ cam.data.type = 'ORTHO'
 cam.data.ortho_scale = 0.62
 tmp = []
 for pose in POSES:
-    name, f = pose.split(':')
+    name, f, *az = pose.split(':')
     act = bpy.data.actions[name]
     for o in sc.objects:
         ad = o.animation_data
@@ -61,11 +61,11 @@ for pose in POSES:
     hm = arm.matrix_world @ arm.pose.bones['head'].matrix
     target = hm @ Vector((0, 0, 0)) + (hm.to_3x3() @ Vector((0, 0.06, 0)))  # a little up the head bone
     # 3/4 from his front-right, slightly above, whichever way the pose has turned him
-    a, e = math.radians(-40), math.radians(18)
+    a, e = math.radians(float(az[0]) if az else -40), math.radians(18)
     d = Vector((math.cos(a) * math.cos(e), math.sin(a) * math.cos(e), math.sin(e)))
     cam.location = target + d * 4
     cam.rotation_euler = (-d).to_track_quat('-Z', 'Y').to_euler()
-    p = os.path.join(os.path.dirname(os.path.abspath(OUT)), f'_pose_{name}_{f}.png')
+    p = os.path.join(os.path.dirname(os.path.abspath(OUT)), f'_pose_{name}_{f}_{len(tmp)}.png')
     sc.render.filepath = p
     bpy.ops.render.render(write_still=True)
     tmp.append((pose, p))
