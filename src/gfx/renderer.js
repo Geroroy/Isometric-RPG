@@ -12,7 +12,8 @@ import { glowSprite } from './fx.js';
 import { transientLights, relightUnits } from './relight.js';
 import { SIG } from '../game/units.js';
 import { canvasFont } from '../ui/fonts.js';
-import { drawCityBackdrop } from './cityBackdrop.js';
+import { drawCityBackdrop, backdropHaze } from './cityBackdrop.js';
+import { LaneTraffic } from './skylineTraffic.js';
 import { SABER, PALETTES, trailWindow, paletteFor, flickerAt, ignition, drawBlade, drawSpark, drawTrail, drawClash, record } from './saberStyle.js';
 import { preset, tintFor, drawLight, drawGround, drawGroundTint, sweepOf, lightCharacter } from './saberLight.js';
 
@@ -189,11 +190,19 @@ export class Renderer {
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.smooth(false);
-    if (g.world.city) drawCityBackdrop(ctx, cam, W, H, p.y > 90 ? 'low' : 'up', dt); // the city beyond the rims, its sky traffic
+    const mode = p.y > 90 ? 'low' : 'up';
+    if (g.world.city) drawCityBackdrop(ctx, cam, W, H, mode, dt); // the city beyond the rims, its far traffic
     else {
       ctx.fillStyle = '#07070a';
       ctx.fillRect(0, 0, W, H);
     }
+    // the speeders in the level's air lanes: those through the drop are depth-sorted with the props
+    // and units below; those overhead come at the end
+    if (g.world.traffic) {
+      if (!this.lanes || this.lanes.src !== g.world.traffic) this.lanes = new LaneTraffic(g.world.traffic);
+      this.lanes.update(dt);
+    } else this.lanes = null;
+    const haze = backdropHaze(mode);
     for (const u of g.activeUnits) this.igniteOf(u); // the blades' ignition clocks, before any light is drawn
     this.terrain.draw(ctx, cam.x, cam.y, W, H);
     g.fx.drawDecals(ctx, cam);
@@ -206,13 +215,14 @@ export class Renderer {
     // the depth-sorted list reuses its entries from frame to frame (no garbage per object per frame)
     const standing = this.standing || (this.standing = []);
     let ns = 0;
-    const put = (depth, prop, unit, pickup, scorch) => {
-      const e = standing[ns] || (standing[ns] = { depth: 0, prop: null, unit: null, pickup: null, scorch: null });
+    const put = (depth, prop, unit, pickup, scorch, car = null) => {
+      const e = standing[ns] || (standing[ns] = { depth: 0, prop: null, unit: null, pickup: null, scorch: null, car: null });
       e.depth = depth;
       e.prop = prop;
       e.unit = unit;
       e.pickup = pickup;
       e.scorch = scorch;
+      e.car = car;
       ns++;
     };
     for (const pr of g.world.props) {
@@ -265,6 +275,7 @@ export class Renderer {
     for (const u of g.activeUnits) if (!u.dead && !u.hidden) put(u.x + u.y, null, u, null, null);
     for (const pk of g.pickups) put(pk.x + pk.y, null, null, pk, null);
     for (const m of g.fx.scorches) put(m.depth ?? m.x + m.y, null, null, null, m);
+    if (this.lanes) for (const it of this.lanes.visible('drop', cam, W, H)) put(it[0], null, null, null, null, it);
     standing.length = ns;
     standing.sort(byDepth);
     const pDepth = p.x + p.y;
@@ -288,6 +299,8 @@ export class Renderer {
         this.drawUnit(d.unit);
       } else if (d.scorch) {
         g.fx.drawScorch(ctx, cam, d.scorch);
+      } else if (d.car) {
+        this.lanes.drawItem(ctx, d.car, 'drop', haze);
       } else if (d.pickup) {
         const pk = d.pickup;
         const s = worldToScreen(pk.x, pk.y, 0.15 + Math.sin(pk.t * 4) * 0.08);
@@ -710,15 +723,7 @@ export class Renderer {
     for (const b of g.bolts) spot(b.x, b.y, b.z, b.color === 'red' ? 255 : 90, b.color === 'red' ? 70 : 140, b.color === 'red' ? 60 : 255, 26, 0.6);
     for (const fl of g.fx.lights) spot(fl.x, fl.y, fl.z, fl.r, fl.g, fl.b, fl.rad, 0.8 * (1 - fl.t / fl.life));
     // speeders passing overhead sweep their light across the street below
-    for (const L of g.world.traffic || []) {
-      if (!L.over) continue;
-      const len = Math.hypot(L.x1 - L.x0, L.y1 - L.y0);
-      for (let d = (this.time * L.speed) % L.gap; d < len; d += L.gap) {
-        const x = L.x0 + ((L.x1 - L.x0) / len) * d;
-        const y = L.y0 + ((L.y1 - L.y0) / len) * d;
-        if (Math.abs(x - p.x) < 16 && Math.abs(y - p.y) < 16) spot(x, y, 0, 210, 220, 255, 70, 0.22);
-      }
-    }
+    if (this.lanes) for (const [x, y] of this.lanes.positions('over')) if (Math.abs(x - p.x) < 16 && Math.abs(y - p.y) < 16) spot(x, y, 0, 210, 220, 255, 70, 0.22);
     for (const u of g.activeUnits) if (u.choke) spot(u.x, u.y, 1.2 + u.z, 160, 60, 60, 40, 0.5);
     // composite
     const ctx = this.ctx;
@@ -927,31 +932,9 @@ export class Renderer {
     ctx.lineCap = 'butt';
   }
 
-  /** The city's air traffic: streams of speeder lights along lanes through the drop. */
+  /** The craft crossing high over the undercity's streets (the drop's are drawn before the terrain). */
   drawTraffic(ctx, cam) {
-    const lanes = this.game.world.traffic;
-    if (!lanes) return;
-    const t = this.time;
-    for (const L of lanes) {
-      const len = Math.hypot(L.x1 - L.x0, L.y1 - L.y0);
-      const ux = (L.x1 - L.x0) / len;
-      const uy = (L.y1 - L.y0) / len;
-      for (let d = (t * L.speed) % L.gap, i = 0; d < len; d += L.gap, i++) {
-        const x = L.x0 + ux * d;
-        const y = L.y0 + uy * d;
-        const a = worldToScreen(x, y, L.z);
-        if (a.x < cam.x - 20 || a.y < cam.y - 20 || a.x > cam.x + this.w + 20 || a.y > cam.y + this.h + 20) continue;
-        if (L.over) {
-          // high overhead: a small craft, a white headlight and a coloured tail light
-          const b = worldToScreen(x - ux * 0.5, y - uy * 0.5, L.z);
-          const col = SPEEDER_COLORS[(((i + Math.floor((t * L.speed) / L.gap)) % SPEEDER_COLORS.length) + SPEEDER_COLORS.length) % SPEEDER_COLORS.length];
-          this.glowLine(ctx, b.x - cam.x, b.y - cam.y, a.x - cam.x, a.y - cam.y, col, 0.4, 'rgba(255,250,240,0.6)');
-          continue;
-        }
-        const b = worldToScreen(x - ux * 0.9, y - uy * 0.9, L.z);
-        this.glowLine(ctx, b.x - cam.x, b.y - cam.y, a.x - cam.x, a.y - cam.y, [255, 120, 90], 0.7, 'rgba(255,240,220,0.95)');
-      }
-    }
+    if (this.lanes) this.lanes.draw(ctx, cam, this.w, this.h, 'over', backdropHaze('low'));
   }
 
   drawBolts(ctx, cam) {
@@ -1149,7 +1132,6 @@ function extent(poly) {
 }
 
 // tail lights of the craft passing high over the undercity
-const SPEEDER_COLORS = [[255, 90, 120], [90, 200, 255], [255, 190, 90], [200, 120, 255]];
 
 // the billboards' hologram ads: abstract shapes and glyph rows, no readable text
 const glyphRow = (ctx, x, y, w, seed) => {

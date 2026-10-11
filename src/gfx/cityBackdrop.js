@@ -125,10 +125,12 @@ function layerCanvas(mode, li) {
   return c;
 }
 
+/** The backdrop's haze colour (for things drawn into it, like the lanes' traffic). */
+export const backdropHaze = (mode) => PAL[mode].haze;
+
 let skyKey = '';
 let sky = null;
 const traffic = new SkylineTraffic();
-if (typeof window !== 'undefined') window.__traffic = traffic; // QA (tools/qa)
 /** The backdrop for the visible screen: `mode` 'up' (the plaza's dusk) or 'low' (the undercity's
  * smog); `dt` advances its traffic (0: frozen, as for a still). */
 export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0) {

@@ -1,15 +1,19 @@
-// Coruscant's sky traffic (docs/SKYLINE_TRAFFIC.md): speeders streaming across the city beyond the
-// platforms' edges, in three altitude tiers threaded between the backdrop's tower layers
-// (gfx/cityBackdrop.js) — the far traffic between the middle and the nearest towers, the rest in
-// front of them all (the towers cover most of the sky: traffic behind two layers was hardly seen) —
-// and drawn before the terrain, so they only show over the drop, never over the map or its
-// props. The sprites are the vehicle sheet's (tools/sprites/traffic/extract.py), all drawn facing
+// Coruscant's sky traffic (docs/SKYLINE_TRAFFIC.md), in three depths: the far traffic over the
+// distant city (SkylineTraffic, below), the speeders in the level's own air lanes through the drop
+// between the platforms, and those crossing high overhead (LaneTraffic, at the end) — the craft
+// that replaced the streaks of light that used to run along those lanes.
+//
+// The far traffic: speeders streaming across the city beyond the platforms' edges, in two
+// altitude tiers drawn into the backdrop (gfx/cityBackdrop.js) — the deeper between its middle and
+// nearest tower layers, the other in front of them all (the towers cover most of the sky: traffic
+// behind two layers was hardly seen) — before the terrain, so never over the map or its props. The sprites are the vehicle sheet's (tools/sprites/traffic/extract.py), all drawn facing
 // down-left; the down-right lanes mirror them. Each vehicle flies a cubic Bézier along an isometric
 // diagonal, bent a little so lanes weave instead of ruling straight lines, at its class's speed
 // (racers and sedans quick, freighters sluggish) with a slow surge and a hover bob; the near tier
 // trails pink or blue engine wake. Vehicles come from a fixed pool per tier: spawned off-screen at
 // random (Poisson) times in lanes kept apart, recycled when they leave the view.
 import { RNG } from '../core/math.js';
+import { worldToScreen } from '../core/iso.js';
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -32,7 +36,6 @@ const CLASSES = {
 export const TIERS = [
   { name: 'deep', after: 1, f: 0.16, scale: 0.34, haze: 0.4, max: 30, rate: 2.4, band: [0.04, 0.5], pace: 0.32, trail: 0, beacon: 1, glow: 0.5 },
   { name: 'mid', after: 2, f: 0.3, scale: 0.6, haze: 0.2, max: 14, rate: 0.9, band: [0.0, 0.55], pace: 0.62, trail: 0.45, beacon: 0.6, glow: 0.3 },
-  { name: 'near', after: 2, f: 0.55, scale: 1.0, haze: 0.04, max: 3, rate: 0.1, band: [-0.05, 0.3], pace: 1.5, trail: 1, beacon: 0, glow: 0 },
 ];
 const MARGIN = 90; // off-screen spawn / recycle margin, tier px
 // underglow colours: the plaza's warm dusk, the undercity's neon
@@ -212,7 +215,6 @@ export class TrafficVehicle {
 export class SkylineTraffic {
   constructor(seed = 7) {
     this.rng = new RNG(seed);
-    this.tiers = TIERS; // (QA)
     this.pools = TIERS.map((T) => Array.from({ length: T.max }, () => new TrafficVehicle()));
     this.next = TIERS.map(() => 0); // seconds to the next spawn per tier
     this.lanes = TIERS.map(() => []); // recent lane starts per tier: { y, dir, at }
@@ -288,7 +290,6 @@ export class SkylineTraffic {
   update(dt, cam, W, H, mode) {
     if (!meta) return load();
     this.mode = mode;
-    this.view = [W, H]; // (QA)
     dt = Math.min(dt, 0.1);
     this.time += dt;
     const busy = mode === 'low' ? 0.7 : 1; // the undercity's smog: fewer craft that low
@@ -323,4 +324,189 @@ export class SkylineTraffic {
     act.sort((a, b) => a.pos()[1] - b.pos()[1]); // higher (farther) first
     for (const v of act) v.draw(ctx, img, T.scale, vx, vy, this.time, T.trail > 0, T.glow, v.neon);
   }
+}
+
+// --- the level's air lanes ------------------------------------------------------------------------
+
+const LANE_SCALE = { drop: 0.85, over: 1.05 }; // of the sheet's size: the drop's craft, the ones overhead
+const LANE_HAZE = { drop: 0.12, over: 0 };
+const POOL = 80;
+
+/** A speeder on a lane: where along it, how fast it wants to go and goes, its look and its wobble. */
+class LaneCar {
+  constructor() {
+    this.active = false;
+  }
+}
+
+/**
+ * The craft along the level's air lanes (world.traffic, worldgen.js: (x0, y0) -> (x1, y1) at height z,
+ * a lane speed and a mean gap; `over`: high above the undercity's streets). Every lane is flown
+ * towards the camera (down the screen) — the sheet draws its craft from the front only, so a lane
+ * running away would show them reversing. Each car keeps its own pace around the lane's (a class
+ * spread and a slow surge), brakes for a slower car ahead (no passing through each other), weaves
+ * a little across the lane and bobs on its repulsors; new cars enter at random (exponential) gaps
+ * once the one before has cleared the entry. One pool for all lanes.
+ */
+export class LaneTraffic {
+  constructor(lanes, seed = 11) {
+    this.rng = new RNG(seed);
+    this.src = lanes;
+    this.pool = Array.from({ length: POOL }, () => new LaneCar());
+    this.lanes = lanes.map((L) => {
+      // flown towards the camera: world +x (down-right) or +y (down-left) along the main axis
+      const dx = L.x1 - L.x0;
+      const dy = L.y1 - L.y0;
+      const away = Math.abs(dx) >= Math.abs(dy) ? dx < 0 : dy < 0;
+      const [x0, y0, x1, y1] = away ? [L.x1, L.y1, L.x0, L.y0] : [L.x0, L.y0, L.x1, L.y1];
+      const len = Math.hypot(x1 - x0, y1 - y0);
+      return { L, x0, y0, z: L.z, ux: (x1 - x0) / len, uy: (y1 - y0) / len, len, mirror: Math.abs(x1 - x0) >= Math.abs(y1 - y0), kind: L.over ? 'over' : 'drop', next: 0, cars: [] };
+    });
+    this.time = 0;
+    this.warm = false;
+  }
+
+  spawn(ln, d) {
+    const c = this.pool.find((p) => !p.active);
+    if (!c || !meta) return null;
+    const rng = this.rng;
+    const [cls, sprite] = SkylineTraffic.prototype.pickSprite.call(this, rng);
+    const C = CLASSES[cls];
+    // the class sets the pace around the lane's: racers quicker, freighters slower
+    const k = { swoop: 1.3, cruiser: 1.15, commuter: 1, cargo: 0.72 }[cls];
+    c.active = true;
+    c.sprite = sprite;
+    c.d = d;
+    c.want = ln.L.speed * k * (0.88 + rng.next() * 0.24);
+    c.v = c.want;
+    c.phase = rng.next() * 6.283;
+    c.surge = 0.05 + rng.next() * 0.07;
+    c.weave = (0.15 + rng.next() * 0.35) * (rng.next() < 0.5 ? -1 : 1); // world units across the lane
+    c.weaveF = 0.08 + rng.next() * 0.1;
+    c.dz = (rng.next() - 0.5) * 1.2; // a little above or below the lane
+    c.trail = rng.next() < C.trail * (ln.kind === 'over' ? 1 : 0.8) ? (rng.next() < 0.5 ? 'blue' : 'pink') : null;
+    c.age = 0;
+    ln.cars.push(c);
+    return c;
+  }
+
+  update(dt) {
+    if (!meta) return load();
+    dt = Math.min(dt, 0.1);
+    this.time += dt;
+    const rng = this.rng;
+    for (const ln of this.lanes) {
+      const mean = ln.L.gap / ln.L.speed; // seconds between cars on average
+      if (!this.warm) {
+        // the lanes are already flowing when the level opens
+        for (let d = rng.next() * ln.L.gap; d < ln.len; d += ln.L.gap * (0.5 + rng.next())) this.spawn(ln, d);
+        ln.cars.sort((a, b) => b.d - a.d);
+        ln.next = rng.next() * mean;
+      }
+      // front to back: each car speeds up to its own pace, or brakes behind the one ahead
+      for (let i = 0; i < ln.cars.length; i++) {
+        const c = ln.cars[i];
+        c.age += dt;
+        let target = c.want * (1 + c.surge * Math.sin(c.age * 0.7 + c.phase));
+        const ahead = ln.cars[i - 1];
+        if (ahead) {
+          const gap = ahead.d - c.d;
+          if (gap < 3) target = Math.min(target, ahead.v * (gap < 1.8 ? 0.85 : 1));
+        }
+        c.v += (target - c.v) * Math.min(1, dt * 1.5);
+        c.d += c.v * dt;
+      }
+      // recycle what has run off the lane's end
+      while (ln.cars.length && ln.cars[0].d > ln.len) ln.cars.shift().active = false;
+      ln.next -= dt;
+      const last = ln.cars[ln.cars.length - 1];
+      if (ln.next <= 0 && (!last || last.d > 3)) {
+        this.spawn(ln, 0);
+        ln.next = mean * (0.35 + -Math.log(1 - rng.next() * 0.999) * 0.75); // irregular: bunches and lulls
+      }
+    }
+    this.warm = true;
+  }
+
+  /** Where a car is: along its lane, weaving across it, bobbing. */
+  place(ln, c) {
+    const w = c.weave * Math.sin(c.d * c.weaveF * 6.283 + c.phase);
+    const x = ln.x0 + ln.ux * c.d - ln.uy * w;
+    const y = ln.y0 + ln.uy * c.d + ln.ux * w;
+    const z = ln.z + c.dz + 0.06 * Math.sin(c.age * 2.3 + c.phase);
+    return [x, y, z];
+  }
+
+  /** Every car's world position (for the overhead craft's light sweeping the street). */
+  *positions(kind) {
+    for (const ln of this.lanes) if (ln.kind === kind) for (const c of ln.cars) yield this.place(ln, c);
+  }
+
+  laneAtlas(kind, haze) {
+    const k = LANE_SCALE[kind];
+    const key = 'lane' + kind + haze.join();
+    let img = tinted.get(key);
+    if (!img) {
+      img = document.createElement('canvas');
+      img.width = Math.ceil(atlas.width * k);
+      img.height = Math.ceil(atlas.height * k);
+      const x = img.getContext('2d');
+      x.imageSmoothingEnabled = true;
+      x.imageSmoothingQuality = 'high';
+      x.drawImage(atlas, 0, 0, img.width, img.height);
+      x.globalCompositeOperation = 'source-atop';
+      x.fillStyle = `rgba(${haze[0]},${haze[1]},${haze[2]},${LANE_HAZE[kind]})`;
+      x.fillRect(0, 0, img.width, img.height);
+      tinted.set(key, img);
+    }
+    return img;
+  }
+
+  /**
+   * The cars of one kind in view: [depth (x + y), screen x, y, lane, car]. The drop's go into the
+   * renderer's depth-sorted list with the props and the units (in front of the platform behind
+   * them and its facade, behind whatever stands nearer); the overhead ones are drawn last.
+   */
+  visible(kind, cam, W, H) {
+    const list = [];
+    if (!meta) return list;
+    for (const ln of this.lanes) {
+      if (ln.kind !== kind) continue;
+      for (const c of ln.cars) {
+        const [x, y, z] = this.place(ln, c);
+        const s = worldToScreen(x, y, z);
+        const sx = s.x - cam.x;
+        const sy = s.y - cam.y;
+        if (sx < -120 || sy < -120 || sx > W + 120 || sy > H + 120) continue;
+        list.push([x + y, sx, sy, ln, c]);
+      }
+    }
+    return list;
+  }
+
+  /** Draw one car from visible(). */
+  drawItem(ctx, item, kind, haze) {
+    const [, sx, sy, ln, c] = item;
+    drawCar(ctx, this.laneAtlas(kind, haze), LANE_SCALE[kind], sx, sy, c, ln.mirror, this.time);
+  }
+
+  /** Draw every car of a kind, farther first ('over': after everything else). */
+  draw(ctx, cam, W, H, kind, haze) {
+    const list = this.visible(kind, cam, W, H).sort((a, b) => a[0] - b[0]);
+    for (const it of list) this.drawItem(ctx, it, kind, haze);
+  }
+}
+
+const drawer = new TrafficVehicle();
+function drawCar(ctx, img, k, sx, sy, c, mirror, now) {
+  drawer.sprite = c.sprite;
+  drawer.mirror = mirror;
+  drawer.trail = c.trail;
+  drawer.beacon = true;
+  drawer.phase = c.phase;
+  drawer.age = c.age;
+  drawer.bob = 0;
+  drawer.pts = [[sx, sy], [sx, sy], [sx, sy], [sx, sy]];
+  drawer.t = 0;
+  drawer.draw(ctx, img, k, 0, 0, now, true, 0, null);
 }
