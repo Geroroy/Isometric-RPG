@@ -83,6 +83,38 @@ if FIT:
     OFF = P.get('scalp_offset', 0.003)
 
 
+# 'drape': hair long enough to reach the shoulders lies on them — the hanging part of every clump is
+# pushed out of the body (its rest-pose meshes: collar, shoulders, back, sleeves, cloak) to
+# `clearance` plus half the clump's thickness off its surface
+DR = P.get('drape')
+if DR:
+    vs, fs = [], []
+    for o in scene.objects:
+        if o.type == 'MESH' and o.name.startswith(tuple(DR['meshes'])):
+            n0 = len(vs)
+            vs += [o.matrix_world @ v.co for v in o.data.vertices]
+            fs += [tuple(n0 + i for i in p.vertices) for p in o.data.polygons]
+    BODY = BVHTree.FromPolygons(vs, fs) if fs else None
+
+
+def drape(pts, thk):
+    """Push the points below the scalp's reach off the body, then smooth the pushed run a little."""
+    if not DR or not BODY:
+        return pts
+    clr = DR.get('clearance', 0.008) + thk * 0.5
+    out = list(pts)
+    for _ in range(2):
+        for k, p in enumerate(out):
+            loc, nrm, _, d = BODY.find_nearest(p, 0.06)
+            if loc is None:
+                continue
+            if (p - loc).dot(nrm) < 0 or d < clr:
+                out[k] = loc + nrm * clr
+        # one smoothing pass along the clump keeps the push from kinking it (the root stays put)
+        out = [out[0]] + [(out[k - 1] + out[k] * 2 + out[k + 1]) / 4 for k in range(1, len(out) - 1)] + [out[-1]]
+    return out
+
+
 def env(th, ph, lift):
     """A point of the hair envelope round the head (theta from the crown, phi round)."""
     e = C + Vector(((R.x + lift) * math.sin(th) * math.cos(ph), (R.y + lift) * math.sin(th) * math.sin(ph), (R.z + lift) * math.cos(th)))
@@ -201,6 +233,7 @@ def clump(root, end, g, rng, alt=0):
         f0 = 1 - g['flick_len']
         fl = g['flick'] * (max(0.0, t - f0) / g['flick_len']) ** 2 if t > f0 else 0.0
         out.append(p + side * w + radial * (fl + 0.4 * abs(w)) + Vector((0, 0, fl * P.get('flick_up', 0.5))))
+    out = drape(out, thk)
     # the section along the guide
     base = len(verts)
     twist = rng.uniform(-0.25, 0.25)
@@ -256,7 +289,7 @@ for g in P['groups']:
         clump((rt, rp), (et, ep), g, rng, i % 2)
 
 
-def mesh_object(name, vs, fs, uv, mat):
+def mesh_object(name, vs, fs, uv, mat, follow=False):
     me = bpy.data.meshes.new(name)
     me.from_pydata([tuple(v) for v in vs], [], fs)
     me.update()
@@ -269,16 +302,28 @@ def mesh_object(name, vs, fs, uv, mat):
     me.materials.append(mat)
     o = bpy.data.objects.new(name, me)
     scene.collection.objects.link(o)
-    # skinned to the head bone, like the rest of the head
+    # skinned to the head bone, like the rest of the head — and with 'body_follow', the hair below the
+    # chin shifts onto the neck and then the chest, so ends lying on the shoulders move with them
     o.parent = arm
-    vg = o.vertex_groups.new(name='head')
-    vg.add(list(range(len(vs))), 1.0, 'REPLACE')
+    BF = P.get('body_follow') if follow else None
+    if not BF:
+        vg = o.vertex_groups.new(name='head')
+        vg.add(list(range(len(vs))), 1.0, 'REPLACE')
+    else:
+        g = {b: o.vertex_groups.new(name=b) for b in ('head', 'neck', 'chest')}
+        for i, v in enumerate(vs):
+            wh = smooth(min(1.0, max(0.0, (v.z - BF['neck_from']) / (BF['head_from'] - BF['neck_from']))))
+            wc = 1 - smooth(min(1.0, max(0.0, (v.z - BF['chest_from']) / (BF['neck_from'] - BF['chest_from']))))
+            wn = max(0.0, 1 - wh - wc)
+            for b, w in (('head', wh), ('neck', wn), ('chest', wc)):
+                if w > 1e-4:
+                    g[b].add([i], w, 'REPLACE')
     md = o.modifiers.new('arm', 'ARMATURE')
     md.object = arm
     return o
 
 
-hair = mesh_object('hairV2', verts, faces, uvs, MAT)
+hair = mesh_object('hairV2', verts, faces, uvs, MAT, follow=True)
 
 # --- 5. the shell under the clumps: tight on the scalp, hanging a little at the back --
 S = P['shell']

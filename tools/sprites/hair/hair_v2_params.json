@@ -13,7 +13,7 @@
   ]
  },
  "hang_theta": 1.62,
- "hang_taper": 0.38,
+ "hang_taper": 0.25,
  "part_phi": 0.42,
  "segments": 18,
  "sides": 6,
@@ -44,8 +44,8 @@
     4.53
    ],
    "end_theta": [
-    2.39,
-    2.59
+    2.75,
+    2.95
    ],
    "sweep": 0.0,
    "width": 0.078,
@@ -69,8 +69,8 @@
     -1.2
    ],
    "end_theta": [
-    2.09,
-    2.24
+    2.39,
+    2.54
    ],
    "sweep": -0.12,
    "width": 0.07,
@@ -94,8 +94,8 @@
     1.75
    ],
    "end_theta": [
-    2.09,
-    2.24
+    2.39,
+    2.54
    ],
    "sweep": 0.12,
    "width": 0.07,
@@ -119,8 +119,8 @@
     3.83
    ],
    "end_theta": [
-    2.49,
-    2.69
+    2.85,
+    3.05
    ],
    "sweep": 0.0,
    "width": 0.08,
@@ -144,8 +144,8 @@
     2.35
    ],
    "end_theta": [
-    2.35,
-    2.55
+    2.65,
+    2.85
    ],
    "sweep": 0.0,
    "width": 0.08,
@@ -169,8 +169,8 @@
     4.38
    ],
    "end_theta": [
-    2.35,
-    2.55
+    2.65,
+    2.85
    ],
    "sweep": 0.0,
    "width": 0.08,
@@ -194,8 +194,8 @@
     -1.15
    ],
    "end_theta": [
-    2.19,
-    2.39
+    2.49,
+    2.69
    ],
    "sweep": -0.2,
    "width": 0.075,
@@ -219,8 +219,8 @@
     1.9
    ],
    "end_theta": [
-    2.19,
-    2.39
+    2.49,
+    2.69
    ],
    "sweep": 0.2,
    "width": 0.075,
@@ -244,8 +244,8 @@
     5.2
    ],
    "end_theta": [
-    2.42,
-    2.67
+    2.7,
+    2.95
    ],
    "sweep": 0.0,
    "width": 0.095,
@@ -297,8 +297,8 @@
     0.4
    ],
    "end_theta": [
-    2.09,
-    2.29
+    2.35,
+    2.55
    ],
    "end_phi": [
     -1.3,
@@ -325,8 +325,8 @@
     0.7
    ],
    "end_theta": [
-    2.04,
-    2.29
+    2.3,
+    2.55
    ],
    "end_phi": [
     1.05,
@@ -377,5 +377,28 @@
  "tip_close": 0.6,
  "layer_step": 0.005,
  "fit_scalp": true,
- "scalp_offset": 0.002
+ "scalp_offset": 0.002,
+ "drape": {
+  "_doc": "the hanging part pushed off these rest-pose meshes (name prefixes) to clearance + half the clump thickness",
+  "meshes": [
+   "collar",
+   "neck",
+   "tabardShoulder",
+   "tabardBack",
+   "tabardL",
+   "tabardR",
+   "tunicTorso",
+   "tunicBell",
+   "lapel",
+   "cloak",
+   "hood"
+  ],
+  "clearance": 0.006
+ },
+ "body_follow": {
+  "_doc": "rest-pose heights (m): head weight 1 above head_from, blending onto 'neck' down to neck_from, onto 'chest' down to chest_from",
+  "head_from": 1.64,
+  "neck_from": 1.6,
+  "chest_from": 1.54
+ }
 }

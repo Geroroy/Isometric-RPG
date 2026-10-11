@@ -2,7 +2,7 @@
 Does the hair sit on the head and move with it? For a model with hair_v2.py's hair, over every
 frame of every animation (every `step`-th frame):
 
-  follow  — the hair's vertices in the head bone's space: how far any of them drifts from where it
+  follow  — the hair's vertices weighted to the head bone alone, in its space: how far any of them drifts from where it
             is in the first frame (0 = rigid on the head, as it must be);
   gap     — how far the hair shell's inner side is from the scalp (the head and ears): everywhere, and along the
             hairline (the shell's open edge, where a gap shows as hair floating off the head);
@@ -36,6 +36,14 @@ sc = bpy.context.scene
 arm = next(o for o in sc.objects if o.type == 'ARMATURE')
 HAIR = [o for o in sc.objects if o.type == 'MESH' and o.name.startswith('hairV2')]
 SHELL = next(o for o in HAIR if o.name.startswith('hairV2Shell'))
+# the part on the head bone alone must not move against it; hair below the chin weighted onto the
+# neck and chest (hair_v2 'body_follow') follows the body instead and is left out of 'follow'
+RIGID = []
+for o in HAIR:
+    gi = {g.index: g.name for g in o.vertex_groups}
+    for v in o.data.vertices:
+        RIGID.append(sum(g.weight for g in v.groups if gi.get(g.group) == 'head') > 0.999)
+print('RIGID', sum(RIGID), 'of', len(RIGID), 'hair vertices on the head bone alone')
 SCALP = [o for o in sc.objects if o.type == 'MESH' and (o.name == 'head' or o.name.startswith('ear'))]
 
 
@@ -124,7 +132,7 @@ for act in sorted(bpy.data.actions, key=lambda a: a.name):
         local = [inv @ p for p in hair]
         if ref_local is None:
             ref_local = local
-        r['follow'] = max(r['follow'], max((a - b).length for a, b in zip(local, ref_local)))
+        r['follow'] = max(r['follow'], max(((a - b).length for a, b, rg in zip(local, ref_local, RIGID) if rg), default=0.0))
         # the gap: the shell to the scalp
         hb = HEAD_BVH(dg)
         shell = world_verts(SHELL, dg)
