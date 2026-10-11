@@ -576,9 +576,21 @@ export class Game {
 
   // ------------------------------------------------------------------ update
 
+  /**
+   * The units that act and are drawn: those within 34 tiles of the player (both axes), and any the
+   * camera sees (viewRect: the view in world-fixed screen px with a sprite's margin, set by the
+   * renderer each frame) — so a wide, zoomed-out view never shows people popping in at its edges.
+   */
   updateActive() {
     const p = this.player;
-    this.activeUnits = this.units.filter((u) => Math.abs(u.x - p.x) < 34 && Math.abs(u.y - p.y) < 34);
+    const v = this.viewRect;
+    this.activeUnits = this.units.filter((u) => {
+      if (Math.abs(u.x - p.x) < 34 && Math.abs(u.y - p.y) < 34) return true;
+      if (!v) return false;
+      const sx = (u.x - u.y) * 20;
+      const sy = (u.x + u.y) * 10 - (u.z || 0) * 24.49;
+      return sx > v[0] && sx < v[2] && sy > v[1] && sy < v[3];
+    });
   }
 
   respawnPlayer() {

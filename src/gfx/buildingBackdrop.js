@@ -12,12 +12,13 @@ const BASE = import.meta.env.BASE_URL;
 // on with ?proto=bg, or in a build made with VITE_PROTO_BG=1 (a test build for review)
 export const BUILDING_PROTO = import.meta.env.VITE_PROTO_BG === '1' || (typeof location !== 'undefined' && new URLSearchParams(location.search).get('proto') === 'bg');
 
-// lattice cell (CX × CY, 2:1), periods M × N cells (the tile: M·CX × N·CY), fill share, avenues
+// lattice cell (CX × CY, 2:1), periods M × N cells (the tile: M·CX × N·CY, at least 1920 × 1080 —
+// the widest view, docs/GAME_DESIGN.md 2.1.1 — so no pattern shows twice on a screen), fill share, avenues
 // every `ave` cells (0: none), how many lattice steps apart twins stand at least, parallax factor
 export const BLAYERS = {
-  far: { CX: 96, CY: 48, M: 12, N: 15, fill: 0.26, ave: 0, apart: 2, f: 0.16, seed: 11 },
-  mid: { CX: 48, CY: 24, M: 25, N: 30, fill: 0.9, ave: 5, apart: 1, f: 0.25, seed: 23 },
-  near: { CX: 80, CY: 40, M: 15, N: 18, fill: 0.36, ave: 0, apart: 2, f: 0.4, seed: 37 },
+  far: { CX: 96, CY: 48, M: 20, N: 23, fill: 0.26, ave: 0, apart: 2, f: 0.16, seed: 11 },
+  mid: { CX: 48, CY: 24, M: 40, N: 45, fill: 0.9, ave: 5, apart: 1, f: 0.25, seed: 23 },
+  near: { CX: 80, CY: 40, M: 24, N: 27, fill: 0.36, ave: 0, apart: 2, f: 0.4, seed: 37 },
 };
 
 let meta = null;

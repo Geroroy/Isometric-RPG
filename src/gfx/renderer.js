@@ -25,13 +25,15 @@ const AMBIENT = [150, 146, 178];
 const byDepth = (a, b) => a.depth - b.depth;
 const TRAIL_LIFE = 0.13; // seconds a saber swing's afterimage lasts
 const SHADOW_ALPHA = 0.75; // a sheet's rendered shadow (the shadow catcher's own alpha)
-// How far the player may zoom, by what the view shows (docs/GAME_DESIGN.md 2.1.1, measured by
-// tools/qa/zoomlimits.mjs). Out: at most 540 × 1024 game px — a larger view outgrows the units'
-// activation box (game.js updateActive, ±34 tiles) and people pop in and out on screen (from 576 rows
-// at 16:9, 1138 columns at 21:9). In: at least 240 rows (a game pixel no coarser than the closest view
-// the art is tuned at, a phone's default), and only while an enemy at blaster range (B1, 7 tiles) still
-// shows its feet and body above the console in every direction. Zoom 1 is always allowed.
-export const VIEW_LIMITS = { maxRows: 540, maxCols: 1024, minRows: 240, reach: 7 };
+// How far the player may zoom, by what the view shows (docs/GAME_DESIGN.md 2.1.1; measured by
+// tools/qa/zoomlimits.mjs, tools/qa/zoomout.mjs). Out: to look over the map — up to 1080 × 1920 game px
+// (a whole district with the city round it; 1080p at 1×), and no smaller than 0.75 css px a game pixel
+// (people stay ~40 px tall: a phone stops before they turn to specks). The units the camera sees act
+// and are drawn (game.updateActive), so a wide view shows no one popping in. In: at least 240 rows (a
+// game pixel no coarser than the closest view the art is tuned at, a phone's default), and only while
+// an enemy at blaster range (B1, 7 tiles) still shows its feet and body above the console in every
+// direction. Zoom 1 is always allowed.
+export const VIEW_LIMITS = { maxRows: 1080, maxCols: 1920, minCss: 0.75, minRows: 240, reach: 7 };
 // PC: about this many game pixels show vertically at zoom 1 — a 1080p screen is 3× (640×360),
 // 1440p 4×, 4K 6× (characters ~50-57 game px tall, ~160 px on a 1080p screen)
 export const PC_BASE_H = 360;
@@ -137,7 +139,7 @@ export class Renderer {
     const w = Math.ceil((window.innerWidth * dpr) / s);
     const h = Math.ceil((window.innerHeight * dpr) / s);
     const L = VIEW_LIMITS;
-    if (h > L.maxRows || w > L.maxCols || h < L.minRows) return false;
+    if (h > L.maxRows || w > L.maxCols || h < L.minRows || s / dpr < L.minCss) return false;
     // an enemy at blaster range in each of 8 directions: feet and body centre (27 px up) in view,
     // with the camera where render() puts it (the player at 55% / 60% of the height above the console)
     const viewH = h - (this.touchMode ? 0 : (this.consoleH * dpr) / s);
@@ -264,6 +266,10 @@ export class Renderer {
     this.cam.x = Math.round(ps.x - W / 2 + dr.x + (sh ? (Math.random() - 0.5) * sh : 0));
     this.cam.y = Math.round(ps.y - viewH * (this.touchMode ? 0.6 : 0.55) + dr.y + (sh ? (Math.random() - 0.5) * sh : 0));
     const cam = this.cam;
+    // the view, for the units that act and are drawn (game.updateActive), with a sprite's margin: to the
+    // sides half a wide sprite and a step, below a tall one's height (its feet under the bottom edge,
+    // its head in view); above, little — a sprite is drawn up from its feet
+    g.viewRect = [cam.x - 90, cam.y - 24, cam.x + W + 90, cam.y + H + 260];
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.smooth(false);
