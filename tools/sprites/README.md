@@ -161,6 +161,10 @@ glTF는 헤어 커브를 담지 못하므로 렌더 때 붙입니다: `render_sp
 | `hair/hair_poses.py model.glb out.png [anim:frame …]` | 극단 자세(공격·점프·피격·사망·시그니처) 머리·어깨 클로즈업 한 장 — 눈으로 확인 |
 | `hair/hair_cw_s1_params.json` · `hair/s1_iter.sh N "메모"` | 클론워즈 시즌 1 외형(`cw_s1`) 헤어와 반복 시트(`renders/cw_s1_iter_N/`) |
 
+기본 외형 '501군단 장군'(스프라이트 `anakin`)은 클론워즈 시즌 1 차림입니다: `render_config.json`의 `anakin`이
+`tools/sprites/out/anakin_cw_s1.glb`(`build_anakin.py … cw_s1` 다음 `hair_v2.py … hair_cw_s1_params.json`)를 씁니다.
+예전 갑옷 차림(`armor`, `anakin.glb`)은 `build_anakin.py`에 그대로 있지만 게임에는 쓰지 않습니다.
+
 ```
 .bvenv/bin/python tools/sprites/hair/hair_v2.py tools/sprites/out/anakin_tunic.glb tools/sprites/out/anakin_tunic_hairv2.glb
 .bvenv/bin/python tools/sprites/hair/hair_v2.py tools/sprites/out/anakin_robe.glb tools/sprites/out/anakin_robe_hairv2.glb

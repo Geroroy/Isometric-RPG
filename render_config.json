@@ -34,11 +34,10 @@
   },
   "sprites": {
     "_doc": "Sprites modelled in Blender (tools/sprites/build_anakin.py outfits); the other characters' directions come from src/gfx/specs.js.",
-    "anakin": { "glb": "tools/sprites/out/anakin.glb", "dirs": 16 },
+    "anakin": { "glb": "tools/sprites/out/anakin_cw_s1.glb", "dirs": 16 },
     "anakin_tunic": { "glb": "tools/sprites/out/anakin_tunic_hairv2.glb", "dirs": 16 },
-    "anakin_robe": { "glb": "tools/sprites/out/anakin_robe.glb", "dirs": 16, "hair": "tools/sprites/out/anakin_hair.blend" },
-    "anakin_vader": { "glb": "tools/sprites/out/anakin_vader.glb", "dirs": 16, "hair": "tools/sprites/out/anakin_hair_hood.blend" },
-    "anakin_cw_s1": { "glb": "tools/sprites/out/anakin_cw_s1.glb", "dirs": 16 }
+    "anakin_robe": { "glb": "tools/sprites/out/anakin_robe_hairv2.glb", "dirs": 16 },
+    "anakin_vader": { "glb": "tools/sprites/out/anakin_vader.glb", "dirs": 16, "hair": "tools/sprites/out/anakin_hair_hood.blend" }
   },
   "building": {
     "_doc": "City assets baked once (body / neon / reflection layers): Cycles, more samples on a GPU.",
