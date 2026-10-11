@@ -5,7 +5,7 @@
 // red aircraft beacons (Attack of the Clones' chase, Revenge of the Sith's skyline); the undercity
 // looks into smog, sparse windows and neon (The Clone Wars' lower levels). Each layer is one
 // pre-drawn tileable canvas: a frame costs a gradient fill and a few drawImage calls. The sky
-// traffic (gfx/skylineTraffic.js) flies between the layers, each tier after the layer behind it.
+// traffic far off (gfx/skylineTraffic.js) flies between the layers.
 import { RNG } from '../core/math.js';
 import { SkylineTraffic, TIERS } from './skylineTraffic.js';
 
@@ -125,9 +125,6 @@ function layerCanvas(mode, li) {
   return c;
 }
 
-/** The backdrop's haze colour (for things drawn into it, like the lanes' traffic). */
-export const backdropHaze = (mode) => PAL[mode].haze;
-
 let skyKey = '';
 let sky = null;
 const traffic = new SkylineTraffic();
@@ -151,6 +148,6 @@ export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0) {
     const ox = -((((cam.x * f) % SIZE) + SIZE) % SIZE);
     const oy = -((((cam.y * f) % SIZE) + SIZE) % SIZE);
     for (let y = oy; y < H; y += SIZE) for (let x = ox; x < W; x += SIZE) ctx.drawImage(c, Math.round(x), Math.round(y));
-    for (let ti = 0; ti < TIERS.length; ti++) if (TIERS[ti].after === li) traffic.draw(ctx, ti, cam, mode, P.haze);
+    for (let ti = 0; ti < TIERS.length; ti++) if (TIERS[ti].after === li) traffic.draw(ctx, ti, cam);
   }
 }

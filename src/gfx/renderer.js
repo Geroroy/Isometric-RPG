@@ -12,7 +12,7 @@ import { glowSprite } from './fx.js';
 import { transientLights, relightUnits } from './relight.js';
 import { SIG } from '../game/units.js';
 import { canvasFont } from '../ui/fonts.js';
-import { drawCityBackdrop, backdropHaze } from './cityBackdrop.js';
+import { drawCityBackdrop } from './cityBackdrop.js';
 import { LaneTraffic } from './skylineTraffic.js';
 import { SABER, PALETTES, trailWindow, paletteFor, flickerAt, ignition, drawBlade, drawSpark, drawTrail, drawClash, record } from './saberStyle.js';
 import { preset, tintFor, drawLight, drawGround, drawGroundTint, sweepOf, lightCharacter } from './saberLight.js';
@@ -202,7 +202,6 @@ export class Renderer {
       if (!this.lanes || this.lanes.src !== g.world.traffic) this.lanes = new LaneTraffic(g.world.traffic);
       this.lanes.update(dt);
     } else this.lanes = null;
-    const haze = backdropHaze(mode);
     for (const u of g.activeUnits) this.igniteOf(u); // the blades' ignition clocks, before any light is drawn
     this.terrain.draw(ctx, cam.x, cam.y, W, H);
     g.fx.drawDecals(ctx, cam);
@@ -300,7 +299,7 @@ export class Renderer {
       } else if (d.scorch) {
         g.fx.drawScorch(ctx, cam, d.scorch);
       } else if (d.car) {
-        this.lanes.drawItem(ctx, d.car, 'drop', haze);
+        this.lanes.drawItem(ctx, d.car);
       } else if (d.pickup) {
         const pk = d.pickup;
         const s = worldToScreen(pk.x, pk.y, 0.15 + Math.sin(pk.t * 4) * 0.08);
@@ -934,7 +933,7 @@ export class Renderer {
 
   /** The craft crossing high over the undercity's streets (the drop's are drawn before the terrain). */
   drawTraffic(ctx, cam) {
-    if (this.lanes) this.lanes.draw(ctx, cam, this.w, this.h, 'over', backdropHaze('low'));
+    if (this.lanes) this.lanes.draw(ctx, cam, this.w, this.h, 'over');
   }
 
   drawBolts(ctx, cam) {
