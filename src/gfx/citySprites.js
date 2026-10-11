@@ -46,6 +46,7 @@ export const CITY_SPRITES = {
   trashBin: 'trashBin_64.json',
   junctionBox: 'junctionBox_96.json',
 };
+export const LOAD_BLENDER_SET = false;
 export const FLOOR_TEXTURE = 'floor_low.png';
 export const FLOOR_TILES = 8; // world tiles the floor texture covers per side
 
@@ -77,7 +78,9 @@ const UW_DIR = 'sprites/underworld/';
 export async function loadCitySprites(onProgress) {
   const base = import.meta.env.BASE_URL + DIR;
   const out = {};
-  const names = Object.keys(CITY_SPRITES);
+  // the Blender set is no longer placed anywhere (the undercity is the underworld set below):
+  // its files stay in the repository, but nothing fetches them
+  const names = LOAD_BLENDER_SET ? Object.keys(CITY_SPRITES) : [];
   for (let i = 0; i < names.length; i++) {
     onProgress(i / names.length, `코러산트 언더시티: ${names[i]}`);
     try {
@@ -113,6 +116,7 @@ export async function loadCitySprites(onProgress) {
     console.warn('언더월드 스프라이트: ' + e.message);
   }
   try {
+    if (!LOAD_BLENDER_SET) throw new Error('the old street floor is not loaded');
     const img = await loadImg(base + FLOOR_TEXTURE);
     const c = document.createElement('canvas');
     c.width = img.width;
@@ -120,9 +124,8 @@ export async function loadCitySprites(onProgress) {
     const x = c.getContext('2d');
     x.drawImage(img, 0, 0);
     out.floor = { data: x.getImageData(0, 0, img.width, img.height), tiles: FLOOR_TILES };
-  } catch (e) {
-    console.warn(e.message); // the old street floor: the underworld set's plates cover the undercity
-    out.floor = null;
+  } catch {
+    out.floor = null; // the underworld set's plates cover the undercity
   }
   return out;
 }

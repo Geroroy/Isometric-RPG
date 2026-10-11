@@ -137,7 +137,7 @@ let FOOTPRINTS = {};
 
 /** The sprites' collision outlines (tiles from the origin), once they are loaded. */
 export function setCityFootprints(city) {
-  FOOTPRINTS = Object.fromEntries(Object.entries(city).filter(([, v]) => v.meta).map(([k, v]) => [k, v.meta.footprint]));
+  FOOTPRINTS = Object.fromEntries(Object.entries(city).filter(([, v]) => v && v.meta).map(([k, v]) => [k, v.meta.footprint]));
 }
 
 export const cityFootprint = (name) => FOOTPRINTS[name] || null;
