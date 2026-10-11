@@ -2,7 +2,7 @@
 // four blade colours × held / mid-swing × a bright floor (the city pad) and a dark one (the
 // Christophsis night front, with droids beside Anakin for the rim light), a palette swatch
 // (old vs new blades on bright and dark), and the frame cost with the light on / off.
-//   TRAIL=movie PALETTE=rots node tools/qa/saberreflect.mjs <out_dir> <label=url> [<label=url> ...]
+//   TRAIL=movie node tools/qa/saberreflect.mjs <out_dir> <label=url> [<label=url> ...]
 import { chromium } from 'playwright-core';
 import fs from 'fs';
 import path from 'path';

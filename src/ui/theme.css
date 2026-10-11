@@ -955,18 +955,44 @@ input[type='range'] {
 }
 
 /* ============================================================ typography (ui/fonts.js loads the files) */
-/* GmarketSans (Korean body): the noonnu CDN, swapped in when it arrives; Pretendard until then */
+/* Korean web fonts (docs/UI_SYSTEM.md "타이포그래피"): free licences, served from this build
+   (public/fonts — the game is an offline PWA) with the public CDNs (noonnu / jsDelivr GitHub) as
+   the second source. GmarketSans: 지마켓 산스 라이선스 (무료, 재배포 가능); D2Coding: OFL 1.1;
+   SUIT: OFL 1.1; Pretendard (OFL 1.1) is bundled from npm by ui/skin.js. */
 @font-face {
   font-family: 'GmarketSans';
   font-weight: 500;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+  src: local('GmarketSans Medium'), local('GmarketSansMedium'), url('/fonts/GmarketSansMedium.woff2') format('woff2'),
+    url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
 }
 @font-face {
   font-family: 'GmarketSans';
   font-weight: 700;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
+  src: local('GmarketSans Bold'), local('GmarketSansBold'), url('/fonts/GmarketSansBold.woff2') format('woff2'),
+    url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
+}
+@font-face {
+  font-family: 'D2Coding';
+  font-weight: 400;
+  font-display: swap;
+  src: local('D2Coding'), url('/fonts/D2Coding.woff2') format('woff2'),
+    url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_three@1.0/D2Coding.woff') format('woff');
+}
+@font-face {
+  font-family: 'SUIT';
+  font-weight: 500;
+  font-display: swap;
+  src: local('SUIT Medium'), url('/fonts/SUIT-Medium.woff2') format('woff2'),
+    url('https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'SUIT';
+  font-weight: 600;
+  font-display: swap;
+  src: local('SUIT SemiBold'), url('/fonts/SUIT-SemiBold.woff2') format('woff2'),
+    url('https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT-SemiBold.woff2') format('woff2');
 }
 /* Aurebesh (decoration): drop a licensed file into public/fonts/Aurebesh.woff2 and enable this
 @font-face {
@@ -976,11 +1002,16 @@ input[type='range'] {
 }
 */
 :root {
+  /* the Latin stacks (the design's reference faces) */
   --font-display: 'Orbitron', 'Bank Gothic', 'Michroma', sans-serif;
   --font-data: 'Share Tech Mono', 'Chakra Petch', ui-monospace, monospace;
   --font-body: 'Rajdhani', 'GmarketSans', 'Pretendard Variable', Pretendard, sans-serif;
   --font-body-ko: 'GmarketSans', 'Pretendard Variable', Pretendard, 'Rajdhani', sans-serif;
   --font-aurebesh: 'Aurebesh', 'Aurebesh AF', 'Orbitron', sans-serif;
+  /* the Korean stacks: geometric square-frame display, monospaced data, modern gothic body */
+  --font-kr-display: 'GmarketSans', 'Orbitron', sans-serif;
+  --font-kr-data: 'D2Coding', 'Chakra Petch', monospace;
+  --font-kr-body: 'Pretendard Variable', 'Pretendard', 'SUIT', sans-serif;
   /* the roles the components use */
   --font-hud: var(--font-body);
   --font-tech: var(--font-display); /* the old "cockpit lettering" role: titles and labels */
@@ -989,6 +1020,16 @@ input[type='range'] {
   --glow-green: 0 0 6px rgba(var(--c-emerald-rgb), 0.6);
   --glow-red: 0 0 6px rgba(var(--c-red-rgb), 0.65);
   --glow-gold: 0 0 6px rgba(var(--c-gold-rgb), 0.55);
+  --led-blue: 0 0 5px rgba(0, 200, 255, 0.7); /* the tactical LED readouts */
+  --led-green: 0 0 5px rgba(0, 255, 135, 0.7);
+}
+/* Korean UI (<html lang="ko">): every role resolves to its Korean stack, so the HUD components
+   below (titles, readouts, body) take the Korean faces without a second set of selectors */
+html[lang='ko'] {
+  --font-display: var(--font-kr-display);
+  --font-data: var(--font-kr-data);
+  --font-body: var(--font-kr-body);
+  --font-body-ko: var(--font-kr-body);
 }
 /* --- utility classes */
 .font-display,
@@ -1008,6 +1049,46 @@ input[type='range'] {
 .t-body {
   font-family: var(--font-body);
   font-weight: 500;
+}
+/* the Korean roles, by name (the same faces the role classes resolve to under lang="ko") */
+.t-kr-display {
+  font-family: var(--font-kr-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  text-shadow: var(--glow-blue);
+}
+.t-kr-data {
+  font-family: var(--font-kr-data);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-shadow: var(--led-blue);
+}
+.t-kr-data.green {
+  text-shadow: var(--led-green);
+}
+.t-kr-body {
+  font-family: var(--font-kr-body);
+  font-weight: 500;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+/* Korean line breaking: words stay whole (keep-all), long tokens still wrap (break-word) */
+html[lang='ko'] body,
+.dialogue,
+.dl-text,
+.tooltip,
+.log,
+.sd-lore,
+.set-note,
+.m-line,
+.objectives li,
+.buff,
+.ov-body,
+.help-body,
+.cn-log {
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 .aure-text {
   font-family: var(--font-aurebesh);
@@ -1089,6 +1170,44 @@ input[type='range'] {
   letter-spacing: 0.06em;
 }
 
+/* Korean display: the square-frame face is set tight (-0.02em), not spaced out like Orbitron */
+html[lang='ko'] .ov-title,
+html[lang='ko'] .ob-h,
+html[lang='ko'] .set-card h4,
+html[lang='ko'] .sd-name,
+html[lang='ko'] .dr-title,
+html[lang='ko'] .death-title,
+html[lang='ko'] .bn-kicker,
+html[lang='ko'] .dr-kicker,
+html[lang='ko'] .plate-h small,
+html[lang='ko'] .st-name,
+html[lang='ko'] .ov-tab,
+html[lang='ko'] .ab-menu button,
+html[lang='ko'] .fo-btn,
+html[lang='ko'] .m-key span,
+html[lang='ko'] .t-attack span,
+html[lang='ko'] .cn-sub,
+html[lang='ko'] .ti-sub,
+html[lang='ko'] .t-display {
+  letter-spacing: -0.02em;
+  text-transform: none;
+  font-weight: 700;
+}
+html[lang='ko'] .ov-title {
+  letter-spacing: -0.01em;
+}
+html[lang='ko'] .ov-title,
+html[lang='ko'] .sd-name,
+html[lang='ko'] .dr-title,
+html[lang='ko'] .ob-h {
+  text-shadow: var(--glow-blue);
+}
+html[lang='ko'] .gauge label,
+html[lang='ko'] .ether small {
+  letter-spacing: 0.04em; /* the short Latin gauge labels keep a little air */
+  font-weight: 700;
+}
+
 /* --- data: every readout */
 .gauge b,
 .m-bar b,
@@ -1113,6 +1232,19 @@ input[type='range'] {
 #fps {
   font-family: var(--font-data);
   font-variant-numeric: tabular-nums;
+}
+html[lang='ko'] .ab .cdt,
+html[lang='ko'] .ab-lv,
+html[lang='ko'] .t-btn .lv,
+html[lang='ko'] .counter b,
+html[lang='ko'] .sc-parts b,
+html[lang='ko'] .info-level b,
+html[lang='ko'] .dr-stats b,
+html[lang='ko'] .st-lv,
+html[lang='ko'] .m-chip,
+html[lang='ko'] #fps {
+  letter-spacing: 0;
+  text-shadow: var(--led-blue);
 }
 .gauge.hp b {
   color: var(--c-emerald);

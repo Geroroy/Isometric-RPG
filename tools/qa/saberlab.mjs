@@ -1,4 +1,4 @@
-// The four lightsaber looks (trail style x palette, src/gfx/saberStyle.js) side by side.
+// The two lightsaber looks (trail style, src/gfx/saberStyle.js) side by side.
 // Per look: a swing's start / middle / end on a dark floor, the middle on a bright floor,
 // a clash; the game is frozen and stepped by hand so every look shows the same instant.
 // Also times a frame (render + post-processing, GPU finished) per look.
@@ -13,11 +13,10 @@ fs.mkdirSync(out, { recursive: true });
 const dir = '/opt/pw-browsers';
 const exe = fs.readdirSync(dir).map((d) => path.join(dir, d, 'chrome-linux', 'chrome')).find((p) => fs.existsSync(p));
 const browser = await chromium.launch({ executablePath: exe, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+// the two trail styles (the palette is the Clone Wars one in both; 'rots' was dropped)
 const LOOKS = [
   ['tcw', 'tcw'],
-  ['tcw', 'rots'],
   ['movie', 'tcw'],
-  ['movie', 'rots'],
 ];
 const timing = {};
 for (const [trail, palette] of LOOKS) {
@@ -25,7 +24,7 @@ for (const [trail, palette] of LOOKS) {
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message));
   await page.addInitScript(({ trail, palette }) => {
-    localStorage.setItem('cw.saber', JSON.stringify(trail === 'old' ? {} : { trail, palette }));
+    localStorage.setItem('cw.saber', JSON.stringify(trail === 'old' ? {} : { trail }));
     const raf = window.requestAnimationFrame.bind(window);
     window.__stop = false;
     window.requestAnimationFrame = (cb) => raf((t) => (window.__stop ? raf(() => window.requestAnimationFrame(cb)) : cb(t)));

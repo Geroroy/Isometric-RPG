@@ -12,7 +12,7 @@ import { AppearanceUI } from './appearance.js';
 import { QUESTS } from '../game/quests.js';
 import { VOLUMES } from '../core/audio.js';
 import { setText, setHTML, setClass } from './dom.js';
-import { SABER, setSaberOpt, TRAIL_NAMES, PALETTE_NAMES } from '../gfx/saberStyle.js';
+import { SABER, setSaberOpt, TRAIL_NAMES } from '../gfx/saberStyle.js';
 import { THEME, loadTheme, rgba, setFraction } from './theme.js';
 import { canvasFont } from './fonts.js';
 
@@ -435,11 +435,10 @@ export class HUD {
       <section class="set-card">
         <h4>광선검</h4>
         <label class="set-select">잔상 스타일 <select id="saberTrail">${Object.entries(TRAIL_NAMES).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></label>
-        <label class="set-select">색상 <select id="saberPalette">${Object.entries(PALETTE_NAMES).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></label>
         <label class="set-toggle"><input type="checkbox" id="saberSlow"> 슬로 모션 (1/4 속도, 잔상 관찰용 · 저장 안 됨)</label>
         <label class="set-select">잔상 길이 <span class="set-range"><input type="range" id="saberLen" min="0.5" max="4" step="0.25"><b></b></span></label>
         <label class="set-select">글로우 세기 <span class="set-range"><input type="range" id="saberGlow" min="0.3" max="2" step="0.1"><b></b></span></label>
-        <p class="set-note">클론워즈 애니메이션과 시스의 복수에서 잰 잔상 스타일과 색상표. 이 기기에 저장됩니다.</p>
+        <p class="set-note">클론워즈 애니메이션과 시스의 복수에서 잰 잔상 스타일. 색은 클론워즈 색상표. 이 기기에 저장됩니다.</p>
       </section>
       <section class="set-card">
         <h4>개발자</h4>
@@ -503,7 +502,7 @@ export class HUD {
       show();
       r.addEventListener('input', () => (setSaberOpt(key, +r.value), show()));
     }
-    for (const [id, key] of [['saberTrail', 'trail'], ['saberPalette', 'palette']]) {
+    for (const [id, key] of [['saberTrail', 'trail']]) {
       const sel = $('#' + id);
       sel.value = SABER[key];
       sel.addEventListener('change', () => setSaberOpt(key, sel.value));

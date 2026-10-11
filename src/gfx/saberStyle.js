@@ -1,18 +1,18 @@
 // Lightsaber looks, measured from the reference footage (docs/SABER_STYLE.md, tools/qa/saberprofile.py):
-// two trail styles (Clone Wars / the films) and two palettes (Clone Wars / Revenge of the Sith),
-// picked separately; four blade colours (blue, red, green, purple) in each. Glows are pre-drawn sprites (no shadowBlur); trails are polygons.
+// two trail styles (Clone Wars / the films) over the Clone Wars colours (blue, red, green, purple). Glows are pre-drawn sprites (no shadowBlur); trails are polygons.
 // Every saber in the game is drawn here (renderer.drawSabers); the light the blades throw on the
 // floor and on characters is saberLight.js.
 
 const STORE = 'cw.saber';
 // len / glow: the settings card's sliders (trail length, glow strength); slow: 1/4 game speed
 // (to look at the trails; never kept)
-export const SABER = { trail: 'tcw', palette: 'tcw', len: 1, glow: 1, slow: false };
+export const SABER = { trail: 'tcw', len: 1, glow: 1, slow: false };
 try {
   Object.assign(SABER, JSON.parse(localStorage.getItem(STORE) || '{}'), { slow: false });
+  delete SABER.palette; // the Revenge of the Sith palette was dropped: Clone Wars colours only
 } catch {}
 
-/** Change a setting (trail, palette, len, glow, slow) and keep it on this device. */
+/** Change a setting (trail, len, glow, slow) and keep it on this device. */
 export function setSaberOpt(key, value) {
   SABER[key] = value;
   try {
@@ -21,14 +21,12 @@ export function setSaberOpt(key, value) {
 }
 
 export const TRAIL_NAMES = { tcw: '클론워즈 (셀 셰이딩)', movie: '영화 (모션 블러)' };
-export const PALETTE_NAMES = { tcw: '클론워즈', rots: '시스의 복수' };
 
-// Colours sampled from the references (1280 px wide frames): the white core, then the colour
-// 1-2 px, 2-4 px, 4-8 px and 8-16 px outside it. Only blue and red are in the footage (the
-// Revenge of the Sith clip has blue only; its red follows the Clone Wars red's ring pattern);
+// The Clone Wars colours, sampled from the reference (1280 px wide frames): the white core, then
+// the colour 1-2 px, 2-4 px, 4-8 px and 8-16 px outside it. Blue and red are in the footage;
 // green and purple are built on the same pattern at their own hues (green 120-135°, purple
-// 275-285°, well away from blue's 210-226°) so the four read apart at a glance.
-// coreW: the white core's line width (the films' palette keeps it thinner).
+// 275-285°, well away from blue's 210-226°) so the four read apart at a glance. (A Revenge of
+// the Sith palette was tried and dropped: its bloom-washed rings read lavender.)
 export const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 export const PALETTES = {
   tcw: {
@@ -36,15 +34,6 @@ export const PALETTES = {
     red: { core: '#fefbfa', rim: '#d92c42', inner: '#a40738', glow: '#790e35', halo: '#621234' },
     green: { core: '#f8fef8', rim: '#4fe06a', inner: '#13a53a', glow: '#0c7a2a', halo: '#0a5a22' },
     purple: { core: '#fcf8fe', rim: '#b56ae8', inner: '#7a2fbf', glow: '#561f8c', halo: '#431a6e' },
-  },
-  rots: {
-    // the footage's rings (#a7bbf8 → #423ca6) drift to 243° (lavender) under the bloom; these keep
-    // the hue at 212-222° and the rings saturated (lightness 68 → 58 → 48 → 32 %), with a
-    // thinner white core — the same pattern for the other three hues (red 6°, green 126°, purple 272°)
-    blue: { core: '#ffffff', rim: '#5aa0ff', inner: '#2b78ff', glow: '#1650e0', halo: '#0f338f', coreW: 1.0 },
-    red: { core: '#fff6f2', rim: '#ff5a48', inner: '#f52a14', glow: '#c0160a', halo: '#7a0d07', coreW: 1.0 },
-    green: { core: '#ffffff', rim: '#5cf06a', inner: '#22cc3e', glow: '#139a2c', halo: '#0c6a1e', coreW: 1.0 },
-    purple: { core: '#fff2ff', rim: '#c070ff', inner: '#9a3cff', glow: '#7220d8', halo: '#4c148f', coreW: 1.0 },
   },
 };
 
@@ -88,17 +77,14 @@ export function trailWindow() {
 }
 
 /**
- * The palette entry for a unit's saber colour: the chosen palette's blue, red, green or purple
- * (hueOf), any other colour a palette made from the colour itself the same way (white core, the
- * colour as the rim, darker rings out) — so every blade is its own colour.
+ * The palette entry for a unit's saber colour: blue, red, green or purple (hueOf), any other
+ * colour a palette made from the colour itself the same way (white core, the colour as the rim,
+ * darker rings out) — so every blade is its own colour.
  */
 const derived = new Map();
 export function paletteFor(rgb) {
   const name = hueOf(rgb);
-  if (name) {
-    const p = PALETTES[SABER.palette] || PALETTES.tcw;
-    return p[name] || PALETTES.tcw[name];
-  }
+  if (name) return PALETTES.tcw[name];
   const [r, g, b] = rgb;
   const key = (r << 16) | (g << 8) | b;
   let p = derived.get(key);
