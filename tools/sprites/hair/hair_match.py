@@ -190,7 +190,7 @@ for v in VIEWS:
 mean = sum(r['iou'] for r in res.values()) / len(res)
 print(f'MEAN IoU {mean:.3f}')
 S = Image.new('RGB', (N * 4 + 18, N + 26), (14, 15, 18))
-ImageDraw.Draw(S).text((6, 6), f'{LABEL} — reference red, ours cyan, both white — mean IoU {mean:.3f}', fill=(255, 220, 120))
+ImageDraw.Draw(S).text((6, 6), f'{LABEL} - reference red, ours cyan, both white - mean IoU {mean:.3f}', fill=(255, 220, 120))
 for i, im in enumerate(sheet):
     S.paste(im, (i * (N + 6), 26))
 S.save(os.path.join(OUT, f'{LABEL}_match.png'))

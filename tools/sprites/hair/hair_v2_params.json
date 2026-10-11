@@ -18,11 +18,11 @@
  "segments": 18,
  "sides": 6,
  "palette": {
-  "shadow": "#17110c",
-  "base": "#2c2119",
-  "mid": "#45322a",
-  "highlight": "#87593b",
-  "root": "#130d09"
+  "shadow": "#15100c",
+  "base": "#2a2019",
+  "mid": "#3f3128",
+  "highlight": "#6c5241",
+  "root": "#110c09"
  },
  "shell": {
   "lift": 0.0,
@@ -44,8 +44,8 @@
     4.53
    ],
    "end_theta": [
-    2.75,
-    2.95
+    2.42,
+    2.56
    ],
    "sweep": 0.0,
    "width": 0.078,
@@ -55,7 +55,8 @@
    "wave_freq": 1.0,
    "flick": 0.0,
    "flick_len": 0.2,
-   "volume": 0.002
+   "volume": 0.002,
+   "hang_taper": -0.35
   },
   {
    "name": "sideUnderR",
@@ -65,14 +66,14 @@
     1.3
    ],
    "root_phi": [
-    -1.75,
-    -1.2
+    -2.23,
+    -1.68
    ],
    "end_theta": [
-    2.39,
-    2.54
+    2.09,
+    2.24
    ],
-   "sweep": -0.12,
+   "sweep": -0.6,
    "width": 0.07,
    "thick": 0.021,
    "lift": 0.002,
@@ -90,14 +91,14 @@
     1.3
    ],
    "root_phi": [
-    1.2,
-    1.75
+    1.68,
+    2.23
    ],
    "end_theta": [
-    2.39,
-    2.54
+    2.09,
+    2.24
    ],
-   "sweep": 0.12,
+   "sweep": 0.6,
    "width": 0.07,
    "thick": 0.021,
    "lift": 0.002,
@@ -119,18 +120,19 @@
     3.83
    ],
    "end_theta": [
-    2.85,
-    3.05
+    2.42,
+    2.56
    ],
    "sweep": 0.0,
    "width": 0.08,
    "thick": 0.018,
    "lift": 0.008,
-   "wave_amp": 0.007,
+   "wave_amp": 0.004,
    "wave_freq": 1.0,
-   "flick": 0.02,
+   "flick": 0.012,
    "flick_len": 0.32,
-   "volume": 0.008
+   "volume": 0.008,
+   "hang_taper": -0.35
   },
   {
    "name": "backSideL",
@@ -144,18 +146,19 @@
     2.35
    ],
    "end_theta": [
-    2.65,
-    2.85
+    2.38,
+    2.52
    ],
    "sweep": 0.0,
    "width": 0.08,
    "thick": 0.018,
    "lift": 0.008,
-   "wave_amp": 0.007,
+   "wave_amp": 0.004,
    "wave_freq": 1.0,
-   "flick": 0.03,
+   "flick": 0.012,
    "flick_len": 0.32,
-   "volume": 0.008
+   "volume": 0.008,
+   "hang_taper": -0.35
   },
   {
    "name": "backSideR",
@@ -169,18 +172,19 @@
     4.38
    ],
    "end_theta": [
-    2.65,
-    2.85
+    2.38,
+    2.52
    ],
    "sweep": 0.0,
    "width": 0.08,
    "thick": 0.018,
    "lift": 0.008,
-   "wave_amp": 0.007,
+   "wave_amp": 0.004,
    "wave_freq": 1.0,
-   "flick": 0.03,
+   "flick": 0.012,
    "flick_len": 0.32,
-   "volume": 0.008
+   "volume": 0.008,
+   "hang_taper": -0.35
   },
   {
    "name": "sideOuterR",
@@ -190,14 +194,14 @@
     1.0
    ],
    "root_phi": [
-    -1.9,
-    -1.15
+    -2.38,
+    -1.63
    ],
    "end_theta": [
-    2.49,
-    2.69
+    2.19,
+    2.39
    ],
-   "sweep": -0.2,
+   "sweep": -0.6,
    "width": 0.075,
    "thick": 0.018,
    "lift": 0.016,
@@ -205,7 +209,8 @@
    "wave_freq": 1.0,
    "flick": 0.03,
    "flick_len": 0.32,
-   "volume": 0.012
+   "volume": 0.012,
+   "hang_taper": 0.45
   },
   {
    "name": "sideOuterL",
@@ -215,14 +220,14 @@
     1.0
    ],
    "root_phi": [
-    1.15,
-    1.9
+    1.63,
+    2.38
    ],
    "end_theta": [
-    2.49,
-    2.69
+    2.19,
+    2.39
    ],
-   "sweep": 0.2,
+   "sweep": 0.6,
    "width": 0.075,
    "thick": 0.018,
    "lift": 0.016,
@@ -230,22 +235,73 @@
    "wave_freq": 1.0,
    "flick": 0.03,
    "flick_len": 0.32,
-   "volume": 0.012
+   "volume": 0.012,
+   "hang_taper": 0.45
   },
   {
-   "name": "crown",
-   "n": 16,
+   "name": "crownSideL",
+   "n": 4,
    "root_theta": [
     0.08,
     0.42
    ],
    "root_phi": [
-    1.0,
-    5.2
+    1.4,
+    2.25
    ],
    "end_theta": [
-    2.7,
-    2.95
+    2.0,
+    2.25
+   ],
+   "sweep": 0.0,
+   "width": 0.095,
+   "thick": 0.02,
+   "lift": 0.026,
+   "wave_amp": 0.006,
+   "wave_freq": 1.1,
+   "flick": 0.018,
+   "flick_len": 0.3,
+   "volume": 0.02
+  },
+  {
+   "name": "crownBack",
+   "n": 8,
+   "root_theta": [
+    0.08,
+    0.42
+   ],
+   "root_phi": [
+    2.25,
+    4.03
+   ],
+   "end_theta": [
+    2.36,
+    2.5
+   ],
+   "sweep": 0.0,
+   "width": 0.095,
+   "thick": 0.02,
+   "lift": 0.026,
+   "wave_amp": 0.006,
+   "wave_freq": 1.1,
+   "flick": 0.018,
+   "flick_len": 0.3,
+   "volume": 0.02
+  },
+  {
+   "name": "crownSideR",
+   "n": 4,
+   "root_theta": [
+    0.08,
+    0.42
+   ],
+   "root_phi": [
+    4.03,
+    4.88
+   ],
+   "end_theta": [
+    2.0,
+    2.25
    ],
    "sweep": 0.0,
    "width": 0.095,
@@ -269,8 +325,8 @@
     0.52
    ],
    "end_theta": [
-    1.4,
-    1.6
+    1.05,
+    1.2
    ],
    "end_phi": [
     -0.75,
@@ -297,12 +353,12 @@
     0.4
    ],
    "end_theta": [
-    2.35,
-    2.55
+    2.05,
+    2.25
    ],
    "end_phi": [
-    -1.3,
-    -1.1
+    -1.78,
+    -1.58
    ],
    "width": 0.065,
    "thick": 0.022,
@@ -325,12 +381,12 @@
     0.7
    ],
    "end_theta": [
-    2.3,
-    2.55
+    2.0,
+    2.25
    ],
    "end_phi": [
-    1.05,
-    1.25
+    1.53,
+    1.73
    ],
    "width": 0.066,
    "thick": 0.022,
@@ -353,8 +409,8 @@
     0.28
    ],
    "end_theta": [
-    1.28,
-    1.36
+    1.18,
+    1.28
    ],
    "end_phi": [
     -0.32,
@@ -400,5 +456,10 @@
   "head_from": 1.64,
   "neck_from": 1.6,
   "chest_from": 1.54
+ },
+ "lift_shape": {
+  "back": 0.015,
+  "side": -0.006,
+  "top": 0.008
  }
 }

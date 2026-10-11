@@ -118,11 +118,12 @@ def drape(pts, thk):
 LS = P.get('lift_shape', {})
 
 
-def env(th, ph, lift):
+def env(th, ph, lift, ls=1.0):
     """A point of the hair envelope round the head (theta from the crown, phi round). 'lift_shape'
     adds volume by direction — 'back' behind, 'side' over the ears (negative: closer), 'top' on the
-    crown — for a head shaped unlike the reference's."""
-    lift += (LS.get('back', 0.0) * max(0.0, -math.cos(ph)) * math.sin(min(th, math.pi / 2))
+    crown — for a head shaped unlike the reference's; `ls` scales it (the shell fades it out at its
+    edge, so the hairline lies on the skin)."""
+    lift += ls * (LS.get('back', 0.0) * max(0.0, -math.cos(ph)) * math.sin(min(th, math.pi / 2))
              + LS.get('side', 0.0) * math.sin(ph) ** 2 * math.sin(min(th, math.pi / 2))
              + LS.get('top', 0.0) * max(0.0, math.cos(th)))
     e = C + Vector(((R.x + lift) * math.sin(th) * math.cos(ph), (R.y + lift) * math.sin(th) * math.sin(ph), (R.z + lift) * math.cos(th)))
@@ -135,16 +136,16 @@ def env(th, ph, lift):
             while far is not None:
                 hit = far
                 far = SCALP.ray_cast(hit + d * 1e-4, d)[0]
-            return hit + d * (OFF + lift)
+            return hit + d * max(0.001, OFF + lift)  # never under the scalp (a negative 'side' lift_shape)
     return e
 
 
-def guide(th, ph, lift, taper=None):
+def guide(th, ph, lift, taper=None, ls=1.0):
     """The envelope above the hang line; below it the hair falls straight down, tucking in a little
     (a group's own 'hang_taper' over the global one; negative flares it out, as a bob's ends)."""
     if th <= TH_H:
-        return env(th, ph, lift)
-    top = env(TH_H, ph, lift)
+        return env(th, ph, lift, ls)
+    top = env(TH_H, ph, lift, ls)
     d = (th - TH_H) * R.z
     rad = Vector((top.x - C.x, top.y - C.y, 0))
     k = 1 - (P['hang_taper'] if taper is None else taper) * min(1.0, d / 0.12) * 0.5
@@ -344,7 +345,7 @@ for i in range(NU + 1):
     tmax = S.get('front_hairline', 1.05) + 0.6 * (1 - front) ** 0.8  # the hairline: high at the forehead, low behind
     for j in range(NV + 1):
         th = 0.02 + (tmax - 0.02) * j / NV
-        p = guide(min(th, TH_H + S['hang'] * (1 - front) / R.z), ph, S['lift'])
+        p = guide(min(th, TH_H + S['hang'] * (1 - front) / R.z), ph, S['lift'], ls=min(1.0, (NV - j) / (0.35 * NV)))
         sv.append(p)
         su.append((i / NU, j / NV))
 for i in range(NU):
