@@ -112,13 +112,18 @@ export async function loadCitySprites(onProgress) {
   } catch (e) {
     console.warn('언더월드 스프라이트: ' + e.message);
   }
-  const img = await loadImg(base + FLOOR_TEXTURE);
-  const c = document.createElement('canvas');
-  c.width = img.width;
-  c.height = img.height;
-  const x = c.getContext('2d');
-  x.drawImage(img, 0, 0);
-  out.floor = { data: x.getImageData(0, 0, img.width, img.height), tiles: FLOOR_TILES };
+  try {
+    const img = await loadImg(base + FLOOR_TEXTURE);
+    const c = document.createElement('canvas');
+    c.width = img.width;
+    c.height = img.height;
+    const x = c.getContext('2d');
+    x.drawImage(img, 0, 0);
+    out.floor = { data: x.getImageData(0, 0, img.width, img.height), tiles: FLOOR_TILES };
+  } catch (e) {
+    console.warn(e.message); // the old street floor: the underworld set's plates cover the undercity
+    out.floor = null;
+  }
   return out;
 }
 

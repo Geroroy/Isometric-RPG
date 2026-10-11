@@ -58,6 +58,7 @@ CELLS = {
   'barSign':      ('A', 858, 637, 979, 830, 0.8, ('box', 0.9, 0.4)),
 }
 GROUND = {  # (sheet, box): square world-space textures
+  'metalPlatePlain': ('B', 62, 150, 134, 222), # the lettered plate's lower-left corner: no text
   'metalPlateAurebesh': ('B', 62, 80, 225, 222), 'metalPlateGrate': ('B', 300, 80, 462, 222), 'metalPlateVent': ('B', 535, 80, 697, 222),
   'swamp': ('B', 748, 84, 900, 222), 'mudConduit': ('B', 930, 84, 1073, 222), 'dirtTiles': ('B', 1094, 84, 1240, 222),
   # (the neon mosaic tiles 03/04 were dropped by the user)

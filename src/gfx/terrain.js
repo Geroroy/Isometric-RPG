@@ -44,17 +44,28 @@ let FLOOR = null;
 let GROUND = null;
 export function setGroundTextures(g) {
   if (!g) return;
-  const pick = (names, tiles) => ({ list: names.map((n) => g[n]).filter(Boolean), tiles });
+  // variants with weights (the plain plate carries most of the floor; grates, vents and the
+  // lettered plate are accents), the cell size in tiles; every cell also turns, mirrors and
+  // shifts its tone by its own hash, so no two neighbours read the same
+  const pick = (entries, tiles) => {
+    const list = [];
+    for (const [n, w] of entries) if (g[n]) list.push({ T: g[n], w });
+    const sum = list.reduce((a, e) => a + e.w, 0);
+    let acc = 0;
+    for (const e of list) e.upto = acc += e.w / sum;
+    return { list, tiles };
+  };
   GROUND = {
-    [BIOME.CITY_LOW]: pick(['metalPlateAurebesh', 'metalPlateGrate', 'metalPlateVent', 'metalPlateAurebesh'], 2),
-    [BIOME.CITY_MOSAIC]: pick(['metalPlateGrate', 'metalPlateVent', 'metalPlateGrate', 'metalPlateAurebesh'], 2), // the plaza: the grated plates
-    [BIOME.CITY_MUD]: pick(['mudConduit'], 3),
-    [BIOME.CITY_SWAMP]: pick(['swamp'], 3),
-    [BIOME.CITY_DIRT]: pick(['dirtTiles'], 3),
+    [BIOME.CITY_LOW]: pick([['metalPlatePlain', 0.55], ['metalPlateAurebesh', 0.1], ['metalPlateGrate', 0.2], ['metalPlateVent', 0.15]], 2),
+    [BIOME.CITY_MOSAIC]: pick([['metalPlatePlain', 0.5], ['metalPlateGrate', 0.3], ['metalPlateVent', 0.2]], 2), // the plaza: more grates
+    [BIOME.CITY_MUD]: pick([['mudConduit', 1]], 3),
+    [BIOME.CITY_SWAMP]: pick([['swamp', 1]], 3),
+    [BIOME.CITY_DIRT]: pick([['dirtTiles', 1]], 3),
   };
   for (const k of Object.keys(GROUND)) if (!GROUND[k].list.length) delete GROUND[k];
 }
 export function setFloorTexture(f) {
+  if (!f) return;
   FLOOR = f;
 }
 
@@ -294,15 +305,27 @@ export class Terrain {
           const bi = this.world.biome[Math.floor(fy) * this.world.w + Math.floor(fx)];
           const gt = GROUND[bi];
           if (gt) {
-            const cell = hash2(Math.floor(fx / gt.tiles), Math.floor(fy / gt.tiles), 71);
-            const T = gt.list[Math.min(gt.list.length - 1, Math.floor(cell * gt.list.length))];
-            const tx = Math.floor(((((fx / gt.tiles) % 1) + 1) % 1) * T.width);
-            const ty = Math.floor(((((fy / gt.tiles) % 1) + 1) % 1) * T.height);
+            const cx = Math.floor(fx / gt.tiles);
+            const cy = Math.floor(fy / gt.tiles);
+            const pickN = hash2(cx, cy, 71);
+            let T = gt.list[gt.list.length - 1].T;
+            for (const e of gt.list) if (pickN <= e.upto) { T = e.T; break; }
+            let u = (((fx / gt.tiles) % 1) + 1) % 1;
+            let v = (((fy / gt.tiles) % 1) + 1) % 1;
+            const rot = Math.floor(hash2(cx, cy, 72) * 4); // a quarter turn per cell
+            if (rot === 1) [u, v] = [1 - v, u];
+            else if (rot === 2) [u, v] = [1 - u, 1 - v];
+            else if (rot === 3) [u, v] = [v, 1 - u];
+            if (hash2(cx, cy, 73) > 0.5) u = 1 - u; // and a mirror
+            const tx = Math.min(T.width - 1, Math.floor(u * T.width));
+            const ty = Math.min(T.height - 1, Math.floor(v * T.height));
             const j = (ty * T.width + tx) * 4;
-            const sh = 1 + blot * 0.2;
-            r = T.data[j] * sh;
+            // the cell's own tone, the blotches, and slow stains (oil, rust, damp) across cells
+            const stain = valueNoise(fx * 0.33, fy * 0.33, 75) - 0.5;
+            const sh = (0.86 + 0.26 * hash2(cx, cy, 74)) * (1 + blot * 0.22) * (1 + stain * 0.5);
+            r = T.data[j] * sh * (1 + stain * 0.25);
             g = T.data[j + 1] * sh;
-            b = T.data[j + 2] * sh;
+            b = T.data[j + 2] * sh * (1 - stain * 0.2);
             texd = true;
           }
         }
