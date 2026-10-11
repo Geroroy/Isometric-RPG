@@ -196,10 +196,9 @@ export class Renderer {
       ctx.fillStyle = '#07070a';
       ctx.fillRect(0, 0, W, H);
     }
-    // the speeders in the level's air lanes: those through the drop are depth-sorted with the props
-    // and units below; those overhead come at the end
+    // the speeders in the level's air lanes, through the drop: depth-sorted with the props and units below
     if (g.world.traffic) {
-      if (!this.lanes || this.lanes.src !== g.world.traffic) this.lanes = new LaneTraffic(g.world.traffic);
+      if (!this.lanes || this.lanes.src !== g.world.traffic) this.lanes = new LaneTraffic(g.world.traffic, g.world);
       this.lanes.update(dt);
     } else this.lanes = null;
     for (const u of g.activeUnits) this.igniteOf(u); // the blades' ignition clocks, before any light is drawn
@@ -341,7 +340,6 @@ export class Renderer {
     this.drawBolts(ctx, cam);
     this.drawThrows(ctx, cam);
     g.fx.drawAdd(ctx, cam);
-    this.drawTraffic(ctx, cam);
     ctx.globalCompositeOperation = 'source-over';
 
     // --- aircraft (above everything)
@@ -721,8 +719,6 @@ export class Renderer {
     for (const t of g.throws) spot(t.x, t.y, t.z, 90, 160, 255, 60, 0.6);
     for (const b of g.bolts) spot(b.x, b.y, b.z, b.color === 'red' ? 255 : 90, b.color === 'red' ? 70 : 140, b.color === 'red' ? 60 : 255, 26, 0.6);
     for (const fl of g.fx.lights) spot(fl.x, fl.y, fl.z, fl.r, fl.g, fl.b, fl.rad, 0.8 * (1 - fl.t / fl.life));
-    // speeders passing overhead sweep their light across the street below
-    if (this.lanes) for (const [x, y] of this.lanes.positions('over')) if (Math.abs(x - p.x) < 16 && Math.abs(y - p.y) < 16) spot(x, y, 0, 210, 220, 255, 70, 0.22);
     for (const u of g.activeUnits) if (u.choke) spot(u.x, u.y, 1.2 + u.z, 160, 60, 60, 40, 0.5);
     // composite
     const ctx = this.ctx;
@@ -929,11 +925,6 @@ export class Renderer {
     ctx.lineWidth = 1.4;
     ctx.stroke();
     ctx.lineCap = 'butt';
-  }
-
-  /** The craft crossing high over the undercity's streets (the drop's are drawn before the terrain). */
-  drawTraffic(ctx, cam) {
-    if (this.lanes) this.lanes.draw(ctx, cam, this.w, this.h, 'over');
   }
 
   drawBolts(ctx, cam) {

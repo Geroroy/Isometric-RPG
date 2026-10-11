@@ -1,25 +1,27 @@
-// Coruscant's air traffic (docs/SKYLINE_TRAFFIC.md): the craft of the attached vehicle sheet
-// (tools/sprites/traffic/extract.py — hovering craft only, ground shadow cut away) flying
-//   - the level's own air lanes (LaneTraffic): through the drop between the platforms, below the rim,
-//     and high over the undercity's streets — where streaks of light used to run;
-//   - far off over the city (SkylineTraffic): small craft between the backdrop's tower layers.
-// Drawn as pre-rendered sprites at their own pixels (the near craft 1:1, the far ones from the
-// atlas halved offline) — never resampled or tinted at run time. Every craft flies a straight line
-// along an isometric axis, placed on exact 2:1 pixel steps from its distance along the line, so it
-// moves without shimmer or zigzag; it enters and leaves off-screen. The sheet draws its craft facing
-// down-left; down-right lanes mirror them, and no lane runs away from the camera (there are no rear
-// views). Engine wakes are the sheet's pink and blue streaks, set on each craft's rear.
+// Coruscant's air traffic (docs/SKYLINE_TRAFFIC.md): the craft of the two eight-view vehicle sheets
+// (tools/sprites/traffic/extract.py — eight craft, every one in eight views, background and ground
+// shadow cut away, scaled to game size offline) flying
+//   - the level's own air lanes (LaneTraffic, where streaks of light used to run): every lane flown
+//     through the drop, just under the platforms' rim, moved off any walkway it crossed — a craft
+//     over a walkway reads as standing on it in this view, so traffic stays behind the map and props;
+//   - far off over the city (SkylineTraffic): smaller craft between the backdrop's tower layers.
+// Drawn as pre-rendered sprites at their own pixels (the far ones from the atlas halved offline) —
+// never resampled or tinted at run time, no drawn-in light. Every craft flies a straight line along
+// an isometric axis, placed on exact 2:1 pixel steps from its distance along the line, so it moves
+// without shimmer or zigzag, and shows the view of the sheet whose nose points the way it is going
+// (down-right SE, down-left SW, up-left NW, up-right NE). It enters and leaves off-screen.
 import { RNG } from '../core/math.js';
 import { worldToScreen, HALF_H } from '../core/iso.js';
 
 const BASE = import.meta.env.BASE_URL;
+const VOID = 13; // world BIOME.VOID: the drop between the levels / off the platforms
 
-// classes: pace (× the lane's speed), how often they fly, the chance of an engine wake
+// classes: pace (× the lane's speed) and how often they fly
 const CLASSES = {
-  swoop: { pace: 1.35, weight: 0.25, trail: 0.9 },
-  cruiser: { pace: 1.12, weight: 0.35, trail: 0.7 },
-  commuter: { pace: 1, weight: 0.25, trail: 0.45 },
-  cargo: { pace: 0.7, weight: 0.15, trail: 0.25 },
+  swoop: { pace: 1.35, weight: 0.24 },
+  cruiser: { pace: 1.12, weight: 0.36 },
+  commuter: { pace: 1, weight: 0.22 },
+  cargo: { pace: 0.68, weight: 0.18 },
 };
 
 let meta = null;
@@ -45,7 +47,8 @@ function load() {
     .catch((e) => console.warn('air traffic: no sprites', e));
 }
 
-function pickSprite(rng, cache) {
+/** A craft by its class's weight: { cls, views }. */
+function pickCraft(rng, cache) {
   let u = rng.next();
   let cls = 'commuter';
   for (const [k, c] of Object.entries(CLASSES)) {
@@ -55,57 +58,29 @@ function pickSprite(rng, cache) {
     }
     u -= c.weight;
   }
-  const list = (cache.byClass ||= Object.fromEntries(Object.keys(CLASSES).map((k) => [k, meta.vehicles.filter((v) => v.cls === k)])))[cls];
-  return [cls, rng.pick(list.length ? list : meta.vehicles)];
+  const all = Object.values(meta.craft);
+  const list = (cache.byClass ||= Object.fromEntries(Object.keys(CLASSES).map((k) => [k, all.filter((c) => c.cls === k)])))[cls];
+  return rng.pick(list.length ? list : all);
 }
 
-/**
- * One craft at screen point (x, y) (its centre), from the full atlas (k = 1) or the halved one
- * (k = 0.5; the atlas keeps every sprite at even coordinates so halving maps it exactly): the wake
- * first, its head on the rear, then the hull, then a blinking red running light on the rear.
- */
-function drawCraft(ctx, s, x, y, mirror, trail, k, phase, now) {
+/** The view whose nose points along a screen step (sx, sy) of a 2:1 diagonal. */
+const viewOf = (sx, sy) => (sy > 0 ? (sx > 0 ? 'SE' : 'SW') : sx > 0 ? 'NE' : 'NW');
+
+/** One craft centred on screen point (x, y), from the full atlas (k = 1) or the halved one (k = 0.5). */
+function drawCraft(ctx, v, x, y, k) {
   const img = k === 1 ? full : halfImg;
-  const sw = Math.ceil(s.w * k);
-  const sh = Math.ceil(s.h * k);
-  const sx = s.x * k;
-  const sy = s.y * k;
-  const x0 = Math.round(x - sw / 2);
-  const y0 = Math.round(y - sh / 2);
-  const rx = mirror ? x0 + sw - Math.round(s.rear[0] * k) : x0 + Math.round(s.rear[0] * k);
-  const ry = y0 + Math.round(s.rear[1] * k);
-  if (trail) {
-    const t = meta.trails[trail];
-    const tw = Math.ceil(t.w * k);
-    const th = Math.ceil(t.h * k);
-    const hx = Math.round(t.head[0] * k);
-    const hy = Math.round(t.head[1] * k);
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 0.8 + 0.12 * Math.sin(now * 19 + phase);
-    if (mirror) {
-      ctx.setTransform(-1, 0, 0, 1, rx + hx, 0);
-      ctx.drawImage(img, t.x * k, t.y * k, tw, th, 0, ry - hy, tw, th);
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    } else ctx.drawImage(img, t.x * k, t.y * k, tw, th, rx - hx, ry - hy, tw, th);
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
-  }
-  if (mirror) {
-    ctx.setTransform(-1, 0, 0, 1, x0 + sw, y0);
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  } else ctx.drawImage(img, sx, sy, sw, sh, x0, y0, sw, sh);
-  if (Math.sin(now * 4.5 + phase * 3) > 0.6) {
-    ctx.fillStyle = 'rgba(255,70,60,0.95)';
-    ctx.fillRect(rx, ry, 1, 1);
-  }
+  ctx.globalCompositeOperation = 'source-over'; // (the overhead pass comes straight after the additive effects)
+  ctx.globalAlpha = 1;
+  const w = Math.ceil(v.w * k);
+  const h = Math.ceil(v.h * k);
+  ctx.drawImage(img, v.x * k, v.y * k, w, h, Math.round(x - w / 2), Math.round(y - h / 2), w, h);
 }
 
 // --- far off over the city -----------------------------------------------------------------------
 
-/** The far traffic's tier: drawn after this backdrop tower layer, with this parallax. */
-export const TIERS = [{ after: 1, f: 0.16, max: 18, rate: 0.9, band: [-0.45, 0.25], speed: [10, 22] }];
-const MARGIN = 70; // spawn / leave beyond the view's edge, tier px
+/** The far traffic: drawn after this backdrop tower layer, with this parallax. */
+export const TIERS = [{ after: 1, f: 0.16, max: 16, rate: 0.8, band: [0.08, 0.62], speed: [9, 18] }];
+const MARGIN = 60; // beyond the view's edge, tier px
 
 /** Small craft crossing the distant city on straight iso diagonals (tier space = parallax space). */
 export class SkylineTraffic {
@@ -124,16 +99,17 @@ export class SkylineTraffic {
     const rng = this.rng;
     const vx = cam.x * T.f;
     const vy = cam.y * T.f;
-    c.dir = rng.next() < 0.5 ? -1 : 1; // screen x: -1 down-left (as drawn), 1 down-right (mirrored)
-    c.x0 = c.dir < 0 ? vx + W + MARGIN : vx - MARGIN;
-    c.y0 = vy + H * (T.band[0] + rng.next() * (T.band[1] - T.band[0]));
-    c.v = T.speed[0] + rng.next() * (T.speed[1] - T.speed[0]); // px of descent a second (x moves twice that)
-    c.span = (W + 2 * MARGIN) / 2; // the descent that takes it across the view
-    c.k = t0 * c.span;
-    const [cls, s] = pickSprite(rng, this);
-    c.s = s;
-    c.trail = rng.next() < CLASSES[cls].trail * 0.5 ? (rng.next() < 0.5 ? 'blue' : 'pink') : null;
-    c.phase = rng.next() * 6.283;
+    c.sx = rng.next() < 0.5 ? -2 : 2; // screen step per row: x two, y one, down or up
+    c.sy = rng.next() < 0.5 ? -1 : 1;
+    // a line through a point in the middle band, run from one side of the view to the other
+    const cx = vx + W * (0.2 + rng.next() * 0.6);
+    const cy = vy + H * (T.band[0] + rng.next() * (T.band[1] - T.band[0]));
+    c.rows = (W + 2 * MARGIN) / 2; // rows it takes to cross the whole view and then some
+    c.x0 = Math.round(cx - (c.sx * c.rows) / 2);
+    c.y0 = Math.round(cy - (c.sy * c.rows) / 2);
+    c.v = T.speed[0] + rng.next() * (T.speed[1] - T.speed[0]); // rows a second
+    c.k = t0 * c.rows;
+    c.view = pickCraft(rng, this).views[viewOf(c.sx, c.sy)];
     c.active = true;
   }
 
@@ -148,15 +124,10 @@ export class SkylineTraffic {
       this.warm = true;
       for (let i = 0; i < Math.round(T.max * 0.6 * busy); i++) this.spawn(cam, W, H, this.rng.next());
     }
-    const vx = cam.x * T.f;
-    const vy = cam.y * T.f;
     for (const c of this.pool) {
       if (!c.active) continue;
       c.k += c.v * dt;
-      const x = c.x0 + c.dir * 2 * c.k;
-      const y = c.y0 + c.k;
-      // gone past the far side (or the camera moved on): back to the pool
-      if (c.k > c.span || x < vx - MARGIN * 3 || x > vx + W + MARGIN * 3 || y > vy + H + MARGIN * 2) c.active = false;
+      if (c.k > c.rows) c.active = false; // across and off the far side: back to the pool
     }
     this.next -= dt;
     if (this.next <= 0) {
@@ -170,10 +141,10 @@ export class SkylineTraffic {
     const T = TIERS[ti];
     const vx = Math.round(cam.x * T.f);
     const vy = Math.round(cam.y * T.f);
-    const list = this.pool.filter((c) => c.active).sort((a, b) => a.y0 + a.k - (b.y0 + b.k));
+    const list = this.pool.filter((c) => c.active).sort((a, b) => a.y0 + a.sy * a.k - (b.y0 + b.sy * b.k));
     for (const c of list) {
-      const k = Math.round(c.k); // whole pixel rows: x moves exactly two per row
-      drawCraft(ctx, c.s, Math.round(c.x0) - vx + c.dir * 2 * k, Math.round(c.y0) - vy + k, c.dir > 0, c.trail, 0.5, c.phase, this.time);
+      const k = Math.round(c.k); // whole rows: x moves exactly two per row
+      drawCraft(ctx, c.view, c.x0 - vx + c.sx * k, c.y0 - vy + c.sy * k, 0.5);
     }
   }
 }
@@ -181,30 +152,67 @@ export class SkylineTraffic {
 // --- the level's air lanes -----------------------------------------------------------------------
 
 const EXT = 30; // lanes run on this far past the level's ends: craft come in and go out off-screen
-const POOL = 260; // every lane's cars at once (about 170 when the lanes are full)
+const POOL = 260; // every lane's cars at once
 const LEN = 4.5; // a craft's length along its lane, world units (no closer than this)
 
 /**
  * The craft along the level's air lanes (world.traffic, worldgen.js: (x0, y0) -> (x1, y1) at height z,
- * a lane speed, a mean gap; `over`: high over the undercity's streets). A lane is straightened onto
- * its main axis, flown towards the camera, and carried on past both ends of the level. Lanes through
- * the drop ('drop') are lowered under the platforms' rim (z below 0), so the craft cross the cliff
- * faces, never the walkways. Each car has its class's pace with its own spread, brakes for a slower
- * car ahead, and enters at irregular (exponential) gaps once the one before has moved on.
+ * a lane speed, a mean gap). A lane is straightened onto its main axis, keeps its direction, is
+ * carried on past both ends of the level, lowered under the platforms' rim and moved sideways off any
+ * walkway (and 1.5 tiles from the lanes beside it); one that finds no clear line stays empty. Each car
+ * has its class's pace with its own spread, brakes for a slower car ahead, and enters at irregular
+ * (exponential) gaps once the one before has moved on.
  */
 export class LaneTraffic {
-  constructor(lanes, seed = 11) {
+  constructor(lanes, world = null, seed = 11) {
     this.rng = new RNG(seed);
     this.src = lanes;
+    // a lane through the drop flies under the platforms' rim, so it must not cross a platform: one
+    // that does is moved sideways to the nearest line clear of them over the level (world.biome VOID)
+    const clear = (alongX, other, lo, hi) => {
+      if (!world) return true;
+      for (let a = lo; a <= hi; a += 0.5) if (world.biomeAt(alongX ? a : other, alongX ? other : a) !== VOID) return false;
+      return true;
+    };
     this.pool = Array.from({ length: POOL }, () => ({ active: false }));
+    const placed = [];
     this.lanes = lanes.map((L) => {
       const alongX = Math.abs(L.x1 - L.x0) >= Math.abs(L.y1 - L.y0);
-      const a0 = alongX ? Math.min(L.x0, L.x1) : Math.min(L.y0, L.y1);
-      const a1 = alongX ? Math.max(L.x0, L.x1) : Math.max(L.y0, L.y1);
-      const other = alongX ? (L.y0 + L.y1) / 2 : (L.x0 + L.x1) / 2;
-      const kind = L.over ? 'over' : 'drop';
-      const z = kind === 'over' ? L.z : -0.5 - L.z * 0.5; // the drop's lanes just under the rim
-      return { L, alongX, a0: a0 - EXT, len: a1 - a0 + 2 * EXT, other, z, kind, next: 0, cars: [] };
+      const sgn = (alongX ? L.x1 - L.x0 : L.y1 - L.y0) >= 0 ? 1 : -1;
+      const lo = alongX ? Math.min(L.x0, L.x1) : Math.min(L.y0, L.y1);
+      const hi = alongX ? Math.max(L.x0, L.x1) : Math.max(L.y0, L.y1);
+      const kind = 'drop'; // (the overhead lanes too: see the header)
+      let other = alongX ? (L.y0 + L.y1) / 2 : (L.x0 + L.x1) / 2;
+      // and kept 1.5 tiles from the parallel lanes already placed (craft on two lanes never overlap)
+      const free = (o) => clear(alongX, o, lo, hi) && !placed.some((p) => p.alongX === alongX && p.kind === kind && Math.abs(p.other - o) < 1.5);
+      if (!free(other)) {
+        const off = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20].flatMap((o) => [o, -o]).find((o) => free(other + o));
+        if (off !== undefined) other += off;
+      }
+      // no room anywhere near: the lane is left empty rather than fly over a walkway
+      const dead = !clear(alongX, other, lo, hi);
+      if (!dead) placed.push({ alongX, kind, other });
+      // screen step per pixel row of travel: +x down-right, -x up-left, +y down-left, -y up-right
+      const sx = alongX ? 2 * sgn : -2 * sgn;
+      const sy = sgn;
+      return {
+        L,
+        alongX,
+        sgn,
+        start: sgn > 0 ? lo - EXT : hi + EXT,
+        inLo: EXT, // the part of the run over the level: d in [inLo, inHi]
+        inHi: EXT + hi - lo,
+        len: hi - lo + 2 * EXT,
+        other,
+        z: -0.5 - Math.min(L.z, 8) * 0.4, // just under the rim, a little deeper for the higher lanes
+        kind,
+        sx,
+        sy,
+        view: viewOf(sx, sy),
+        dead,
+        next: 0,
+        cars: [],
+      };
     });
     this.time = 0;
     this.warm = false;
@@ -214,15 +222,13 @@ export class LaneTraffic {
     const c = this.pool.find((p) => !p.active);
     if (!c) return;
     const rng = this.rng;
-    const [cls, s] = pickSprite(rng, this);
-    const C = CLASSES[cls];
+    const craft = pickCraft(rng, this);
     c.active = true;
-    c.s = s;
+    c.v0 = craft.views[ln.view];
+    c.view = ln.view;
     c.d = d;
-    c.want = ln.L.speed * C.pace * (0.9 + rng.next() * 0.2);
+    c.want = ln.L.speed * CLASSES[craft.cls].pace * (0.9 + rng.next() * 0.2);
     c.v = c.want;
-    c.trail = rng.next() < (ln.kind === 'over' ? 1 : C.trail) ? (rng.next() < 0.5 ? 'blue' : 'pink') : null;
-    c.phase = rng.next() * 6.283;
     ln.cars.push(c);
   }
 
@@ -232,6 +238,7 @@ export class LaneTraffic {
     this.time += dt;
     const rng = this.rng;
     for (const ln of this.lanes) {
+      if (ln.dead) continue;
       const mean = ln.L.gap / ln.L.speed;
       if (!this.warm) {
         // flowing already when the level opens
@@ -260,46 +267,46 @@ export class LaneTraffic {
 
   /** A car's world point (x, y, z). */
   world(ln, c) {
-    const a = ln.a0 + c.d;
+    const a = ln.start + ln.sgn * c.d;
     return ln.alongX ? [a, ln.other, ln.z] : [ln.other, a, ln.z];
   }
 
-  /** Every car's world position of a kind (the overhead craft's light sweeps the street). */
+  /** Every car's world position of a kind. */
   *positions(kind) {
     for (const ln of this.lanes) if (ln.kind === kind) for (const c of ln.cars) yield this.world(ln, c);
   }
 
   /**
    * The cars of a kind in view: [depth (x + y), screen x, y, lane, car], the screen point on whole
-   * 2:1 pixel steps from the lane's start (so it never shimmers). The drop's go into the renderer's
-   * depth-sorted list with the props and units; the overhead ones are drawn last.
+   * 2:1 pixel steps from the lane's start (so it never shimmers); they go into the renderer's
+   * depth-sorted list with the props and units.
    */
   visible(kind, cam, W, H) {
     const list = [];
     if (!meta) return list;
     for (const ln of this.lanes) {
       if (ln.kind !== kind) continue;
-      const o = ln.alongX ? worldToScreen(ln.a0, ln.other, ln.z) : worldToScreen(ln.other, ln.a0, ln.z);
+      const o = ln.alongX ? worldToScreen(ln.start, ln.other, ln.z) : worldToScreen(ln.other, ln.start, ln.z);
       const ox = Math.round(o.x) - cam.x;
       const oy = Math.round(o.y) - cam.y;
       for (const c of ln.cars) {
-        const k = Math.round(c.d * HALF_H); // pixel rows down the lane; x moves two per row
-        const sx = ox + (ln.alongX ? 2 * k : -2 * k);
-        const sy = oy + k;
-        if (sx < -100 || sy < -100 || sx > W + 100 || sy > H + 100) continue;
-        list.push([ln.a0 + c.d + ln.other, sx, sy, ln, c]);
+        const k = Math.round(c.d * HALF_H); // pixel rows along the lane; x moves two per row
+        const sx = ox + ln.sx * k;
+        const sy = oy + ln.sy * k;
+        if (sx < -120 || sy < -120 || sx > W + 120 || sy > H + 120) continue;
+        const [wx, wy] = this.world(ln, c);
+        list.push([wx + wy, sx, sy, ln, c]);
       }
     }
     return list;
   }
 
-  /** Draw one car from visible(): world +x lanes run down-right (mirrored), +y down-left (as drawn). */
+  /** Draw one car from visible(). */
   drawItem(ctx, item) {
-    const [, sx, sy, ln, c] = item;
-    drawCraft(ctx, c.s, sx, sy, ln.alongX, c.trail, 1, c.phase, this.time);
+    drawCraft(ctx, item[4].v0, item[1], item[2], 1);
   }
 
-  /** Draw every car of a kind, farther first ('over': after everything else). */
+  /** Draw every car of a kind, farther first. */
   draw(ctx, cam, W, H, kind) {
     const list = this.visible(kind, cam, W, H).sort((a, b) => a[0] - b[0]);
     for (const it of list) this.drawItem(ctx, it);

@@ -2,7 +2,8 @@
 // step the game frame by frame (1/60 s), log every lane car's drawn screen position, and count
 //   pop-ins  — a car first drawn well inside the view (it should come in from off-screen),
 //   reversals — a car whose step on screen turns back on x or y (zigzag / jitter),
-//   stalls    — a moving car not moving on screen for many frames, then jumping;
+//   stalls    — a moving car not moving on screen for many frames, then jumping,
+//   facing    — a car whose sprite's nose does not point the way it travels;
 // and save a strip of frames (every 6th) of the view to look at the motion.
 //   npm run dev; node tools/qa/trafficplay.mjs <out_dir> [spot=terrace] [seconds=6]
 import { chromium } from 'playwright-core';
@@ -10,7 +11,7 @@ import fs from 'fs';
 import path from 'path';
 
 const [, , out = 'tools/qa/out/trafficplay', spot = 'terrace', secs = '6'] = process.argv;
-const SPOTS = { terrace: [96, 76], corner_se: [122, 77], plaza: [98, 112], lift: [84, 101], west_alley: [76, 114], pad: [112, 62] };
+const SPOTS = { terrace: [96, 76], corner_nw: [74, 51], corner_se: [122, 77], plaza: [98, 112], lift: [84, 101], west_alley: [76, 114], pad: [112, 62] };
 fs.mkdirSync(out, { recursive: true });
 const dir = '/opt/pw-browsers';
 const exe = fs.readdirSync(dir).map((d) => path.join(dir, d, 'chrome-linux', 'chrome')).find((p) => fs.existsSync(p));
@@ -59,7 +60,7 @@ for (let f = 0; f < frames; f++) {
         let id = __ids.get(c);
         if (id === undefined) __ids.set(c, (id = __nid++));
         // in world-fixed screen pixels (the view's own moves taken out), so a camera nudge is not counted
-        (__tracks[id] ||= { kind, pts: [] }).pts.push([f, Math.round(it[1]) + r.cam.x, Math.round(it[2]) + r.cam.y]);
+        (__tracks[id] ||= { kind, view: c.view, pts: [] }).pts.push([f, Math.round(it[1]) + r.cam.x, Math.round(it[2]) + r.cam.y]);
       }
   }, f);
   if (f % 6 === 0) {
@@ -104,10 +105,23 @@ const res = await page.evaluate(() => {
       if (still === 20) stall++;
     }
   }
+  // facing: the view's nose against the way the car went on screen over its run
+  let facing = 0;
+  for (const [id, t] of Object.entries(__tracks)) {
+    const p = t.pts;
+    if (p.length < 10 || !t.view) continue;
+    const dx = p[p.length - 1][1] - p[0][1];
+    const dy = p[p.length - 1][2] - p[0][2];
+    const want = dy > 0 ? (dx > 0 ? 'SE' : 'SW') : dx > 0 ? 'NE' : 'NW';
+    if (want !== t.view) {
+      facing++;
+      bad.push(`facing ${t.kind} #${id}: view ${t.view}, travels ${want}`);
+    }
+  }
   const paths = Object.entries(__tracks).map(([id, t]) => `${t.kind} #${id}: ${t.pts[0].slice(1).join(',')} -> ${t.pts[t.pts.length - 1].slice(1).join(',')} (${t.pts.length} frames)`);
-  return { cars: Object.keys(__tracks).length, view: [W, H], camMoves, pop, rev, stall, bad, paths };
+  return { cars: Object.keys(__tracks).length, view: [W, H], camMoves, pop, rev, stall, facing, bad, paths };
 });
-console.log(`TRAFFIC ${spot}: ${res.cars} cars seen, ${res.pop} pop-ins, ${res.rev} reversals, ${res.stall} stalls (camera moved ${res.camMoves} frames); errors ${errs.length}`);
+console.log(`TRAFFIC ${spot}: ${res.cars} cars seen, ${res.pop} pop-ins, ${res.rev} reversals, ${res.stall} stalls, ${res.facing} facing wrong (camera moved ${res.camMoves} frames); errors ${errs.length}`);
 for (const b of res.bad.slice(0, 20)) console.log('  ' + b);
 fs.writeFileSync(`${out}/${spot}_tracks.json`, JSON.stringify(res, null, 1));
 await browser.close();

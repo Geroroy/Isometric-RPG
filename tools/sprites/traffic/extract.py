@@ -1,14 +1,17 @@
-"""Cut the flying traffic out of the vehicle concept sheet (reference/unsorted/image_2.png,
-'CATEGORY 4: VEHICLES & CRAFT') into one atlas for the skyline traffic (gfx/skylineTraffic.js):
-public/sprites/traffic/traffic.png (and traffic_half.png, the same at half size, box-filtered, for the
-far traffic) and traffic.json — every craft facing down-left (SW) as drawn on the sheet (the game
-mirrors it for the down-right lanes), its class, and its rear and nose points (the engine wake starts
-at the rear); plus the two engine-wake streaks (pink and blue).
-Only hovering craft: the sheet's wheeled cars and trucks (most of it) would look wrong in the air,
-and its wrecks, top-down, side-on and rear views and the one cart facing the other way are left out.
-Cleaned for flight: the sheet's ground shadow (the dark, flat, neutral pixels reached from a sprite's
-outline) is cut away, and the outline is matted against the sheet's grey (alpha from the distance to
-it, the grey taken out of the colour) instead of a hard cut with a grey fringe.
+"""Cut the air traffic out of the two eight-direction vehicle sheets (reference/unsorted/image_3.png and
+image_4.png: four craft per sheet, one row each, every craft in eight views) into the atlas the game
+flies (gfx/skylineTraffic.js): public/sprites/traffic/traffic.png (and traffic_half.png, the same at
+half size, box-filtered, for the far traffic) and traffic.json — per craft its class and, per view,
+the sprite's rect and its rear point (where the engine glow sits).
+
+The sheets' columns run round the craft: 0 nose to the camera (S), 1 nose down-left (SW), 2 side
+facing left (W), 3 nose up-left (NW), 4 tail to the camera (N), 5 nose up-right (NE), 6 side facing
+right (E), 7 nose down-right (SE). The game picks the view from the screen direction of travel.
+
+Cleaned: the flat grey background and the soft ground shadow under each craft (dark, neutral, smooth
+pixels reached from the outline) are cut away and the outline is matted against the grey (alpha from
+the distance to it, the grey taken out of the colour). Then every sprite is scaled to game size by
+SCALE (Lanczos, premultiplied) — once, here; the game draws the pixels as they are.
    python3 tools/sprites/traffic/extract.py [--contact out.png]
 """
 import json
@@ -19,23 +22,21 @@ from collections import deque
 import numpy as np
 from PIL import Image, ImageDraw
 
-SRC = 'reference/unsorted/image_2.png'
 OUT = 'public/sprites/traffic'
-BG = np.array([92, 92, 92])
-
-# the sheet's pieces (in reading order of their connected components, see --contact) by class:
-#   swoop  — speeder bikes and racers: small and fast
-#   cruiser — luxury sedans and sport craft: fast
-#   commuter — air-cars and taxis: medium
-#   cargo  — trucks and freighters: big and slow
-CLASS = {
-    'swoop': [21, 41, 62, 49, 50, 63, 64],  # swoop bikes and racers
-    'cruiser': [30, 32, 33, 42, 43, 65],  # air-taxi and luxury airspeeders
-    'commuter': [31, 13, 34, 40],  # boxy air-cars and an open hover-boat
-    'cargo': [47, 48, 74],  # gunship, enforcement craft, shuttle: heavy and slow
+SHEETS = ['reference/unsorted/image_3.png', 'reference/unsorted/image_4.png']
+# (sheet, row) -> name, class; classes set the pace: swoop (racers) > cruiser > commuter > cargo
+CRAFT = {
+    (0, 0): ('roadsterRed', 'cruiser'),
+    (0, 1): ('airTaxi', 'commuter'),
+    (0, 2): ('cargoHauler', 'cargo'),
+    (0, 3): ('racer07', 'swoop'),
+    (1, 0): ('interceptorBlack', 'cruiser'),
+    (1, 1): ('classicRed', 'cruiser'),
+    (1, 2): ('crateFreighter', 'cargo'),
+    (1, 3): ('racerBlue', 'swoop'),
 }
-TRAILS = {'pink': 87, 'blue': 89}
-LABELLED = {25, 46, 47}  # a label strip fused to the top of the piece
+VIEWS = ['S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE']
+SCALE = 0.5  # sheet px -> game px: a craft ~70-80 px long on screen, as a 4 m speeder beside 55 px people
 
 
 def components(fg):
@@ -44,56 +45,82 @@ def components(fg):
     out = []
     n = 0
     for y in range(H):
-        for x in range(W):
-            if fg[y, x] and not lab[y, x]:
-                n += 1
-                q = deque([(y, x)])
-                lab[y, x] = n
-                ys, xs = [], []
-                while q:
-                    cy, cx = q.popleft()
-                    ys.append(cy)
-                    xs.append(cx)
-                    for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                        ny, nx = cy + dy, cx + dx
-                        if 0 <= ny < H and 0 <= nx < W and fg[ny, nx] and not lab[ny, nx]:
-                            lab[ny, nx] = n
-                            q.append((ny, nx))
-                out.append((n, len(ys), min(xs), min(ys), max(xs) + 1, max(ys) + 1))
+        row = fg[y]
+        for x in np.nonzero(row & (lab[y] == 0))[0]:
+            if lab[y, x]:
+                continue
+            n += 1
+            q = deque([(y, x)])
+            lab[y, x] = n
+            ys, xs = [], []
+            while q:
+                cy, cx = q.popleft()
+                ys.append(cy)
+                xs.append(cx)
+                for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    ny, nx = cy + dy, cx + dx
+                    if 0 <= ny < H and 0 <= nx < W and fg[ny, nx] and not lab[ny, nx]:
+                        lab[ny, nx] = n
+                        q.append((ny, nx))
+            out.append((n, len(ys), min(xs), min(ys), max(xs) + 1, max(ys) + 1, sum(xs) / len(xs), sum(ys) / len(ys)))
     return lab, out
 
 
-def clean(rgb, m):
-    """Cut the ground shadow off a craft and matte its outline; returns (rgba, mask)."""
+def edge_of(m):
+    p = np.pad(m, 1)
+    return m & ~(p[:-2, 1:-1] & p[2:, 1:-1] & p[1:-1, :-2] & p[1:-1, 2:])
+
+
+def cut(rgb, m, bg):
+    """The craft out of a piece: shadow peeled off the outline, the biggest part kept, the edge matted."""
     from numpy.lib.stride_tricks import sliding_window_view
     m = m.copy()
     mx, mn = rgb.max(2), rgb.min(2)
     lum = rgb.mean(2)
-    std = sliding_window_view(np.pad(lum, 1, mode='edge'), (3, 3)).std(axis=(2, 3))
-    shadowish = (mx <= 86) & (mn >= 36) & ((mx - mn) < 14) & (std < 7)
-    # peel: shadow-like pixels on the outline go, again and again (the shadow is reached from outside;
-    # dark windows inside the hull are not)
-    for _ in range(40):
-        pad = np.pad(m, 1)
-        edge = m & ~(pad[:-2, 1:-1] & pad[2:, 1:-1] & pad[1:-1, :-2] & pad[1:-1, 2:])
-        cut = edge & shadowish
-        if not cut.any():
+    std = sliding_window_view(np.pad(lum, 2, mode='edge'), (5, 5)).std(axis=(2, 3))
+    shadowish = (lum > 120) & (lum < bg.mean() - 1) & ((mx - mn) < 12) & (std < 6)
+    for _ in range(200):
+        c = edge_of(m) & shadowish
+        if not c.any():
             break
-        m &= ~cut
-    _, parts = components(m)  # the hull: the biggest piece left
-    sub, _ = components(m)
+        m &= ~c
+    # the halo: the sheet's soft edge, pixels still close to the grey, peeled off the outline (a few rings)
+    dist = np.abs(rgb - bg).max(2)
+    lightish = (dist < 34) | ((mx - mn < 14) & (lum > bg.mean() - 30) & (lum < bg.mean() + 30))
+    for _ in range(4):
+        c = edge_of(m) & lightish
+        if not c.any():
+            break
+        m &= ~c
+    sub, parts = components(m)
     m = sub == max(parts, key=lambda c: c[1])[0]
-    # matte the outline: alpha from the distance to the sheet's grey, the grey taken out
-    pad = np.pad(m, 1)
-    edge = m & ~(pad[:-2, 1:-1] & pad[2:, 1:-1] & pad[1:-1, :-2] & pad[1:-1, 2:])
-    alpha = np.where(m, 1.0, 0.0)
-    dist = np.abs(rgb - BG).max(2)
-    alpha[edge] = np.clip(dist[edge] / 48.0, 0.35, 1.0)
-    col = rgb.astype(float)
+    # fill pinholes (enclosed background-coloured pixels inside the hull are hull)
+    inv, holes = components(~m)
+    for h in holes:
+        n, area, x0, y0, x1, y1 = h[:6]
+        if area < 60 and x0 > 0 and y0 > 0 and x1 < m.shape[1] and y1 < m.shape[0]:
+            m |= inv == n
+    alpha = m.astype(float)
+    e = edge_of(m)
+    alpha[e] = np.clip(dist[e] / 70.0, 0.4, 1.0)
     a3 = alpha[..., None]
-    col = np.where(a3 > 0, (col - (1 - a3) * BG) / np.maximum(a3, 1e-3), 0)
-    out = np.dstack([np.clip(col, 0, 255), alpha * 255]).astype(np.uint8)
-    return out, m
+    col = np.where(a3 > 0, (rgb - (1 - a3) * bg) / np.maximum(a3, 1e-3), 0)
+    return np.dstack([np.clip(col, 0, 255), alpha * 255])
+
+
+def resize(img, k):
+    """Premultiplied Lanczos resize of a float RGBA array."""
+    h, w = img.shape[:2]
+    nw, nh = max(1, round(w * k)), max(1, round(h * k))
+    a = img[..., 3:4] / 255
+    pm = np.concatenate([img[..., :3] * a, img[..., 3:4]], 2)
+    chans = [np.asarray(Image.fromarray(pm[..., i].astype(np.float32), 'F').resize((nw, nh), Image.LANCZOS)) for i in range(4)]
+    q = np.dstack(chans)
+    aa = np.clip(q[..., 3:4], 0, 255)
+    rgb = np.where(aa > 1, q[..., :3] / np.maximum(aa / 255, 1e-3), 0)
+    out = np.concatenate([rgb, aa], 2)
+    out[aa[..., 0] < 8] = 0  # no faint haze round the outline
+    return out.clip(0, 255).astype(np.uint8)
 
 
 def half(img):
@@ -108,76 +135,92 @@ def half(img):
     return np.concatenate([rgb, aa * 255], 2).clip(0, 255).astype(np.uint8)
 
 
-def main():
-    a = np.asarray(Image.open(SRC).convert('RGB')).astype(int)
-    rgba = np.asarray(Image.open(SRC).convert('RGBA')).copy()
-    fg = np.abs(a - BG).max(2) > 16
-    lab, comps = components(fg)
-    big = [c for c in comps if c[1] > 250]  # [0] is the panel frame
-    pieces = {}
-    for i, (n, area, x0, y0, x1, y1) in enumerate(big):
-        m = lab[y0:y1, x0:x1] == n
-        if i in LABELLED:  # drop the rows of near-white label text and everything above them
-            white = (a[y0:y1, x0:x1].min(2) > 170) & m
-            rows = np.nonzero(white.sum(1) > 2)[0]
-            if len(rows):
-                m[: rows.max() + 3] = False
-            sub, parts = components(m)  # and keep the vehicle: the biggest piece left
-            m = sub == max(parts, key=lambda c: c[1])[0]
-            ys, xs = np.nonzero(m)
-            x0, y0, x1, y1 = x0 + xs.min(), y0 + ys.min(), x0 + xs.max() + 1, y0 + ys.max() + 1
-            m = m[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
-        img, m = clean(a[y0:y1, x0:x1], m) if i not in TRAILS.values() else (np.dstack([rgba[y0:y1, x0:x1, :3], np.where(m, 255, 0)]).astype(np.uint8), m)
-        pieces[i] = (img, m)
+def groups(vals, n):
+    """Split sorted centroids into n clusters at the n-1 widest gaps; returns the index per value."""
+    order = np.argsort(vals)
+    sv = np.asarray(vals)[order]
+    gaps = np.argsort(np.diff(sv))[-(n - 1):]
+    cuts = sorted(gaps)
+    idx = np.zeros(len(vals), int)
+    g = 0
+    for k, o in enumerate(order):
+        idx[o] = g
+        if g < n - 1 and k == cuts[g]:
+            g += 1
+    return idx
 
-    # shelf-pack into one atlas
-    order = [(cls, i) for cls, ids in CLASS.items() for i in ids] + [('trail', i) for i in TRAILS.values()]
-    # every sprite at even coordinates with even gaps, so the half-size atlas maps exactly (x / 2)
-    W, x, y, rowh = 1024, 2, 2, 0
+
+def main():
+    sprites = {}  # (name, view) -> rgba (game size)
+    contact = []
+    for si, path in enumerate(SHEETS):
+        rgb = np.asarray(Image.open(path).convert('RGB')).astype(float)
+        bg = np.median(np.concatenate([rgb[:4].reshape(-1, 3), rgb[-4:].reshape(-1, 3)]), 0)
+        fg = np.abs(rgb - bg).max(2) > 6
+        lab, comps = components(fg)
+        big = [c for c in comps if c[1] > 1500]
+        rows = groups([c[7] for c in big], 4)
+        for r in range(4):
+            inrow = [c for c, rr in zip(big, rows) if rr == r]
+            cols = groups([c[6] for c in inrow], 8) if len(inrow) >= 8 else None
+            # a craft and its separate shadow are two pieces in one column: the craft is the bigger one
+            per = {}
+            for c, cc in zip(inrow, cols):
+                if cc not in per or c[1] > per[cc][1]:
+                    per[cc] = c
+            assert len(per) == 8, (path, r, len(per))
+            name, cls = CRAFT[(si, r)]
+            for v in range(8):
+                n, area, x0, y0, x1, y1 = per[v][:6]
+                piece = cut(rgb[y0:y1, x0:x1], lab[y0:y1, x0:x1] == n, bg)
+                sprites[(name, v)] = resize(piece, SCALE)
+                contact.append(((name, v), piece))
+
+    # shelf-pack, even coordinates (the half atlas maps exactly)
+    W, x, y, rowh = 2048, 2, 2, 0
     place = {}
-    for cls, i in order:
-        img, _ = pieces[i]
+    for key, img in sprites.items():
         h, w = img.shape[:2]
         if x + w + 2 > W:
             x, y, rowh = 2, y + rowh + rowh % 2 + 4, 0
-        place[i] = (x, y, w, h)
+        place[key] = (x, y, w, h)
         x += w + w % 2 + 4
         rowh = max(rowh, h)
     Hh = y + rowh + rowh % 2 + 2
     atlas = np.zeros((Hh, W, 4), np.uint8)
-    meta = {'_doc': 'Skyline traffic (tools/sprites/traffic/extract.py): vehicles face down-left (SW); rear/nose in sprite pixels.', 'vehicles': [], 'trails': {}}
-    for cls, i in order:
-        img, m = pieces[i]
-        px, py, w, h = place[i]
+    craft = {}
+    for (name, v), img in sprites.items():
+        px, py, w, h = place[(name, v)]
         atlas[py:py + h, px:px + w] = img
-        ys, xs = np.nonzero(m)
-        k = 2 * xs - ys  # along the screen's down-left / up-right axis
-        rear = (int(xs[k.argmax()]), int(ys[k.argmax()]))
-        nose = (int(xs[k.argmin()]), int(ys[k.argmin()]))
-        if cls == 'trail':
-            name = next(t for t, j in TRAILS.items() if j == i)
-            # the streak's down-left end goes on the vehicle's rear
-            meta['trails'][name] = {'x': px, 'y': py, 'w': w, 'h': h, 'head': list(nose)}
-        else:
-            meta['vehicles'].append({'x': px, 'y': py, 'w': w, 'h': h, 'cls': cls, 'rear': list(rear), 'nose': list(nose), 'src': i})
+        a = img[..., 3] > 128
+        ys, xs = np.nonzero(a)
+        # the rear: the far end of the hull along the view's travel direction (screen vectors per view)
+        dx, dy = {'S': (0, 1), 'SW': (-2, 1), 'W': (-1, 0), 'NW': (-2, -1), 'N': (0, -1), 'NE': (2, -1), 'E': (1, 0), 'SE': (2, 1)}[VIEWS[v]]
+        k = xs * dx + ys * dy
+        sel = k <= k.min() + 2
+        rear = [int(np.median(xs[sel])), int(np.median(ys[sel]))]
+        entry = craft.setdefault(name, {'cls': CRAFT[next(kk for kk, vv in CRAFT.items() if vv[0] == name)][1], 'views': {}})
+        entry['views'][VIEWS[v]] = {'x': px, 'y': py, 'w': w, 'h': h, 'rear': rear}
     os.makedirs(OUT, exist_ok=True)
     Image.fromarray(atlas).save(os.path.join(OUT, 'traffic.png'), optimize=True)
     Image.fromarray(half(atlas)).save(os.path.join(OUT, 'traffic_half.png'), optimize=True)
+    meta = {'_doc': 'Air traffic (tools/sprites/traffic/extract.py): per craft its class and 8 views (S SW W NW N NE E SE = nose direction on screen), rect and rear point in atlas px.', 'craft': craft}
     json.dump(meta, open(os.path.join(OUT, 'traffic.json'), 'w'), separators=(',', ':'))
-    print('traffic atlas', W, 'x', Hh, len(meta['vehicles']), 'vehicles', {c: len(v) for c, v in CLASS.items()})
+    print('traffic atlas', W, 'x', Hh, len(craft), 'craft x 8 views')
 
-    if '--contact' in sys.argv:  # every piece with its number, for picking
+    if '--contact' in sys.argv:
         out = sys.argv[sys.argv.index('--contact') + 1]
-        cols, cw, ch = 12, 120, 90
-        S = Image.new('RGB', (cols * cw, ((len(big) + cols - 1) // cols) * ch), (30, 30, 36))
+        cw, ch = 180, 140
+        S = Image.new('RGB', (8 * cw, len(craft) * ch), (40, 44, 52))
         d = ImageDraw.Draw(S)
-        for k, i in enumerate(sorted(pieces)):
-            if i == 0:
-                continue
-            c = Image.fromarray(pieces[i][0])
-            px, py = (k % cols) * cw, (k // cols) * ch
-            S.paste(c, (px + (cw - c.width) // 2, py + 12 + (ch - 12 - c.height) // 2), c)
-            d.text((px + 3, py + 1), str(i), fill=(255, 220, 0))
+        for (name, v), img in sprites.items():
+            r = list(craft).index(name)
+            im = Image.fromarray(img)
+            S.paste(im, (v * cw + (cw - im.width) // 2, r * ch + 14 + (ch - 14 - im.height) // 2), im)
+            rx, ry = craft[name]['views'][VIEWS[v]]['rear']
+            d.ellipse([v * cw + (cw - im.width) // 2 + rx - 2, r * ch + 14 + (ch - 14 - im.height) // 2 + ry - 2,
+                       v * cw + (cw - im.width) // 2 + rx + 2, r * ch + 14 + (ch - 14 - im.height) // 2 + ry + 2], outline=(255, 60, 60))
+            d.text((v * cw + 3, r * ch + 2), f'{name} {VIEWS[v]}', fill=(255, 220, 0))
         S.save(out)
 
 
