@@ -11,7 +11,10 @@ import { StarCardsUI } from './starCards.js';
 import { AppearanceUI } from './appearance.js';
 import { QUESTS } from '../game/quests.js';
 import { VOLUMES } from '../core/audio.js';
-import { GFX_LABEL, gfxMode, setGfxMode, onGfxMode } from '../core/gfx.js';
+import { setText, setHTML, setClass } from './dom.js';
+import { SABER, setSaberOpt, TRAIL_NAMES } from '../gfx/saberStyle.js';
+import { THEME, loadTheme, rgba, setFraction } from './theme.js';
+import { canvasFont } from './fonts.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (tag, cls, html) => {
@@ -30,6 +33,8 @@ const ATTR_INFO = {
 const KIND = { active: '액티브', passive: '패시브', buff: '버프', summon: '소환' };
 const FORCE_SEGMENTS = 10;
 
+// the PC scanner's canvas: shown at ~102 CSS px, 240 covers a 2x screen (it was 360: 3.5x, redrawn 12 times a second)
+const RADAR_PX = 240;
 export class HUD {
   constructor(game, renderer, portrait, audio, photo) {
     this.game = game;
@@ -49,6 +54,7 @@ export class HUD {
     this.fogCanvas = document.createElement('canvas');
     this.fogCanvas.width = game.world.w;
     this.fogCanvas.height = game.world.h;
+    loadTheme(); // the palette for the scanner and the map (ui/theme.css)
     this.buildHud();
     this.buildSkillTree();
     this.buildInfo();
@@ -62,6 +68,7 @@ export class HUD {
 
     game.on('say', (text, key, dur, speaker) => this.say(text, dur, speaker));
     game.on('region', (name) => this.banner(name));
+    game.on('log', (text, cls) => this.log(text, cls));
     game.on('hurt', () => portrait.hurt());
     game.on('levelup', (lv) => {
       this.refreshPanels();
@@ -78,32 +85,33 @@ export class HUD {
     // the console along the bottom edge
     const cn = el('div', 'console');
     cn.innerHTML = `
-      <div class="cn-portrait monitor"><canvas id="portrait" width="240" height="240"></canvas><div class="ps-eq"><i></i><i></i><i></i><i></i><i></i></div></div>
-      <div class="cn-log monitor"><div class="log" id="msgLog"></div></div>
-      <div class="cn-btns">
-        <button class="fo-btn stims" id="stims" type="button" title="박타 주사기 (Q)"></button>
-        <button class="fo-btn" id="saberBtn" type="button" title="광선검 켜기/끄기 (X)"><i></i><span>SABER</span></button>
+      <div class="cn-portrait monitor"><canvas id="portrait" width="240" height="240"></canvas><div class="ps-eq"><i></i><i></i><i></i><i></i><i></i></div><span class="aure" aria-hidden="true" data-aure="pilot"></span></div>
+      <div class="cn-stats">
+        <div class="plate-h"><span class="aure" aria-hidden="true" data-aure="vitals"></span><small>생체 신호</small></div>
+        <div class="gauge hp hp-bar" title="체력"><span class="g-chip hp-chip"></span><span class="g-fill hp-fill"></span><label>HP</label><b id="hpText">0</b></div>
+        <div class="gauge fp" title="포스"><span class="g-fill" id="fpFill"></span><label>FORCE</label><b id="fpText">0</b></div>
+        <div class="cn-sub"><div class="dark-meter" title="빛과 어둠"><span>빛</span><div class="dm"><i id="dmMark"></i></div><span>어둠</span></div></div>
       </div>
       <div class="cn-center">
+        <div class="ether" id="ether" title="레벨 · 경험치(금) · 포스(빛)"><small>LV</small><b id="lvlText">1</b></div>
         <div class="fp-lights" id="forceSeg">${'<i></i>'.repeat(FORCE_SEGMENTS)}</div>
         <div class="abilities"><div class="ab-row"></div></div>
         <div class="xp-line" title="경험치"><i id="xpFill"></i></div>
       </div>
-      <div class="cn-stats">
-        <div class="counter hp"><label>HP</label><b id="hpText">0</b></div>
-        <div class="hp-bar"><div class="hp-chip"></div><div class="hp-fill"></div></div>
-        <div class="counter fp"><label>FP</label><b id="fpText">0</b></div>
-        <div class="cn-sub"><span id="lvlText">LV 1</span><div class="dark-meter" title="빛과 어둠"><span>빛</span><div class="dm"><i id="dmMark"></i></div><span>어둠</span></div></div>
+      <div class="cn-btns">
+        <button class="fo-btn stims" id="stims" type="button" title="박타 주사기 (Q)"></button>
+        <button class="fo-btn" id="saberBtn" type="button" title="광선검 켜기/끄기 (X)"><i></i><span>광선검</span></button>
       </div>
+      <div class="cn-log monitor"><span class="aure" aria-hidden="true" data-aure="comms"></span><div class="log" id="msgLog"></div></div>
       <div class="cn-menu ab-menu">
-        <button type="button" data-open="map"><i></i>MAP<small>Tab</small></button>
-        <button type="button" data-open="char"><i></i>CHA<small>C</small><b class="dot"></b></button>
-        <button type="button" data-open="tree"><i></i>SKL<small>K</small><b class="dot"></b></button>
-        <button type="button" data-open="cards"><i></i>CRD<small>P</small></button>
-        <button type="button" data-open="settings"><i></i>OPT<small>O</small></button>
-        <button type="button" data-open="help"><i></i>HELP<small>F1</small></button>
+        <button type="button" data-open="map"><i></i>지도<small>Tab</small></button>
+        <button type="button" data-open="char"><i></i>정보<small>C</small><b class="dot"></b></button>
+        <button type="button" data-open="tree"><i></i>기술<small>K</small><b class="dot"></b></button>
+        <button type="button" data-open="cards"><i></i>카드<small>P</small></button>
+        <button type="button" data-open="settings"><i></i>설정<small>O</small></button>
+        <button type="button" data-open="help"><i></i>도움<small>F1</small></button>
       </div>
-      <div class="cn-radar monitor"><canvas id="radar" width="360" height="360"></canvas><div class="radar-region" id="regionText"></div></div>`;
+      <div class="cn-radar monitor"><span class="aure" aria-hidden="true" data-aure="scan"></span><canvas id="radar" width="${RADAR_PX}" height="${RADAR_PX}"></canvas><div class="radar-region" id="regionText"></div></div>`;
     r.appendChild(cn);
     this.pcanvas = $('#portrait');
     this.pctx = this.pcanvas.getContext('2d');
@@ -111,14 +119,12 @@ export class HUD {
     this.logEl = $('#msgLog');
     this.pcanvas.addEventListener('mousedown', (e) => {
       e.stopPropagation();
-      this.pokes = (this.pokes || 0) + 1;
-      clearTimeout(this.pokeReset);
-      this.pokeReset = setTimeout(() => (this.pokes = 0), 4000);
-      this.game.say(this.pokes > 4 ? 'pokeAnnoyed' : 'poke');
+      this.pokePortrait();
     });
     cn.addEventListener('mousedown', (e) => e.stopPropagation());
     $('#stims').addEventListener('click', (e) => {
       e.stopPropagation();
+      if (this.game.talkingTo) return;
       this.game.useBacta();
     });
     $('#saberBtn').addEventListener('click', (e) => {
@@ -163,7 +169,7 @@ export class HUD {
       e.stopPropagation();
       if (e.button !== 0) return;
       const rect = this.radar.getBoundingClientRect();
-      const w = this.radarToWorld(((e.clientX - rect.left) / rect.width) * 360, ((e.clientY - rect.top) / rect.height) * 360);
+      const w = this.radarToWorld(((e.clientX - rect.left) / rect.width) * RADAR_PX, ((e.clientY - rect.top) / rect.height) * RADAR_PX);
       this.game.player.commandMove(w.x, w.y);
       this.renderer.addClickMark(w.x, w.y);
     });
@@ -176,6 +182,14 @@ export class HUD {
     r.appendChild(this.objectives);
     this.target = el('div', 'target-info hidden', '<div class="ti-name"></div><div class="ti-bar"><i></i></div><div class="ti-sub"></div>');
     r.appendChild(this.target);
+  }
+
+  /** Poking the portrait: Anakin answers (the phone HUD's face too). */
+  pokePortrait() {
+    this.pokes = (this.pokes || 0) + 1;
+    clearTimeout(this.pokeReset);
+    this.pokeReset = setTimeout(() => (this.pokes = 0), 4000);
+    this.game.say(this.pokes > 4 ? 'pokeAnnoyed' : 'poke'); // a subtitled line
   }
 
   /** Add a line to the console's message display. */
@@ -406,9 +420,25 @@ export class HUD {
       <section class="set-card">
         <h4>소리</h4>
         <label class="set-toggle"><input type="checkbox" id="soundOn"> 소리 켜기 <kbd>M</kbd></label>
-        <label class="set-toggle"><input type="checkbox" id="speechOn"> 아나킨 대사 음성 <small id="speechVoice"></small></label>
         <div class="set-vol">${VOLUMES.map(([k, l]) => `<label><span>${l}</span><input type="range" min="0" max="100" step="1" data-vol="${k}"><b></b></label>`).join('')}</div>
         <p class="set-note">이 기기에 저장됩니다. 대사 음성·효과음 파일을 직접 넣는 방법은 <code>public/audio/README.md</code>를 참고하세요.</p>
+      </section>
+      <section class="set-card">
+        <h4>화면 효과</h4>
+        <label class="set-toggle"><input type="checkbox" data-post="grade"> 행성별 색 보정 (LUT)</label>
+        <label class="set-toggle"><input type="checkbox" data-post="bloom"> 빛 번짐 (블룸)</label>
+        <label class="set-toggle"><input type="checkbox" data-post="vignette"> 비네팅</label>
+        <label class="set-toggle"><input type="checkbox" data-post="grain"> 필름 그레인</label>
+        <label class="set-toggle"><input type="checkbox" data-post="fps"> FPS 표시</label>
+        <p class="set-note" id="postNote">이 기기에 저장됩니다. 느린 기기에서는 끄면 가벼워집니다.</p>
+      </section>
+      <section class="set-card">
+        <h4>광선검</h4>
+        <label class="set-select">잔상 스타일 <select id="saberTrail">${Object.entries(TRAIL_NAMES).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></label>
+        <label class="set-toggle"><input type="checkbox" id="saberSlow"> 슬로 모션 (1/4 속도, 잔상 관찰용 · 저장 안 됨)</label>
+        <label class="set-select">잔상 길이 <span class="set-range"><input type="range" id="saberLen" min="0.5" max="4" step="0.25"><b></b></span></label>
+        <label class="set-select">글로우 세기 <span class="set-range"><input type="range" id="saberGlow" min="0.3" max="2" step="0.1"><b></b></span></label>
+        <p class="set-note">클론워즈 애니메이션과 시스의 복수에서 잰 잔상 스타일. 색은 클론워즈 색상표. 이 기기에 저장됩니다.</p>
       </section>
       <section class="set-card">
         <h4>개발자</h4>
@@ -417,8 +447,6 @@ export class HUD {
       </section>
       <section class="set-card">
         <h4>화면</h4>
-        <div class="set-gfx"><span>그래픽</span>${['original', 'remaster'].map((m) => `<button type="button" class="btn-ghost" data-gfx="${m}">${GFX_LABEL[m]}</button>`).join('')}<kbd>F5</kbd></div>
-        <p class="set-note">오리지널: 저해상도 픽셀 · 줄인 색 · 딱딱한 가장자리. 리마스터: 화면 해상도 · 2배 밀도 지형과 오브젝트 · 부드러운 가장자리와 그림자 · 매끄러운 조명.</p>
         <p class="set-note">확대·축소: 휴대폰은 두 손가락, PC는 마우스 휠 또는 <kbd>-</kbd> <kbd>=</kbd> (<kbd>0</kbd> 기본). 전체 화면: <kbd>F</kbd></p>
         <button type="button" class="btn-ghost" id="openHelp">조작법 보기</button>
       </section>`;
@@ -458,16 +486,28 @@ export class HUD {
         show();
       });
     });
-    const sp = this.audio.speech;
-    const spOn = $('#speechOn');
-    spOn.checked = !!(sp && sp.on);
-    spOn.disabled = !(sp && sp.available);
-    spOn.addEventListener('change', (e) => sp && sp.setOn(e.target.checked));
-    $('#speechVoice').textContent = !sp || !sp.available ? '(이 브라우저는 음성 합성을 지원하지 않음)' : '';
-    o.querySelectorAll('[data-gfx]').forEach((b) => b.addEventListener('click', () => setGfxMode(b.dataset.gfx)));
-    const syncGfx = () => o.querySelectorAll('[data-gfx]').forEach((b) => b.classList.toggle('on', b.dataset.gfx === gfxMode()));
-    syncGfx();
-    onGfxMode(syncGfx);
+    const post = this.renderer.post;
+    o.querySelectorAll('[data-post]').forEach((cb) => {
+      cb.checked = !!post.opts[cb.dataset.post];
+      if (!post.ok && cb.dataset.post !== 'fps') cb.disabled = true;
+      cb.addEventListener('change', () => post.set(cb.dataset.post, cb.checked));
+    });
+    const slow = $('#saberSlow');
+    slow.checked = !!SABER.slow;
+    slow.addEventListener('change', () => setSaberOpt('slow', slow.checked));
+    for (const [id, key] of [['saberLen', 'len'], ['saberGlow', 'glow']]) {
+      const r = $('#' + id);
+      const show = () => (r.nextElementSibling.textContent = '×' + (+r.value).toFixed(2).replace(/0$/, ''));
+      r.value = SABER[key] || 1;
+      show();
+      r.addEventListener('input', () => (setSaberOpt(key, +r.value), show()));
+    }
+    for (const [id, key] of [['saberTrail', 'trail']]) {
+      const sel = $('#' + id);
+      sel.value = SABER[key];
+      sel.addEventListener('change', () => setSaberOpt(key, sel.value));
+    }
+    if (!post.ok) $('#postNote').textContent = '이 기기에서는 WebGL을 쓸 수 없어 화면 효과가 꺼져 있습니다.';
     $('#openDebug').addEventListener('click', () => this.toggle('debug', true));
     $('#openHelp').addEventListener('click', () => {
       this.toggle('settings', false);
@@ -677,15 +717,17 @@ export class HUD {
     $('.hp-fill').style.width = hpK * 100 + '%';
     $('.hp-chip').style.width = this.hpChip * 100 + '%';
     $('.hp-bar').classList.toggle('low', hpK < 0.25);
+    $('#fpFill').style.width = Math.max(0, p.force / p.maxForce) * 100 + '%';
     // Force as a bar of indicator segments
     const fpK = Math.max(0, p.force / p.maxForce) * FORCE_SEGMENTS;
     const segs = $('#forceSeg').children;
-    for (let i = 0; i < FORCE_SEGMENTS; i++) segs[i].className = fpK >= i + 1 ? 'on' : fpK > i ? 'half' : '';
+    for (let i = 0; i < FORCE_SEGMENTS; i++) setClass(segs[i], fpK >= i + 1 ? 'on' : fpK > i ? 'half' : '');
 
     // portrait + voice equaliser
     this.portrait.setScene(/드로이드 공장|격전지/.test(g.region) ? 'hangar' : 'corridor');
     this.portrait.update(dt, p.darkness, p.dead);
-    this.portrait.draw(this.pctx, this.pcanvas.width, this.pcanvas.height);
+    const pc = !this.renderer.touchMode; // the console is hidden on the phone: its canvases are not drawn
+    if (pc) this.portrait.draw(this.pctx, this.pcanvas.width, this.pcanvas.height);
     if (this.open.settings) this.portrait.draw(this.setCtx, 320, 320);
     const talking = this.sub && this.sub.speaker === '아나킨' && this.sub.t < this.sub.talk;
     this.eq.classList.toggle('on', !!talking);
@@ -706,13 +748,14 @@ export class HUD {
       b.classList.toggle('empty', !id);
       const cd = id ? p.cooldowns[id] || 0 : 0;
       const total = id && SKILLS[id].cd ? SKILLS[id].cd(p.skillLevel(id)) || 1 : 1;
-      b.children[1].style.background = cd > 0 ? `conic-gradient(rgba(6,8,12,0.78) ${(cd / total) * 360}deg, transparent 0)` : 'none';
-      b.children[2].textContent = cd > 0 ? (cd < 1 ? cd.toFixed(1) : Math.ceil(cd)) : '';
+      setFraction(b.children[1], 'cd', cd > 0 ? 1 - cd / total : 1);
+      b.classList.toggle('cooling', cd > 0);
+      setText(b.children[2], cd > 0 ? (cd < 1 ? cd.toFixed(1) : Math.ceil(cd)) : '');
       const cost = id && SKILLS[id].cost ? SKILLS[id].cost(p.skillLevel(id)) : 0;
       b.classList.toggle('nofp', !!id && p.force < cost);
       b.classList.toggle('rmb', p.rmbSlot === i && !!id);
       b.classList.toggle('pending', this.pendingSkill === id && !!id);
-      b.lastChild.textContent = id ? p.skillLevel(id) : '';
+      setText(b.lastChild, id ? p.skillLevel(id) : '');
     }
     this.menuTree.classList.toggle('alert', p.skillPoints > 0);
     this.menuChar.classList.toggle('alert', p.attrPoints > 0);
@@ -720,33 +763,33 @@ export class HUD {
     // target info (hovered / engaged unit)
     const h = g.hover;
     if (h && !h.dead) {
-      this.target.classList.remove('hidden');
-      const nm = $('.ti-name', this.target);
-      nm.textContent = h.name;
-      this.target.className = 'target-info' + (h.elite ? ' elite' : h.team === 'rep' ? ' ally' : '');
+      setText($('.ti-name', this.target), h.name);
+      setClass(this.target, 'target-info' + (h.elite ? ' elite' : h.team === 'rep' ? ' ally' : ''));
       $('.ti-bar i', this.target).style.width = Math.max(0, (h.hp / h.maxHp) * 100) + '%';
-      $('.ti-sub', this.target).textContent = h.npc ? `${h.title} · 대화 (E / 클릭)` : h.team === 'cis' ? `LV ${h.level}${h.elite ? ' · 정예' : ''}` : h.owner ? '아군 · 지휘 중' : '아군';
-    } else this.target.classList.add('hidden');
+      setText($('.ti-sub', this.target), h.npc ? `${h.title} · 대화 ${this.renderer.touchMode ? '(대화 버튼)' : '(E / 클릭)'}` : h.team === 'cis' ? `LV ${h.level}${h.elite ? ' · 정예' : ''}` : h.owner ? '아군 · 지휘 중' : '아군');
+    } else if (!this.target.classList.contains('hidden')) this.target.classList.add('hidden');
 
     // throttled text
     this.textT -= dt;
     if (this.textT <= 0) {
       this.textT = 0.12;
-      $('#hpText').textContent = `${Math.ceil(Math.max(0, p.hp))}`;
-      $('#fpText').textContent = `${Math.floor(p.force)}`;
-      $('#lvlText').textContent = `LV ${p.level}`;
-      $('#xpFill').style.width = (p.xp / p.xpNext) * 100 + '%';
+      setText($('#hpText'), Math.ceil(Math.max(0, p.hp)));
+      setText($('#fpText'), Math.floor(p.force));
+      setText($('#lvlText'), p.level);
+      const core = $('#ether');
+      setFraction(core, 'xp', Math.max(0, Math.min(1, p.xp / p.xpNext)));
+      setFraction(core, 'fp', Math.max(0, Math.min(1, p.force / p.maxForce)));
       $('#dmMark').style.left = p.darkness + '%';
-      $('#stims').innerHTML = `<i></i><span>BACTA</span><em>${[0, 1, 2, 3, 4].map((k) => `<b class="${k < p.bacta ? 'on' : ''}"></b>`).join('')}</em>`;
+      setHTML($('#stims'), `<i></i><span>박타</span><em>${[0, 1, 2, 3, 4].map((k) => `<b class="${k < p.bacta ? 'on' : ''}"></b>`).join('')}</em>`);
       $('#saberBtn').classList.toggle('on', p.saberLit && !p.saberOut);
-      $('#regionText').textContent = g.region;
+      setText($('#regionText'), g.region);
       const buffs = [];
       for (const [k, b] of Object.entries(p.buffs)) buffs.push(`<span class="buff"><img src="${iconURL(k)}" alt="">${Math.ceil(b.t)}s</span>`);
       if (p.saberOut) buffs.push('<span class="buff info">광선검 회수 중</span>');
       if (p.darkness >= 60) buffs.push('<span class="buff dark">어둠의 유혹</span>');
       if (p.skillPoints) buffs.push(`<span class="buff gold">스킬 포인트 ${p.skillPoints} <kbd>K</kbd></span>`);
       if (p.attrPoints) buffs.push(`<span class="buff gold">능력치 포인트 ${p.attrPoints} <kbd>C</kbd></span>`);
-      $('#buffs').innerHTML = buffs.join('');
+      setHTML($('#buffs'), buffs.join(''));
       this.updateObjectives();
       if (this.open.char) this.refreshChar();
     }
@@ -760,13 +803,14 @@ export class HUD {
         this.fogT = 6;
         this.updateFog();
       }
-      this.drawRadar();
+      if (pc) this.drawRadar();
       if (this.open.map) this.drawMapView();
     }
   }
 
   updateObjectives() {
     const g = this.game;
+    if (g.duel) return; // the Movie Duels have no campaign objectives
     const p = g.player;
     const front = g.front;
     const camps = front.camps.filter((c) => !c.boss);
@@ -795,10 +839,10 @@ export class HUD {
       .tracked()
       .map(({ id, q, s }) => `<li class="ob-quest ${s.state === 'ready' ? 'ready' : ''}"><i></i>${q.title} <b>${s.state === 'ready' ? '보고하기' : g.quests.progress(id)}</b></li>`)
       .join('');
-    this.objectives.innerHTML = `<div class="ob-h">목표</div><ul>
+    setHTML(this.objectives, `<div class="ob-h">목표</div><ul>
       <li class="${cleared === camps.length ? 'done' : ''}"><i></i>드로이드 거점 소탕 <b>${cleared} / ${camps.length}</b></li>
       <li class="${boss && boss.cleared ? 'done' : ''}"><i></i>북쪽의 드로이드 공장 파괴</li>
-      ${quests}${arrow}${away ? '<li class="ob-near"><i></i>제다이 착륙장의 스타파이터로 크리스토프시스 출격</li>' : ''}</ul>`;
+      ${quests}${arrow}${away ? '<li class="ob-near"><i></i>제다이 착륙장의 스타파이터로 크리스토프시스 출격</li>' : ''}</ul>`);
   }
 
   // ================================================================== map drawing
@@ -853,7 +897,7 @@ export class HUD {
       if (!w.explored[Math.floor(c.y) * w.w + Math.floor(c.x)] && !c.boss) continue;
       if (c.cleared) continue;
       const [x, y] = T(c.x, c.y);
-      ctx.strokeStyle = c.boss ? '#ff5a4a' : '#ff8a6a';
+      ctx.strokeStyle = c.boss ? THEME.red : rgba(THEME.red, 0.75);
       ctx.lineWidth = 2 * s;
       ctx.beginPath();
       ctx.moveTo(x, y - 6 * s);
@@ -864,13 +908,13 @@ export class HUD {
       ctx.stroke();
     }
     const [bx, by] = T(w.spawn.x, w.spawn.y);
-    ctx.fillStyle = '#5cc8ff';
+    ctx.fillStyle = THEME.holo;
     ctx.fillRect(bx - 4 * s, by - 4 * s, 8 * s, 8 * s);
     for (const u of g.units) {
       if (u.dead || u === p) continue;
       if (u.team === 'cis' && dist(u.x, u.y, p.x, p.y) > 26) continue;
       const [x, y] = T(u.x, u.y);
-      ctx.fillStyle = u.team === 'cis' ? '#ff4a3a' : '#6fd0ff';
+      ctx.fillStyle = u.team === 'cis' ? THEME.red : THEME.holo;
       ctx.beginPath();
       ctx.arc(x, y, 2.2 * s, 0, Math.PI * 2);
       ctx.fill();
@@ -883,7 +927,7 @@ export class HUD {
     ctx.save();
     ctx.translate(px, py);
     ctx.rotate(a);
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = THEME.chrome;
     ctx.beginPath();
     ctx.moveTo(7 * s, 0);
     ctx.lineTo(-5 * s, -5 * s);
@@ -895,60 +939,99 @@ export class HUD {
   }
 
   radarScale() {
-    return 2.6;
+    return 2.6 * (RADAR_PX / 360);
   }
 
   radarToWorld(cx, cy) {
     const p = this.game.player;
     const k = this.radarScale();
-    const a = (cx - 180) / k; // x - y
-    const b = (cy - 180) / (k * 0.5); // x + y
+    const a = (cx - RADAR_PX / 2) / k; // x - y
+    const b = (cy - RADAR_PX / 2) / (k * 0.5); // x + y
     return { x: p.x + (a + b) / 2, y: p.y + (b - a) / 2 };
   }
 
   drawRadar() {
-    const ctx = this.rctx;
+    this.drawScanner(this.rctx, RADAR_PX, this.radarScale(), 1.2);
+  }
+
+  /**
+   * The Republic scanner: a round tactical holo — explored ground, an iso grid that moves with
+   * Anakin, range rings, a sweep, blue (ally) and red (enemy) dots, a chrome bezel with ticks.
+   * `S`: the canvas's size, `k`: world units to px, `ms`: marker scale.
+   */
+  drawScanner(ctx, S, k, ms) {
     const p = this.game.player;
-    const k = this.radarScale();
-    ctx.clearRect(0, 0, 360, 360);
+    const c = S / 2;
+    const R = c - 8;
+    const ox = c - (p.x - p.y) * k;
+    const oy = c - (p.x + p.y) * k * 0.5;
+    ctx.clearRect(0, 0, S, S);
     ctx.save();
     ctx.beginPath();
-    ctx.arc(180, 180, 172, 0, Math.PI * 2);
+    ctx.arc(c, c, R, 0, Math.PI * 2);
     ctx.clip();
-    ctx.fillStyle = 'rgba(6,10,16,0.85)';
-    ctx.fillRect(0, 0, 360, 360);
-    this.drawMap(ctx, k, 180 - (p.x - p.y) * k, 180 - (p.x + p.y) * k * 0.5, { markerScale: 1.6 });
-    // rings + sweep
-    ctx.strokeStyle = 'rgba(160,210,255,0.18)';
-    ctx.lineWidth = 2;
-    for (const r of [60, 120]) {
+    ctx.fillStyle = rgba(THEME.base, 0.9);
+    ctx.fillRect(0, 0, S, S);
+    ctx.globalAlpha = 0.7;
+    this.drawMap(ctx, k, ox, oy, { markerScale: ms });
+    ctx.globalAlpha = 1;
+    // the tactical grid, in world space (it slides under Anakin as he walks)
+    ctx.save();
+    ctx.setTransform(k, k * 0.5, -k, k * 0.5, ox, oy);
+    ctx.strokeStyle = rgba(THEME.holo, 0.2);
+    ctx.lineWidth = 1 / k;
+    ctx.beginPath();
+    const G = 4;
+    const reach = (R / k) * 1.5;
+    for (let x = Math.floor((p.x - reach) / G) * G; x <= p.x + reach; x += G) {
+      ctx.moveTo(x, p.y - reach);
+      ctx.lineTo(x, p.y + reach);
+    }
+    for (let y = Math.floor((p.y - reach) / G) * G; y <= p.y + reach; y += G) {
+      ctx.moveTo(p.x - reach, y);
+      ctx.lineTo(p.x + reach, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+    // range rings and the sweep
+    ctx.strokeStyle = rgba(THEME.holo, 0.28);
+    ctx.lineWidth = S / 180;
+    for (const r of [R / 3, (R * 2) / 3]) {
       ctx.beginPath();
-      ctx.arc(180, 180, r, 0, Math.PI * 2);
+      ctx.arc(c, c, r, 0, Math.PI * 2);
       ctx.stroke();
     }
     const sw = (this.game.time * 1.4) % (Math.PI * 2);
-    const grd = ctx.createConicGradient ? ctx.createConicGradient(sw, 180, 180) : null;
+    const grd = ctx.createConicGradient ? ctx.createConicGradient(sw, c, c) : null;
     if (grd) {
-      grd.addColorStop(0, 'rgba(120,200,255,0.18)');
-      grd.addColorStop(0.12, 'rgba(120,200,255,0)');
-      grd.addColorStop(1, 'rgba(120,200,255,0)');
+      grd.addColorStop(0, rgba(THEME.holo, 0.28));
+      grd.addColorStop(0.14, rgba(THEME.holo, 0));
+      grd.addColorStop(1, rgba(THEME.holo, 0));
       ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, 360, 360);
+      ctx.fillRect(0, 0, S, S);
     }
-    ctx.restore();
-    ctx.strokeStyle = 'rgba(235,242,250,0.55)';
-    ctx.lineWidth = 3;
+    // the sweep's leading edge
+    ctx.strokeStyle = rgba(THEME.holo, 0.9);
+    ctx.lineWidth = S / 180;
     ctx.beginPath();
-    ctx.arc(180, 180, 172, 0, Math.PI * 2);
+    ctx.moveTo(c, c);
+    ctx.lineTo(c + Math.cos(sw) * R, c + Math.sin(sw) * R);
     ctx.stroke();
-    // ticks
-    ctx.strokeStyle = 'rgba(235,242,250,0.5)';
+    ctx.restore();
+    // chrome bezel with ticks
+    ctx.strokeStyle = rgba(THEME.chrome, 0.85);
+    ctx.lineWidth = S / 120;
+    ctx.beginPath();
+    ctx.arc(c, c, R, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = rgba(THEME.chrome, 0.55);
+    ctx.lineWidth = S / 180;
     for (let i = 0; i < 24; i++) {
       const a = (i / 24) * Math.PI * 2;
-      const r0 = i % 6 === 0 ? 156 : 164;
+      const r0 = R - (i % 6 === 0 ? S / 22 : S / 45);
       ctx.beginPath();
-      ctx.moveTo(180 + Math.cos(a) * r0, 180 + Math.sin(a) * r0);
-      ctx.lineTo(180 + Math.cos(a) * 172, 180 + Math.sin(a) * 172);
+      ctx.moveTo(c + Math.cos(a) * r0, c + Math.sin(a) * r0);
+      ctx.lineTo(c + Math.cos(a) * R, c + Math.sin(a) * R);
       ctx.stroke();
     }
   }
@@ -972,7 +1055,7 @@ export class HUD {
     const ox = W / 2 - 0 * k;
     const oy = (H - w.h * k) / 2;
     this.drawMap(ctx, k, ox, oy, { markerScale: 1.2 });
-    ctx.font = '12px Galmuri11, sans-serif';
+    ctx.font = canvasFont(600, 12, 'body'); // the map's place names
     ctx.textAlign = 'center';
     for (const poi of w.pois) {
       if (!w.explored[Math.floor(poi.y) * w.w + Math.floor(poi.x)]) continue;

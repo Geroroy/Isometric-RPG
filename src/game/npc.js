@@ -12,7 +12,7 @@ export const NPC_DEFS = {
   quartermaster: { name: "보급관 '체인'", title: '501군단 보급 하사관', sprite: 'quartermaster', hub: [106, 56.5] },
   r2: { name: 'R2-D2', title: '아스트로멕 드로이드', sprite: 'r2', hub: [115, 65.5] },
   // outside the lower level's bar
-  figrin: { name: "피그린 단", title: '모달 노드 · 클루 혼 연주자', sprite: 'bith', hub: [108, 121.8] },
+  figrin: { name: "피그린 단", title: '모달 노드 · 클루 혼 연주자', sprite: 'bith', hub: [119.0, 128.6] },
   // Anakin's starfighter (placed by Game: the hub's pad and the Christophsis base)
   fighter: { name: '제다이 스타파이터', title: '아나킨의 전용기 · 출격', sprite: 'fighter' },
 };

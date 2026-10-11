@@ -4,6 +4,9 @@
 // ruins of an old crystal city; a droid factory stronghold far to the north.
 import { RNG, fbm, dist, distToSegment, clamp } from '../core/math.js';
 import { PROPS } from '../gfx/models/props.js';
+import { SHEET_PROPS, cityFootprint, inPoly } from './cityProps.js';
+import UNDERCITY from '../data/undercity.json';
+if (typeof window !== 'undefined') window.__undercity = UNDERCITY; // QA (tools/qa/undercity_ascii.mjs)
 
 export const MAP_W = 192;
 export const MAP_H = 192;
@@ -23,6 +26,10 @@ export const BIOME = {
   CITY_UP: 11, // the city hub's upper level: polished stone
   CITY_LOW: 12, // the lower level: grimy duracrete
   VOID: 13, // the drop between the levels / off the platforms
+  CITY_MOSAIC: 14, // the undercity plaza's pavement: cracked mosaic with neon veins
+  CITY_MUD: 15, // the undercity's wet alleys: mud over conduits, puddles (slow)
+  CITY_SWAMP: 16, // the undercity's sump: standing water and moss (slow)
+  CITY_DIRT: 17, // the undercity's packed dirt (the residential court)
 };
 
 export const BIOME_NAMES = {
@@ -40,6 +47,10 @@ export const BIOME_NAMES = {
   11: '코러산트 · 상층 플라자',
   12: '코러산트 · 언더시티',
   13: '코러산트 · 끝없는 낭떠러지',
+  14: '코러산트 · 네온 시장 광장',
+  15: '코러산트 · 진흙 골목',
+  16: '코러산트 · 하수 웅덩이',
+  17: '코러산트 · 흙바닥 안뜰',
 };
 
 export const BASE_POS = { x: 150, y: 152 };
@@ -299,6 +310,37 @@ export class World {
     return p;
   }
 
+  /**
+   * A Blender-rendered city sprite (world/cityProps.js): blocks the tiles
+   * inside its footprint, adds its lights; steam vents and sound sources are
+   * collected for the renderer and the ambience.
+   */
+  addSheetProp(name, x, y, opts = {}) {
+    const def = SHEET_PROPS[name];
+    if (!cityFootprint(name)) return null; // its sprite did not load: leave it out
+    const p = { type: 'sheet', sheet: name, x, y, flat: !!def.flat, phase: this.rng.next() * 10, neon: { until: 0, phase: this.rng.next() * 7 } };
+    const fp = cityFootprint(name);
+    if (fp && !opts.noBlock && !def.flat) {
+      const xs = fp.map((q) => q[0]);
+      const ys = fp.map((q) => q[1]);
+      let any = false;
+      for (let ty = Math.floor(y + Math.min(...ys)); ty <= Math.floor(y + Math.max(...ys)); ty++)
+        for (let tx = Math.floor(x + Math.min(...xs)); tx <= Math.floor(x + Math.max(...xs)); tx++)
+          if (this.inBounds(tx, ty) && inPoly(tx + 0.5 - x, ty + 0.5 - y, fp)) {
+            this.blocked[ty * MAP_W + tx] = 1;
+            any = true;
+          }
+      if (!any && this.inBounds(Math.floor(x), Math.floor(y))) this.blocked[Math.floor(y) * MAP_W + Math.floor(x)] = 1;
+      p.rect = [Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
+    }
+    for (const [dx, dy, z, r, g, b, rad, flicker] of def.lights || []) this.lights.push({ x: x + dx, y: y + dy, z, r, g, b, rad, flicker });
+    for (const [dx, dy, z] of def.steam || []) (this.steam ||= []).push({ x: x + dx, y: y + dy, z, t: this.rng.next() * 3 });
+    if (def.sound) (this.sounds ||= []).push({ ...def.sound, x: x + def.sound.at[0], y: y + def.sound.at[1] });
+    p.depth = x + y;
+    this.props.push(p);
+    return p;
+  }
+
   clearArea(x, y, r) {
     for (let ty = Math.floor(y - r); ty <= Math.ceil(y + r); ty++)
       for (let tx = Math.floor(x - r); tx <= Math.ceil(x + r); tx++)
@@ -317,8 +359,8 @@ export class World {
     this.addProp('tent', bx - 1, by + 8);
     this.addProp('sensorTower', bx + 11, by - 11);
     this.addProp('sensorTower', bx - 11, by + 11);
-    for (const [dx, dy] of [[-4, -3], [3, 2], [-4, 3], [3, -11], [-11, -9], [11, 3]]) this.addProp('lamp', bx + dx, by + dy);
-    for (const [dx, dy] of [[-4, -10], [-3, -10], [-5, 9.5], [-6, 9.5], [10, -1], [10, 0], [2, 11]]) this.addProp('crate', bx + dx + 0.5, by + dy + 0.5);
+    for (const [dx, dy] of [[-4, -3], [3, 2], [-4, 3], [3, -11], [-11, -9], [12, 5.5]]) this.addProp('lamp', bx + dx, by + dy);
+    for (const [dx, dy] of [[-4, -10], [-3, -10], [-5, 9.5], [-6, 9.5], [8, -11], [9, -11], [2, 11]]) this.addProp('crate', bx + dx + 0.5, by + dy + 0.5);
     // Perimeter barricades with gates on each side.
     for (let i = -12; i <= 12; i += 2) {
       if (Math.abs(i) <= 2) continue;
@@ -403,6 +445,7 @@ export class Arena extends World {
     this.rng = new RNG(this.seed);
     const { x: cx, y: cy, r } = ARENA;
     this.ambient = [104, 118, 104];
+    this.grade = 'geonosis'; // post.js colour grade
     this.pois.push({ x: cx, y: cy, r: 30, name: BIOME_NAMES[BIOME.HANGAR] });
     for (let y = 0; y < MAP_H; y++) {
       for (let x = 0; x < MAP_W; x++) {
@@ -436,83 +479,141 @@ export class Arena extends World {
 }
 
 // ----------------------------------------------------------------------------
-// Movie Duel #2 arena: Mustafar. Everything floats on lava: the mining
-// facility's landing platform (where Padmé's skiff lands and the duel begins),
-// a collector platform drifting on the lava river (the second half of the
-// fight) and the black sand bank above it — the high ground.
+// Movie Duel #2 arena: Mustafar, laid out in the order the film's duel moves
+// through it. One walkable route, everything else lava:
+//   deck → hallway → conference room → door → control room (its east side
+//   open on the lava behind the failed shield) → balcony catwalk running
+//   south → the collector arm reaching east over the lava falls.
+// Downstream, the lava river: the collector platform (Obi-Wan) and a mining
+// droid's hover platform (Anakin) drift east along it towards the black sand
+// bank — the high ground.
 
 export const MUSTAFAR = {
-  deck: { x: 96, y: 88, hw: 9, hh: 6 }, // landing platform (tile half-sizes)
-  hall: { x: 52, y: 52, hw: 7, hh: 5 }, // the Separatist conference room
-  control: { x: 52, y: 96, hw: 6, hh: 5 }, // the control room, its window open on the lava
-  arm: { x: 140, y: 60, hw: 10, hh: 1.4 }, // the collector arm over the lava falls
-  raft: { x: 96, y: 118, hw: 4.5, hh: 3.5 }, // collector platform on the lava river
-  bank: { x: 96, y: 131 }, // the high ground
+  deck: { x: 38, y: 46, hw: 8, hh: 6 }, // the landing platform (tile half-sizes)
+  hallway: { x: 54, y: 46, hw: 8, hh: 1.6 }, // into the facility
+  hall: { x: 70, y: 46, hw: 8, hh: 5 }, // the Separatist conference room
+  door: { x: 80.5, y: 46, hw: 2.5, hh: 1.4 },
+  control: { x: 90, y: 46, hw: 7, hh: 5 }, // the control room
+  balcony: { x: 90, y: 58, hw: 1.8, hh: 7 }, // the catwalk outside
+  arm: { x: 112, y: 64, hw: 20, hh: 1.2 }, // the collector arm
+  river: { x0: 122, x1: 166, y: 90 }, // where the platforms drift
+  raft: { hw: 2.5, hh: 1.8 }, // Obi-Wan's collector platform (north)
+  droid: { hw: 1.2, hh: 1.0 }, // Anakin's hover platform (south, touching)
+  bank: { x: 171, y: 99 }, // the high ground
 };
 
 export class MustafarArena extends World {
   generate() {
     this.rng = new RNG(this.seed);
-    const { deck, raft, hall, control, arm } = MUSTAFAR;
+    const M = MUSTAFAR;
+    const { deck, hallway, hall, door, control, balcony, arm, river, bank } = M;
     this.ambient = [150, 86, 70];
-    this.pois.push({ x: deck.x, y: deck.y, r: 14, name: BIOME_NAMES[BIOME.MUSTAFAR] });
-    this.pois.push({ x: hall.x, y: hall.y, r: 12, name: '무스타파 · 분리주의 회의실' });
-    this.pois.push({ x: control.x, y: control.y, r: 11, name: '무스타파 · 제어실' });
-    this.pois.push({ x: arm.x, y: arm.y, r: 12, name: '무스타파 · 집하기 팔' });
-    this.pois.push({ x: raft.x, y: raft.y, r: 9, name: BIOME_NAMES[BIOME.LAVA] });
+    this.grade = 'mustafar';
+    this.pois.push({ x: deck.x, y: deck.y, r: 12, name: BIOME_NAMES[BIOME.MUSTAFAR] });
+    this.pois.push({ x: hall.x, y: hall.y, r: 9, name: '무스타파 · 분리주의 회의실' });
+    this.pois.push({ x: control.x, y: control.y, r: 8, name: '무스타파 · 제어실' });
+    this.pois.push({ x: balcony.x, y: balcony.y, r: 7, name: '무스타파 · 발코니' });
+    this.pois.push({ x: arm.x, y: arm.y, r: arm.hw + 1, name: '무스타파 · 집하기 팔' });
+    this.pois.push({ x: (river.x0 + river.x1) / 2, y: river.y, r: 26, name: BIOME_NAMES[BIOME.LAVA] });
+    const walk = [deck, hallway, hall, door, control, balcony, arm];
     const inRect = (x, y, r) => Math.abs(x - r.x) <= r.hw && Math.abs(y - r.y) <= r.hh;
+    const rooms = [hall, control].map((r) => ({ ...r, hw: r.hw + 1.6, hh: r.hh + 1.6 }));
     for (let y = 0; y < MAP_H; y++) {
       for (let x = 0; x < MAP_W; x++) {
         const i = y * MAP_W + x;
         const cx = x + 0.5;
         const cy = y + 0.5;
-        // the bank: a black sand slope rising south of the river
-        const bankEdge = MUSTAFAR.bank.y - 3 + (fbm(x / 5, 3, 11) - 0.5) * 3;
         let b = BIOME.LAVA;
-        const inside = (r) => inRect(cx, cy, r);
-        const around = (r) => inRect(cx, cy, { ...r, hw: r.hw + 1.6, hh: r.hh + 1.6 });
-        if ([deck, raft, hall, control, arm].some(inside)) b = BIOME.MUSTAFAR;
-        else if (around(hall) || (around(control) && cx < control.x + control.hw)) b = BIOME.ASH; // the rooms' rock floor; the control room's east side opens on the lava
-        else if (cy > bankEdge && Math.abs(cx - MUSTAFAR.bank.x) < 22) b = BIOME.ASH;
+        if (walk.some((r) => inRect(cx, cy, r))) b = BIOME.MUSTAFAR;
+        else if (rooms.some((r) => inRect(cx, cy, r)) && cx < control.x + control.hw) b = BIOME.ASH; // the rooms' rock; the control room opens east on the lava
+        else if (cy > bank.y - 4 + (fbm(x / 5, 3, 11) - 0.5) * 3 && Math.abs(cx - bank.x) < 16 + (bank.y - cy) * -0.8) b = BIOME.ASH; // the black sand bank
         this.biome[i] = b;
-        this.blocked[i] = b === BIOME.MUSTAFAR ? 0 : 2; // only the decks are walkable in the fight
+        this.blocked[i] = b === BIOME.MUSTAFAR ? 0 : 2; // only the facility is walkable; the river platforms open their own tiles
         this.explored[i] = 1;
       }
     }
-    // the facility side of the deck: collector towers, Padmé's skiff
-    for (const [dx, dy] of [[-8, -5], [8, -5], [-8, 5], [8, 5]]) this.addProp('mustafarTower', deck.x + dx, deck.y + dy);
-    this.addProp('skiff', deck.x + 1, deck.y - 9.5, { noBlock: true });
-    for (const [dx, dy] of [[-4, -4.2], [4, 4.2]]) this.addProp('mustafarTower', raft.x + dx, raft.y + dy);
-    // the conference room: walls, the council's table, the leaders Anakin killed
-    this.walls(hall);
-    this.addProp('confTable', hall.x, hall.y);
-    for (const [dx, dy] of [[-3, -2], [2.5, -2.2], [-1, 2.3], [4.5, 1.5], [-5, 0.5]]) this.addProp('sepBody', hall.x + dx, hall.y + dy, { noBlock: true });
-    // the control room: consoles along the walls, the east side open on the lava (the shield window)
-    this.walls(control);
-    for (const [dx, dy, ai] of [[-4.5, -2, 1], [-4.5, 2, 1], [0, -4.2, 0], [1.5, 4.2, 0]]) this.addProp('mustafarConsole', control.x + dx, control.y + dy, { angleIdx: ai });
-    // the collector arm: a catwalk ending at a collector tower
-    this.addProp('mustafarTower', arm.x + arm.hw + 1.5, arm.y);
-    for (let x = -arm.hw; x <= arm.hw; x += 4) this.lights.push({ x: arm.x + x, y: arm.y, z: 0.2, r: 255, g: 120, b: 40, rad: 140, flicker: 0.15 });
-    for (const r of [hall, control]) this.lights.push({ x: r.x, y: r.y, z: 2.5, r: 255, g: 150, b: 90, rad: 220, flicker: 0.03 });
-    // the robes thrown off before the fight (shown by the opening scene)
+
+    // the landing platform: collector towers, Padmé's skiff
+    for (const [dx, dy] of [[-7, -5], [7, -5], [-7, 5]]) this.addProp('mustafarTower', deck.x + dx, deck.y + dy);
+    this.addProp('skiff', deck.x - 1, deck.y - 9.6, { noBlock: true });
     this.cloak = this.addProp('cloakPile', deck.x - 2.2, deck.y + 1.6);
     this.robe = this.addProp('robePile', deck.x + 3.4, deck.y - 1.8);
     this.cloak.hidden = this.robe.hidden = true;
-    // lava glow all round the decks
-    for (let a = 0; a < Math.PI * 2; a += Math.PI / 7) {
-      this.lights.push({ x: deck.x + Math.cos(a) * (deck.hw + 2.5), y: deck.y + Math.sin(a) * (deck.hh + 2.5), z: 0.2, r: 255, g: 120, b: 40, rad: 150, flicker: 0.12 });
-      this.lights.push({ x: raft.x + Math.cos(a) * (raft.hw + 2), y: raft.y + Math.sin(a) * (raft.hh + 2), z: 0.2, r: 255, g: 110, b: 30, rad: 130, flicker: 0.12 });
+    // the hallway: a wall on the north side, rails over the lava to the south
+    for (let x = -hallway.hw + 1; x <= hallway.hw - 1; x += 2) {
+      this.addProp('mustafarWall', hallway.x + x, hallway.y - hallway.hh - 0.9, { angleIdx: 0, noBlock: true });
+      this.addProp('catwalkRail', hallway.x + x, hallway.y + hallway.hh + 0.2, { angleIdx: 0, noBlock: true });
+    }
+    // the conference room: the council's table, the leaders Anakin killed
+    this.walls(hall, true);
+    this.addProp('confTable', hall.x, hall.y - 0.5);
+    for (const [dx, dy] of [[-3, -2.6], [2.5, -2.4], [-1, 2.3], [4.5, 1.8], [-5.5, 0.6]]) this.addProp('sepBody', hall.x + dx, hall.y + dy, { noBlock: true });
+    // the control room: consoles, the shield controls in the middle of the north wall
+    this.walls(control, true);
+    for (const [dx, dy, ai] of [[-5, -2.5, 1], [-5, 2.5, 1], [-2.5, -4.2, 0], [2.5, -4.2, 0]]) this.addProp('mustafarConsole', control.x + dx, control.y + dy, { angleIdx: ai });
+    this.shieldConsole = this.addProp('mustafarConsole', control.x, control.y - 4.2, { angleIdx: 0 });
+    // the balcony and the collector arm: railings, the great pipe, the end tower
+    for (let y = -balcony.hh + 1; y <= balcony.hh - 1; y += 2) {
+      this.addProp('catwalkRail', balcony.x - balcony.hw - 0.1, balcony.y + y, { angleIdx: 1, noBlock: true });
+      if (y < balcony.hh - 3) this.addProp('catwalkRail', balcony.x + balcony.hw + 0.1, balcony.y + y, { angleIdx: 1, noBlock: true });
+    }
+    for (let x = -arm.hw + 1; x <= arm.hw - 1; x += 2) {
+      this.addProp('collectorPipe', arm.x + x, arm.y - arm.hh - 0.7, { angleIdx: 0, noBlock: true });
+      this.addProp('catwalkRail', arm.x + x, arm.y + arm.hh + 0.15, { angleIdx: 0, noBlock: true });
+    }
+    this.armTower = this.addProp('mustafarTower', arm.x + arm.hw + 1.6, arm.y, { noBlock: true });
+    // the lava falls pouring past the arm
+    this.falls = [];
+    for (let x = -arm.hw + 3; x <= arm.hw - 2; x += 5) {
+      const f = { x: arm.x + x + this.rng.range(-1, 1), y: arm.y - 4 };
+      this.falls.push(f);
+      this.lights.push({ x: f.x, y: f.y, z: 3, r: 255, g: 130, b: 40, rad: 170, flicker: 0.2 });
+    }
+    // the river platforms (shown when the fight reaches the river)
+    this.raft = this.addProp('collectorRaft', river.x0, river.y - M.raft.hh, { noBlock: true });
+    this.droid = this.addProp('droidPlatform', river.x0, river.y + M.droid.hh, { noBlock: true });
+    this.raftTower = this.addProp('mustafarTower', river.x0 - 2, river.y - M.raft.hh - 1.2, { noBlock: true });
+    this.raft.hidden = this.droid.hidden = this.raftTower.hidden = true;
+    // the bank: black rock above the lava
+    for (const [dx, dy] of [[-6, 2], [5, 1.5], [9, 4], [-10, 5], [2, 6]]) this.addProp('boulder', bank.x + dx, bank.y + dy, { noBlock: true });
+    // light: the rooms, lava glow along the route and the river
+    for (const r of [hall, control]) this.lights.push({ x: r.x, y: r.y, z: 2.5, r: 255, g: 150, b: 90, rad: 220, flicker: 0.03 });
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) this.lights.push({ x: deck.x + Math.cos(a) * (deck.hw + 2.5), y: deck.y + Math.sin(a) * (deck.hh + 2.5), z: 0.2, r: 255, g: 120, b: 40, rad: 150, flicker: 0.12 });
+    for (let x = hallway.x - hallway.hw; x <= hallway.x + hallway.hw; x += 5) this.lights.push({ x, y: hallway.y + 4, z: 0.2, r: 255, g: 110, b: 30, rad: 130, flicker: 0.12 });
+    for (let y = balcony.y - balcony.hh; y <= balcony.y + balcony.hh; y += 5) this.lights.push({ x: balcony.x + 4, y, z: 0.2, r: 255, g: 120, b: 40, rad: 140, flicker: 0.12 });
+    for (let x = river.x0 - 4; x <= river.x1 + 8; x += 6) {
+      this.lights.push({ x, y: river.y - 5, z: 0.2, r: 255, g: 110, b: 30, rad: 150, flicker: 0.12 });
+      this.lights.push({ x, y: river.y + 5, z: 0.2, r: 255, g: 110, b: 30, rad: 150, flicker: 0.12 });
     }
     this.spawn = { x: deck.x - 1.5, y: deck.y + 1.5 };
     this.roadSegs = [];
     this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
   }
 
-  /** The far walls of a room (north and west); the near sides stay open so the fight is visible, as in Fallout. */
-  walls(r) {
+  /** The far walls of a room (north and west, a gap for the door); the near sides stay open so the fight is visible, as in Fallout. */
+  walls(r, westDoor = false) {
     const edge = (x, y, ai) => this.addProp('mustafarWall', x, y, { angleIdx: ai, noBlock: true });
     for (let x = -r.hw + 1; x <= r.hw - 1; x += 2) edge(r.x + x, r.y - r.hh - 0.9, 0);
-    for (let y = -r.hh + 1; y <= r.hh - 1; y += 2) edge(r.x - r.hw - 0.9, r.y + y, 1);
+    for (let y = -r.hh + 1; y <= r.hh - 1; y += 2) if (!westDoor || Math.abs(y) > 1.5) edge(r.x - r.hw - 0.9, r.y + y, 1);
+  }
+
+  /**
+   * Open the tiles under a moving platform (and close those it left).
+   * `rects` are the platforms' current { x, y, hw, hh }.
+   */
+  setFloating(rects) {
+    for (const i of this.floating || []) this.blocked[i] = 2;
+    const open = [];
+    for (const r of rects) {
+      for (let ty = Math.floor(r.y - r.hh + 0.01); ty < Math.ceil(r.y + r.hh - 0.01); ty++)
+        for (let tx = Math.floor(r.x - r.hw + 0.01); tx < Math.ceil(r.x + r.hw - 0.01); tx++) {
+          if (!this.inBounds(tx, ty)) continue;
+          const i = ty * MAP_W + tx;
+          this.blocked[i] = 0;
+          open.push(i);
+        }
+    }
+    this.floating = open;
   }
 }
 
@@ -527,19 +628,30 @@ export class MustafarArena extends World {
 export const CITY = {
   up: { x: 98, y: 64, hw: 26, hh: 15 }, // upper plaza (tile half-sizes)
   pad: { x: 117, y: 62 }, // Jedi landing pad
-  low: { x: 96, y: 113, hw: 32, hh: 18 }, // lower level
+  low: { x: 98, y: 113.5, hw: 40, hh: 19.5 }, // the undercity (data/undercity.json: x 58-138, y 94-133)
   liftUp: { x: 82, y: 77.5 },
   liftLow: { x: 82, y: 97.5 },
-  bar: { x: 108, y: 123 }, // the bar ("녹슨 등불")
-  shaft: { x: 96, y: 112 }, // the one place light reaches the street
+  bar: { x: 117, y: 123 }, // the cantina ("녹슨 등불"): its ground centre
+  barDoor: { x: 117.4, y: 127.6 }, // in front of its door, on the square
+  shaft: { x: 98, y: 112 }, // the one place light reaches the street: the plaza's centre
 };
 
 export class CityHub extends World {
+  /** The data's props (data/undercity.json): p = a sprite of the underworld set, m = a model prop. */
+  placeProps(list) {
+    for (const q of list) {
+      if (q.p) this.addSheetProp(q.p, q.x, q.y, { noBlock: !!q.noBlock });
+      else this.addProp(q.m, q.x, q.y, { angleIdx: q.a, noBlock: !!q.noBlock });
+      if (q.steam) (this.steam ||= []).push({ x: q.x, y: q.y, z: 1.8, t: this.rng.next() * 3 });
+    }
+  }
+
   generate() {
     this.rng = new RNG(this.seed);
     const rng = this.rng;
-    const { up, low, pad, liftUp, liftLow, bar, shaft } = CITY;
+    const { up, low, pad, liftUp, liftLow } = CITY;
     this.ambient = [96, 100, 128];
+    this.grade = 'coruscant'; // the undercity below y 90 grades as 'undercity'
     this.city = true;
     const inRect = (x, y, r) => Math.abs(x - r.x) <= r.hw && Math.abs(y - r.y) <= r.hh;
     for (let y = 0; y < MAP_H; y++) {
@@ -556,56 +668,49 @@ export class CityHub extends World {
       }
     }
     this.pois.push({ ...pad, r: 6, name: '코러산트 · 제다이 착륙장' });
-    this.pois.push({ ...bar, r: 5, name: '코러산트 · 녹슨 등불 바' });
-    this.pois.push({ x: low.x, y: 106.5, r: 9, name: '코러산트 · 언더시티 시장' });
-    this.pois.push({ ...shaft, r: 3.5, name: '코러산트 · 빛이 드는 골목' });
 
-    // --- upper plaza ------------------------------------------------------
+    // --- upper plaza (data/undercity.json "upper") -----------------------------------
+    // the landing pad and the turbolift are the game's own; the terrace's dressing (office blocks
+    // and stacks along the north edge, pipes, light posts and signs along the drop, terminals and
+    // a kiosk round the centre, the quartermaster's depot by the pad) is the underworld set
     this.addProp('landingPad', pad.x, pad.y);
-    // skyline: towers along the north edge and out in the drop
-    for (let x = up.x - up.hw + 2; x <= up.x + up.hw - 2; x += 5) this.addProp('spire', x + rng.range(-0.6, 0.6), up.y - up.hh + 1.5);
-    for (const [x, y] of [[66, 48], [70, 62], [130, 50], [134, 70], [60, 76], [138, 84], [76, 40], [120, 38]]) this.addProp('spire', x, y, { noBlock: true });
-    // a ring of planters and lamps round the plaza's centre
-    for (let k = 0; k < 8; k++) {
-      const a = (k / 8) * Math.PI * 2;
-      this.addProp(k % 2 ? 'plazaLamp' : 'planter', 94 + Math.cos(a) * 6, 66 + Math.sin(a) * 4.5);
-    }
-    for (const [x, y] of [[80, 56], [86, 72], [104, 72], [108, 54], [76, 68]]) this.addProp('planter', x, y);
-    for (const [x, y] of [[100, 58], [88, 60], [110, 70], [122, 56], [122, 68], [78, 62]]) this.addProp('plazaLamp', x, y);
-    // the railing along the edge over the drop (south side)
-    for (let x = up.x - up.hw + 1; x <= up.x + up.hw - 1; x += 2) if (Math.abs(x - liftUp.x) > 1.5) this.addProp('railing', x, up.y + up.hh + 0.2, { angleIdx: 0 });
+    this.placeProps(UNDERCITY.upper.props);
     this.addProp('turbolift', liftUp.x, liftUp.y);
 
-    // --- lower level ------------------------------------------------------
-    // blocks of dwellings with streets between them; the market street runs
-    // east–west through the middle
-    const blocks = [];
-    for (const bx of [70, 84, 100, 116]) for (const by of [100, 117, 126]) blocks.push([bx, by]);
-    for (const [bx, by] of blocks) {
-      if (Math.abs(bx - shaft.x) < 6 && Math.abs(by - shaft.y) < 7) continue; // the square under the light
-      if (bx === 84 && by === 100) continue; // the lift's landing
-      this.addProp('slumBlock', bx, by);
+    // --- lower level: the undercity (data/undercity.json, docs/UNDERCITY_MAP.md) --------
+    // Zoned round a neon market plaza (mosaic pavement, the food stalls, trade terminals), with
+    // muddy back alleys and a residential court to the west, a workshop alley to the north-east,
+    // the cantina's square to the south-east and industrial vent zones in the corners; closed by
+    // the mega-structure's pillars and pipe walls to the north, tenement stacks and clogged alley
+    // ends to the sides, and the chasm (with guardrails) to the south.
+    const U = UNDERCITY;
+    const inP = (x, y, poly) => inPoly(x, y, poly);
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        const i = y * MAP_W + x;
+        if (this.biome[i] !== BIOME.CITY_LOW) continue;
+        const cx = x + 0.5;
+        const cy = y + 0.5;
+        let b = BIOME.CITY_LOW;
+        for (const c of U.ground.chasm) if (inP(cx, cy, c.poly)) b = BIOME.VOID;
+        if (b === BIOME.CITY_LOW) for (const c of U.ground.mosaic) if (inP(cx, cy, c.poly)) b = BIOME.CITY_MOSAIC;
+        if (b === BIOME.CITY_LOW) for (const c of U.ground.mud) if (inP(cx, cy, c.poly)) b = BIOME.CITY_MUD;
+        if (b === BIOME.CITY_LOW) for (const c of U.ground.swamp || []) if (inP(cx, cy, c.poly)) b = BIOME.CITY_SWAMP;
+        if (b === BIOME.CITY_LOW) for (const c of U.ground.dirt || []) if (inP(cx, cy, c.poly)) b = BIOME.CITY_DIRT;
+        this.biome[i] = b;
+        this.blocked[i] = b === BIOME.VOID ? 2 : 0;
+      }
     }
+    // the outermost ring stays off limits (the pillars and pipes stand on it; no one on the lip)
+    const [rx0, ry0, rx1] = U.grid.region;
+    for (let x = rx0; x < rx1; x++) if (this.biome[ry0 * MAP_W + x] !== BIOME.VOID) this.blocked[ry0 * MAP_W + x] = 1;
+    for (let y = ry0; y < 134; y++) for (const x of [rx0, rx1 - 1]) if (this.biome[y * MAP_W + x] !== BIOME.VOID) this.blocked[y * MAP_W + x] = 1;
     this.addProp('turbolift', liftLow.x, liftLow.y);
-    // market street: stalls both sides, neon over them
-    for (let x = low.x - low.hw + 3; x <= low.x + low.hw - 3; x += 4.5) {
-      this.addProp('stall', x, 104.2);
-      if (rng.chance(0.7)) this.addProp('stall', x + 2, 110.6);
-      if (rng.chance(0.6)) this.addProp('neonSign', x + 1.2, 103.6);
-    }
-    for (const [x, y] of [[64.5, 112], [127, 108], [92, 121], [124, 121], [76, 129], [112, 96.5]]) this.addProp('ventStack', x, y);
-    for (let k = 0; k < 14; k++) this.addProp('trashPile', rng.range(low.x - low.hw + 1, low.x + low.hw - 1), rng.pick([108.5, 112.5, 121.5, 130, 96.5]), { noBlock: true });
-    // the bar: a block with two signs and a warm doorway
-    this.addProp('neonSign', bar.x - 2.6, bar.y - 2.6, { variant: 0 });
-    this.addProp('neonSign', bar.x + 2.6, bar.y - 2.6, { variant: 2 });
-    // light: warm windows and neon pockets; one cold shaft from above
-    const neon = [[255, 80, 170], [80, 230, 255], [255, 180, 70], [160, 120, 255]];
-    for (let k = 0; k < 26; k++) {
-      const [r, g, b] = rng.pick(neon);
-      this.lights.push({ x: rng.range(low.x - low.hw + 2, low.x + low.hw - 2), y: rng.pick([104, 108.5, 112, 121.5, 96.5, 130]), z: 2.2, r, g, b, rad: rng.range(70, 120), flicker: rng.chance(0.3) ? 0.2 : 0.04 });
-    }
-    this.lights.push({ x: shaft.x, y: shaft.y, z: 6, r: 200, g: 225, b: 255, rad: 150, flicker: 0.01 });
-    this.lights.push({ x: bar.x, y: bar.y - 3, z: 1.5, r: 255, g: 170, b: 90, rad: 120, flicker: 0.05 });
+    this.placeProps(U.props);
+    for (const [x, y, z] of U.steam || []) this.steam.push({ x, y, z, t: rng.next() * 3 });
+    this.puddles = U.puddles.map(([x, y, r]) => ({ x, y, r, drops: [] }));
+    for (const [x, y, z, r, g, b, rad, flicker] of U.lights) this.lights.push({ x, y, z, r, g, b, rad, flicker });
+    for (const poi of U.pois) this.pois.push({ ...poi });
     // the upper plaza is lit like day
     for (let x = up.x - up.hw + 4; x <= up.x + up.hw - 4; x += 9) for (const y of [up.y - 7, up.y + 6]) this.lights.push({ x, y, z: 6, r: 255, g: 246, b: 228, rad: 300, flicker: 0 });
 
@@ -616,7 +721,7 @@ export class CityHub extends World {
         if (this.blocked[y * MAP_W + x]) continue;
         const b = this.biome[y * MAP_W + x];
         if (b === BIOME.CITY_UP && dist(x, y, pad.x, pad.y) > 5) this.walk.up.push({ x: x + 0.5, y: y + 0.5 });
-        else if (b === BIOME.CITY_LOW) this.walk.low.push({ x: x + 0.5, y: y + 0.5 });
+        else if (b >= BIOME.CITY_LOW && b !== BIOME.VOID) this.walk.low.push({ x: x + 0.5, y: y + 0.5 });
       }
     }
     // turbolifts between the levels
@@ -635,7 +740,15 @@ export class CityHub extends World {
       const x = rng.pick([60, 66, 132, 138]);
       this.traffic.push({ x0: x, y0: 30, x1: x + rng.range(-4, 4), y1: 150, z: rng.range(3, 8), speed: rng.range(6, 10), gap: rng.range(8, 16) });
     }
+    // speeders high over the undercity's streets: lights crossing overhead
+    for (const y of [103, 116.5, 124.5]) this.traffic.push({ x0: 56, y0: y, x1: 136, y1: y + rng.range(-2, 2), z: rng.range(8, 11), speed: rng.range(7, 12), gap: rng.range(10, 18), over: true });
+    for (const x of [76, 104, 121]) this.traffic.push({ x0: x, y0: 136, x1: x + rng.range(-3, 3), y1: 90, z: rng.range(9, 12), speed: rng.range(6, 10), gap: rng.range(12, 20), over: true });
     this.spawn = { x: pad.x - 5, y: pad.y + 1.5 };
+    // the camera's regions (renderer: the view stays over the level it is on)
+    this.camRegions = [
+      { x0: up.x - up.hw, y0: up.y - up.hh, x1: up.x + up.hw, y1: up.y + up.hh },
+      { x0: 58, y0: 94, x1: 138, y1: 133 },
+    ];
     this.roadSegs = [];
     this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
   }

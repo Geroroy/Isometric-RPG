@@ -7,6 +7,8 @@ import { SKILLS } from '../game/skills.js';
 import { iconURL } from './icons.js';
 import { screenVecToWorldAngle } from '../core/iso.js';
 import { dist, angleDiff } from '../core/math.js';
+import { setText } from './dom.js';
+import { setFraction } from './theme.js';
 
 // how far a dragged skill is aimed (world units) when the skill targets a point
 const AIM_RANGE = { throw: 7, push: 3.5, leap: 7.5, clones: 3, gunship: 9, fury: 3, rex: 2 };
@@ -94,29 +96,15 @@ export class TouchControls {
     cluster.appendChild(this.bactaBtn);
     root.appendChild(cluster);
 
-    // menu buttons
-    const menu = el('div', 't-menu');
-    const items = [
-      ['skills', '스킬', () => this.hud.toggle('tree')],
-      ['character', '정보', () => this.hud.toggle('char')],
-      ['cards', '카드', () => this.hud.toggle('cards')],
-      ['map', '지도', () => this.hud.toggle('map')],
-      ['settings', '설정', () => this.hud.toggle('settings')],
-      ['flurry', '광선검', () => this.game.player.setSaber(!this.game.player.saberLit)],
-    ];
-    this.menuBtns = {};
-    for (const [icon, label, fn] of items) {
-      const b = el('div', 't-mbtn', icon === 'map' || icon === 'settings' ? `<b>${icon === 'map' ? '⌖' : '⚙'}</b><span>${label}</span>` : `<img src="${iconURL(icon)}" alt=""><span>${label}</span>`);
-      // 'click' (not pointerdown) so the follow-up click can't hit the panel that just opened
-      b.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.audio.unlock();
-        fn();
-      });
-      menu.appendChild(b);
-      this.menuBtns[icon] = b;
-    }
-    root.appendChild(menu);
+    // the saber switch: a small key beside the cluster (the menu keys live in ui/mobileHud.js)
+    this.saberBtn = el('div', 't-btn t-saber', `<img src="${iconURL('flurry')}" alt=""><span class="lv">검</span>`);
+    this.saberBtn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.audio.unlock();
+      this.game.player.setSaber(!this.game.player.saberLit);
+    });
+    if (!this.game.duel) cluster.appendChild(this.saberBtn);
     document.getElementById('hud').appendChild(root);
 
     this.bindJoystick();
@@ -406,16 +394,20 @@ export class TouchControls {
         img.src = want;
         img.dataset.src = want;
       }
+      // an empty socket is hidden: with no skills learned the cluster is just the attack key
       b.classList.toggle('empty', !id);
       const cd = id ? p.cooldowns[id] || 0 : 0;
       const total = id && SKILLS[id].cd ? SKILLS[id].cd(p.skillLevel(id)) || 1 : 1;
-      b.children[1].style.background = cd > 0 ? `conic-gradient(rgba(0,0,0,0.72) ${(cd / total) * 360}deg, transparent 0)` : 'none';
+      setFraction(b.children[1], 'cd', cd > 0 ? 1 - cd / total : 1);
+      b.classList.toggle('cooling', cd > 0);
       const cost = id && SKILLS[id].cost ? SKILLS[id].cost(p.skillLevel(id)) : 0;
       b.classList.toggle('nofp', !!id && p.force < cost);
-      b.children[2].textContent = id ? p.skillLevel(id) : '';
+      setText(b.children[2], id ? p.skillLevel(id) : '');
     }
-    if (!g.duel) this.bactaBtn.lastChild.textContent = p.bacta;
-    this.menuBtns.skills.classList.toggle('glow', p.skillPoints > 0);
-    this.menuBtns.character.classList.toggle('glow', p.attrPoints > 0);
+    if (!g.duel) {
+      setText(this.bactaBtn.lastChild, p.bacta);
+      this.bactaBtn.classList.toggle('empty', p.bacta <= 0);
+      this.saberBtn.classList.toggle('on', p.saberLit && !p.saberOut);
+    }
   }
 }

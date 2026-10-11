@@ -1,0 +1,52 @@
+{
+ "name": "tradeTerminal",
+ "size": 154,
+ "window": 154.0,
+ "k": 0.45,
+ "anchor": [
+  77.0,
+  108.4
+ ],
+ "sort": [
+  77.0,
+  150
+ ],
+ "footprint": [
+  [
+   -0.9,
+   -0.5
+  ],
+  [
+   0.9,
+   -0.5
+  ],
+  [
+   0.9,
+   0.5
+  ],
+  [
+   -0.9,
+   0.5
+  ]
+ ],
+ "flat": false,
+ "layers": {
+  "body": "tradeTerminal_body.png",
+  "neon": "tradeTerminal_neon.png",
+  "reflect": "tradeTerminal_reflect.png"
+ },
+ "neon": {
+  "base": 1.0,
+  "hum": 0.05,
+  "speed": 9,
+  "flicker": {
+   "rate": 0.12,
+   "dur": [
+    0.04,
+    0.22
+   ],
+   "level": 0.12
+  }
+ },
+ "source": "sheet B cell (23,637)-(261,830)"
+}

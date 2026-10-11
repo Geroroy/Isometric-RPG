@@ -82,6 +82,10 @@ export class Dooku extends Unit {
     const face = () => this.faceTo(p.x, p.y);
     const aggression = d.phase === 3 ? 1.5 : d.phase === 2 ? 1.25 : 1;
 
+    if (this.stun > 0) {
+      this.setAnim('hurt', 0.35); // a Djem So strike's stun is real for him too
+      return;
+    }
     switch (this.state) {
       case 'broken':
       case 'stagger':
@@ -347,7 +351,7 @@ export class Duel {
       {
         t: 14.8,
         do: () => {
-          g.fx.sparks((p.x + dk.x) / 2, (p.y + dk.y) / 2, 1.3, '#fff2c8', 16, 3);
+          g.clash((p.x + dk.x) / 2, (p.y + dk.y) / 2, 1.3, 16);
           g.audio.play('lockStart', dk);
           p.setAnim('lock');
           dk.setAnim('lock');
@@ -446,7 +450,7 @@ export class Duel {
     if (a && a.type === 'melee' && a.phase === 'swing' && !a.fired && Math.random() < 0.55) return this.startLock();
     if (p.blocking && !p.busy && this.facing(p, dk)) {
       const perfect = g.time - p.blockT < PERFECT_WINDOW;
-      g.fx.sparks((p.x + dk.x) / 2, (p.y + dk.y) / 2, 1.2, '#fff2c8', perfect ? 18 : 9, 3);
+      g.clash((p.x + dk.x) / 2, (p.y + dk.y) / 2, 1.2, perfect ? 18 : 10);
       g.audio.play('clash', dk, { perfect });
       p.clashFlash = dk.clashFlash = 0.15;
       if (perfect) {
@@ -509,6 +513,7 @@ export class Duel {
       return amount;
     }
     if (tgt !== dk) return amount;
+    if (dk.scripted || this.cine || dk.state === 'lock') return 0; // in a scene or bound blade to blade: nothing lands
     dk.lastHurtT = g.time;
     if (dk.state === 'broken') return amount * 1.5;
     if (dk.state === 'stagger') return amount * 1.3;
@@ -534,7 +539,7 @@ export class Duel {
       dk.setAnim('parry', 1, true);
       dk.composure -= Math.min(22, amount * 0.6) * (opts.pressure || 1); // the signature onslaught wears the guard down
       dk.clashFlash = 0.15;
-      g.fx.sparks(dk.x, dk.y, 1.2, '#ffd8c8', 7, 2.5);
+      g.clash(dk.x + Math.cos(dk.facing) * 0.4, dk.y + Math.sin(dk.facing) * 0.4, 1.2, 9);
       g.audio.play('clash', dk);
       g.fx.text(dk.x, dk.y, '막음', '#d8dde4', 0.7);
       if (dk.composure <= 0) this.breakGuard(dk);
@@ -658,7 +663,7 @@ export class Duel {
 
   /** Phase changes by the foe's remaining health `k` (the film's beats). */
   phases(k) {
-    if (this.game.cinema) return; // one scene at a time
+    if (this.game.cinema || this.cine || this.lock) return; // one scene at a time, never from inside a lock
     if (this.phase === 1 && k <= 0.6) {
       this.phase = 2;
       this.toPhase2();

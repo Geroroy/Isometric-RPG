@@ -1,16 +1,25 @@
 // World renderer: low-resolution canvas (scaled up with nearest-neighbour for
 // chunky pixels), depth-sorted sprites, Diablo-style light map and additive
-// glow pass for sabers, blaster bolts and Force effects. In Remaster graphics
-// the canvas holds D device pixels per game pixel (all drawing stays in game
-// pixels under a D× transform), so 2×-density terrain and props, glow lines,
-// soft shadows and the light map come out at the screen's own resolution.
-import { worldToScreen, screenToWorld } from '../core/iso.js';
+// glow pass for sabers, blaster bolts and Force effects. Characters with a
+// Blender sprite sheet (gfx/sheet.js) cast their own rendered shadow.
+import { worldToScreen, screenToWorld, PX_PER_UNIT, Z_PX, HALF_W, HALF_H } from '../core/iso.js';
 import { Terrain } from './terrain.js';
 import { PROPS } from './models/props.js';
 import { dist } from '../core/math.js';
-import { isHD } from '../core/gfx.js';
+import { SHEET_PROPS } from '../world/cityProps.js';
+import { neonLevel } from './citySprites.js';
+import { glowSprite } from './fx.js';
+import { transientLights, relightUnits } from './relight.js';
+import { SIG } from '../game/units.js';
+import { canvasFont } from '../ui/fonts.js';
+import { drawCityBackdrop } from './cityBackdrop.js';
+import { SABER, PALETTES, trailWindow, paletteFor, flickerAt, ignition, drawBlade, drawSpark, drawTrail, drawClash, record } from './saberStyle.js';
+import { preset, tintFor, drawLight, drawGround, drawGroundTint, sweepOf, lightCharacter } from './saberLight.js';
 
 const AMBIENT = [150, 146, 178];
+const byDepth = (a, b) => a.depth - b.depth;
+const TRAIL_LIFE = 0.13; // seconds a saber swing's afterimage lasts
+const SHADOW_ALPHA = 0.75; // a sheet's rendered shadow (the shadow catcher's own alpha)
 export const ZOOM_MIN = 0.5;
 export const ZOOM_MAX = 2.5;
 
@@ -32,27 +41,15 @@ export class Renderer {
     this.time = 0;
     this.zoom = 1;
     this.touchMode = false;
-    this.hd = false;
-    this.D = 1;
-    this.shadow = softShadow();
-    this.applyMode();
+    this.prepareProps();
+    this.resize();
   }
 
   /** Another place (the city hub ⇄ Christophsis): new ground, props, map. */
   setWorld() {
     const w = this.game.world;
     this.terrain = w.terrain ||= new Terrain(w); // each place keeps its built ground
-    this.applyMode();
-  }
-
-  /** Original / Remaster graphics (props must already be baked for the mode). */
-  applyMode() {
-    this.hd = isHD() && !!this.assets.propsHD;
-    this.assets.props = this.hd ? this.assets.propsHD : this.assets.propsSD || this.assets.props;
     this.prepareProps();
-    this.terrain.setDensity(this.hd ? 2 : 1);
-    this.canvas.style.imageRendering = this.hd ? 'auto' : '';
-    this.resize();
   }
 
   prepareProps() {
@@ -61,6 +58,18 @@ export class Renderer {
 
   /** Screen placement of a prop (again after a cutscene moves one). */
   placeProp(p) {
+    if (p.sheet) {
+      // a Blender-rendered city sprite: body, neon and reflection layers
+      const c = this.assets.city[p.sheet];
+      p.frame = c.body;
+      p.layers = c;
+      const s = worldToScreen(p.x, p.y);
+      p.sx = s.x;
+      p.sy = s.y;
+      p.rect = [s.x - c.body.ox, s.y - c.body.oy, c.body.w, c.body.h];
+      p.sortDepth = p.x + p.y + (p.rect && c.meta.footprint ? Math.min(...extent(c.meta.footprint)) * 0.35 : 0);
+      return;
+    }
     {
       const frames = this.assets.props[p.type];
       p.frame = frames[p.frameIdx % frames.length];
@@ -105,16 +114,17 @@ export class Renderer {
     this.scale = devScale / dpr;
     this.w = Math.ceil((W * dpr) / devScale);
     this.h = Math.ceil((H * dpr) / devScale);
-    // Remaster: up to 3 device pixels per game pixel (CSS scales the rest)
-    this.D = this.hd ? Math.min(3, devScale) : 1;
-    this.canvas.width = this.w * this.D;
-    this.canvas.height = this.h * this.D;
+    this.canvas.width = this.w;
+    this.canvas.height = this.h;
     this.canvas.style.width = this.w * this.scale + 'px';
     this.canvas.style.height = this.h * this.scale + 'px';
     this.light.width = this.w;
     this.light.height = this.h;
-    this.overlay.width = Math.round(W * dpr);
-    this.overlay.height = Math.round(H * dpr);
+    // labels and numbers: at most 1.5× CSS px — still sharp text, a quarter of the pixels of 3×
+    this.odpr = Math.min(dpr, 1.5);
+    this.overlay.width = Math.round(W * this.odpr);
+    this.overlay.height = Math.round(H * this.odpr);
+    this.overlayUsed = true;
     this.overlay.style.width = W + 'px';
     this.overlay.style.height = H + 'px';
     this.ctx.imageSmoothingEnabled = false;
@@ -163,29 +173,54 @@ export class Renderer {
     const f = g.camFocus; // a cutscene's camera
     const ps = f ? worldToScreen(f.x, f.y, 0) : worldToScreen(p.x, p.y, p.z * 0.4);
     const viewH = H - (g.cinema ? 0 : this.consoleH) / this.scale; // cutscenes use the whole screen
+    // the camera stays over the level (docs/MAP_EDGES.md): its view centre is held inside the
+    // level's screen box less an inset, so a rim never fills half the screen
+    const cr = !f && g.world.camRegions && this.camRegion(g.world.camRegions, p);
+    if (cr) {
+      const clampTo = (v, lo, hi) => (lo > hi ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, v)));
+      ps.x = clampTo(ps.x, (cr.x0 - cr.y1) * HALF_W + W * 0.22, (cr.x1 - cr.y0) * HALF_W - W * 0.22);
+      ps.y = clampTo(ps.y, (cr.x0 + cr.y0) * HALF_H + viewH * 0.24, (cr.x1 + cr.y1) * HALF_H - viewH * 0.3);
+    }
     const sh = g.fx.shakeAmt;
     const dr = this.drift; // slow title-screen camera move, in game pixels
     this.cam.x = Math.round(ps.x - W / 2 + dr.x + (sh ? (Math.random() - 0.5) * sh : 0));
     this.cam.y = Math.round(ps.y - viewH * (this.touchMode ? 0.6 : 0.55) + dr.y + (sh ? (Math.random() - 0.5) * sh : 0));
     const cam = this.cam;
 
-    ctx.setTransform(this.D, 0, 0, this.D, 0, 0);
-    this.smooth(this.hd);
-    ctx.fillStyle = '#07070a';
-    ctx.fillRect(0, 0, W, H);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.smooth(false);
+    if (g.world.city) drawCityBackdrop(ctx, cam, W, H, p.y > 90 ? 'low' : 'up'); // the city beyond the rims
+    else {
+      ctx.fillStyle = '#07070a';
+      ctx.fillRect(0, 0, W, H);
+    }
+    for (const u of g.activeUnits) this.igniteOf(u); // the blades' ignition clocks, before any light is drawn
     this.terrain.draw(ctx, cam.x, cam.y, W, H);
     g.fx.drawDecals(ctx, cam);
+    if (g.world.puddles) this.drawPuddles(ctx, cam, dt);
+    this.drawSaberFloorTint(ctx, cam);
 
     const inView = (x, y, w, h) => x + w > cam.x - 4 && x < cam.x + W + 4 && y + h > cam.y - 4 && y < cam.y + H + 4;
 
     // --- flat layer: pads, debris, corpses
-    const standing = [];
+    // the depth-sorted list reuses its entries from frame to frame (no garbage per object per frame)
+    const standing = this.standing || (this.standing = []);
+    let ns = 0;
+    const put = (depth, prop, unit, pickup, scorch) => {
+      const e = standing[ns] || (standing[ns] = { depth: 0, prop: null, unit: null, pickup: null, scorch: null });
+      e.depth = depth;
+      e.prop = prop;
+      e.unit = unit;
+      e.pickup = pickup;
+      e.scorch = scorch;
+      ns++;
+    };
     for (const pr of g.world.props) {
       if (pr.hidden) continue; // placed but not shown yet (scripted)
-      const [rx, ry, rw, rh] = pr.rect;
-      if (!inView(rx, ry, rw, rh)) continue;
+      const r = pr.rect;
+      if (!inView(r[0], r[1], r[2], r[3])) continue;
       if (pr.flat) this.drawFrame(pr.frame, pr.sx, pr.sy);
-      else standing.push({ depth: pr.sortDepth, prop: pr });
+      else put(pr.sortDepth, pr, null, null, null);
     }
     for (const u of g.activeUnits) {
       if (!u.dead) continue;
@@ -200,13 +235,8 @@ export class Renderer {
     // --- ground markers: selection ellipses, click marks, strike targets
     this.drawGroundMarkers(ctx, cam);
 
-    // --- shadows: flat ellipses (original) or soft alpha blobs (remaster)
+    // --- shadows: the frame's own rendered shadow (sprite sheets), else a flat ellipse
     const shadow = (x, y, rx) => {
-      if (this.hd) {
-        this.smooth(true);
-        ctx.drawImage(this.shadow, x - cam.x - rx * 1.35, y - cam.y - rx * 0.68, rx * 2.7, rx * 1.36);
-        return;
-      }
       ctx.beginPath();
       ctx.ellipse(x - cam.x, y - cam.y, rx, rx * 0.5, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -215,6 +245,14 @@ export class Renderer {
     for (const u of g.activeUnits) {
       if (u.dead || u.hidden) continue;
       const s = worldToScreen(u.x, u.y);
+      const sf = u.frame().shadow;
+      if (sf) {
+        // fainter as the unit leaves the ground
+        ctx.globalAlpha = SHADOW_ALPHA / (1 + u.z * 0.6);
+        this.drawFrame(sf, s.x, s.y);
+        ctx.globalAlpha = 1;
+        continue;
+      }
       const r = u.kind === 'b2' ? 11 : u.kind === 'r2' ? 7 : u.kind === 'fighter' ? 30 : 9;
       shadow(s.x, s.y, r / (1 + u.z * 0.4));
     }
@@ -224,9 +262,11 @@ export class Renderer {
     }
 
     // --- depth-sorted standing objects
-    for (const u of g.activeUnits) if (!u.dead && !u.hidden) standing.push({ depth: u.x + u.y, unit: u });
-    for (const pk of g.pickups) standing.push({ depth: pk.x + pk.y, pickup: pk });
-    standing.sort((a, b) => a.depth - b.depth);
+    for (const u of g.activeUnits) if (!u.dead && !u.hidden) put(u.x + u.y, null, u, null, null);
+    for (const pk of g.pickups) put(pk.x + pk.y, null, null, pk, null);
+    for (const m of g.fx.scorches) put(m.depth ?? m.x + m.y, null, null, null, m);
+    standing.length = ns;
+    standing.sort(byDepth);
     const pDepth = p.x + p.y;
     for (const d of standing) {
       if (d.prop) {
@@ -234,14 +274,20 @@ export class Renderer {
         // Diablo-style: fade structures that hide the player.
         let alpha = 1;
         if (d.depth > pDepth && !p.dead) {
-          const [rx, ry, rw, rh] = pr.rect;
-          if (ps.x > rx + 4 && ps.x < rx + rw - 4 && ps.y - 30 > ry && ps.y - 20 < ry + rh && rh > 30) alpha = 0.45;
+          const r = pr.rect;
+          if (ps.x > r[0] + 4 && ps.x < r[0] + r[2] - 4 && ps.y - 30 > r[1] && ps.y - 20 < r[1] + r[3] && r[3] > 30) alpha = 0.45;
         }
         ctx.globalAlpha = alpha;
-        this.drawFrame(pr.frame, pr.sx, pr.sy);
+        // parked speeders hover: a slow bob of a pixel or so
+        const bob = pr.sheet && SHEET_PROPS[pr.sheet].bob ? Math.round(Math.sin(this.time * SHEET_PROPS[pr.sheet].bob + pr.phase) * 1.2) : 0;
+        this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
+        pr.alpha = alpha;
+        pr.bob = bob;
         ctx.globalAlpha = 1;
       } else if (d.unit) {
         this.drawUnit(d.unit);
+      } else if (d.scorch) {
+        g.fx.drawScorch(ctx, cam, d.scorch);
       } else if (d.pickup) {
         const pk = d.pickup;
         const s = worldToScreen(pk.x, pk.y, 0.15 + Math.sin(pk.t * 4) * 0.08);
@@ -259,10 +305,27 @@ export class Renderer {
 
     // --- lighting
     this.drawLighting(cam);
+    // transient lights on the characters' normal maps (sheets rendered with the normal pass)
+    if (this.relight !== false) {
+      ctx.globalCompositeOperation = 'lighter';
+      this.smooth(true);
+      relightUnits(ctx, g, cam, transientLights(g, cam, this.time), W, H);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    this.drawHitFlashes(ctx);
+    // --- the Force bending space (refraction of the lit picture)
+    this.drawRipples(ctx, cam);
 
     // --- additive glows
     ctx.globalCompositeOperation = 'lighter';
+    this.drawCityGlow(ctx, cam, dt);
+    this.drawSaberLight(ctx, cam);
     this.drawSabers(ctx, cam, dt);
+    for (const c of g.fx.saberClashes) {
+      // the saber-look preview's clashes, in the chosen style
+      const cp = worldToScreen(c.x, c.y, c.z);
+      drawClash(ctx, cp.x - cam.x, cp.y - cam.y, (1 - c.t / c.life) * (c.big ? 1 : 0.75), paletteFor(g.player.saberColor || [60, 130, 255]) || PALETTES.tcw.blue);
+    }
     this.drawBolts(ctx, cam);
     this.drawThrows(ctx, cam);
     g.fx.drawAdd(ctx, cam);
@@ -284,10 +347,9 @@ export class Renderer {
       this.ctx.drawImage(f.page, f.sx, f.sy, f.w, f.h, Math.round(x - f.ox - this.cam.x), Math.round(y - f.oy - this.cam.y), f.w, f.h);
       return;
     }
-    // a 2×-density (remaster) frame, snapped to device pixels
-    const D = this.D;
+    // a sheet rendered at another size than game pixels: scaled smoothly
     this.smooth(true);
-    this.ctx.drawImage(f.page, f.sx, f.sy, f.w, f.h, Math.round((x - f.ox * k - this.cam.x) * D) / D, Math.round((y - f.oy * k - this.cam.y) * D) / D, f.w * k, f.h * k);
+    this.ctx.drawImage(f.page, f.sx, f.sy, f.w, f.h, Math.round(x - f.ox * k - this.cam.x), Math.round(y - f.oy * k - this.cam.y), f.w * k, f.h * k);
   }
 
   smooth(on) {
@@ -298,14 +360,21 @@ export class Renderer {
     const ctx = this.ctx;
     const s = worldToScreen(u.x, u.y, u.z);
     const f = u.frame();
-    this.drawFrame(f, s.x, s.y);
-    if (u.flash > 0) {
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = 0.55;
-      this.drawFrame(f, s.x, s.y);
+    // Signature Move: the last two poses of the spin linger faintly behind him (motion blur)
+    const sf = u.anim === 'sig' && u.sigFrame ? u.sigFrame() : -1;
+    if (sf >= SIG.spin[0] + 1 && sf <= SIG.hit + 1) {
+      const a = u.sprites.anims.sig;
+      const dir = a.data.findIndex((row) => row.includes(f));
+      for (const [back, alpha] of [[2, 0.14], [1, 0.26]]) {
+        const pf = dir >= 0 && a.data[dir][sf - back];
+        if (!pf) continue;
+        ctx.globalAlpha = alpha;
+        this.drawFrame(pf, s.x, s.y);
+      }
       ctx.globalAlpha = 1;
-      ctx.globalCompositeOperation = 'source-over';
     }
+    this.drawFrame(f, s.x, s.y);
+    if (u.flash > 0) (this.flashUnits ||= []).push(u); // white, after the light map (hitfeel.js)
     if (u.stun > 0 && !u.choke && u.kind !== 'player') {
       const t = this.time * 6;
       ctx.fillStyle = '#ffe680';
@@ -313,6 +382,218 @@ export class Renderer {
         const a = t + (i * Math.PI * 2) / 3;
         ctx.fillRect(Math.round(s.x - this.cam.x + Math.cos(a) * 7), Math.round(s.y - this.cam.y - 52 + Math.sin(a) * 3), 2, 2);
       }
+    }
+  }
+
+  /** Units just hit turn white for a moment (drawn after the light map so the white stays white). */
+  drawHitFlashes(ctx) {
+    const list = this.flashUnits;
+    if (!list || !list.length) return;
+    const c = (this.flashCanvas ||= document.createElement('canvas'));
+    const x2 = c.getContext('2d');
+    for (const u of list) {
+      const f = u.frame();
+      const k = f.k || 1;
+      const w = Math.ceil(f.w * k);
+      const h = Math.ceil(f.h * k);
+      if (c.width < w || c.height < h) {
+        c.width = Math.max(c.width, w);
+        c.height = Math.max(c.height, h);
+      }
+      x2.globalCompositeOperation = 'copy';
+      x2.imageSmoothingEnabled = !!f.k;
+      x2.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, w, h);
+      x2.globalCompositeOperation = 'source-in';
+      x2.fillStyle = '#ffffff';
+      x2.fillRect(0, 0, w, h);
+      const s = worldToScreen(u.x, u.y, u.z);
+      ctx.globalAlpha = Math.min(1, u.flash / 0.05) * 0.85;
+      this.smooth(false);
+      ctx.drawImage(c, 0, 0, w, h, Math.round(s.x - f.ox * k - this.cam.x), Math.round(s.y - f.oy * k - this.cam.y), w, h);
+    }
+    ctx.globalAlpha = 1;
+    list.length = 0;
+  }
+
+  /**
+   * Force ripples: a ring that bends the already-lit picture outward, like
+   * heat haze, with a faint bright leading edge. No colour of its own
+   * (ART_GUIDE.md §8). Works on the few pixels round each ring only.
+   */
+  drawRipples(ctx, cam) {
+    const rips = this.game.fx.ripples;
+    const post = this.post;
+    const gpu = post && post.active ? (post.ripples.length = 0, post.ripples) : null;
+    if (!rips.length) return;
+    const W = this.w;
+    const H = this.h;
+    for (const r of rips) {
+      const k = r.t / r.life;
+      const c = worldToScreen(r.x, r.y, 0.6);
+      const cx = c.x - cam.x;
+      const cy = c.y - cam.y;
+      const R = r.r * PX_PER_UNIT * (0.15 + 0.85 * Math.sqrt(k));
+      const band = 6 + 6 * k;
+      const amp = r.amp * (1 - k);
+      const x0 = Math.max(0, Math.floor(cx - R - band * 1.6));
+      const x1 = Math.min(W, Math.ceil(cx + R + band * 1.6));
+      const y0 = Math.max(0, Math.floor(cy - (R + band * 1.6) / 2));
+      const y1 = Math.min(H, Math.ceil(cy + (R + band * 1.6) / 2));
+      const w = x1 - x0;
+      const h = y1 - y0;
+      if (w <= 2 || h <= 2) continue;
+      // the cone's direction on screen (in unsquashed iso space)
+      let ca = 0;
+      if (r.ang !== null) {
+        const e = worldToScreen(r.x + Math.cos(r.ang), r.y + Math.sin(r.ang), 0.6);
+        ca = Math.atan2((e.y - c.y) * 2, e.x - c.x);
+      }
+      // with post-processing the shader bends the picture on the GPU (post.js, same maths);
+      // reading pixels back to the CPU stalls the GPU, so this loop is only the fallback
+      if (gpu) {
+        if (gpu.length < 4) gpu.push([cx, cy, R, band, amp, k, ca, r.ang !== null ? r.half : -1]);
+        continue;
+      }
+      const img = ctx.getImageData(x0, y0, w, h);
+      // a copy of the untouched pixels to pull from, in a buffer kept between frames
+      if (!this.ripSrc || this.ripSrc.length < img.data.length) this.ripSrc = new Uint8ClampedArray(img.data.length * 2);
+      const src = this.ripSrc;
+      src.set(img.data);
+      const out = img.data;
+      for (let y = 0; y < h; y++) {
+        const dy = (y + y0 - cy) * 2;
+        for (let x = 0; x < w; x++) {
+          const dx = x + x0 - cx;
+          const d = Math.hypot(dx, dy) || 1;
+          const e = (d - R) / band;
+          if (e < -1.6 || e > 1.6) continue;
+          let m = Math.exp(-e * e * 2);
+          if (r.ang !== null) {
+            let da = Math.abs(Math.atan2(dy, dx) - ca);
+            if (da > Math.PI) da = Math.PI * 2 - da;
+            if (da > r.half) continue;
+            m *= Math.min(1, (r.half - da) * 4);
+          }
+          const off = (amp * 1.6 * m * -e) / 0.3; // peaks at ±amp; pulls from inside on the leading edge, outside behind it
+          const sx = Math.round(x - (dx / d) * off);
+          const sy = Math.round(y - ((dy / d) * off) / 2);
+          if (sx < 0 || sy < 0 || sx >= w || sy >= h) continue;
+          const si = (sy * w + sx) * 4;
+          const di = (y * w + x) * 4;
+          const lum = 1 + 0.32 * m * (1 - k) * (e > 0 ? 1 : 0.25);
+          out[di] = src[si] * lum;
+          out[di + 1] = src[si + 1] * lum;
+          out[di + 2] = src[si + 2] * lum;
+        }
+      }
+      ctx.putImageData(img, x0, y0);
+    }
+  }
+
+  /**
+   * The city sprites' light, after the light map so it glows: each neon
+   * layer at its flickering level, the neon's reflection on the wet street,
+   * and the billboards' holograms cycling through their ads.
+   */
+  /** The camera region (world tiles) the unit is in, or the nearest one. */
+  camRegion(regions, u) {
+    let best = null;
+    let bd = Infinity;
+    for (const r of regions) {
+      const dx = Math.max(r.x0 - u.x, 0, u.x - r.x1);
+      const dy = Math.max(r.y0 - u.y, 0, u.y - r.y1);
+      const d = dx + dy;
+      if (d < bd) {
+        bd = d;
+        best = r;
+      }
+    }
+    return best;
+  }
+
+  drawCityGlow(ctx, cam, dt) {
+    const W = this.w;
+    const H = this.h;
+    for (const pr of this.game.world.props) {
+      if (!pr.sheet || pr.hidden) continue;
+      const r = pr.rect;
+      if (r[0] + r[2] < cam.x || r[0] > cam.x + W || r[1] + r[3] < cam.y || r[1] > cam.y + H + 60) continue;
+      const L = pr.layers;
+      const level = neonLevel(pr.neon, L.meta.neon, this.time, dt);
+      ctx.globalAlpha = Math.min(1, level) * 0.85;
+      this.drawFrame(L.reflect, pr.sx, pr.sy);
+      ctx.globalAlpha = Math.min(1, level) * (pr.alpha ?? 1);
+      this.drawFrame(L.neon, pr.sx, pr.sy + (pr.bob || 0));
+      ctx.globalAlpha = 1;
+      const holo = SHEET_PROPS[pr.sheet].holo;
+      if (holo) this.drawHologram(ctx, cam, pr, holo, level);
+    }
+  }
+
+  /** A translucent hologram ad in a billboard's frame: a new one every few seconds, with a glitch between. */
+  drawHologram(ctx, cam, pr, h, level) {
+    const c = worldToScreen(pr.x + h.x, pr.y + h.y, (h.z0 + h.z1) / 2);
+    const w = h.hw * 2 * PX_PER_UNIT - 4;
+    const ht = (h.z1 - h.z0) * Z_PX - 4;
+    const x0 = Math.round(c.x - cam.x - w / 2);
+    const y0 = Math.round(c.y - cam.y - ht / 2);
+    const T = this.time + pr.phase * 3;
+    const slot = Math.floor(T / 6);
+    const into = T % 6;
+    const glitch = into < 0.25 || (into > 5.85 && Math.random() < 0.5);
+    const ad = ADS[(slot + Math.floor(pr.phase)) % ADS.length];
+    const [r, g, b] = ad.color;
+    const a = (glitch ? 0.35 : 0.6) * Math.min(1, level + 0.3);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x0, y0, w, ht);
+    ctx.clip();
+    const grd = ctx.createLinearGradient(0, y0, 0, y0 + ht);
+    grd.addColorStop(0, `rgba(${r},${g},${b},${a * 0.45})`);
+    grd.addColorStop(1, `rgba(${r},${g},${b},${a * 0.15})`);
+    ctx.fillStyle = grd;
+    ctx.fillRect(x0, y0, w, ht);
+    ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
+    ctx.strokeStyle = `rgba(${r},${g},${b},${a})`;
+    ad.draw(ctx, x0 + (glitch ? (Math.random() - 0.5) * 6 : 0), y0, w, ht, T);
+    // scanlines rolling down
+    ctx.fillStyle = `rgba(${r},${g},${b},${a * 0.25})`;
+    for (let y = (T * 12) % 3; y < ht; y += 3) ctx.fillRect(x0, y0 + y, w, 1);
+    ctx.restore();
+  }
+
+  /** Puddles on the street: a dark sheen, and rings where drips land. */
+  drawPuddles(ctx, cam, dt) {
+    for (const pd of this.game.world.puddles) {
+      const s = worldToScreen(pd.x, pd.y);
+      const sx = s.x - cam.x;
+      const sy = s.y - cam.y;
+      const R = pd.r * PX_PER_UNIT;
+      if (sx < -R || sy < -R || sx > this.w + R || sy > this.h + R) continue;
+      ctx.save();
+      ctx.translate(Math.round(sx), Math.round(sy));
+      ctx.scale(1, 0.5);
+      const g = ctx.createRadialGradient(0, 0, R * 0.2, 0, 0, R);
+      g.addColorStop(0, 'rgba(14,12,26,0.55)');
+      g.addColorStop(0.8, 'rgba(30,26,44,0.35)');
+      g.addColorStop(1, 'rgba(30,26,44,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, R, 0, Math.PI * 2);
+      ctx.fill();
+      // drips: now and then one lands and spreads a ring
+      if (Math.random() < dt * 0.9 * pd.r) pd.drops.push({ x: (Math.random() - 0.5) * R, y: (Math.random() - 0.5) * R, t: 0 });
+      ctx.lineWidth = 1;
+      for (const d of pd.drops) {
+        d.t += dt;
+        const k = d.t / 1.1;
+        ctx.strokeStyle = `rgba(190,210,255,${0.45 * (1 - k)})`;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y * 2, 1 + k * R * 0.45, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      pd.drops = pd.drops.filter((d) => d.t < 1.1);
+      ctx.restore();
     }
   }
 
@@ -393,19 +674,56 @@ export class Renderer {
       const fl = 1 + Math.sin(this.time * 3 + L.x * 7) * L.flicker;
       spot(L.x, L.y, L.z, L.r, L.g, L.b, L.rad * fl, 0.55);
     }
+    // a lit blade lights its surroundings (saberLight.js: inverse-square falloff with a hot core, the
+    // blade colour's reflected tints): along the blade, and the floor under it as an iso ellipse
+    // along the blade's projection that stretches along a swing; the blade's flicker goes in
+    const fl = flickerAt(this.time);
     for (const u of g.activeUnits) {
       if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) continue;
-      const [r, gg, b] = u.saberColor;
-      spot(u.x, u.y, 1.2 + u.z, Math.min(255, r * 1.4), Math.min(255, gg * 1.25), b, 70, 0.55 + (u.deflectFlash > 0 ? 0.4 : 0));
+      const pal = paletteFor(u.saberColor);
+      const f = u.frame();
+      const s = worldToScreen(u.x, u.y, u.z);
+      const sx = s.x - cam.x;
+      const sy = s.y - cam.y;
+      const b = f.markers.saberBase;
+      const e = f.markers.saberTip;
+      if (!pal || !b || !e) {
+        const [r, gg, bl] = u.saberColor;
+        spot(u.x, u.y, 1.2 + u.z, r, gg, bl, 70, 0.6);
+        continue;
+      }
+      const t = tintFor(u.saberColor);
+      const p = preset();
+      const sweep = sweepOf(u, this.time);
+      const o = this.saberPool(u, cam);
+      const a = (0.75 + (sweep ? 0.3 * sweep.fresh : 0) + (u.deflectFlash > 0 ? 0.4 : 0)) * p.mapA * fl * o.light;
+      for (const k of ['saber', 'saber2']) {
+        const bb = f.markers[k + 'Base'];
+        const ee = f.markers[k + 'Tip'];
+        if (!bb || !ee) continue;
+        // the blade's middle, a little towards the tip
+        drawLight(l, sx + (bb[0] + ee[0]) * 0.5 + (ee[0] - bb[0]) * 0.15, sy + (bb[1] + ee[1]) * 0.5 + (ee[1] - bb[1]) * 0.15, t, p, a);
+      }
+      drawGround(l, o.gx, o.gy, o.dx, o.dy, t, p, sweep, a * 0.6, 'lighter', 0, o.spread);
     }
     for (const t of g.throws) spot(t.x, t.y, t.z, 90, 160, 255, 60, 0.6);
     for (const b of g.bolts) spot(b.x, b.y, b.z, b.color === 'red' ? 255 : 90, b.color === 'red' ? 70 : 140, b.color === 'red' ? 60 : 255, 26, 0.6);
     for (const fl of g.fx.lights) spot(fl.x, fl.y, fl.z, fl.r, fl.g, fl.b, fl.rad, 0.8 * (1 - fl.t / fl.life));
+    // speeders passing overhead sweep their light across the street below
+    for (const L of g.world.traffic || []) {
+      if (!L.over) continue;
+      const len = Math.hypot(L.x1 - L.x0, L.y1 - L.y0);
+      for (let d = (this.time * L.speed) % L.gap; d < len; d += L.gap) {
+        const x = L.x0 + ((L.x1 - L.x0) / len) * d;
+        const y = L.y0 + ((L.y1 - L.y0) / len) * d;
+        if (Math.abs(x - p.x) < 16 && Math.abs(y - p.y) < 16) spot(x, y, 0, 210, 220, 255, 70, 0.22);
+      }
+    }
     for (const u of g.activeUnits) if (u.choke) spot(u.x, u.y, 1.2 + u.z, 160, 60, 60, 40, 0.5);
     // composite
     const ctx = this.ctx;
     ctx.globalCompositeOperation = 'multiply';
-    this.smooth(this.hd); // remaster: the light map is smoothly upscaled
+    this.smooth(false);
     ctx.drawImage(this.light, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
   }
@@ -415,17 +733,38 @@ export class Renderer {
    * the blade core; the glow is added only along the stretches the baker
    * found in front of the body, so a blade behind Anakin's back stays hidden.
    */
+  /**
+   * The blade's ignition clock: stamped when the blade comes on (units.setSaber raises
+   * `saberIgnite`; a direct `saberLit = true` is caught by the change), read as the ignition's
+   * state (saberStyle.ignition) for the frames it lasts. A unit first seen lit does not ignite.
+   */
+  igniteOf(u) {
+    const lit = !!u.saberColor && u.saberLit !== false;
+    if (lit && (u.saberIgnite || u.wasLit === false)) u.igniteT = this.time;
+    u.saberIgnite = false;
+    u.wasLit = lit;
+    return lit && u.igniteT != null ? ignition(this.time - u.igniteT) : null;
+  }
+
+  /** The ignition's state for a unit this frame (igniteOf stamped it at the frame's start). */
+  igniting(u) {
+    return u.igniteT != null && u.saberLit !== false ? ignition(this.time - u.igniteT) : null;
+  }
+
   drawSabers(ctx, cam, dt) {
     for (const u of this.game.activeUnits) {
       const tr = u.saberTrail;
       if (tr) {
         for (const t of tr) t.t += dt;
-        while (tr.length && tr[0].t > 0.09) tr.shift();
+        while (tr.length && tr[0].t > TRAIL_LIFE) tr.shift();
       }
+      const ign = this.igniting(u);
       if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) continue;
       const f = u.frame();
       const s = worldToScreen(u.x, u.y, u.z);
-      const swinging = u.anim.startsWith('attack') || u.anim === 'leap' || u.anim === 'parry';
+      const sf = u.anim === 'sig' && u.sigFrame ? u.sigFrame() : -1;
+      // the Signature Move leaves its trail only through the spin and the cut (frames 9-13)
+      const swinging = u.anim.startsWith('attack') || u.anim === 'leap' || u.anim === 'parry' || (sf >= SIG.spin[0] + 1 && sf <= SIG.spin[1]);
       for (const k of ['saber', 'saber2']) {
         const b = f.markers[k + 'Base'];
         const e = f.markers[k + 'Tip'];
@@ -435,16 +774,37 @@ export class Renderer {
         const tx = s.x + e[0] - cam.x;
         const ty = s.y + e[1] - cam.y;
         const segs = f.blades ? f.blades[k] : [[0, 1]];
+        const pal = paletteFor(u.saberColor);
+        if (pal) {
+          // the saber look (saberStyle.js): trail by style, colours by palette
+          const hist = ((u.saberHist ||= {})[k] ||= []);
+          record(hist, bx + cam.x, by + cam.y, tx + cam.x, ty + cam.y, this.time);
+          if (swinging) u.trailUntil = this.time + trailWindow() + 0.05;
+          if (this.time <= (u.trailUntil || 0)) drawTrail(ctx, hist, this.time, cam, pal);
+          const flash = u.deflectFlash > 0 ? 1.6 : u.clashFlash > 0 ? 1.8 : 1;
+          // igniting: only the stretch that has run out of the hilt so far, the tip fat and
+          // the glow overshooting (drawBlade), the white spark at the hilt
+          const grow = ign ? ign.grow : 1;
+          for (const [s0, s1] of segs) {
+            const e1 = Math.min(s1, grow);
+            if (e1 - s0 < 0.02) continue;
+            drawBlade(ctx, bx + (tx - bx) * s0, by + (ty - by) * s0, bx + (tx - bx) * e1, by + (ty - by) * e1, pal, flash, this.time, e1 === grow ? ign : null);
+          }
+          if (ign && ign.spark > 0) drawSpark(ctx, bx, by, pal, ign.spark);
+          continue;
+        }
         // swing trail (world-anchored so it survives camera motion)
         const trail = (u.saberTrail ||= []);
         if (swinging) trail.push({ k, bx: bx + cam.x, by: by + cam.y, tx: tx + cam.x, ty: ty + cam.y, t: 0 });
         const pts = trail.filter((t) => t.k === k);
         if (pts.length > 1) {
+          // the swept band fades with age; its outer edge (the tip's path) stays bright longest
           const [r, g, bl] = u.saberColor;
-          ctx.fillStyle = `rgba(${r},${g},${bl},0.2)`;
           for (let i = 1; i < pts.length; i++) {
             const A = pts[i - 1];
             const B = pts[i];
+            const a = 1 - B.t / TRAIL_LIFE;
+            ctx.fillStyle = `rgba(${r},${g},${bl},${0.32 * a})`;
             ctx.beginPath();
             ctx.moveTo(A.bx - cam.x, A.by - cam.y);
             ctx.lineTo(A.tx - cam.x, A.ty - cam.y);
@@ -452,6 +812,12 @@ export class Renderer {
             ctx.lineTo(B.bx - cam.x, B.by - cam.y);
             ctx.closePath();
             ctx.fill();
+            ctx.strokeStyle = `rgba(${Math.min(255, r + 120)},${Math.min(255, g + 110)},${Math.min(255, bl + 60)},${0.7 * a * a})`;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(A.tx - cam.x, A.ty - cam.y);
+            ctx.lineTo(B.tx - cam.x, B.ty - cam.y);
+            ctx.stroke();
           }
         }
         const flash = u.deflectFlash > 0 ? 1.6 : u.clashFlash > 0 ? 1.8 : 1;
@@ -459,6 +825,87 @@ export class Renderer {
           if (s1 - s0 < 0.02) continue;
           this.glowLine(ctx, bx + (tx - bx) * s0, by + (ty - by) * s0, bx + (tx - bx) * s1, by + (ty - by) * s1, u.saberColor, flash, u.saberCore);
         }
+      }
+    }
+  }
+
+  /**
+   * Where a unit's blade lights the floor: the tints, the sweep, the ground point under the
+   * blade's middle (screen px), the blade vector and the floor's brightness there (0..1, as the
+   * light map leaves it). null without a lit blade.
+   */
+  saberPool(u, cam) {
+    if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) return null;
+    const f = u.frame();
+    const b = f.markers.saberBase;
+    const e = f.markers.saberTip;
+    if (!b || !e) return null;
+    const o = this.pool || (this.pool = { t: null, p: null, sweep: null, gx: 0, gy: 0, dx: 0, dy: 0, lx: 0, ly: 0, lum: 0, light: 1, spread: 1 });
+    const amb = this.game.world.ambient || AMBIENT;
+    const s = worldToScreen(u.x, u.y, u.z);
+    const g0 = worldToScreen(u.x, u.y, 0);
+    const mx = (b[0] + e[0]) / 2;
+    const my = (b[1] + e[1]) / 2;
+    o.t = tintFor(u.saberColor);
+    o.p = preset();
+    o.sweep = sweepOf(u, this.time);
+    o.lx = s.x - cam.x + mx; // the blade's middle: where its light comes from
+    o.ly = s.y - cam.y + my;
+    o.gx = g0.x - cam.x + mx * 0.75;
+    o.gy = g0.y - cam.y + Math.max(-8, Math.min(8, my * 0.15));
+    o.dx = e[0] - b[0];
+    o.dy = e[1] - b[1];
+    o.lum = Math.min(1, this.terrain.lumAt(u.x, u.y) * ((amb[0] + amb[1] + amb[2]) / 765) * 1.7);
+    // igniting: the light flashes with the spark and settles, the pool wider for a moment
+    const ign = this.igniting(u);
+    o.light = ign ? ign.light : 1;
+    o.spread = ign ? ign.spread : 1;
+    return o;
+  }
+
+  /** A bright floor takes the blades' colour (saberLight.drawGroundTint), under the sprites. */
+  drawSaberFloorTint(ctx, cam) {
+    const fl = flickerAt(this.time);
+    for (const u of this.game.activeUnits) {
+      const o = this.saberPool(u, cam);
+      if (!o || o.lum <= 0.2) continue;
+      drawGroundTint(ctx, o.gx, o.gy, o.dx, o.dy, o.t, o.p, o.sweep, (SABER.glow || 1) * fl * o.light, o.lum, o.spread);
+    }
+  }
+
+  /**
+   * The blades' light on characters beyond what the light map gives: each sprite's own colours
+   * times the blade's light, fading from the blade ('lighter') — sheets with a normal pass get
+   * the directional version instead (relight.js).
+   */
+  drawSaberLight(ctx, cam) {
+    const g = this.game;
+    const fl = flickerAt(this.time);
+    for (const u of g.activeUnits) {
+      const o = this.saberPool(u, cam);
+      if (!o) continue;
+      const { t, p, sweep, lx, ly } = o;
+      // the floor: the light's ellipse added over the lit picture (the light map only darkens or
+      // tints; this is the glow that punches through on a dark floor), along the blade, streaked
+      // while swinging; a bright floor took the hue instead (drawSaberFloorTint)
+      drawGround(ctx, o.gx, o.gy, o.dx, o.dy, t, p, sweep, (SABER.glow || 1) * fl * o.light, 'lighter', o.lum, o.spread);
+      // the characters it reaches (itself and the nearest others, at most four)
+      ctx.globalCompositeOperation = 'lighter';
+      const R = (p.r0 * p.reach) / PX_PER_UNIT; // world units the light reaches
+      const near = this.saberNear || (this.saberNear = []);
+      near.length = 0;
+      for (const v of g.activeUnits) {
+        if (v.dead || v.hidden || v.frame().normal) continue; // normal-mapped sheets: relightUnits
+        if (Math.hypot(v.x - u.x, v.y - u.y) <= R) near.push(v);
+      }
+      if (near.length > 4) near.sort((a, c) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(c.x - u.x, c.y - u.y)).length = 4;
+      const boost = (1 + (sweep ? 0.35 * sweep.fresh : 0)) * fl * o.light;
+      for (const v of near) {
+        const vf = v.frame();
+        const vs = worldToScreen(v.x, v.y, v.z);
+        const k = vf.k || 1;
+        // the wielder: the arm and side by the blade catch it, the rest little
+        lightCharacter(ctx, vf, Math.round(vs.x - vf.ox * k - cam.x), Math.round(vs.y - vf.oy * k - cam.y), t, p, (v === u ? 0.55 : 1.2) * boost * (SABER.glow || 1), lx, ly);
       }
     }
   }
@@ -489,11 +936,18 @@ export class Renderer {
       const len = Math.hypot(L.x1 - L.x0, L.y1 - L.y0);
       const ux = (L.x1 - L.x0) / len;
       const uy = (L.y1 - L.y0) / len;
-      for (let d = (t * L.speed) % L.gap; d < len; d += L.gap) {
+      for (let d = (t * L.speed) % L.gap, i = 0; d < len; d += L.gap, i++) {
         const x = L.x0 + ux * d;
         const y = L.y0 + uy * d;
         const a = worldToScreen(x, y, L.z);
         if (a.x < cam.x - 20 || a.y < cam.y - 20 || a.x > cam.x + this.w + 20 || a.y > cam.y + this.h + 20) continue;
+        if (L.over) {
+          // high overhead: a small craft, a white headlight and a coloured tail light
+          const b = worldToScreen(x - ux * 0.5, y - uy * 0.5, L.z);
+          const col = SPEEDER_COLORS[(((i + Math.floor((t * L.speed) / L.gap)) % SPEEDER_COLORS.length) + SPEEDER_COLORS.length) % SPEEDER_COLORS.length];
+          this.glowLine(ctx, b.x - cam.x, b.y - cam.y, a.x - cam.x, a.y - cam.y, col, 0.4, 'rgba(255,250,240,0.6)');
+          continue;
+        }
         const b = worldToScreen(x - ux * 0.9, y - uy * 0.9, L.z);
         this.glowLine(ctx, b.x - cam.x, b.y - cam.y, a.x - cam.x, a.y - cam.y, [255, 120, 90], 0.7, 'rgba(255,240,220,0.95)');
       }
@@ -505,6 +959,10 @@ export class Renderer {
       const a = worldToScreen(b.x, b.y, b.z);
       const e = worldToScreen(b.x - Math.cos(b.ang) * 0.6, b.y - Math.sin(b.ang) * 0.6, b.z);
       const rgb = b.color === 'red' ? [255, 40, 30] : [60, 140, 255];
+      // a soft halo round the head, then the bolt itself
+      ctx.globalAlpha = 0.75;
+      ctx.drawImage(glowSprite(rgb), a.x - cam.x - 9, a.y - cam.y - 9, 18, 18);
+      ctx.globalAlpha = 1;
       this.glowLine(ctx, a.x - cam.x, a.y - cam.y, e.x - cam.x, e.y - cam.y, rgb, 1.3);
     }
   }
@@ -563,12 +1021,15 @@ export class Renderer {
 
   drawOverlay() {
     const o = this.octx;
-    o.setTransform(1, 0, 0, 1, 0, 0);
-    o.clearRect(0, 0, this.overlay.width, this.overlay.height);
-    o.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     const g = this.game;
     const cam = this.cam;
     const S = this.scale;
+    let n = 0; // things drawn; an empty overlay stays untouched so the compositor needn't re-upload it
+    if (this.overlayUsed) {
+      o.setTransform(1, 0, 0, 1, 0, 0);
+      o.clearRect(0, 0, this.overlay.width, this.overlay.height);
+    }
+    o.setTransform(this.odpr, 0, 0, this.odpr, 0, 0);
     // small health bars for damaged units near the player
     for (const u of g.activeUnits) {
       if (u.dead || u === g.player || u.hp >= u.maxHp) continue;
@@ -578,6 +1039,7 @@ export class Renderer {
       const x = (s.x - cam.x) * S;
       const y = (s.y - cam.y - top) * S;
       const w = 34;
+      n++;
       o.fillStyle = 'rgba(0,0,0,0.55)';
       o.fillRect(x - w / 2 - 1, y - 1, w + 2, 4);
       o.fillStyle = u.team === 'cis' ? '#e2483d' : '#5cc8ff';
@@ -592,8 +1054,9 @@ export class Renderer {
       const s = worldToScreen(u.x, u.y);
       const x = (s.x - cam.x) * S;
       const y = (s.y - cam.y - (u.sprite === 'r2' ? 30 : 56)) * S;
+      n++;
       o.textAlign = 'center';
-      o.font = '12px Galmuri11, sans-serif';
+      o.font = canvasFont(600, 12, 'body');
       o.fillStyle = 'rgba(0,0,0,0.6)';
       o.fillText(u.name, x + 1, y + 1);
       o.fillStyle = '#e8eef4';
@@ -602,31 +1065,143 @@ export class Renderer {
       const giver = u.npcId;
       const mark = q.readyFrom(giver) ? '?' : q.offerFrom(giver) ? '!' : '';
       if (mark) {
-        o.font = '20px Michroma, sans-serif';
+        o.font = canvasFont(700, 20, 'display');
         o.fillStyle = '#e9c47a';
         o.fillText(mark, x, y - 16);
       }
       if (d < 2.6 && !g.talkingTo) {
-        o.font = '11px Galmuri11, sans-serif';
+        o.font = canvasFont(500, 11, 'body');
         o.fillStyle = 'rgba(233,196,122,0.95)';
         o.fillText(this.touchMode ? '대화 버튼으로 말 걸기' : '[E] 대화', x, y + 16);
       }
       o.textAlign = 'start';
     }
     g.fx.drawText(o, cam, S);
+    n += g.fx.texts.length;
+    n += this.drawBubbles(o, cam, S);
+    this.overlayUsed = n > 0;
+  }
+
+  /** Speech bubbles over people's heads, at screen resolution. Returns how many were drawn. */
+  drawBubbles(o, cam, S) {
+    const g = this.game;
+    let n = 0;
+    o.font = canvasFont(500, 12, 'body');
+    o.textAlign = 'center';
+    o.textBaseline = 'middle';
+    for (const b of g.bubbles) {
+      const u = b.u;
+      if (u.hidden || dist(u.x, u.y, g.player.x, g.player.y) > 18) continue;
+      const s = worldToScreen(u.x, u.y, u.z);
+      const x = (s.x - cam.x) * S;
+      const y = (s.y - cam.y - (u.sprite === 'r2' ? 34 : 60)) * S;
+      // fade in and out, a little lift as it appears
+      const a = Math.min(1, b.t * 6, (b.life - b.t) * 3);
+      const lift = (1 - Math.min(1, b.t * 6)) * 6;
+      const lines = wrap(o, b.text, 190);
+      const w = Math.max(...lines.map((l) => o.measureText(l).width)) + 16;
+      const h = lines.length * 15 + 10;
+      const bx = Math.round(x - w / 2);
+      const by = Math.round(y - h - 8 + lift);
+      const guard = u.kind === 'patrol';
+      n++;
+      o.globalAlpha = a;
+      o.fillStyle = guard ? 'rgba(40,14,16,0.88)' : 'rgba(14,18,26,0.85)';
+      o.strokeStyle = guard ? 'rgba(230,90,80,0.9)' : 'rgba(200,220,240,0.55)';
+      o.lineWidth = 1;
+      o.beginPath();
+      o.roundRect(bx + 0.5, by + 0.5, w, h, 6);
+      o.moveTo(x - 5, by + h + 0.5);
+      o.lineTo(x, by + h + 7);
+      o.lineTo(x + 5, by + h + 0.5);
+      o.fill();
+      o.stroke();
+      o.fillStyle = guard ? '#ffd8d0' : '#e8eef4';
+      lines.forEach((l, i) => o.fillText(l, x, by + 12 + i * 15));
+      o.globalAlpha = 1;
+    }
+    o.textAlign = 'start';
+    o.textBaseline = 'alphabetic';
+    return n;
   }
 }
 
-/** A soft elliptical contact shadow (drawn squashed to 2:1). */
-function softShadow() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const x = c.getContext('2d');
-  const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
-  g.addColorStop(0, 'rgba(0,0,0,0.5)');
-  g.addColorStop(0.55, 'rgba(0,0,0,0.32)');
-  g.addColorStop(1, 'rgba(0,0,0,0)');
-  x.fillStyle = g;
-  x.fillRect(0, 0, 64, 64);
-  return c;
+/** Break text into lines no wider than `max` px (at the context's font). */
+function wrap(o, text, max) {
+  const out = [];
+  let line = '';
+  for (const word of text.split(' ')) {
+    const t = line ? line + ' ' + word : word;
+    if (o.measureText(t).width > max && line) {
+      out.push(line);
+      line = word;
+    } else line = t;
+  }
+  if (line) out.push(line);
+  return out;
 }
+
+/** Width and depth of a footprint polygon. */
+function extent(poly) {
+  const xs = poly.map((p) => p[0]);
+  const ys = poly.map((p) => p[1]);
+  return [Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
+}
+
+// tail lights of the craft passing high over the undercity
+const SPEEDER_COLORS = [[255, 90, 120], [90, 200, 255], [255, 190, 90], [200, 120, 255]];
+
+// the billboards' hologram ads: abstract shapes and glyph rows, no readable text
+const glyphRow = (ctx, x, y, w, seed) => {
+  let cx = x;
+  for (let i = 0; cx < x + w; i++) {
+    const n = ((seed * 9301 + i * 49297) % 233280) / 233280;
+    const gw = 2 + Math.floor(n * 4);
+    ctx.fillRect(cx, y, gw, n > 0.5 ? 3 : 2);
+    if (n > 0.7) ctx.fillRect(cx, y - 2, 1, 2);
+    cx += gw + 2;
+  }
+};
+const ADS = [
+  { color: [80, 230, 255], draw(ctx, x, y, w, h, t) {
+    // a drink: a tilted glass rotating, rings of fizz
+    const cx = x + w * 0.3;
+    const cy = y + h * 0.55;
+    const sw = Math.abs(Math.cos(t * 1.5)) * 9 + 2;
+    ctx.fillRect(cx - sw / 2, cy - 12, sw, 22);
+    for (let i = 0; i < 4; i++) ctx.fillRect(cx - 1 + Math.sin(t * 3 + i) * 3, cy - 14 - ((t * 10 + i * 5) % 14), 2, 2);
+    glyphRow(ctx, x + w * 0.52, y + h * 0.3, w * 0.42, 3);
+    glyphRow(ctx, x + w * 0.52, y + h * 0.55, w * 0.3, 7);
+  } },
+  { color: [255, 80, 190], draw(ctx, x, y, w, h, t) {
+    // a speeder: a sleek wedge flying through, speed lines
+    const px = x + ((t * 30) % (w + 30)) - 15;
+    ctx.beginPath();
+    ctx.moveTo(px + 16, y + h * 0.5);
+    ctx.lineTo(px - 10, y + h * 0.36);
+    ctx.lineTo(px - 14, y + h * 0.6);
+    ctx.closePath();
+    ctx.fill();
+    for (let i = 0; i < 5; i++) ctx.fillRect(px - 30 - i * 7, y + h * (0.4 + i * 0.05), 6, 1);
+    glyphRow(ctx, x + 4, y + h * 0.82, w * 0.6, 11);
+  } },
+  { color: [255, 190, 80], draw(ctx, x, y, w, h, t) {
+    // a spinning emblem and a price in glyphs
+    const cx = x + w * 0.5;
+    const cy = y + h * 0.45;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 10 * Math.abs(Math.cos(t * 2)) + 1, 10, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillRect(cx - 1, cy - 6, 2, 12);
+    glyphRow(ctx, x + w * 0.2, y + h * 0.85, w * 0.6, 5);
+  } },
+  { color: [140, 255, 170], draw(ctx, x, y, w, h, t) {
+    // a scrolling ticker over pulsing bars
+    for (let i = 0; i < 8; i++) {
+      const bh = (Math.sin(t * 4 + i) * 0.5 + 0.5) * h * 0.5 + 3;
+      ctx.fillRect(x + 6 + i * ((w - 12) / 8), y + h * 0.75 - bh, (w - 12) / 8 - 2, bh);
+    }
+    glyphRow(ctx, x - ((t * 20) % 40), y + h * 0.88, w + 40, 13);
+  } },
+];

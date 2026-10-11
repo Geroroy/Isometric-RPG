@@ -1,0 +1,52 @@
+{
+ "name": "marketStall",
+ "size": 110,
+ "window": 110.0,
+ "k": 1.0,
+ "anchor": [
+  55.0,
+  109.2
+ ],
+ "sort": [
+  55.0,
+  152
+ ],
+ "footprint": [
+  [
+   -1.6,
+   -1.6
+  ],
+  [
+   1.6,
+   -1.6
+  ],
+  [
+   1.6,
+   1.6
+  ],
+  [
+   -1.6,
+   1.6
+  ]
+ ],
+ "flat": false,
+ "layers": {
+  "body": "marketStall_body.png",
+  "neon": "marketStall_neon.png",
+  "reflect": "marketStall_reflect.png"
+ },
+ "neon": {
+  "base": 1.0,
+  "hum": 0.05,
+  "speed": 9,
+  "flicker": {
+   "rate": 0.12,
+   "dur": [
+    0.04,
+    0.22
+   ],
+   "level": 0.12
+  }
+ },
+ "source": "sheet B cell (1082,253)-(1245,445)"
+}

@@ -1,0 +1,11822 @@
+{
+ "anim": "idleOff",
+ "frame": 0,
+ "parts": {
+  "belt": {
+   "verts": 160,
+   "faces": 256,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 64,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "beltEdge0.09": {
+   "verts": 160,
+   "faces": 256,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 64,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "beltEdge0.035": {
+   "verts": 160,
+   "faces": 256,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 64,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "beltClip": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "beltHilt"
+  },
+  "belt_grip": {
+   "verts": 112,
+   "faces": 196,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 28,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "beltHiltAxis"
+  },
+  "belt_neck": {
+   "verts": 70,
+   "faces": 112,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 28,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "beltHiltAxis"
+  },
+  "belt_pommel": {
+   "verts": 70,
+   "faces": 124,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 14,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "beltHiltAxis"
+  },
+  "belt_shroud": {
+   "verts": 70,
+   "faces": 124,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 14,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "beltHiltAxis"
+  },
+  "belt_switch": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "beltHiltAxis"
+  },
+  "buckle": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "buckleIn": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "clip": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "clipU": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "flap0": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "flap1": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "flap2": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "flap3": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "ankleL": {
+   "verts": 90,
+   "faces": 144,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "anL"
+  },
+  "footL": {
+   "verts": 127,
+   "faces": 234,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 18,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "anL"
+  },
+  "heelL": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "anL"
+  },
+  "soleL": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "anL"
+  },
+  "bootCuffL": {
+   "verts": 308,
+   "faces": 616,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knL"
+  },
+  "bootL": {
+   "verts": 500,
+   "faces": 978,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 20,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knL"
+  },
+  "buckleL0": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knL"
+  },
+  "buckleL1": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knL"
+  },
+  "buckleL2": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knL"
+  },
+  "cuffSeamL": {
+   "verts": 110,
+   "faces": 176,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 44,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knL"
+  },
+  "strapEndL0": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knL"
+  },
+  "strapEndL1": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knL"
+  },
+  "strapEndL2": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knL"
+  },
+  "strapL0": {
+   "verts": 100,
+   "faces": 160,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 40,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knL"
+  },
+  "strapL1": {
+   "verts": 100,
+   "faces": 160,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 40,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knL"
+  },
+  "strapL2": {
+   "verts": 100,
+   "faces": 160,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 40,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knL"
+  },
+  "thighL": {
+   "verts": 540,
+   "faces": 1044,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "hipL"
+  },
+  "ankleR": {
+   "verts": 90,
+   "faces": 144,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "anR"
+  },
+  "footR": {
+   "verts": 127,
+   "faces": 234,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 18,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "anR"
+  },
+  "heelR": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "anR"
+  },
+  "soleR": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "anR"
+  },
+  "bootCuffR": {
+   "verts": 308,
+   "faces": 616,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knR"
+  },
+  "bootR": {
+   "verts": 500,
+   "faces": 978,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 20,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knR"
+  },
+  "buckleR0": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knR"
+  },
+  "buckleR1": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knR"
+  },
+  "buckleR2": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knR"
+  },
+  "cuffSeamR": {
+   "verts": 110,
+   "faces": 176,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 44,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knR"
+  },
+  "strapEndR0": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knR"
+  },
+  "strapEndR1": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knR"
+  },
+  "strapEndR2": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knR"
+  },
+  "strapR0": {
+   "verts": 100,
+   "faces": 160,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 40,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knR"
+  },
+  "strapR1": {
+   "verts": 100,
+   "faces": 160,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 40,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knR"
+  },
+  "strapR2": {
+   "verts": 100,
+   "faces": 160,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 40,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "knR"
+  },
+  "thighR": {
+   "verts": 540,
+   "faces": 1044,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "hipR"
+  },
+  "hips": {
+   "verts": 312,
+   "faces": 576,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 48,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "pouch0": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "pouch1": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "pouch2": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "pouch3": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "pelvis"
+  },
+  "skirtinnerL": {
+   "verts": 1344,
+   "faces": 2684,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "skirt_innerL"
+  },
+  "skirtinnerR": {
+   "verts": 1344,
+   "faces": 2684,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "skirt_innerR"
+  },
+  "hemouterB": {
+   "verts": 210,
+   "faces": 416,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "skirt_outerB"
+  },
+  "skirtouterB": {
+   "verts": 1638,
+   "faces": 3272,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "skirt_outerB"
+  },
+  "hemouterL": {
+   "verts": 210,
+   "faces": 416,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "skirt_outerL"
+  },
+  "skirtouterL": {
+   "verts": 1680,
+   "faces": 3356,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "skirt_outerL"
+  },
+  "hemouterR": {
+   "verts": 210,
+   "faces": 416,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "skirt_outerR"
+  },
+  "skirtouterR": {
+   "verts": 1680,
+   "faces": 3356,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "skirt_outerR"
+  },
+  "collar": {
+   "verts": 168,
+   "faces": 288,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 48,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "collarFold": {
+   "verts": 120,
+   "faces": 192,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 48,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "lameL0": {
+   "verts": 16,
+   "faces": 24,
+   "islands": 2,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "lameL1": {
+   "verts": 112,
+   "faces": 236,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 3,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "lameL2": {
+   "verts": 58,
+   "faces": 120,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 3,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "lameR0": {
+   "verts": 6,
+   "faces": 8,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "lameR1": {
+   "verts": 116,
+   "faces": 228,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 2,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "lameR2": {
+   "verts": 160,
+   "faces": 328,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 3,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "brow1": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "brow-1": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "chin": {
+   "verts": 86,
+   "faces": 168,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "ear1": {
+   "verts": 72,
+   "faces": 140,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "ear-1": {
+   "verts": 72,
+   "faces": 140,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "eye1": {
+   "verts": 52,
+   "faces": 100,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "eye-1": {
+   "verts": 52,
+   "faces": 100,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "hairShell": {
+   "verts": 1998,
+   "faces": 3992,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "head.001": {
+   "verts": 478,
+   "faces": 952,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "jaw": {
+   "verts": 164,
+   "faces": 324,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock0": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock1": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock2": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock3": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock4": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock5": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock6": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock7": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock8": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock9": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock10": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock11": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock12": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock13": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock14": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock15": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock16": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock17": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock18": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock19": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock20": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock21": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock22": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock23": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock24": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock25": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock26": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock27": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock28": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock29": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock30": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock31": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock32": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock33": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock34": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock35": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock36": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock37": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock38": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock39": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock40": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock41": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock42": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock43": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock44": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock45": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock46": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock47": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock48": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock49": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock50": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock51": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock52": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock53": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock54": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock55": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock56": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock57": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock58": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock59": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock60": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock61": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock62": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock63": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock64": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock65": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock66": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock67": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock68": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock69": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock70": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock71": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock72": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock73": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock74": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock75": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock76": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock77": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock78": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock79": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock80": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock81": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock82": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock83": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock84": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock85": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock86": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock87": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock88": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock89": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock90": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock91": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock92": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock93": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock94": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock95": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock96": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock97": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock98": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock99": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock100": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock101": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock102": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock103": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock104": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock105": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock106": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock107": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock108": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "lock109": {
+   "verts": 84,
+   "faces": 164,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "mouth": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "nose": {
+   "verts": 5,
+   "faces": 6,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "head"
+  },
+  "neck.001": {
+   "verts": 84,
+   "faces": 140,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 28,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "neck"
+  },
+  "neckRim": {
+   "verts": 280,
+   "faces": 560,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "plastron": {
+   "verts": 3182,
+   "faces": 6396,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 4,
+   "degenerate_faces": 0,
+   "duplicate_verts": 21,
+   "parent": "chest"
+  },
+  "plastronRim": {
+   "verts": 352,
+   "faces": 700,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "plateGroove1": {
+   "verts": 30,
+   "faces": 56,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "plateGroove-1": {
+   "verts": 30,
+   "faces": 56,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "crest0": {
+   "verts": 162,
+   "faces": 352,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "shL"
+  },
+  "crest1": {
+   "verts": 194,
+   "faces": 420,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "shL"
+  },
+  "crest2": {
+   "verts": 28,
+   "faces": 56,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "shL"
+  },
+  "crest3": {
+   "verts": 42,
+   "faces": 92,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 3,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "shL"
+  },
+  "deltoidL": {
+   "verts": 146,
+   "faces": 288,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 10,
+   "parent": "shL"
+  },
+  "cuffRimL": {
+   "verts": 180,
+   "faces": 360,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elL"
+  },
+  "gauntletL": {
+   "verts": 306,
+   "faces": 576,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elL"
+  },
+  "fingerL0": {
+   "verts": 24,
+   "faces": 44,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "haL"
+  },
+  "fingerL1": {
+   "verts": 24,
+   "faces": 44,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "haL"
+  },
+  "fingerL2": {
+   "verts": 24,
+   "faces": 44,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "haL"
+  },
+  "fingerL3": {
+   "verts": 24,
+   "faces": 44,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "haL"
+  },
+  "palmL": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "haL"
+  },
+  "thumbL": {
+   "verts": 18,
+   "faces": 32,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "haL"
+  },
+  "ribL0": {
+   "verts": 90,
+   "faces": 144,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elL"
+  },
+  "ribL1": {
+   "verts": 90,
+   "faces": 144,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elL"
+  },
+  "ribL2": {
+   "verts": 90,
+   "faces": 144,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elL"
+  },
+  "ribL3": {
+   "verts": 90,
+   "faces": 144,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elL"
+  },
+  "stitchL": {
+   "verts": 20,
+   "faces": 36,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elL"
+  },
+  "pauldron": {
+   "verts": 546,
+   "faces": 1136,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 7,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "shL"
+  },
+  "pauldronEdge": {
+   "verts": 156,
+   "faces": 308,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 2,
+   "duplicate_verts": 0,
+   "parent": "shL"
+  },
+  "sleeveL": {
+   "verts": 320,
+   "faces": 622,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 16,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "shL"
+  },
+  "deltoidR": {
+   "verts": 146,
+   "faces": 288,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 10,
+   "parent": "shR"
+  },
+  "cuffRimR": {
+   "verts": 180,
+   "faces": 360,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elR"
+  },
+  "gauntletR": {
+   "verts": 306,
+   "faces": 576,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elR"
+  },
+  "fingerR0": {
+   "verts": 24,
+   "faces": 44,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "haR"
+  },
+  "fingerR1": {
+   "verts": 24,
+   "faces": 44,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "haR"
+  },
+  "fingerR2": {
+   "verts": 24,
+   "faces": 44,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "haR"
+  },
+  "fingerR3": {
+   "verts": 24,
+   "faces": 44,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "haR"
+  },
+  "palmR": {
+   "verts": 56,
+   "faces": 108,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "haR"
+  },
+  "thumbR": {
+   "verts": 18,
+   "faces": 32,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 1,
+   "parent": "haR"
+  },
+  "ribR0": {
+   "verts": 90,
+   "faces": 144,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elR"
+  },
+  "ribR1": {
+   "verts": 90,
+   "faces": 144,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elR"
+  },
+  "ribR2": {
+   "verts": 90,
+   "faces": 144,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elR"
+  },
+  "ribR3": {
+   "verts": 90,
+   "faces": 144,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 36,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elR"
+  },
+  "stitchR": {
+   "verts": 20,
+   "faces": 36,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "elR"
+  },
+  "sleeveR": {
+   "verts": 320,
+   "faces": 622,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 16,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "shR"
+  },
+  "tabardChest": {
+   "verts": 920,
+   "faces": 1836,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "tunicChest": {
+   "verts": 504,
+   "faces": 982,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 24,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "chest"
+  },
+  "tabardEdge1": {
+   "verts": 36,
+   "faces": 68,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "spine"
+  },
+  "tabardEdge-1": {
+   "verts": 36,
+   "faces": 68,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "spine"
+  },
+  "tabardWaist": {
+   "verts": 782,
+   "faces": 1560,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 0,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "spine"
+  },
+  "tunicWaist": {
+   "verts": 384,
+   "faces": 720,
+   "islands": 1,
+   "flipped_edges": 0,
+   "inverted": false,
+   "open_edges": 48,
+   "nonmanifold_edges": 0,
+   "degenerate_faces": 0,
+   "duplicate_verts": 0,
+   "parent": "spine"
+  }
+ },
+ "intersections": [
+  {
+   "a": "tabardChest",
+   "b": "tabardWaist",
+   "tris": 802
+  },
+  {
+   "a": "neckRim",
+   "b": "plastron",
+   "tris": 750
+  },
+  {
+   "a": "plastron",
+   "b": "plastronRim",
+   "tris": 599
+  },
+  {
+   "a": "tabardChest",
+   "b": "tunicChest",
+   "tris": 550
+  },
+  {
+   "a": "skirtinnerL",
+   "b": "skirtouterL",
+   "tris": 489
+  },
+  {
+   "a": "hairShell",
+   "b": "lock22",
+   "tris": 436
+  },
+  {
+   "a": "hairShell",
+   "b": "lock103",
+   "tris": 433
+  },
+  {
+   "a": "hairShell",
+   "b": "lock67",
+   "tris": 432
+  },
+  {
+   "a": "hairShell",
+   "b": "lock49",
+   "tris": 429
+  },
+  {
+   "a": "hairShell",
+   "b": "lock19",
+   "tris": 426
+  },
+  {
+   "a": "hairShell",
+   "b": "lock8",
+   "tris": 425
+  },
+  {
+   "a": "hairShell",
+   "b": "lock85",
+   "tris": 425
+  },
+  {
+   "a": "hairShell",
+   "b": "lock94",
+   "tris": 425
+  },
+  {
+   "a": "hairShell",
+   "b": "lock1",
+   "tris": 423
+  },
+  {
+   "a": "hairShell",
+   "b": "lock104",
+   "tris": 423
+  },
+  {
+   "a": "hairShell",
+   "b": "lock46",
+   "tris": 423
+  },
+  {
+   "a": "hairShell",
+   "b": "lock9",
+   "tris": 419
+  },
+  {
+   "a": "hairShell",
+   "b": "lock96",
+   "tris": 419
+  },
+  {
+   "a": "hairShell",
+   "b": "lock21",
+   "tris": 417
+  },
+  {
+   "a": "hairShell",
+   "b": "lock73",
+   "tris": 416
+  },
+  {
+   "a": "hairShell",
+   "b": "lock87",
+   "tris": 414
+  },
+  {
+   "a": "hairShell",
+   "b": "lock99",
+   "tris": 414
+  },
+  {
+   "a": "hairShell",
+   "b": "lock38",
+   "tris": 413
+  },
+  {
+   "a": "hairShell",
+   "b": "lock37",
+   "tris": 412
+  },
+  {
+   "a": "hairShell",
+   "b": "lock39",
+   "tris": 412
+  },
+  {
+   "a": "hairShell",
+   "b": "lock81",
+   "tris": 412
+  },
+  {
+   "a": "hairShell",
+   "b": "lock101",
+   "tris": 411
+  },
+  {
+   "a": "hairShell",
+   "b": "lock74",
+   "tris": 411
+  },
+  {
+   "a": "hairShell",
+   "b": "lock80",
+   "tris": 411
+  },
+  {
+   "a": "hairShell",
+   "b": "lock89",
+   "tris": 411
+  },
+  {
+   "a": "hairShell",
+   "b": "lock34",
+   "tris": 409
+  },
+  {
+   "a": "hairShell",
+   "b": "lock86",
+   "tris": 409
+  },
+  {
+   "a": "hairShell",
+   "b": "lock93",
+   "tris": 409
+  },
+  {
+   "a": "hairShell",
+   "b": "lock45",
+   "tris": 408
+  },
+  {
+   "a": "hairShell",
+   "b": "lock64",
+   "tris": 408
+  },
+  {
+   "a": "hairShell",
+   "b": "lock26",
+   "tris": 407
+  },
+  {
+   "a": "hairShell",
+   "b": "lock83",
+   "tris": 407
+  },
+  {
+   "a": "hairShell",
+   "b": "lock72",
+   "tris": 406
+  },
+  {
+   "a": "hairShell",
+   "b": "lock105",
+   "tris": 405
+  },
+  {
+   "a": "hairShell",
+   "b": "lock14",
+   "tris": 405
+  },
+  {
+   "a": "hairShell",
+   "b": "lock40",
+   "tris": 405
+  },
+  {
+   "a": "hairShell",
+   "b": "lock95",
+   "tris": 405
+  },
+  {
+   "a": "hairShell",
+   "b": "lock7",
+   "tris": 404
+  },
+  {
+   "a": "hairShell",
+   "b": "lock82",
+   "tris": 404
+  },
+  {
+   "a": "hairShell",
+   "b": "lock88",
+   "tris": 404
+  },
+  {
+   "a": "hairShell",
+   "b": "lock97",
+   "tris": 404
+  },
+  {
+   "a": "hairShell",
+   "b": "lock52",
+   "tris": 403
+  },
+  {
+   "a": "hairShell",
+   "b": "lock20",
+   "tris": 402
+  },
+  {
+   "a": "hairShell",
+   "b": "lock11",
+   "tris": 401
+  },
+  {
+   "a": "hairShell",
+   "b": "lock33",
+   "tris": 401
+  },
+  {
+   "a": "hairShell",
+   "b": "lock41",
+   "tris": 401
+  },
+  {
+   "a": "hairShell",
+   "b": "lock102",
+   "tris": 400
+  },
+  {
+   "a": "hairShell",
+   "b": "lock71",
+   "tris": 399
+  },
+  {
+   "a": "hairShell",
+   "b": "lock0",
+   "tris": 398
+  },
+  {
+   "a": "hairShell",
+   "b": "lock17",
+   "tris": 398
+  },
+  {
+   "a": "hairShell",
+   "b": "lock35",
+   "tris": 396
+  },
+  {
+   "a": "hairShell",
+   "b": "lock98",
+   "tris": 396
+  },
+  {
+   "a": "hairShell",
+   "b": "lock12",
+   "tris": 395
+  },
+  {
+   "a": "hairShell",
+   "b": "lock13",
+   "tris": 395
+  },
+  {
+   "a": "hairShell",
+   "b": "lock53",
+   "tris": 394
+  },
+  {
+   "a": "hairShell",
+   "b": "lock78",
+   "tris": 394
+  },
+  {
+   "a": "hairShell",
+   "b": "lock79",
+   "tris": 394
+  },
+  {
+   "a": "hairShell",
+   "b": "lock30",
+   "tris": 393
+  },
+  {
+   "a": "hairShell",
+   "b": "lock31",
+   "tris": 393
+  },
+  {
+   "a": "hairShell",
+   "b": "lock47",
+   "tris": 393
+  },
+  {
+   "a": "hairShell",
+   "b": "lock50",
+   "tris": 393
+  },
+  {
+   "a": "hairShell",
+   "b": "lock68",
+   "tris": 392
+  },
+  {
+   "a": "hairShell",
+   "b": "lock28",
+   "tris": 390
+  },
+  {
+   "a": "hairShell",
+   "b": "lock66",
+   "tris": 390
+  },
+  {
+   "a": "hairShell",
+   "b": "lock75",
+   "tris": 390
+  },
+  {
+   "a": "hairShell",
+   "b": "lock10",
+   "tris": 389
+  },
+  {
+   "a": "hairShell",
+   "b": "lock16",
+   "tris": 389
+  },
+  {
+   "a": "hairShell",
+   "b": "lock23",
+   "tris": 388
+  },
+  {
+   "a": "hairShell",
+   "b": "lock3",
+   "tris": 388
+  },
+  {
+   "a": "hairShell",
+   "b": "lock107",
+   "tris": 387
+  },
+  {
+   "a": "hairShell",
+   "b": "lock109",
+   "tris": 387
+  },
+  {
+   "a": "hairShell",
+   "b": "lock100",
+   "tris": 386
+  },
+  {
+   "a": "hairShell",
+   "b": "lock48",
+   "tris": 386
+  },
+  {
+   "a": "hairShell",
+   "b": "lock2",
+   "tris": 385
+  },
+  {
+   "a": "hairShell",
+   "b": "lock58",
+   "tris": 385
+  },
+  {
+   "a": "lock102",
+   "b": "lock67",
+   "tris": 385
+  },
+  {
+   "a": "hairShell",
+   "b": "lock57",
+   "tris": 384
+  },
+  {
+   "a": "hairShell",
+   "b": "lock6",
+   "tris": 383
+  },
+  {
+   "a": "hairShell",
+   "b": "lock70",
+   "tris": 383
+  },
+  {
+   "a": "hairShell",
+   "b": "lock90",
+   "tris": 383
+  },
+  {
+   "a": "hairShell",
+   "b": "lock51",
+   "tris": 382
+  },
+  {
+   "a": "hairShell",
+   "b": "lock60",
+   "tris": 381
+  },
+  {
+   "a": "hairShell",
+   "b": "lock27",
+   "tris": 379
+  },
+  {
+   "a": "hairShell",
+   "b": "lock65",
+   "tris": 379
+  },
+  {
+   "a": "hairShell",
+   "b": "lock84",
+   "tris": 378
+  },
+  {
+   "a": "hairShell",
+   "b": "lock25",
+   "tris": 377
+  },
+  {
+   "a": "hairShell",
+   "b": "lock15",
+   "tris": 376
+  },
+  {
+   "a": "hairShell",
+   "b": "lock42",
+   "tris": 376
+  },
+  {
+   "a": "hairShell",
+   "b": "lock76",
+   "tris": 375
+  },
+  {
+   "a": "hairShell",
+   "b": "lock4",
+   "tris": 373
+  },
+  {
+   "a": "hairShell",
+   "b": "lock44",
+   "tris": 373
+  },
+  {
+   "a": "hairShell",
+   "b": "lock54",
+   "tris": 373
+  },
+  {
+   "a": "hairShell",
+   "b": "lock55",
+   "tris": 373
+  },
+  {
+   "a": "hairShell",
+   "b": "lock18",
+   "tris": 371
+  },
+  {
+   "a": "hairShell",
+   "b": "lock29",
+   "tris": 371
+  },
+  {
+   "a": "hairShell",
+   "b": "lock61",
+   "tris": 371
+  },
+  {
+   "a": "hairShell",
+   "b": "lock106",
+   "tris": 370
+  },
+  {
+   "a": "hairShell",
+   "b": "lock24",
+   "tris": 370
+  },
+  {
+   "a": "hairShell",
+   "b": "lock43",
+   "tris": 368
+  },
+  {
+   "a": "hairShell",
+   "b": "lock56",
+   "tris": 364
+  },
+  {
+   "a": "hairShell",
+   "b": "lock77",
+   "tris": 361
+  },
+  {
+   "a": "hairShell",
+   "b": "lock5",
+   "tris": 352
+  },
+  {
+   "a": "hairShell",
+   "b": "lock63",
+   "tris": 315
+  },
+  {
+   "a": "bootCuffL",
+   "b": "skirtouterL",
+   "tris": 302
+  },
+  {
+   "a": "hairShell",
+   "b": "lock32",
+   "tris": 293
+  },
+  {
+   "a": "crest0",
+   "b": "pauldron",
+   "tris": 291
+  },
+  {
+   "a": "sleeveR",
+   "b": "tabardChest",
+   "tris": 286
+  },
+  {
+   "a": "bootCuffR",
+   "b": "skirtouterR",
+   "tris": 284
+  },
+  {
+   "a": "sleeveL",
+   "b": "tabardChest",
+   "tris": 284
+  },
+  {
+   "a": "crest1",
+   "b": "pauldron",
+   "tris": 281
+  },
+  {
+   "a": "lock22",
+   "b": "lock8",
+   "tris": 274
+  },
+  {
+   "a": "lock73",
+   "b": "lock87",
+   "tris": 266
+  },
+  {
+   "a": "lock67",
+   "b": "lock73",
+   "tris": 265
+  },
+  {
+   "a": "hairShell",
+   "b": "lock36",
+   "tris": 263
+  },
+  {
+   "a": "hairShell",
+   "b": "lock59",
+   "tris": 257
+  },
+  {
+   "a": "lock35",
+   "b": "lock51",
+   "tris": 255
+  },
+  {
+   "a": "lock37",
+   "b": "lock72",
+   "tris": 254
+  },
+  {
+   "a": "hairShell",
+   "b": "lock91",
+   "tris": 252
+  },
+  {
+   "a": "lock102",
+   "b": "lock73",
+   "tris": 251
+  },
+  {
+   "a": "lock33",
+   "b": "lock9",
+   "tris": 250
+  },
+  {
+   "a": "lock33",
+   "b": "lock44",
+   "tris": 249
+  },
+  {
+   "a": "hairShell",
+   "b": "lock108",
+   "tris": 248
+  },
+  {
+   "a": "lock1",
+   "b": "lock45",
+   "tris": 248
+  },
+  {
+   "a": "hairShell",
+   "b": "lock62",
+   "tris": 247
+  },
+  {
+   "a": "lock1",
+   "b": "lock75",
+   "tris": 247
+  },
+  {
+   "a": "lock13",
+   "b": "lock6",
+   "tris": 247
+  },
+  {
+   "a": "lock38",
+   "b": "lock96",
+   "tris": 247
+  },
+  {
+   "a": "lock16",
+   "b": "lock6",
+   "tris": 246
+  },
+  {
+   "a": "lock68",
+   "b": "lock79",
+   "tris": 246
+  },
+  {
+   "a": "lock46",
+   "b": "lock97",
+   "tris": 245
+  },
+  {
+   "a": "hairShell",
+   "b": "lock92",
+   "tris": 243
+  },
+  {
+   "a": "lock21",
+   "b": "lock30",
+   "tris": 243
+  },
+  {
+   "a": "lock73",
+   "b": "lock88",
+   "tris": 243
+  },
+  {
+   "a": "lock103",
+   "b": "lock85",
+   "tris": 242
+  },
+  {
+   "a": "lock14",
+   "b": "lock75",
+   "tris": 241
+  },
+  {
+   "a": "lock67",
+   "b": "lock87",
+   "tris": 239
+  },
+  {
+   "a": "lock45",
+   "b": "lock85",
+   "tris": 237
+  },
+  {
+   "a": "lock55",
+   "b": "lock90",
+   "tris": 237
+  },
+  {
+   "a": "lock104",
+   "b": "lock8",
+   "tris": 235
+  },
+  {
+   "a": "lock100",
+   "b": "lock76",
+   "tris": 234
+  },
+  {
+   "a": "lock28",
+   "b": "lock78",
+   "tris": 234
+  },
+  {
+   "a": "lock28",
+   "b": "lock49",
+   "tris": 231
+  },
+  {
+   "a": "lock30",
+   "b": "lock44",
+   "tris": 231
+  },
+  {
+   "a": "lock44",
+   "b": "lock9",
+   "tris": 231
+  },
+  {
+   "a": "lock53",
+   "b": "lock75",
+   "tris": 231
+  },
+  {
+   "a": "lock89",
+   "b": "lock93",
+   "tris": 230
+  },
+  {
+   "a": "lock104",
+   "b": "lock22",
+   "tris": 229
+  },
+  {
+   "a": "lock32",
+   "b": "lock62",
+   "tris": 229
+  },
+  {
+   "a": "lock103",
+   "b": "lock49",
+   "tris": 228
+  },
+  {
+   "a": "lock85",
+   "b": "lock99",
+   "tris": 228
+  },
+  {
+   "a": "lock107",
+   "b": "lock2",
+   "tris": 227
+  },
+  {
+   "a": "lock14",
+   "b": "lock53",
+   "tris": 227
+  },
+  {
+   "a": "lock106",
+   "b": "lock42",
+   "tris": 226
+  },
+  {
+   "a": "lock103",
+   "b": "lock99",
+   "tris": 225
+  },
+  {
+   "a": "lock2",
+   "b": "lock60",
+   "tris": 225
+  },
+  {
+   "a": "lock58",
+   "b": "lock79",
+   "tris": 224
+  },
+  {
+   "a": "lock102",
+   "b": "lock87",
+   "tris": 223
+  },
+  {
+   "a": "lock32",
+   "b": "lock59",
+   "tris": 223
+  },
+  {
+   "a": "lock33",
+   "b": "lock96",
+   "tris": 223
+  },
+  {
+   "a": "lock52",
+   "b": "lock71",
+   "tris": 223
+  },
+  {
+   "a": "lock62",
+   "b": "lock63",
+   "tris": 223
+  },
+  {
+   "a": "lock107",
+   "b": "lock12",
+   "tris": 222
+  },
+  {
+   "a": "lock109",
+   "b": "lock80",
+   "tris": 222
+  },
+  {
+   "a": "lock30",
+   "b": "lock94",
+   "tris": 222
+  },
+  {
+   "a": "lock34",
+   "b": "lock4",
+   "tris": 222
+  },
+  {
+   "a": "lock0",
+   "b": "lock66",
+   "tris": 221
+  },
+  {
+   "a": "lock100",
+   "b": "lock79",
+   "tris": 221
+  },
+  {
+   "a": "lock50",
+   "b": "lock95",
+   "tris": 221
+  },
+  {
+   "a": "lock89",
+   "b": "lock96",
+   "tris": 221
+  },
+  {
+   "a": "hairShell",
+   "b": "lock69",
+   "tris": 220
+  },
+  {
+   "a": "lock15",
+   "b": "lock84",
+   "tris": 220
+  },
+  {
+   "a": "lock17",
+   "b": "lock51",
+   "tris": 220
+  },
+  {
+   "a": "lock45",
+   "b": "lock75",
+   "tris": 220
+  },
+  {
+   "a": "lock76",
+   "b": "lock79",
+   "tris": 220
+  },
+  {
+   "a": "lock107",
+   "b": "lock60",
+   "tris": 219
+  },
+  {
+   "a": "lock14",
+   "b": "lock46",
+   "tris": 219
+  },
+  {
+   "a": "lock20",
+   "b": "lock3",
+   "tris": 219
+  },
+  {
+   "a": "lock69",
+   "b": "lock91",
+   "tris": 219
+  },
+  {
+   "a": "lock1",
+   "b": "lock103",
+   "tris": 218
+  },
+  {
+   "a": "lock17",
+   "b": "lock35",
+   "tris": 218
+  },
+  {
+   "a": "lock45",
+   "b": "lock53",
+   "tris": 218
+  },
+  {
+   "a": "lock23",
+   "b": "lock48",
+   "tris": 217
+  },
+  {
+   "a": "lock37",
+   "b": "lock79",
+   "tris": 217
+  },
+  {
+   "a": "lock46",
+   "b": "lock75",
+   "tris": 217
+  },
+  {
+   "a": "lock48",
+   "b": "lock84",
+   "tris": 217
+  },
+  {
+   "a": "lock58",
+   "b": "lock76",
+   "tris": 217
+  },
+  {
+   "a": "lock83",
+   "b": "lock98",
+   "tris": 217
+  },
+  {
+   "a": "lock10",
+   "b": "lock105",
+   "tris": 216
+  },
+  {
+   "a": "lock38",
+   "b": "lock89",
+   "tris": 216
+  },
+  {
+   "a": "lock48",
+   "b": "lock74",
+   "tris": 216
+  },
+  {
+   "a": "lock26",
+   "b": "lock31",
+   "tris": 215
+  },
+  {
+   "a": "lock30",
+   "b": "lock93",
+   "tris": 215
+  },
+  {
+   "a": "lock93",
+   "b": "lock96",
+   "tris": 214
+  },
+  {
+   "a": "lock100",
+   "b": "lock37",
+   "tris": 213
+  },
+  {
+   "a": "lock10",
+   "b": "lock40",
+   "tris": 212
+  },
+  {
+   "a": "lock108",
+   "b": "lock32",
+   "tris": 212
+  },
+  {
+   "a": "lock33",
+   "b": "lock89",
+   "tris": 212
+  },
+  {
+   "a": "lock45",
+   "b": "lock46",
+   "tris": 212
+  },
+  {
+   "a": "lock108",
+   "b": "lock92",
+   "tris": 211
+  },
+  {
+   "a": "lock3",
+   "b": "lock83",
+   "tris": 211
+  },
+  {
+   "a": "lock20",
+   "b": "lock24",
+   "tris": 210
+  },
+  {
+   "a": "lock49",
+   "b": "lock78",
+   "tris": 210
+  },
+  {
+   "a": "lock9",
+   "b": "lock93",
+   "tris": 210
+  },
+  {
+   "a": "lock13",
+   "b": "lock29",
+   "tris": 209
+  },
+  {
+   "a": "lock21",
+   "b": "lock94",
+   "tris": 209
+  },
+  {
+   "a": "lock12",
+   "b": "lock95",
+   "tris": 208
+  },
+  {
+   "a": "lock21",
+   "b": "lock9",
+   "tris": 208
+  },
+  {
+   "a": "lock107",
+   "b": "lock77",
+   "tris": 207
+  },
+  {
+   "a": "lock11",
+   "b": "lock84",
+   "tris": 207
+  },
+  {
+   "a": "lock24",
+   "b": "lock43",
+   "tris": 207
+  },
+  {
+   "a": "lock38",
+   "b": "lock93",
+   "tris": 207
+  },
+  {
+   "a": "lock42",
+   "b": "lock74",
+   "tris": 207
+  },
+  {
+   "a": "lock72",
+   "b": "lock79",
+   "tris": 207
+  },
+  {
+   "a": "lock73",
+   "b": "lock82",
+   "tris": 207
+  },
+  {
+   "a": "lock26",
+   "b": "lock41",
+   "tris": 206
+  },
+  {
+   "a": "lock30",
+   "b": "lock9",
+   "tris": 206
+  },
+  {
+   "a": "lock42",
+   "b": "lock56",
+   "tris": 206
+  },
+  {
+   "a": "lock51",
+   "b": "lock91",
+   "tris": 206
+  },
+  {
+   "a": "lock13",
+   "b": "lock50",
+   "tris": 205
+  },
+  {
+   "a": "lock16",
+   "b": "lock81",
+   "tris": 205
+  },
+  {
+   "a": "lock82",
+   "b": "lock87",
+   "tris": 205
+  },
+  {
+   "a": "lock37",
+   "b": "lock58",
+   "tris": 204
+  },
+  {
+   "a": "lock11",
+   "b": "lock23",
+   "tris": 203
+  },
+  {
+   "a": "lock15",
+   "b": "lock17",
+   "tris": 203
+  },
+  {
+   "a": "lock1",
+   "b": "lock53",
+   "tris": 202
+  },
+  {
+   "a": "lock16",
+   "b": "lock50",
+   "tris": 201
+  },
+  {
+   "a": "lock105",
+   "b": "lock40",
+   "tris": 199
+  },
+  {
+   "a": "lock12",
+   "b": "lock50",
+   "tris": 199
+  },
+  {
+   "a": "lock65",
+   "b": "lock88",
+   "tris": 199
+  },
+  {
+   "a": "lock31",
+   "b": "lock41",
+   "tris": 197
+  },
+  {
+   "a": "lock47",
+   "b": "lock54",
+   "tris": 197
+  },
+  {
+   "a": "lock55",
+   "b": "lock70",
+   "tris": 197
+  },
+  {
+   "a": "lock29",
+   "b": "lock81",
+   "tris": 196
+  },
+  {
+   "a": "lock49",
+   "b": "lock99",
+   "tris": 196
+  },
+  {
+   "a": "lock60",
+   "b": "lock77",
+   "tris": 196
+  },
+  {
+   "a": "lock12",
+   "b": "lock81",
+   "tris": 195
+  },
+  {
+   "a": "lock68",
+   "b": "lock72",
+   "tris": 195
+  },
+  {
+   "a": "skirtouterB",
+   "b": "skirtouterL",
+   "tris": 195
+  },
+  {
+   "a": "lock60",
+   "b": "lock95",
+   "tris": 194
+  },
+  {
+   "a": "lock67",
+   "b": "lock82",
+   "tris": 194
+  },
+  {
+   "a": "lock102",
+   "b": "lock82",
+   "tris": 193
+  },
+  {
+   "a": "lock33",
+   "b": "lock93",
+   "tris": 193
+  },
+  {
+   "a": "lock30",
+   "b": "lock33",
+   "tris": 192
+  },
+  {
+   "a": "lock103",
+   "b": "lock78",
+   "tris": 191
+  },
+  {
+   "a": "lock106",
+   "b": "lock56",
+   "tris": 191
+  },
+  {
+   "a": "lock25",
+   "b": "lock52",
+   "tris": 191
+  },
+  {
+   "a": "lock46",
+   "b": "lock99",
+   "tris": 191
+  },
+  {
+   "a": "lock72",
+   "b": "lock76",
+   "tris": 191
+  },
+  {
+   "a": "lock9",
+   "b": "lock96",
+   "tris": 190
+  },
+  {
+   "a": "lock27",
+   "b": "lock64",
+   "tris": 189
+  },
+  {
+   "a": "lock53",
+   "b": "lock85",
+   "tris": 189
+  },
+  {
+   "a": "lock100",
+   "b": "lock68",
+   "tris": 188
+  },
+  {
+   "a": "lock44",
+   "b": "lock57",
+   "tris": 188
+  },
+  {
+   "a": "lock5",
+   "b": "lock56",
+   "tris": 188
+  },
+  {
+   "a": "lock33",
+   "b": "lock34",
+   "tris": 187
+  },
+  {
+   "a": "lock53",
+   "b": "lock99",
+   "tris": 187
+  },
+  {
+   "a": "lock75",
+   "b": "lock85",
+   "tris": 187
+  },
+  {
+   "a": "lock15",
+   "b": "lock51",
+   "tris": 186
+  },
+  {
+   "a": "lock24",
+   "b": "lock3",
+   "tris": 186
+  },
+  {
+   "a": "lock6",
+   "b": "lock81",
+   "tris": 186
+  },
+  {
+   "a": "lock13",
+   "b": "lock16",
+   "tris": 185
+  },
+  {
+   "a": "lock16",
+   "b": "lock29",
+   "tris": 185
+  },
+  {
+   "a": "lock58",
+   "b": "lock72",
+   "tris": 185
+  },
+  {
+   "a": "lock106",
+   "b": "lock5",
+   "tris": 184
+  },
+  {
+   "a": "lock14",
+   "b": "lock49",
+   "tris": 184
+  },
+  {
+   "a": "lock3",
+   "b": "lock98",
+   "tris": 184
+  },
+  {
+   "a": "lock30",
+   "b": "lock89",
+   "tris": 184
+  },
+  {
+   "a": "lock57",
+   "b": "lock94",
+   "tris": 184
+  },
+  {
+   "a": "hemouterB",
+   "b": "skirtouterB",
+   "tris": 183
+  },
+  {
+   "a": "hemouterL",
+   "b": "skirtouterL",
+   "tris": 183
+  },
+  {
+   "a": "hemouterR",
+   "b": "skirtouterR",
+   "tris": 183
+  },
+  {
+   "a": "lock1",
+   "b": "lock14",
+   "tris": 183
+  },
+  {
+   "a": "lock32",
+   "b": "lock36",
+   "tris": 183
+  },
+  {
+   "a": "lock35",
+   "b": "lock91",
+   "tris": 183
+  },
+  {
+   "a": "lock58",
+   "b": "lock68",
+   "tris": 183
+  },
+  {
+   "a": "lock14",
+   "b": "lock45",
+   "tris": 182
+  },
+  {
+   "a": "lock41",
+   "b": "lock54",
+   "tris": 182
+  },
+  {
+   "a": "lock51",
+   "b": "lock84",
+   "tris": 182
+  },
+  {
+   "a": "lock12",
+   "b": "lock13",
+   "tris": 181
+  },
+  {
+   "a": "lock34",
+   "b": "lock93",
+   "tris": 181
+  },
+  {
+   "a": "lock37",
+   "b": "lock68",
+   "tris": 181
+  },
+  {
+   "a": "lock6",
+   "b": "lock95",
+   "tris": 181
+  },
+  {
+   "a": "lock101",
+   "b": "lock86",
+   "tris": 180
+  },
+  {
+   "a": "lock107",
+   "b": "lock95",
+   "tris": 180
+  },
+  {
+   "a": "lock3",
+   "b": "lock43",
+   "tris": 180
+  },
+  {
+   "a": "lock36",
+   "b": "lock59",
+   "tris": 180
+  },
+  {
+   "a": "lock36",
+   "b": "lock62",
+   "tris": 180
+  },
+  {
+   "a": "lock39",
+   "b": "lock64",
+   "tris": 180
+  },
+  {
+   "a": "lock40",
+   "b": "lock80",
+   "tris": 180
+  },
+  {
+   "a": "lock43",
+   "b": "lock5",
+   "tris": 180
+  },
+  {
+   "a": "lock45",
+   "b": "lock99",
+   "tris": 180
+  },
+  {
+   "a": "lock19",
+   "b": "lock86",
+   "tris": 179
+  },
+  {
+   "a": "lock21",
+   "b": "lock57",
+   "tris": 179
+  },
+  {
+   "a": "lock36",
+   "b": "lock63",
+   "tris": 179
+  },
+  {
+   "a": "lock53",
+   "b": "lock97",
+   "tris": 179
+  },
+  {
+   "a": "lock24",
+   "b": "lock5",
+   "tris": 178
+  },
+  {
+   "a": "lock75",
+   "b": "lock78",
+   "tris": 178
+  },
+  {
+   "a": "lock101",
+   "b": "lock64",
+   "tris": 177
+  },
+  {
+   "a": "lock107",
+   "b": "lock50",
+   "tris": 177
+  },
+  {
+   "a": "lock11",
+   "b": "lock35",
+   "tris": 177
+  },
+  {
+   "a": "lock11",
+   "b": "lock48",
+   "tris": 177
+  },
+  {
+   "a": "lock34",
+   "b": "lock96",
+   "tris": 177
+  },
+  {
+   "a": "lock37",
+   "b": "lock88",
+   "tris": 177
+  },
+  {
+   "a": "lock46",
+   "b": "lock85",
+   "tris": 177
+  },
+  {
+   "a": "lock0",
+   "b": "lock3",
+   "tris": 176
+  },
+  {
+   "a": "lock2",
+   "b": "lock77",
+   "tris": 176
+  },
+  {
+   "a": "lock29",
+   "b": "lock6",
+   "tris": 176
+  },
+  {
+   "a": "lock41",
+   "b": "lock63",
+   "tris": 176
+  },
+  {
+   "a": "lock65",
+   "b": "lock76",
+   "tris": 176
+  },
+  {
+   "a": "lock89",
+   "b": "lock9",
+   "tris": 176
+  },
+  {
+   "a": "lock1",
+   "b": "lock46",
+   "tris": 175
+  },
+  {
+   "a": "lock100",
+   "b": "lock58",
+   "tris": 175
+  },
+  {
+   "a": "lock103",
+   "b": "lock45",
+   "tris": 175
+  },
+  {
+   "a": "lock21",
+   "b": "lock8",
+   "tris": 175
+  },
+  {
+   "a": "lock43",
+   "b": "lock83",
+   "tris": 175
+  },
+  {
+   "a": "lock72",
+   "b": "lock88",
+   "tris": 175
+  },
+  {
+   "a": "lock0",
+   "b": "lock98",
+   "tris": 174
+  },
+  {
+   "a": "lock14",
+   "b": "lock85",
+   "tris": 174
+  },
+  {
+   "a": "lock15",
+   "b": "lock35",
+   "tris": 174
+  },
+  {
+   "a": "lock32",
+   "b": "lock63",
+   "tris": 174
+  },
+  {
+   "a": "lock35",
+   "b": "lock84",
+   "tris": 174
+  },
+  {
+   "a": "lock44",
+   "b": "lock96",
+   "tris": 174
+  },
+  {
+   "a": "lock50",
+   "b": "lock81",
+   "tris": 174
+  },
+  {
+   "a": "lock103",
+   "b": "lock14",
+   "tris": 173
+  },
+  {
+   "a": "lock11",
+   "b": "lock51",
+   "tris": 173
+  },
+  {
+   "a": "lock18",
+   "b": "lock60",
+   "tris": 173
+  },
+  {
+   "a": "lock4",
+   "b": "lock70",
+   "tris": 173
+  },
+  {
+   "a": "lock7",
+   "b": "lock97",
+   "tris": 173
+  },
+  {
+   "a": "lock8",
+   "b": "lock94",
+   "tris": 173
+  },
+  {
+   "a": "lock16",
+   "b": "lock71",
+   "tris": 172
+  },
+  {
+   "a": "lock2",
+   "b": "lock95",
+   "tris": 172
+  },
+  {
+   "a": "lock20",
+   "b": "lock43",
+   "tris": 172
+  },
+  {
+   "a": "lock1",
+   "b": "lock99",
+   "tris": 171
+  },
+  {
+   "a": "lock108",
+   "b": "lock36",
+   "tris": 171
+  },
+  {
+   "a": "lock20",
+   "b": "lock98",
+   "tris": 171
+  },
+  {
+   "a": "lock59",
+   "b": "lock62",
+   "tris": 171
+  },
+  {
+   "a": "lock67",
+   "b": "lock7",
+   "tris": 171
+  },
+  {
+   "a": "lock7",
+   "b": "lock87",
+   "tris": 171
+  },
+  {
+   "a": "lock70",
+   "b": "lock90",
+   "tris": 171
+  },
+  {
+   "a": "lock103",
+   "b": "lock53",
+   "tris": 170
+  },
+  {
+   "a": "lock36",
+   "b": "lock92",
+   "tris": 170
+  },
+  {
+   "a": "lock59",
+   "b": "lock63",
+   "tris": 170
+  },
+  {
+   "a": "lock103",
+   "b": "lock46",
+   "tris": 169
+  },
+  {
+   "a": "lock104",
+   "b": "lock57",
+   "tris": 169
+  },
+  {
+   "a": "lock108",
+   "b": "lock62",
+   "tris": 169
+  },
+  {
+   "a": "lock25",
+   "b": "lock71",
+   "tris": 169
+  },
+  {
+   "a": "lock31",
+   "b": "lock63",
+   "tris": 169
+  },
+  {
+   "a": "lock34",
+   "b": "lock38",
+   "tris": 169
+  },
+  {
+   "a": "lock58",
+   "b": "lock65",
+   "tris": 169
+  },
+  {
+   "a": "lock105",
+   "b": "lock109",
+   "tris": 168
+  },
+  {
+   "a": "lock11",
+   "b": "lock15",
+   "tris": 168
+  },
+  {
+   "a": "lock11",
+   "b": "lock74",
+   "tris": 168
+  },
+  {
+   "a": "lock19",
+   "b": "lock64",
+   "tris": 168
+  },
+  {
+   "a": "lock29",
+   "b": "lock71",
+   "tris": 168
+  },
+  {
+   "a": "lock6",
+   "b": "lock71",
+   "tris": 168
+  },
+  {
+   "a": "lock107",
+   "b": "lock13",
+   "tris": 167
+  },
+  {
+   "a": "lock109",
+   "b": "lock40",
+   "tris": 167
+  },
+  {
+   "a": "lock27",
+   "b": "lock39",
+   "tris": 167
+  },
+  {
+   "a": "lock25",
+   "b": "lock6",
+   "tris": 166
+  },
+  {
+   "a": "lock108",
+   "b": "lock63",
+   "tris": 165
+  },
+  {
+   "a": "lock15",
+   "b": "lock23",
+   "tris": 165
+  },
+  {
+   "a": "lock18",
+   "b": "lock2",
+   "tris": 165
+  },
+  {
+   "a": "lock25",
+   "b": "lock29",
+   "tris": 165
+  },
+  {
+   "a": "lock65",
+   "b": "lock87",
+   "tris": 165
+  },
+  {
+   "a": "lock19",
+   "b": "lock39",
+   "tris": 164
+  },
+  {
+   "a": "lock26",
+   "b": "lock47",
+   "tris": 164
+  },
+  {
+   "a": "lock78",
+   "b": "lock8",
+   "tris": 164
+  },
+  {
+   "a": "lock12",
+   "b": "lock60",
+   "tris": 163
+  },
+  {
+   "a": "lock14",
+   "b": "lock28",
+   "tris": 163
+  },
+  {
+   "a": "lock2",
+   "b": "lock50",
+   "tris": 163
+  },
+  {
+   "a": "lock21",
+   "b": "lock96",
+   "tris": 163
+  },
+  {
+   "a": "lock28",
+   "b": "lock53",
+   "tris": 163
+  },
+  {
+   "a": "lock34",
+   "b": "lock89",
+   "tris": 163
+  },
+  {
+   "a": "lock44",
+   "b": "lock93",
+   "tris": 163
+  },
+  {
+   "a": "lock17",
+   "b": "lock84",
+   "tris": 162
+  },
+  {
+   "a": "lock18",
+   "b": "lock77",
+   "tris": 162
+  },
+  {
+   "a": "lock23",
+   "b": "lock51",
+   "tris": 162
+  },
+  {
+   "a": "lock3",
+   "b": "lock5",
+   "tris": 162
+  },
+  {
+   "a": "skirtinnerR",
+   "b": "skirtouterR",
+   "tris": 162
+  },
+  {
+   "a": "lock102",
+   "b": "lock7",
+   "tris": 161
+  },
+  {
+   "a": "lock104",
+   "b": "lock28",
+   "tris": 161
+  },
+  {
+   "a": "lock107",
+   "b": "lock81",
+   "tris": 161
+  },
+  {
+   "a": "lock26",
+   "b": "lock92",
+   "tris": 161
+  },
+  {
+   "a": "lock38",
+   "b": "lock4",
+   "tris": 161
+  },
+  {
+   "a": "lock4",
+   "b": "lock89",
+   "tris": 161
+  },
+  {
+   "a": "lock46",
+   "b": "lock53",
+   "tris": 161
+  },
+  {
+   "a": "lock50",
+   "b": "lock6",
+   "tris": 161
+  },
+  {
+   "a": "crest2",
+   "b": "crest3",
+   "tris": 160
+  },
+  {
+   "a": "lock27",
+   "b": "lock76",
+   "tris": 160
+  },
+  {
+   "a": "lock36",
+   "b": "lock54",
+   "tris": 160
+  },
+  {
+   "a": "lock37",
+   "b": "lock39",
+   "tris": 160
+  },
+  {
+   "a": "lock62",
+   "b": "lock92",
+   "tris": 160
+  },
+  {
+   "a": "lock64",
+   "b": "lock79",
+   "tris": 160
+  },
+  {
+   "a": "lock14",
+   "b": "lock97",
+   "tris": 159
+  },
+  {
+   "a": "lock50",
+   "b": "lock60",
+   "tris": 159
+  },
+  {
+   "a": "lock68",
+   "b": "lock73",
+   "tris": 159
+  },
+  {
+   "a": "lock106",
+   "b": "lock48",
+   "tris": 158
+  },
+  {
+   "a": "lock12",
+   "b": "lock29",
+   "tris": 158
+  },
+  {
+   "a": "lock17",
+   "b": "lock91",
+   "tris": 158
+  },
+  {
+   "a": "lock64",
+   "b": "lock76",
+   "tris": 158
+  },
+  {
+   "a": "lock13",
+   "b": "lock81",
+   "tris": 157
+  },
+  {
+   "a": "lock29",
+   "b": "lock95",
+   "tris": 157
+  },
+  {
+   "a": "lock37",
+   "b": "lock76",
+   "tris": 157
+  },
+  {
+   "a": "lock41",
+   "b": "lock47",
+   "tris": 157
+  },
+  {
+   "a": "lock45",
+   "b": "lock49",
+   "tris": 157
+  },
+  {
+   "a": "lock67",
+   "b": "lock88",
+   "tris": 157
+  },
+  {
+   "a": "lock108",
+   "b": "lock59",
+   "tris": 156
+  },
+  {
+   "a": "lock27",
+   "b": "lock79",
+   "tris": 156
+  },
+  {
+   "a": "lock44",
+   "b": "lock94",
+   "tris": 156
+  },
+  {
+   "a": "lock21",
+   "b": "lock22",
+   "tris": 155
+  },
+  {
+   "a": "lock38",
+   "b": "lock44",
+   "tris": 155
+  },
+  {
+   "a": "lock12",
+   "b": "lock77",
+   "tris": 154
+  },
+  {
+   "a": "lock24",
+   "b": "lock42",
+   "tris": 154
+  },
+  {
+   "a": "lock31",
+   "b": "lock47",
+   "tris": 154
+  },
+  {
+   "a": "lock42",
+   "b": "lock43",
+   "tris": 154
+  },
+  {
+   "a": "lock49",
+   "b": "lock85",
+   "tris": 154
+  },
+  {
+   "a": "lock102",
+   "b": "lock88",
+   "tris": 153
+  },
+  {
+   "a": "lock12",
+   "b": "lock2",
+   "tris": 153
+  },
+  {
+   "a": "lock21",
+   "b": "lock44",
+   "tris": 153
+  },
+  {
+   "a": "lock28",
+   "b": "lock99",
+   "tris": 153
+  },
+  {
+   "a": "lock32",
+   "b": "lock92",
+   "tris": 153
+  },
+  {
+   "a": "lock57",
+   "b": "lock8",
+   "tris": 153
+  },
+  {
+   "a": "lock100",
+   "b": "lock39",
+   "tris": 152
+  },
+  {
+   "a": "lock16",
+   "b": "lock25",
+   "tris": 152
+  },
+  {
+   "a": "lock17",
+   "b": "lock23",
+   "tris": 152
+  },
+  {
+   "a": "lock20",
+   "b": "lock5",
+   "tris": 152
+  },
+  {
+   "a": "lock24",
+   "b": "lock56",
+   "tris": 152
+  },
+  {
+   "a": "lock34",
+   "b": "lock70",
+   "tris": 152
+  },
+  {
+   "a": "lock38",
+   "b": "lock9",
+   "tris": 152
+  },
+  {
+   "a": "lock45",
+   "b": "lock97",
+   "tris": 152
+  },
+  {
+   "a": "lock66",
+   "b": "lock98",
+   "tris": 152
+  },
+  {
+   "a": "lock7",
+   "b": "lock82",
+   "tris": 152
+  },
+  {
+   "a": "lock75",
+   "b": "lock99",
+   "tris": 152
+  },
+  {
+   "a": "lock39",
+   "b": "lock86",
+   "tris": 151
+  },
+  {
+   "a": "lock52",
+   "b": "lock81",
+   "tris": 151
+  },
+  {
+   "a": "lock65",
+   "b": "lock68",
+   "tris": 151
+  },
+  {
+   "a": "lock104",
+   "b": "lock78",
+   "tris": 150
+  },
+  {
+   "a": "lock23",
+   "b": "lock74",
+   "tris": 150
+  },
+  {
+   "a": "lock46",
+   "b": "lock78",
+   "tris": 150
+  },
+  {
+   "a": "lock48",
+   "b": "lock56",
+   "tris": 150
+  },
+  {
+   "a": "lock94",
+   "b": "lock96",
+   "tris": 150
+  },
+  {
+   "a": "lock100",
+   "b": "lock72",
+   "tris": 149
+  },
+  {
+   "a": "lock15",
+   "b": "lock74",
+   "tris": 149
+  },
+  {
+   "a": "lock16",
+   "b": "lock95",
+   "tris": 149
+  },
+  {
+   "a": "lock33",
+   "b": "lock94",
+   "tris": 149
+  },
+  {
+   "a": "lock4",
+   "b": "lock96",
+   "tris": 149
+  },
+  {
+   "a": "lock46",
+   "b": "lock49",
+   "tris": 149
+  },
+  {
+   "a": "lock65",
+   "b": "lock73",
+   "tris": 149
+  },
+  {
+   "a": "lock87",
+   "b": "lock88",
+   "tris": 149
+  },
+  {
+   "a": "lock10",
+   "b": "lock31",
+   "tris": 148
+  },
+  {
+   "a": "lock10",
+   "b": "lock41",
+   "tris": 148
+  },
+  {
+   "a": "lock105",
+   "b": "lock47",
+   "tris": 148
+  },
+  {
+   "a": "lock40",
+   "b": "lock41",
+   "tris": 148
+  },
+  {
+   "a": "lock49",
+   "b": "lock8",
+   "tris": 148
+  },
+  {
+   "a": "lock5",
+   "b": "lock83",
+   "tris": 148
+  },
+  {
+   "a": "lock61",
+   "b": "lock86",
+   "tris": 148
+  },
+  {
+   "a": "lock33",
+   "b": "lock4",
+   "tris": 147
+  },
+  {
+   "a": "lock78",
+   "b": "lock85",
+   "tris": 147
+  },
+  {
+   "a": "lock10",
+   "b": "lock54",
+   "tris": 146
+  },
+  {
+   "a": "lock11",
+   "b": "lock17",
+   "tris": 146
+  },
+  {
+   "a": "lock21",
+   "b": "lock33",
+   "tris": 146
+  },
+  {
+   "a": "lock4",
+   "b": "lock93",
+   "tris": 146
+  },
+  {
+   "a": "lock65",
+   "b": "lock79",
+   "tris": 146
+  },
+  {
+   "a": "lock22",
+   "b": "lock78",
+   "tris": 145
+  },
+  {
+   "a": "lock45",
+   "b": "lock78",
+   "tris": 145
+  },
+  {
+   "a": "lock10",
+   "b": "lock80",
+   "tris": 144
+  },
+  {
+   "a": "lock101",
+   "b": "lock19",
+   "tris": 144
+  },
+  {
+   "a": "lock20",
+   "b": "lock42",
+   "tris": 144
+  },
+  {
+   "a": "cuffRimR",
+   "b": "gauntletR",
+   "tris": 143
+  },
+  {
+   "a": "lock0",
+   "b": "lock83",
+   "tris": 143
+  },
+  {
+   "a": "lock103",
+   "b": "lock28",
+   "tris": 143
+  },
+  {
+   "a": "lock17",
+   "b": "lock69",
+   "tris": 143
+  },
+  {
+   "a": "lock26",
+   "b": "lock32",
+   "tris": 143
+  },
+  {
+   "a": "lock28",
+   "b": "lock8",
+   "tris": 143
+  },
+  {
+   "a": "lock43",
+   "b": "lock98",
+   "tris": 143
+  },
+  {
+   "a": "deltoidR",
+   "b": "lameR2",
+   "tris": 142
+  },
+  {
+   "a": "lock31",
+   "b": "lock54",
+   "tris": 142
+  },
+  {
+   "a": "lock13",
+   "b": "lock95",
+   "tris": 141
+  },
+  {
+   "a": "lock16",
+   "b": "lock52",
+   "tris": 141
+  },
+  {
+   "a": "lock49",
+   "b": "lock53",
+   "tris": 141
+  },
+  {
+   "a": "lock63",
+   "b": "lock92",
+   "tris": 141
+  },
+  {
+   "a": "lock65",
+   "b": "lock72",
+   "tris": 141
+  },
+  {
+   "a": "lock65",
+   "b": "lock82",
+   "tris": 141
+  },
+  {
+   "a": "cuffRimL",
+   "b": "gauntletL",
+   "tris": 140
+  },
+  {
+   "a": "lock13",
+   "b": "lock60",
+   "tris": 140
+  },
+  {
+   "a": "lock13",
+   "b": "lock77",
+   "tris": 139
+  },
+  {
+   "a": "lock30",
+   "b": "lock57",
+   "tris": 139
+  },
+  {
+   "a": "lock6",
+   "b": "lock60",
+   "tris": 139
+  },
+  {
+   "a": "lock6",
+   "b": "lock77",
+   "tris": 139
+  },
+  {
+   "a": "lock77",
+   "b": "lock95",
+   "tris": 139
+  },
+  {
+   "a": "lock1",
+   "b": "lock49",
+   "tris": 138
+  },
+  {
+   "a": "lock31",
+   "b": "lock36",
+   "tris": 138
+  },
+  {
+   "a": "lock1",
+   "b": "lock78",
+   "tris": 137
+  },
+  {
+   "a": "lock36",
+   "b": "lock41",
+   "tris": 137
+  },
+  {
+   "a": "lock44",
+   "b": "lock89",
+   "tris": 137
+  },
+  {
+   "a": "lock33",
+   "b": "lock38",
+   "tris": 136
+  },
+  {
+   "a": "lock50",
+   "b": "lock77",
+   "tris": 136
+  },
+  {
+   "a": "sleeveL",
+   "b": "tunicChest",
+   "tris": 136
+  },
+  {
+   "a": "hips",
+   "b": "tabardWaist",
+   "tris": 135
+  },
+  {
+   "a": "lock103",
+   "b": "lock75",
+   "tris": 135
+  },
+  {
+   "a": "lock12",
+   "b": "lock6",
+   "tris": 135
+  },
+  {
+   "a": "lock18",
+   "b": "lock90",
+   "tris": 135
+  },
+  {
+   "a": "lock23",
+   "b": "lock84",
+   "tris": 135
+  },
+  {
+   "a": "lock26",
+   "b": "lock59",
+   "tris": 135
+  },
+  {
+   "a": "lock38",
+   "b": "lock70",
+   "tris": 135
+  },
+  {
+   "a": "lock77",
+   "b": "lock81",
+   "tris": 135
+  },
+  {
+   "a": "lock9",
+   "b": "lock94",
+   "tris": 135
+  },
+  {
+   "a": "lock24",
+   "b": "lock98",
+   "tris": 133
+  },
+  {
+   "a": "lock26",
+   "b": "lock54",
+   "tris": 133
+  },
+  {
+   "a": "lock33",
+   "b": "lock57",
+   "tris": 133
+  },
+  {
+   "a": "lock104",
+   "b": "lock94",
+   "tris": 132
+  },
+  {
+   "a": "lock21",
+   "b": "lock38",
+   "tris": 132
+  },
+  {
+   "a": "lock27",
+   "b": "lock86",
+   "tris": 132
+  },
+  {
+   "a": "lock53",
+   "b": "lock78",
+   "tris": 132
+  },
+  {
+   "a": "lock57",
+   "b": "lock89",
+   "tris": 132
+  },
+  {
+   "a": "lock14",
+   "b": "lock99",
+   "tris": 131
+  },
+  {
+   "a": "lock30",
+   "b": "lock34",
+   "tris": 131
+  },
+  {
+   "a": "lock44",
+   "b": "lock8",
+   "tris": 131
+  },
+  {
+   "a": "lock48",
+   "b": "lock51",
+   "tris": 131
+  },
+  {
+   "a": "lock7",
+   "b": "lock73",
+   "tris": 131
+  },
+  {
+   "a": "lock70",
+   "b": "lock93",
+   "tris": 131
+  },
+  {
+   "a": "lock21",
+   "b": "lock93",
+   "tris": 130
+  },
+  {
+   "a": "lock25",
+   "b": "lock50",
+   "tris": 130
+  },
+  {
+   "a": "lock28",
+   "b": "lock75",
+   "tris": 130
+  },
+  {
+   "a": "lock35",
+   "b": "lock48",
+   "tris": 130
+  },
+  {
+   "a": "sleeveR",
+   "b": "tunicChest",
+   "tris": 130
+  },
+  {
+   "a": "lock1",
+   "b": "lock97",
+   "tris": 129
+  },
+  {
+   "a": "lock104",
+   "b": "lock49",
+   "tris": 129
+  },
+  {
+   "a": "lock16",
+   "b": "lock60",
+   "tris": 129
+  },
+  {
+   "a": "lock22",
+   "b": "lock28",
+   "tris": 129
+  },
+  {
+   "a": "lock75",
+   "b": "lock97",
+   "tris": 129
+  },
+  {
+   "a": "lock22",
+   "b": "lock57",
+   "tris": 128
+  },
+  {
+   "a": "lock40",
+   "b": "lock54",
+   "tris": 128
+  },
+  {
+   "a": "lock57",
+   "b": "lock93",
+   "tris": 128
+  },
+  {
+   "a": "lock58",
+   "b": "lock73",
+   "tris": 128
+  },
+  {
+   "a": "lock1",
+   "b": "lock85",
+   "tris": 127
+  },
+  {
+   "a": "lock23",
+   "b": "lock42",
+   "tris": 127
+  },
+  {
+   "a": "lock78",
+   "b": "lock99",
+   "tris": 127
+  },
+  {
+   "a": "lock30",
+   "b": "lock38",
+   "tris": 126
+  },
+  {
+   "a": "lock38",
+   "b": "lock94",
+   "tris": 126
+  },
+  {
+   "a": "lock57",
+   "b": "lock96",
+   "tris": 126
+  },
+  {
+   "a": "lock79",
+   "b": "lock88",
+   "tris": 125
+  },
+  {
+   "a": "lock18",
+   "b": "lock95",
+   "tris": 124
+  },
+  {
+   "a": "lock55",
+   "b": "lock60",
+   "tris": 124
+  },
+  {
+   "a": "lock14",
+   "b": "lock78",
+   "tris": 123
+  },
+  {
+   "a": "lock22",
+   "b": "lock94",
+   "tris": 123
+  },
+  {
+   "a": "lock27",
+   "b": "lock37",
+   "tris": 123
+  },
+  {
+   "a": "lock4",
+   "b": "lock9",
+   "tris": 123
+  },
+  {
+   "a": "lock49",
+   "b": "lock75",
+   "tris": 123
+  },
+  {
+   "a": "lock60",
+   "b": "lock81",
+   "tris": 123
+  },
+  {
+   "a": "lock97",
+   "b": "lock99",
+   "tris": 123
+  },
+  {
+   "a": "lock39",
+   "b": "lock58",
+   "tris": 122
+  },
+  {
+   "a": "lock42",
+   "b": "lock83",
+   "tris": 122
+  },
+  {
+   "a": "lock68",
+   "b": "lock76",
+   "tris": 122
+  },
+  {
+   "a": "lock8",
+   "b": "lock99",
+   "tris": 122
+  },
+  {
+   "a": "belt_shroud",
+   "b": "skirtinnerL",
+   "tris": 121
+  },
+  {
+   "a": "lock100",
+   "b": "lock65",
+   "tris": 121
+  },
+  {
+   "a": "lock103",
+   "b": "lock8",
+   "tris": 121
+  },
+  {
+   "a": "lock2",
+   "b": "lock55",
+   "tris": 121
+  },
+  {
+   "a": "lock45",
+   "b": "lock7",
+   "tris": 121
+  },
+  {
+   "a": "lock74",
+   "b": "lock84",
+   "tris": 121
+  },
+  {
+   "a": "head.001",
+   "b": "lock82",
+   "tris": 120
+  },
+  {
+   "a": "lock73",
+   "b": "lock76",
+   "tris": 120
+  },
+  {
+   "a": "lock103",
+   "b": "lock97",
+   "tris": 119
+  },
+  {
+   "a": "lock29",
+   "b": "lock50",
+   "tris": 119
+  },
+  {
+   "a": "lock8",
+   "b": "lock85",
+   "tris": 119
+  },
+  {
+   "a": "lock34",
+   "b": "lock44",
+   "tris": 118
+  },
+  {
+   "a": "lock68",
+   "b": "lock87",
+   "tris": 118
+  },
+  {
+   "a": "lock85",
+   "b": "lock97",
+   "tris": 118
+  },
+  {
+   "a": "lock104",
+   "b": "lock99",
+   "tris": 117
+  },
+  {
+   "a": "lock12",
+   "b": "lock18",
+   "tris": 117
+  },
+  {
+   "a": "lock16",
+   "b": "lock77",
+   "tris": 117
+  },
+  {
+   "a": "lock2",
+   "b": "lock6",
+   "tris": 117
+  },
+  {
+   "a": "lock31",
+   "b": "lock62",
+   "tris": 117
+  },
+  {
+   "a": "lock33",
+   "b": "lock8",
+   "tris": 117
+  },
+  {
+   "a": "lock89",
+   "b": "lock94",
+   "tris": 117
+  },
+  {
+   "a": "head.001",
+   "b": "lock1",
+   "tris": 116
+  },
+  {
+   "a": "lock104",
+   "b": "lock21",
+   "tris": 116
+  },
+  {
+   "a": "lock15",
+   "b": "lock48",
+   "tris": 116
+  },
+  {
+   "a": "lock4",
+   "b": "lock55",
+   "tris": 116
+  },
+  {
+   "a": "lock102",
+   "b": "lock65",
+   "tris": 115
+  },
+  {
+   "a": "lock105",
+   "b": "lock80",
+   "tris": 115
+  },
+  {
+   "a": "lock106",
+   "b": "lock43",
+   "tris": 115
+  },
+  {
+   "a": "lock11",
+   "b": "lock56",
+   "tris": 115
+  },
+  {
+   "a": "lock14",
+   "b": "lock7",
+   "tris": 115
+  },
+  {
+   "a": "lock24",
+   "b": "lock83",
+   "tris": 115
+  },
+  {
+   "a": "lock28",
+   "b": "lock45",
+   "tris": 115
+  },
+  {
+   "a": "lock29",
+   "b": "lock77",
+   "tris": 115
+  },
+  {
+   "a": "lock30",
+   "b": "lock4",
+   "tris": 115
+  },
+  {
+   "a": "lock35",
+   "b": "lock69",
+   "tris": 115
+  },
+  {
+   "a": "lock40",
+   "b": "lock47",
+   "tris": 115
+  },
+  {
+   "a": "lock61",
+   "b": "lock64",
+   "tris": 115
+  },
+  {
+   "a": "bootCuffL",
+   "b": "cuffSeamL",
+   "tris": 114
+  },
+  {
+   "a": "bootCuffR",
+   "b": "cuffSeamR",
+   "tris": 114
+  },
+  {
+   "a": "head.001",
+   "b": "lock21",
+   "tris": 114
+  },
+  {
+   "a": "lock13",
+   "b": "lock18",
+   "tris": 114
+  },
+  {
+   "a": "lock19",
+   "b": "lock27",
+   "tris": 114
+  },
+  {
+   "a": "lock3",
+   "b": "lock56",
+   "tris": 114
+  },
+  {
+   "a": "lock39",
+   "b": "lock79",
+   "tris": 114
+  },
+  {
+   "a": "lock54",
+   "b": "lock63",
+   "tris": 114
+  },
+  {
+   "a": "lock76",
+   "b": "lock88",
+   "tris": 114
+  },
+  {
+   "a": "lock93",
+   "b": "lock94",
+   "tris": 114
+  },
+  {
+   "a": "lock10",
+   "b": "lock47",
+   "tris": 113
+  },
+  {
+   "a": "lock102",
+   "b": "lock68",
+   "tris": 113
+  },
+  {
+   "a": "lock103",
+   "b": "lock104",
+   "tris": 113
+  },
+  {
+   "a": "lock2",
+   "b": "lock81",
+   "tris": 113
+  },
+  {
+   "a": "lock22",
+   "b": "lock33",
+   "tris": 113
+  },
+  {
+   "a": "lock22",
+   "b": "lock44",
+   "tris": 113
+  },
+  {
+   "a": "lock25",
+   "b": "lock81",
+   "tris": 113
+  },
+  {
+   "a": "lock30",
+   "b": "lock8",
+   "tris": 113
+  },
+  {
+   "a": "lock34",
+   "b": "lock90",
+   "tris": 113
+  },
+  {
+   "a": "lock51",
+   "b": "lock69",
+   "tris": 113
+  },
+  {
+   "a": "lock65",
+   "b": "lock67",
+   "tris": 113
+  },
+  {
+   "a": "lock66",
+   "b": "lock83",
+   "tris": 113
+  },
+  {
+   "a": "head.001",
+   "b": "lock103",
+   "tris": 112
+  },
+  {
+   "a": "head.001",
+   "b": "lock94",
+   "tris": 112
+  },
+  {
+   "a": "lock100",
+   "b": "lock73",
+   "tris": 112
+  },
+  {
+   "a": "lock13",
+   "b": "lock25",
+   "tris": 112
+  },
+  {
+   "a": "lock20",
+   "b": "lock56",
+   "tris": 112
+  },
+  {
+   "a": "lock22",
+   "b": "lock49",
+   "tris": 112
+  },
+  {
+   "a": "lock27",
+   "b": "lock61",
+   "tris": 112
+  },
+  {
+   "a": "lock31",
+   "b": "lock32",
+   "tris": 112
+  },
+  {
+   "a": "lock34",
+   "b": "lock9",
+   "tris": 112
+  },
+  {
+   "a": "lock57",
+   "b": "lock9",
+   "tris": 112
+  },
+  {
+   "a": "lock73",
+   "b": "lock79",
+   "tris": 112
+  },
+  {
+   "a": "lock101",
+   "b": "lock61",
+   "tris": 111
+  },
+  {
+   "a": "lock104",
+   "b": "lock33",
+   "tris": 111
+  },
+  {
+   "a": "lock104",
+   "b": "lock85",
+   "tris": 111
+  },
+  {
+   "a": "lock13",
+   "b": "lock2",
+   "tris": 111
+  },
+  {
+   "a": "lock18",
+   "b": "lock55",
+   "tris": 111
+  },
+  {
+   "a": "lock21",
+   "b": "lock89",
+   "tris": 111
+  },
+  {
+   "a": "lock22",
+   "b": "lock9",
+   "tris": 111
+  },
+  {
+   "a": "lock22",
+   "b": "lock99",
+   "tris": 111
+  },
+  {
+   "a": "lock26",
+   "b": "lock63",
+   "tris": 111
+  },
+  {
+   "a": "lock33",
+   "b": "lock70",
+   "tris": 111
+  },
+  {
+   "a": "lock39",
+   "b": "lock72",
+   "tris": 111
+  },
+  {
+   "a": "lock59",
+   "b": "lock92",
+   "tris": 111
+  },
+  {
+   "a": "lock70",
+   "b": "lock96",
+   "tris": 111
+  },
+  {
+   "a": "lock8",
+   "b": "lock93",
+   "tris": 111
+  },
+  {
+   "a": "lock81",
+   "b": "lock95",
+   "tris": 111
+  },
+  {
+   "a": "head.001",
+   "b": "lock34",
+   "tris": 110
+  },
+  {
+   "a": "head.001",
+   "b": "lock75",
+   "tris": 110
+  },
+  {
+   "a": "head.001",
+   "b": "lock85",
+   "tris": 110
+  },
+  {
+   "a": "head.001",
+   "b": "lock95",
+   "tris": 110
+  },
+  {
+   "a": "head.001",
+   "b": "lock99",
+   "tris": 110
+  },
+  {
+   "a": "lock1",
+   "b": "lock22",
+   "tris": 110
+  },
+  {
+   "a": "lock103",
+   "b": "lock22",
+   "tris": 110
+  },
+  {
+   "a": "lock107",
+   "b": "lock29",
+   "tris": 110
+  },
+  {
+   "a": "lock109",
+   "b": "lock61",
+   "tris": 110
+  },
+  {
+   "a": "lock20",
+   "b": "lock83",
+   "tris": 110
+  },
+  {
+   "a": "lock22",
+   "b": "lock30",
+   "tris": 110
+  },
+  {
+   "a": "lock22",
+   "b": "lock85",
+   "tris": 110
+  },
+  {
+   "a": "lock27",
+   "b": "lock58",
+   "tris": 110
+  },
+  {
+   "a": "lock3",
+   "b": "lock66",
+   "tris": 110
+  },
+  {
+   "a": "lock1",
+   "b": "lock104",
+   "tris": 109
+  },
+  {
+   "a": "lock104",
+   "b": "lock53",
+   "tris": 109
+  },
+  {
+   "a": "lock23",
+   "b": "lock56",
+   "tris": 109
+  },
+  {
+   "a": "lock53",
+   "b": "lock7",
+   "tris": 109
+  },
+  {
+   "a": "lock57",
+   "b": "lock78",
+   "tris": 109
+  },
+  {
+   "a": "lock72",
+   "b": "lock87",
+   "tris": 109
+  },
+  {
+   "a": "cuffRimL",
+   "b": "tabardWaist",
+   "tris": 108
+  },
+  {
+   "a": "head.001",
+   "b": "lock2",
+   "tris": 108
+  },
+  {
+   "a": "head.001",
+   "b": "lock45",
+   "tris": 108
+  },
+  {
+   "a": "head.001",
+   "b": "lock46",
+   "tris": 108
+  },
+  {
+   "a": "head.001",
+   "b": "lock57",
+   "tris": 108
+  },
+  {
+   "a": "head.001",
+   "b": "lock96",
+   "tris": 108
+  },
+  {
+   "a": "lock10",
+   "b": "lock109",
+   "tris": 108
+  },
+  {
+   "a": "lock104",
+   "b": "lock45",
+   "tris": 108
+  },
+  {
+   "a": "lock104",
+   "b": "lock75",
+   "tris": 108
+  },
+  {
+   "a": "lock107",
+   "b": "lock6",
+   "tris": 108
+  },
+  {
+   "a": "lock15",
+   "b": "lock42",
+   "tris": 108
+  },
+  {
+   "a": "lock30",
+   "b": "lock96",
+   "tris": 108
+  },
+  {
+   "a": "lock32",
+   "b": "lock47",
+   "tris": 108
+  },
+  {
+   "a": "lock37",
+   "b": "lock67",
+   "tris": 108
+  },
+  {
+   "a": "lock4",
+   "b": "lock90",
+   "tris": 108
+  },
+  {
+   "a": "lock46",
+   "b": "lock7",
+   "tris": 108
+  },
+  {
+   "a": "lock61",
+   "b": "lock80",
+   "tris": 108
+  },
+  {
+   "a": "lock64",
+   "b": "lock86",
+   "tris": 108
+  },
+  {
+   "a": "lock70",
+   "b": "lock89",
+   "tris": 108
+  },
+  {
+   "a": "lock71",
+   "b": "lock77",
+   "tris": 108
+  },
+  {
+   "a": "lock71",
+   "b": "lock81",
+   "tris": 108
+  },
+  {
+   "a": "lock107",
+   "b": "lock55",
+   "tris": 107
+  },
+  {
+   "a": "lock108",
+   "b": "lock31",
+   "tris": 107
+  },
+  {
+   "a": "lock12",
+   "b": "lock16",
+   "tris": 107
+  },
+  {
+   "a": "lock18",
+   "b": "lock70",
+   "tris": 107
+  },
+  {
+   "a": "lock19",
+   "b": "lock61",
+   "tris": 107
+  },
+  {
+   "a": "lock22",
+   "b": "lock89",
+   "tris": 107
+  },
+  {
+   "a": "lock27",
+   "b": "lock72",
+   "tris": 107
+  },
+  {
+   "a": "lock30",
+   "b": "lock70",
+   "tris": 107
+  },
+  {
+   "a": "lock38",
+   "b": "lock90",
+   "tris": 107
+  },
+  {
+   "a": "lock49",
+   "b": "lock97",
+   "tris": 107
+  },
+  {
+   "a": "lock67",
+   "b": "lock68",
+   "tris": 107
+  },
+  {
+   "a": "lock68",
+   "b": "lock88",
+   "tris": 107
+  },
+  {
+   "a": "lock78",
+   "b": "lock94",
+   "tris": 107
+  },
+  {
+   "a": "head.001",
+   "b": "lock33",
+   "tris": 106
+  },
+  {
+   "a": "head.001",
+   "b": "lock49",
+   "tris": 106
+  },
+  {
+   "a": "lock0",
+   "b": "lock20",
+   "tris": 106
+  },
+  {
+   "a": "lock100",
+   "b": "lock27",
+   "tris": 106
+  },
+  {
+   "a": "lock101",
+   "b": "lock27",
+   "tris": 106
+  },
+  {
+   "a": "lock106",
+   "b": "lock23",
+   "tris": 106
+  },
+  {
+   "a": "lock17",
+   "b": "lock48",
+   "tris": 106
+  },
+  {
+   "a": "lock21",
+   "b": "lock28",
+   "tris": 106
+  },
+  {
+   "a": "lock45",
+   "b": "lock8",
+   "tris": 106
+  },
+  {
+   "a": "lock58",
+   "b": "lock64",
+   "tris": 106
+  },
+  {
+   "a": "lock0",
+   "b": "lock43",
+   "tris": 105
+  },
+  {
+   "a": "lock1",
+   "b": "lock7",
+   "tris": 105
+  },
+  {
+   "a": "lock103",
+   "b": "lock7",
+   "tris": 105
+  },
+  {
+   "a": "lock104",
+   "b": "lock30",
+   "tris": 105
+  },
+  {
+   "a": "lock11",
+   "b": "lock42",
+   "tris": 105
+  },
+  {
+   "a": "lock2",
+   "b": "lock90",
+   "tris": 105
+  },
+  {
+   "a": "lock28",
+   "b": "lock46",
+   "tris": 105
+  },
+  {
+   "a": "lock28",
+   "b": "lock57",
+   "tris": 105
+  },
+  {
+   "a": "lock29",
+   "b": "lock52",
+   "tris": 105
+  },
+  {
+   "a": "lock34",
+   "b": "lock57",
+   "tris": 105
+  },
+  {
+   "a": "lock35",
+   "b": "lock74",
+   "tris": 105
+  },
+  {
+   "a": "lock37",
+   "b": "lock65",
+   "tris": 105
+  },
+  {
+   "a": "lock67",
+   "b": "lock72",
+   "tris": 105
+  },
+  {
+   "a": "lock7",
+   "b": "lock75",
+   "tris": 105
+  },
+  {
+   "a": "lock82",
+   "b": "lock88",
+   "tris": 105
+  },
+  {
+   "a": "lock82",
+   "b": "lock97",
+   "tris": 105
+  },
+  {
+   "a": "cuffRimL",
+   "b": "tabardChest",
+   "tris": 104
+  },
+  {
+   "a": "cuffRimR",
+   "b": "tabardChest",
+   "tris": 104
+  },
+  {
+   "a": "cuffRimR",
+   "b": "tabardWaist",
+   "tris": 104
+  },
+  {
+   "a": "head.001",
+   "b": "lock102",
+   "tris": 104
+  },
+  {
+   "a": "head.001",
+   "b": "lock12",
+   "tris": 104
+  },
+  {
+   "a": "head.001",
+   "b": "lock93",
+   "tris": 104
+  },
+  {
+   "a": "lock107",
+   "b": "lock16",
+   "tris": 104
+  },
+  {
+   "a": "lock107",
+   "b": "lock18",
+   "tris": 104
+  },
+  {
+   "a": "lock37",
+   "b": "lock73",
+   "tris": 104
+  },
+  {
+   "a": "lock39",
+   "b": "lock68",
+   "tris": 104
+  },
+  {
+   "a": "lock39",
+   "b": "lock76",
+   "tris": 104
+  },
+  {
+   "a": "lock60",
+   "b": "lock90",
+   "tris": 104
+  },
+  {
+   "a": "lock64",
+   "b": "lock72",
+   "tris": 104
+  },
+  {
+   "a": "lock72",
+   "b": "lock73",
+   "tris": 104
+  },
+  {
+   "a": "lock1",
+   "b": "lock28",
+   "tris": 103
+  },
+  {
+   "a": "lock1",
+   "b": "lock8",
+   "tris": 103
+  },
+  {
+   "a": "lock102",
+   "b": "lock72",
+   "tris": 103
+  },
+  {
+   "a": "lock104",
+   "b": "lock46",
+   "tris": 103
+  },
+  {
+   "a": "lock13",
+   "b": "lock52",
+   "tris": 103
+  },
+  {
+   "a": "lock22",
+   "b": "lock53",
+   "tris": 103
+  },
+  {
+   "a": "lock26",
+   "b": "lock36",
+   "tris": 103
+  },
+  {
+   "a": "lock28",
+   "b": "lock85",
+   "tris": 103
+  },
+  {
+   "a": "lock32",
+   "b": "lock41",
+   "tris": 103
+  },
+  {
+   "a": "lock4",
+   "b": "lock44",
+   "tris": 103
+  },
+  {
+   "a": "lock42",
+   "b": "lock48",
+   "tris": 103
+  },
+  {
+   "a": "lock65",
+   "b": "lock7",
+   "tris": 103
+  },
+  {
+   "a": "lock67",
+   "b": "lock97",
+   "tris": 103
+  },
+  {
+   "a": "head.001",
+   "b": "lock53",
+   "tris": 102
+  },
+  {
+   "a": "head.001",
+   "b": "lock60",
+   "tris": 102
+  },
+  {
+   "a": "head.001",
+   "b": "lock67",
+   "tris": 102
+  },
+  {
+   "a": "head.001",
+   "b": "lock8",
+   "tris": 102
+  },
+  {
+   "a": "head.001",
+   "b": "lock9",
+   "tris": 102
+  },
+  {
+   "a": "lock100",
+   "b": "lock64",
+   "tris": 102
+  },
+  {
+   "a": "lock101",
+   "b": "lock39",
+   "tris": 102
+  },
+  {
+   "a": "lock27",
+   "b": "lock65",
+   "tris": 102
+  },
+  {
+   "a": "lock28",
+   "b": "lock94",
+   "tris": 102
+  },
+  {
+   "a": "lock31",
+   "b": "lock40",
+   "tris": 102
+  },
+  {
+   "a": "lock38",
+   "b": "lock57",
+   "tris": 102
+  },
+  {
+   "a": "lock55",
+   "b": "lock95",
+   "tris": 102
+  },
+  {
+   "a": "skirtouterB",
+   "b": "skirtouterR",
+   "tris": 102
+  },
+  {
+   "a": "lock102",
+   "b": "lock97",
+   "tris": 101
+  },
+  {
+   "a": "lock106",
+   "b": "lock24",
+   "tris": 101
+  },
+  {
+   "a": "lock16",
+   "b": "lock2",
+   "tris": 101
+  },
+  {
+   "a": "lock34",
+   "b": "lock94",
+   "tris": 101
+  },
+  {
+   "a": "lock42",
+   "b": "lock5",
+   "tris": 101
+  },
+  {
+   "a": "lock56",
+   "b": "lock74",
+   "tris": 101
+  },
+  {
+   "a": "lock75",
+   "b": "lock82",
+   "tris": 101
+  },
+  {
+   "a": "lock8",
+   "b": "lock89",
+   "tris": 101
+  },
+  {
+   "a": "plastron",
+   "b": "sleeveR",
+   "tris": 101
+  },
+  {
+   "a": "head.001",
+   "b": "jaw",
+   "tris": 100
+  },
+  {
+   "a": "head.001",
+   "b": "lock14",
+   "tris": 100
+  },
+  {
+   "a": "head.001",
+   "b": "lock30",
+   "tris": 100
+  },
+  {
+   "a": "head.001",
+   "b": "lock38",
+   "tris": 100
+  },
+  {
+   "a": "head.001",
+   "b": "lock4",
+   "tris": 100
+  },
+  {
+   "a": "head.001",
+   "b": "lock55",
+   "tris": 100
+  },
+  {
+   "a": "head.001",
+   "b": "lock97",
+   "tris": 100
+  },
+  {
+   "a": "lock107",
+   "b": "lock25",
+   "tris": 100
+  },
+  {
+   "a": "lock19",
+   "b": "lock37",
+   "tris": 100
+  },
+  {
+   "a": "lock19",
+   "b": "lock58",
+   "tris": 100
+  },
+  {
+   "a": "lock22",
+   "b": "lock45",
+   "tris": 100
+  },
+  {
+   "a": "lock34",
+   "b": "lock55",
+   "tris": 100
+  },
+  {
+   "a": "lock36",
+   "b": "lock47",
+   "tris": 100
+  },
+  {
+   "a": "lock44",
+   "b": "lock70",
+   "tris": 100
+  },
+  {
+   "a": "lock5",
+   "b": "lock98",
+   "tris": 100
+  },
+  {
+   "a": "lock50",
+   "b": "lock52",
+   "tris": 100
+  },
+  {
+   "a": "lock51",
+   "b": "lock74",
+   "tris": 100
+  },
+  {
+   "a": "lock52",
+   "b": "lock6",
+   "tris": 100
+  },
+  {
+   "a": "lock76",
+   "b": "lock87",
+   "tris": 100
+  },
+  {
+   "a": "lock77",
+   "b": "lock90",
+   "tris": 100
+  },
+  {
+   "a": "plastron",
+   "b": "sleeveL",
+   "tris": 100
+  },
+  {
+   "a": "skirtouterL",
+   "b": "thighL",
+   "tris": 100
+  },
+  {
+   "a": "lock102",
+   "b": "lock58",
+   "tris": 99
+  },
+  {
+   "a": "lock106",
+   "b": "lock20",
+   "tris": 99
+  },
+  {
+   "a": "lock108",
+   "b": "lock26",
+   "tris": 99
+  },
+  {
+   "a": "lock21",
+   "b": "lock49",
+   "tris": 99
+  },
+  {
+   "a": "lock29",
+   "b": "lock60",
+   "tris": 99
+  },
+  {
+   "a": "lock37",
+   "b": "lock64",
+   "tris": 99
+  },
+  {
+   "a": "lock87",
+   "b": "lock97",
+   "tris": 99
+  },
+  {
+   "a": "skirtouterR",
+   "b": "thighR",
+   "tris": 99
+  },
+  {
+   "a": "head.001",
+   "b": "lock13",
+   "tris": 98
+  },
+  {
+   "a": "head.001",
+   "b": "lock44",
+   "tris": 98
+  },
+  {
+   "a": "head.001",
+   "b": "lock7",
+   "tris": 98
+  },
+  {
+   "a": "head.001",
+   "b": "lock71",
+   "tris": 98
+  },
+  {
+   "a": "head.001",
+   "b": "lock73",
+   "tris": 98
+  },
+  {
+   "a": "head.001",
+   "b": "lock81",
+   "tris": 98
+  },
+  {
+   "a": "head.001",
+   "b": "lock89",
+   "tris": 98
+  },
+  {
+   "a": "head.001",
+   "b": "lock90",
+   "tris": 98
+  },
+  {
+   "a": "head.001",
+   "b": "neck.001",
+   "tris": 98
+  },
+  {
+   "a": "lock106",
+   "b": "lock83",
+   "tris": 98
+  },
+  {
+   "a": "lock106",
+   "b": "lock84",
+   "tris": 98
+  },
+  {
+   "a": "lock108",
+   "b": "lock41",
+   "tris": 98
+  },
+  {
+   "a": "lock15",
+   "b": "lock91",
+   "tris": 98
+  },
+  {
+   "a": "lock17",
+   "b": "lock74",
+   "tris": 98
+  },
+  {
+   "a": "lock19",
+   "b": "lock72",
+   "tris": 98
+  },
+  {
+   "a": "lock47",
+   "b": "lock63",
+   "tris": 98
+  },
+  {
+   "a": "lock50",
+   "b": "lock71",
+   "tris": 98
+  },
+  {
+   "a": "lock55",
+   "b": "lock77",
+   "tris": 98
+  },
+  {
+   "a": "lock0",
+   "b": "lock24",
+   "tris": 97
+  },
+  {
+   "a": "lock102",
+   "b": "lock75",
+   "tris": 97
+  },
+  {
+   "a": "lock104",
+   "b": "lock14",
+   "tris": 97
+  },
+  {
+   "a": "lock105",
+   "b": "lock41",
+   "tris": 97
+  },
+  {
+   "a": "lock26",
+   "b": "lock62",
+   "tris": 97
+  },
+  {
+   "a": "lock46",
+   "b": "lock8",
+   "tris": 97
+  },
+  {
+   "a": "lock52",
+   "b": "lock95",
+   "tris": 97
+  },
+  {
+   "a": "lock58",
+   "b": "lock67",
+   "tris": 97
+  },
+  {
+   "a": "lock58",
+   "b": "lock88",
+   "tris": 97
+  },
+  {
+   "a": "lock7",
+   "b": "lock85",
+   "tris": 97
+  },
+  {
+   "a": "lock78",
+   "b": "lock97",
+   "tris": 97
+  },
+  {
+   "a": "head.001",
+   "b": "lock104",
+   "tris": 96
+  },
+  {
+   "a": "head.001",
+   "b": "lock87",
+   "tris": 96
+  },
+  {
+   "a": "lock10",
+   "b": "lock26",
+   "tris": 96
+  },
+  {
+   "a": "lock100",
+   "b": "lock19",
+   "tris": 96
+  },
+  {
+   "a": "lock14",
+   "b": "lock8",
+   "tris": 96
+  },
+  {
+   "a": "lock19",
+   "b": "lock79",
+   "tris": 96
+  },
+  {
+   "a": "lock25",
+   "b": "lock95",
+   "tris": 96
+  },
+  {
+   "a": "lock27",
+   "b": "lock68",
+   "tris": 96
+  },
+  {
+   "a": "lock3",
+   "b": "lock42",
+   "tris": 96
+  },
+  {
+   "a": "lock32",
+   "b": "lock54",
+   "tris": 96
+  },
+  {
+   "a": "lock37",
+   "b": "lock87",
+   "tris": 96
+  },
+  {
+   "a": "lock42",
+   "b": "lock84",
+   "tris": 96
+  },
+  {
+   "a": "lock48",
+   "b": "lock5",
+   "tris": 96
+  },
+  {
+   "a": "lock90",
+   "b": "lock96",
+   "tris": 96
+  },
+  {
+   "a": "tunicChest",
+   "b": "tunicWaist",
+   "tris": 96
+  },
+  {
+   "a": "lock1",
+   "b": "lock82",
+   "tris": 95
+  },
+  {
+   "a": "lock104",
+   "b": "lock44",
+   "tris": 95
+  },
+  {
+   "a": "lock2",
+   "b": "lock29",
+   "tris": 95
+  },
+  {
+   "a": "lock21",
+   "b": "lock78",
+   "tris": 95
+  },
+  {
+   "a": "lock68",
+   "b": "lock82",
+   "tris": 95
+  },
+  {
+   "a": "lock8",
+   "b": "lock9",
+   "tris": 95
+  },
+  {
+   "a": "lock8",
+   "b": "lock96",
+   "tris": 95
+  },
+  {
+   "a": "head.001",
+   "b": "lock107",
+   "tris": 94
+  },
+  {
+   "a": "head.001",
+   "b": "lock16",
+   "tris": 94
+  },
+  {
+   "a": "head.001",
+   "b": "lock22",
+   "tris": 94
+  },
+  {
+   "a": "head.001",
+   "b": "lock28",
+   "tris": 94
+  },
+  {
+   "a": "head.001",
+   "b": "lock6",
+   "tris": 94
+  },
+  {
+   "a": "head.001",
+   "b": "lock78",
+   "tris": 94
+  },
+  {
+   "a": "lock0",
+   "b": "lock52",
+   "tris": 94
+  },
+  {
+   "a": "lock105",
+   "b": "lock54",
+   "tris": 94
+  },
+  {
+   "a": "lock106",
+   "b": "lock11",
+   "tris": 94
+  },
+  {
+   "a": "lock109",
+   "b": "lock54",
+   "tris": 94
+  },
+  {
+   "a": "lock18",
+   "b": "lock81",
+   "tris": 94
+  },
+  {
+   "a": "lock37",
+   "b": "lock86",
+   "tris": 94
+  },
+  {
+   "a": "lock43",
+   "b": "lock56",
+   "tris": 94
+  },
+  {
+   "a": "lock70",
+   "b": "lock9",
+   "tris": 94
+  },
+  {
+   "a": "buckle",
+   "b": "skirtinnerL",
+   "tris": 93
+  },
+  {
+   "a": "lock100",
+   "b": "lock67",
+   "tris": 93
+  },
+  {
+   "a": "lock106",
+   "b": "lock3",
+   "tris": 93
+  },
+  {
+   "a": "lock22",
+   "b": "lock93",
+   "tris": 93
+  },
+  {
+   "a": "lock22",
+   "b": "lock96",
+   "tris": 93
+  },
+  {
+   "a": "lock28",
+   "b": "lock44",
+   "tris": 93
+  },
+  {
+   "a": "lock31",
+   "b": "lock92",
+   "tris": 93
+  },
+  {
+   "a": "lock49",
+   "b": "lock57",
+   "tris": 93
+  },
+  {
+   "a": "deltoidR",
+   "b": "tabardChest",
+   "tris": 92
+  },
+  {
+   "a": "head.001",
+   "b": "lock68",
+   "tris": 92
+  },
+  {
+   "a": "lock102",
+   "b": "lock37",
+   "tris": 92
+  },
+  {
+   "a": "lock102",
+   "b": "lock79",
+   "tris": 92
+  },
+  {
+   "a": "lock109",
+   "b": "lock47",
+   "tris": 92
+  },
+  {
+   "a": "lock12",
+   "b": "lock25",
+   "tris": 92
+  },
+  {
+   "a": "lock38",
+   "b": "lock55",
+   "tris": 92
+  },
+  {
+   "a": "lock79",
+   "b": "lock87",
+   "tris": 92
+  },
+  {
+   "a": "lock80",
+   "b": "lock86",
+   "tris": 92
+  },
+  {
+   "a": "lock84",
+   "b": "lock91",
+   "tris": 92
+  },
+  {
+   "a": "lock102",
+   "b": "lock14",
+   "tris": 91
+  },
+  {
+   "a": "lock12",
+   "b": "lock90",
+   "tris": 91
+  },
+  {
+   "a": "lock28",
+   "b": "lock97",
+   "tris": 91
+  },
+  {
+   "a": "lock53",
+   "b": "lock8",
+   "tris": 91
+  },
+  {
+   "a": "lock7",
+   "b": "lock88",
+   "tris": 91
+  },
+  {
+   "a": "lock7",
+   "b": "lock99",
+   "tris": 91
+  },
+  {
+   "a": "head.001",
+   "b": "lock18",
+   "tris": 90
+  },
+  {
+   "a": "head.001",
+   "b": "lock25",
+   "tris": 90
+  },
+  {
+   "a": "head.001",
+   "b": "lock29",
+   "tris": 90
+  },
+  {
+   "a": "head.001",
+   "b": "lock50",
+   "tris": 90
+  },
+  {
+   "a": "head.001",
+   "b": "lock65",
+   "tris": 90
+  },
+  {
+   "a": "head.001",
+   "b": "lock70",
+   "tris": 90
+  },
+  {
+   "a": "head.001",
+   "b": "lock88",
+   "tris": 90
+  },
+  {
+   "a": "lock100",
+   "b": "lock102",
+   "tris": 90
+  },
+  {
+   "a": "lock100",
+   "b": "lock87",
+   "tris": 90
+  },
+  {
+   "a": "lock106",
+   "b": "lock15",
+   "tris": 90
+  },
+  {
+   "a": "lock107",
+   "b": "lock71",
+   "tris": 90
+  },
+  {
+   "a": "lock109",
+   "b": "lock41",
+   "tris": 90
+  },
+  {
+   "a": "lock18",
+   "b": "lock50",
+   "tris": 90
+  },
+  {
+   "a": "lock18",
+   "b": "lock6",
+   "tris": 90
+  },
+  {
+   "a": "lock2",
+   "b": "lock70",
+   "tris": 90
+  },
+  {
+   "a": "lock55",
+   "b": "lock96",
+   "tris": 90
+  },
+  {
+   "a": "lock64",
+   "b": "lock65",
+   "tris": 90
+  },
+  {
+   "a": "lock75",
+   "b": "lock8",
+   "tris": 90
+  },
+  {
+   "a": "tabardEdge1",
+   "b": "tabardWaist",
+   "tris": 90
+  },
+  {
+   "a": "lock100",
+   "b": "lock88",
+   "tris": 89
+  },
+  {
+   "a": "lock104",
+   "b": "lock9",
+   "tris": 89
+  },
+  {
+   "a": "lock44",
+   "b": "lock78",
+   "tris": 89
+  },
+  {
+   "a": "lock49",
+   "b": "lock94",
+   "tris": 89
+  },
+  {
+   "a": "lock58",
+   "b": "lock87",
+   "tris": 89
+  },
+  {
+   "a": "lock67",
+   "b": "lock76",
+   "tris": 89
+  },
+  {
+   "a": "deltoidL",
+   "b": "tabardChest",
+   "tris": 88
+  },
+  {
+   "a": "head.001",
+   "b": "lock77",
+   "tris": 88
+  },
+  {
+   "a": "lock12",
+   "b": "lock71",
+   "tris": 88
+  },
+  {
+   "a": "lock18",
+   "b": "lock4",
+   "tris": 88
+  },
+  {
+   "a": "lock31",
+   "b": "lock59",
+   "tris": 88
+  },
+  {
+   "a": "lock39",
+   "b": "lock61",
+   "tris": 88
+  },
+  {
+   "a": "lock60",
+   "b": "lock70",
+   "tris": 88
+  },
+  {
+   "a": "lock67",
+   "b": "lock75",
+   "tris": 88
+  },
+  {
+   "a": "lock67",
+   "b": "lock79",
+   "tris": 88
+  },
+  {
+   "a": "lock68",
+   "b": "lock7",
+   "tris": 88
+  },
+  {
+   "a": "lock70",
+   "b": "lock77",
+   "tris": 88
+  },
+  {
+   "a": "lock102",
+   "b": "lock45",
+   "tris": 87
+  },
+  {
+   "a": "lock104",
+   "b": "lock89",
+   "tris": 87
+  },
+  {
+   "a": "lock14",
+   "b": "lock22",
+   "tris": 87
+  },
+  {
+   "a": "lock20",
+   "b": "lock66",
+   "tris": 87
+  },
+  {
+   "a": "lock21",
+   "b": "lock34",
+   "tris": 87
+  },
+  {
+   "a": "lock22",
+   "b": "lock46",
+   "tris": 87
+  },
+  {
+   "a": "lock25",
+   "b": "lock77",
+   "tris": 87
+  },
+  {
+   "a": "lock46",
+   "b": "lock82",
+   "tris": 87
+  },
+  {
+   "a": "lock47",
+   "b": "lock80",
+   "tris": 87
+  },
+  {
+   "a": "lock49",
+   "b": "lock7",
+   "tris": 87
+  },
+  {
+   "a": "lock56",
+   "b": "lock84",
+   "tris": 87
+  },
+  {
+   "a": "lock57",
+   "b": "lock99",
+   "tris": 87
+  },
+  {
+   "a": "lock73",
+   "b": "lock97",
+   "tris": 87
+  },
+  {
+   "a": "head.001",
+   "b": "lock72",
+   "tris": 86
+  },
+  {
+   "a": "lock15",
+   "b": "lock56",
+   "tris": 86
+  },
+  {
+   "a": "lock19",
+   "b": "lock76",
+   "tris": 86
+  },
+  {
+   "a": "lock41",
+   "b": "lock59",
+   "tris": 86
+  },
+  {
+   "a": "lock79",
+   "b": "lock86",
+   "tris": 86
+  },
+  {
+   "a": "lock107",
+   "b": "lock90",
+   "tris": 85
+  },
+  {
+   "a": "lock21",
+   "b": "lock4",
+   "tris": 85
+  },
+  {
+   "a": "lock28",
+   "b": "lock9",
+   "tris": 85
+  },
+  {
+   "a": "lock4",
+   "b": "lock57",
+   "tris": 85
+  },
+  {
+   "a": "lock5",
+   "b": "lock74",
+   "tris": 85
+  },
+  {
+   "a": "lock53",
+   "b": "lock57",
+   "tris": 85
+  },
+  {
+   "a": "lock53",
+   "b": "lock82",
+   "tris": 85
+  },
+  {
+   "a": "lock82",
+   "b": "lock85",
+   "tris": 85
+  },
+  {
+   "a": "lock88",
+   "b": "lock97",
+   "tris": 85
+  },
+  {
+   "a": "lock94",
+   "b": "lock99",
+   "tris": 85
+  },
+  {
+   "a": "head.001",
+   "b": "lock52",
+   "tris": 84
+  },
+  {
+   "a": "lock102",
+   "b": "lock76",
+   "tris": 84
+  },
+  {
+   "a": "lock105",
+   "b": "lock26",
+   "tris": 84
+  },
+  {
+   "a": "lock106",
+   "b": "lock74",
+   "tris": 84
+  },
+  {
+   "a": "lock12",
+   "b": "lock55",
+   "tris": 84
+  },
+  {
+   "a": "lock2",
+   "b": "lock4",
+   "tris": 84
+  },
+  {
+   "a": "lock23",
+   "b": "lock35",
+   "tris": 84
+  },
+  {
+   "a": "lock41",
+   "b": "lock62",
+   "tris": 84
+  },
+  {
+   "a": "lock45",
+   "b": "lock67",
+   "tris": 84
+  },
+  {
+   "a": "lock52",
+   "b": "lock66",
+   "tris": 84
+  },
+  {
+   "a": "lock56",
+   "b": "lock83",
+   "tris": 84
+  },
+  {
+   "a": "lock60",
+   "b": "lock71",
+   "tris": 84
+  },
+  {
+   "a": "lock76",
+   "b": "lock86",
+   "tris": 84
+  },
+  {
+   "a": "lock90",
+   "b": "lock93",
+   "tris": 84
+  },
+  {
+   "a": "lock90",
+   "b": "lock95",
+   "tris": 84
+  },
+  {
+   "a": "lock106",
+   "b": "lock98",
+   "tris": 83
+  },
+  {
+   "a": "lock14",
+   "b": "lock82",
+   "tris": 83
+  },
+  {
+   "a": "lock15",
+   "b": "lock69",
+   "tris": 83
+  },
+  {
+   "a": "lock22",
+   "b": "lock75",
+   "tris": 83
+  },
+  {
+   "a": "lock23",
+   "b": "lock5",
+   "tris": 83
+  },
+  {
+   "a": "lock66",
+   "b": "lock71",
+   "tris": 83
+  },
+  {
+   "a": "head.001",
+   "b": "lock37",
+   "tris": 82
+  },
+  {
+   "a": "head.001",
+   "b": "lock79",
+   "tris": 82
+  },
+  {
+   "a": "lock1",
+   "b": "lock102",
+   "tris": 82
+  },
+  {
+   "a": "lock101",
+   "b": "lock76",
+   "tris": 82
+  },
+  {
+   "a": "lock101",
+   "b": "lock79",
+   "tris": 82
+  },
+  {
+   "a": "lock13",
+   "b": "lock71",
+   "tris": 82
+  },
+  {
+   "a": "lock14",
+   "b": "lock67",
+   "tris": 82
+  },
+  {
+   "a": "lock50",
+   "b": "lock55",
+   "tris": 82
+  },
+  {
+   "a": "lock44",
+   "b": "lock49",
+   "tris": 81
+  },
+  {
+   "a": "lock44",
+   "b": "lock99",
+   "tris": 81
+  },
+  {
+   "a": "lock45",
+   "b": "lock82",
+   "tris": 81
+  },
+  {
+   "a": "lock54",
+   "b": "lock59",
+   "tris": 81
+  },
+  {
+   "a": "lock78",
+   "b": "lock9",
+   "tris": 81
+  },
+  {
+   "a": "lock85",
+   "b": "lock94",
+   "tris": 81
+  },
+  {
+   "a": "head.001",
+   "b": "lock58",
+   "tris": 80
+  },
+  {
+   "a": "lock1",
+   "b": "lock67",
+   "tris": 80
+  },
+  {
+   "a": "lock100",
+   "b": "lock86",
+   "tris": 80
+  },
+  {
+   "a": "lock101",
+   "b": "lock80",
+   "tris": 80
+  },
+  {
+   "a": "lock108",
+   "b": "lock54",
+   "tris": 80
+  },
+  {
+   "a": "lock25",
+   "b": "lock60",
+   "tris": 80
+  },
+  {
+   "a": "lock26",
+   "b": "lock40",
+   "tris": 80
+  },
+  {
+   "a": "lock27",
+   "b": "lock73",
+   "tris": 80
+  },
+  {
+   "a": "lock33",
+   "b": "lock90",
+   "tris": 80
+  },
+  {
+   "a": "lock43",
+   "b": "lock74",
+   "tris": 80
+  },
+  {
+   "a": "lock46",
+   "b": "lock87",
+   "tris": 80
+  },
+  {
+   "a": "lock5",
+   "b": "lock66",
+   "tris": 80
+  },
+  {
+   "a": "lock58",
+   "b": "lock82",
+   "tris": 80
+  },
+  {
+   "a": "lock65",
+   "b": "lock97",
+   "tris": 80
+  },
+  {
+   "a": "lock67",
+   "b": "lock85",
+   "tris": 80
+  },
+  {
+   "a": "lock76",
+   "b": "lock82",
+   "tris": 80
+  },
+  {
+   "a": "lock104",
+   "b": "lock38",
+   "tris": 79
+  },
+  {
+   "a": "lock28",
+   "b": "lock7",
+   "tris": 79
+  },
+  {
+   "a": "lock9",
+   "b": "lock99",
+   "tris": 79
+  },
+  {
+   "a": "clip",
+   "b": "skirtinnerR",
+   "tris": 78
+  },
+  {
+   "a": "head.001",
+   "b": "lock100",
+   "tris": 78
+  },
+  {
+   "a": "lameR2",
+   "b": "sleeveR",
+   "tris": 78
+  },
+  {
+   "a": "lock0",
+   "b": "lock5",
+   "tris": 78
+  },
+  {
+   "a": "lock10",
+   "b": "lock32",
+   "tris": 78
+  },
+  {
+   "a": "lock100",
+   "b": "lock82",
+   "tris": 78
+  },
+  {
+   "a": "lock101",
+   "b": "lock37",
+   "tris": 78
+  },
+  {
+   "a": "lock102",
+   "b": "lock46",
+   "tris": 78
+  },
+  {
+   "a": "lock105",
+   "b": "lock61",
+   "tris": 78
+  },
+  {
+   "a": "lock106",
+   "b": "lock51",
+   "tris": 78
+  },
+  {
+   "a": "lock13",
+   "b": "lock55",
+   "tris": 78
+  },
+  {
+   "a": "lock16",
+   "b": "lock18",
+   "tris": 78
+  },
+  {
+   "a": "lock18",
+   "b": "lock29",
+   "tris": 78
+  },
+  {
+   "a": "lock24",
+   "b": "lock66",
+   "tris": 78
+  },
+  {
+   "a": "lock24",
+   "b": "lock74",
+   "tris": 78
+  },
+  {
+   "a": "lock27",
+   "b": "lock88",
+   "tris": 78
+  },
+  {
+   "a": "lock37",
+   "b": "lock82",
+   "tris": 78
+  },
+  {
+   "a": "lock40",
+   "b": "lock61",
+   "tris": 78
+  },
+  {
+   "a": "lock46",
+   "b": "lock67",
+   "tris": 78
+  },
+  {
+   "a": "lock47",
+   "b": "lock59",
+   "tris": 78
+  },
+  {
+   "a": "lock55",
+   "b": "lock93",
+   "tris": 78
+  },
+  {
+   "a": "lock64",
+   "b": "lock68",
+   "tris": 78
+  },
+  {
+   "a": "lock7",
+   "b": "lock72",
+   "tris": 78
+  },
+  {
+   "a": "lock71",
+   "b": "lock95",
+   "tris": 78
+  },
+  {
+   "a": "lock103",
+   "b": "lock57",
+   "tris": 77
+  },
+  {
+   "a": "lock11",
+   "b": "lock5",
+   "tris": 77
+  },
+  {
+   "a": "lock14",
+   "b": "lock21",
+   "tris": 77
+  },
+  {
+   "a": "lock30",
+   "b": "lock78",
+   "tris": 77
+  },
+  {
+   "a": "lock5",
+   "b": "lock84",
+   "tris": 77
+  },
+  {
+   "a": "lock75",
+   "b": "lock87",
+   "tris": 77
+  },
+  {
+   "a": "beltEdge0.035",
+   "b": "skirtouterL",
+   "tris": 76
+  },
+  {
+   "a": "lock100",
+   "b": "lock101",
+   "tris": 76
+  },
+  {
+   "a": "lock104",
+   "b": "lock96",
+   "tris": 76
+  },
+  {
+   "a": "lock12",
+   "b": "lock52",
+   "tris": 76
+  },
+  {
+   "a": "lock18",
+   "b": "lock34",
+   "tris": 76
+  },
+  {
+   "a": "lock18",
+   "b": "lock38",
+   "tris": 76
+  },
+  {
+   "a": "lock19",
+   "b": "lock68",
+   "tris": 76
+  },
+  {
+   "a": "lock20",
+   "b": "lock48",
+   "tris": 76
+  },
+  {
+   "a": "lock24",
+   "b": "lock48",
+   "tris": 76
+  },
+  {
+   "a": "lock28",
+   "b": "lock30",
+   "tris": 76
+  },
+  {
+   "a": "lock30",
+   "b": "lock90",
+   "tris": 76
+  },
+  {
+   "a": "lock35",
+   "b": "lock42",
+   "tris": 76
+  },
+  {
+   "a": "lock39",
+   "b": "lock65",
+   "tris": 76
+  },
+  {
+   "a": "lock43",
+   "b": "lock66",
+   "tris": 76
+  },
+  {
+   "a": "lock47",
+   "b": "lock92",
+   "tris": 76
+  },
+  {
+   "a": "lock58",
+   "b": "lock7",
+   "tris": 76
+  },
+  {
+   "a": "lock72",
+   "b": "lock82",
+   "tris": 76
+  },
+  {
+   "a": "lock0",
+   "b": "lock71",
+   "tris": 75
+  },
+  {
+   "a": "lock1",
+   "b": "lock94",
+   "tris": 75
+  },
+  {
+   "a": "lock11",
+   "b": "lock91",
+   "tris": 75
+  },
+  {
+   "a": "lock14",
+   "b": "lock87",
+   "tris": 75
+  },
+  {
+   "a": "lock14",
+   "b": "lock94",
+   "tris": 75
+  },
+  {
+   "a": "lock21",
+   "b": "lock85",
+   "tris": 75
+  },
+  {
+   "a": "lock21",
+   "b": "lock99",
+   "tris": 75
+  },
+  {
+   "a": "lock22",
+   "b": "lock38",
+   "tris": 75
+  },
+  {
+   "a": "lock48",
+   "b": "lock91",
+   "tris": 75
+  },
+  {
+   "a": "head.001",
+   "b": "lock39",
+   "tris": 74
+  },
+  {
+   "a": "head.001",
+   "b": "lock76",
+   "tris": 74
+  },
+  {
+   "a": "lock101",
+   "b": "lock58",
+   "tris": 74
+  },
+  {
+   "a": "lock103",
+   "b": "lock67",
+   "tris": 74
+  },
+  {
+   "a": "lock105",
+   "b": "lock31",
+   "tris": 74
+  },
+  {
+   "a": "lock107",
+   "b": "lock52",
+   "tris": 74
+  },
+  {
+   "a": "lock108",
+   "b": "lock47",
+   "tris": 74
+  },
+  {
+   "a": "lock13",
+   "b": "lock90",
+   "tris": 74
+  },
+  {
+   "a": "lock33",
+   "b": "lock55",
+   "tris": 74
+  },
+  {
+   "a": "lock37",
+   "b": "lock7",
+   "tris": 74
+  },
+  {
+   "a": "lock54",
+   "b": "lock62",
+   "tris": 74
+  },
+  {
+   "a": "lock58",
+   "b": "lock86",
+   "tris": 74
+  },
+  {
+   "a": "lock68",
+   "b": "lock86",
+   "tris": 74
+  },
+  {
+   "a": "lock73",
+   "b": "lock75",
+   "tris": 74
+  },
+  {
+   "a": "lock79",
+   "b": "lock82",
+   "tris": 74
+  },
+  {
+   "a": "lock89",
+   "b": "lock90",
+   "tris": 74
+  },
+  {
+   "a": "lock101",
+   "b": "lock109",
+   "tris": 73
+  },
+  {
+   "a": "lock103",
+   "b": "lock21",
+   "tris": 73
+  },
+  {
+   "a": "lock103",
+   "b": "lock94",
+   "tris": 73
+  },
+  {
+   "a": "lock14",
+   "b": "lock57",
+   "tris": 73
+  },
+  {
+   "a": "lock4",
+   "b": "lock94",
+   "tris": 73
+  },
+  {
+   "a": "lock49",
+   "b": "lock9",
+   "tris": 73
+  },
+  {
+   "a": "lock53",
+   "b": "lock94",
+   "tris": 73
+  },
+  {
+   "a": "belt_shroud",
+   "b": "skirtouterL",
+   "tris": 72
+  },
+  {
+   "a": "bootCuffR",
+   "b": "skirtouterB",
+   "tris": 72
+  },
+  {
+   "a": "lock1",
+   "b": "lock87",
+   "tris": 72
+  },
+  {
+   "a": "lock100",
+   "b": "lock7",
+   "tris": 72
+  },
+  {
+   "a": "lock102",
+   "b": "lock53",
+   "tris": 72
+  },
+  {
+   "a": "lock102",
+   "b": "lock85",
+   "tris": 72
+  },
+  {
+   "a": "lock64",
+   "b": "lock88",
+   "tris": 72
+  },
+  {
+   "a": "lock72",
+   "b": "lock86",
+   "tris": 72
+  },
+  {
+   "a": "lock104",
+   "b": "lock93",
+   "tris": 71
+  },
+  {
+   "a": "lock104",
+   "b": "lock97",
+   "tris": 71
+  },
+  {
+   "a": "lock22",
+   "b": "lock34",
+   "tris": 71
+  },
+  {
+   "a": "lock41",
+   "b": "lock92",
+   "tris": 71
+  },
+  {
+   "a": "lock45",
+   "b": "lock57",
+   "tris": 71
+  },
+  {
+   "a": "lock52",
+   "b": "lock60",
+   "tris": 71
+  },
+  {
+   "a": "lock7",
+   "b": "lock78",
+   "tris": 71
+  },
+  {
+   "a": "lock78",
+   "b": "lock89",
+   "tris": 71
+  },
+  {
+   "a": "head.001",
+   "b": "lock0",
+   "tris": 70
+  },
+  {
+   "a": "head.001",
+   "b": "lock27",
+   "tris": 70
+  },
+  {
+   "a": "lock104",
+   "b": "lock4",
+   "tris": 70
+  },
+  {
+   "a": "lock106",
+   "b": "lock35",
+   "tris": 70
+  },
+  {
+   "a": "lock19",
+   "b": "lock80",
+   "tris": 70
+  },
+  {
+   "a": "lock28",
+   "b": "lock33",
+   "tris": 70
+  },
+  {
+   "a": "lock42",
+   "b": "lock51",
+   "tris": 70
+  },
+  {
+   "a": "lock46",
+   "b": "lock88",
+   "tris": 70
+  },
+  {
+   "a": "lock104",
+   "b": "lock34",
+   "tris": 69
+  },
+  {
+   "a": "lock30",
+   "b": "lock49",
+   "tris": 69
+  },
+  {
+   "a": "lock30",
+   "b": "lock99",
+   "tris": 69
+  },
+  {
+   "a": "lock33",
+   "b": "lock78",
+   "tris": 69
+  },
+  {
+   "a": "lock45",
+   "b": "lock87",
+   "tris": 69
+  },
+  {
+   "a": "lock45",
+   "b": "lock94",
+   "tris": 69
+  },
+  {
+   "a": "lock46",
+   "b": "lock57",
+   "tris": 69
+  },
+  {
+   "a": "lock57",
+   "b": "lock85",
+   "tris": 69
+  },
+  {
+   "a": "lock82",
+   "b": "lock99",
+   "tris": 69
+  },
+  {
+   "a": "belt",
+   "b": "skirtinnerR",
+   "tris": 68
+  },
+  {
+   "a": "belt",
+   "b": "skirtouterR",
+   "tris": 68
+  },
+  {
+   "a": "crest2",
+   "b": "pauldron",
+   "tris": 68
+  },
+  {
+   "a": "lock0",
+   "b": "lock25",
+   "tris": 68
+  },
+  {
+   "a": "lock10",
+   "b": "lock59",
+   "tris": 68
+  },
+  {
+   "a": "lock109",
+   "b": "lock31",
+   "tris": 68
+  },
+  {
+   "a": "lock17",
+   "b": "lock56",
+   "tris": 68
+  },
+  {
+   "a": "lock18",
+   "b": "lock93",
+   "tris": 68
+  },
+  {
+   "a": "lock20",
+   "b": "lock74",
+   "tris": 68
+  },
+  {
+   "a": "lock34",
+   "b": "lock8",
+   "tris": 68
+  },
+  {
+   "a": "lock39",
+   "b": "lock73",
+   "tris": 68
+  },
+  {
+   "a": "lock4",
+   "b": "lock60",
+   "tris": 68
+  },
+  {
+   "a": "lock4",
+   "b": "lock8",
+   "tris": 68
+  },
+  {
+   "a": "lock42",
+   "b": "lock98",
+   "tris": 68
+  },
+  {
+   "a": "lock43",
+   "b": "lock48",
+   "tris": 68
+  },
+  {
+   "a": "lock44",
+   "b": "lock90",
+   "tris": 68
+  },
+  {
+   "a": "lock46",
+   "b": "lock65",
+   "tris": 68
+  },
+  {
+   "a": "lock46",
+   "b": "lock73",
+   "tris": 68
+  },
+  {
+   "a": "lock47",
+   "b": "lock62",
+   "tris": 68
+  },
+  {
+   "a": "lock50",
+   "b": "lock70",
+   "tris": 68
+  },
+  {
+   "a": "lock52",
+   "b": "lock98",
+   "tris": 68
+  },
+  {
+   "a": "lock53",
+   "b": "lock67",
+   "tris": 68
+  },
+  {
+   "a": "lock54",
+   "b": "lock80",
+   "tris": 68
+  },
+  {
+   "a": "lock69",
+   "b": "lock84",
+   "tris": 68
+  },
+  {
+   "a": "lock103",
+   "b": "lock82",
+   "tris": 67
+  },
+  {
+   "a": "lock2",
+   "b": "lock52",
+   "tris": 67
+  },
+  {
+   "a": "lock21",
+   "b": "lock53",
+   "tris": 67
+  },
+  {
+   "a": "flap2",
+   "b": "tabardWaist",
+   "tris": 66
+  },
+  {
+   "a": "head.001",
+   "b": "lock64",
+   "tris": 66
+  },
+  {
+   "a": "head.001",
+   "b": "lock86",
+   "tris": 66
+  },
+  {
+   "a": "head.001",
+   "b": "lock98",
+   "tris": 66
+  },
+  {
+   "a": "lock1",
+   "b": "lock73",
+   "tris": 66
+  },
+  {
+   "a": "lock10",
+   "b": "lock61",
+   "tris": 66
+  },
+  {
+   "a": "lock102",
+   "b": "lock103",
+   "tris": 66
+  },
+  {
+   "a": "lock106",
+   "b": "lock17",
+   "tris": 66
+  },
+  {
+   "a": "lock2",
+   "b": "lock71",
+   "tris": 66
+  },
+  {
+   "a": "lock38",
+   "b": "lock8",
+   "tris": 66
+  },
+  {
+   "a": "lock53",
+   "b": "lock87",
+   "tris": 66
+  },
+  {
+   "a": "lock55",
+   "b": "lock89",
+   "tris": 66
+  },
+  {
+   "a": "lock67",
+   "b": "lock99",
+   "tris": 66
+  },
+  {
+   "a": "lock9",
+   "b": "lock90",
+   "tris": 66
+  },
+  {
+   "a": "flap0",
+   "b": "tabardWaist",
+   "tris": 65
+  },
+  {
+   "a": "lock109",
+   "b": "lock86",
+   "tris": 65
+  },
+  {
+   "a": "lock57",
+   "b": "lock75",
+   "tris": 65
+  },
+  {
+   "a": "lock8",
+   "b": "lock97",
+   "tris": 65
+  },
+  {
+   "a": "belt",
+   "b": "skirtinnerL",
+   "tris": 64
+  },
+  {
+   "a": "lock10",
+   "b": "lock36",
+   "tris": 64
+  },
+  {
+   "a": "lock101",
+   "b": "lock72",
+   "tris": 64
+  },
+  {
+   "a": "lock18",
+   "b": "lock96",
+   "tris": 64
+  },
+  {
+   "a": "lock2",
+   "b": "lock25",
+   "tris": 64
+  },
+  {
+   "a": "lock27",
+   "b": "lock87",
+   "tris": 64
+  },
+  {
+   "a": "lock64",
+   "b": "lock73",
+   "tris": 64
+  },
+  {
+   "a": "lock7",
+   "b": "lock76",
+   "tris": 64
+  },
+  {
+   "a": "lock70",
+   "b": "lock94",
+   "tris": 64
+  },
+  {
+   "a": "lock73",
+   "b": "lock85",
+   "tris": 64
+  },
+  {
+   "a": "lock74",
+   "b": "lock83",
+   "tris": 64
+  },
+  {
+   "a": "lock85",
+   "b": "lock87",
+   "tris": 64
+  },
+  {
+   "a": "pouch0",
+   "b": "skirtouterR",
+   "tris": 64
+  },
+  {
+   "a": "pouch1",
+   "b": "skirtouterR",
+   "tris": 64
+  },
+  {
+   "a": "pouch2",
+   "b": "skirtouterL",
+   "tris": 64
+  },
+  {
+   "a": "lock1",
+   "b": "lock57",
+   "tris": 63
+  },
+  {
+   "a": "lock103",
+   "b": "lock9",
+   "tris": 63
+  },
+  {
+   "a": "buckle",
+   "b": "skirtouterL",
+   "tris": 62
+  },
+  {
+   "a": "cuffRimL",
+   "b": "tunicWaist",
+   "tris": 62
+  },
+  {
+   "a": "lock10",
+   "b": "lock63",
+   "tris": 62
+  },
+  {
+   "a": "lock102",
+   "b": "lock99",
+   "tris": 62
+  },
+  {
+   "a": "lock107",
+   "b": "lock70",
+   "tris": 62
+  },
+  {
+   "a": "lock18",
+   "b": "lock89",
+   "tris": 62
+  },
+  {
+   "a": "lock2",
+   "b": "lock34",
+   "tris": 62
+  },
+  {
+   "a": "lock21",
+   "b": "lock70",
+   "tris": 62
+  },
+  {
+   "a": "lock21",
+   "b": "lock90",
+   "tris": 62
+  },
+  {
+   "a": "lock22",
+   "b": "lock97",
+   "tris": 62
+  },
+  {
+   "a": "lock23",
+   "b": "lock69",
+   "tris": 62
+  },
+  {
+   "a": "lock23",
+   "b": "lock91",
+   "tris": 62
+  },
+  {
+   "a": "lock41",
+   "b": "lock80",
+   "tris": 62
+  },
+  {
+   "a": "lock45",
+   "b": "lock73",
+   "tris": 62
+  },
+  {
+   "a": "lock55",
+   "b": "lock81",
+   "tris": 62
+  },
+  {
+   "a": "pouch3",
+   "b": "skirtouterB",
+   "tris": 62
+  },
+  {
+   "a": "lock109",
+   "b": "lock19",
+   "tris": 61
+  },
+  {
+   "a": "lock75",
+   "b": "lock94",
+   "tris": 61
+  },
+  {
+   "a": "lock78",
+   "b": "lock96",
+   "tris": 61
+  },
+  {
+   "a": "buckleIn",
+   "b": "skirtouterL",
+   "tris": 60
+  },
+  {
+   "a": "deltoidL",
+   "b": "tunicChest",
+   "tris": 60
+  },
+  {
+   "a": "deltoidR",
+   "b": "tunicChest",
+   "tris": 60
+  },
+  {
+   "a": "head.001",
+   "b": "lock19",
+   "tris": 60
+  },
+  {
+   "a": "head.001",
+   "b": "lock43",
+   "tris": 60
+  },
+  {
+   "a": "head.001",
+   "b": "lock66",
+   "tris": 60
+  },
+  {
+   "a": "lock103",
+   "b": "lock87",
+   "tris": 60
+  },
+  {
+   "a": "lock109",
+   "b": "lock26",
+   "tris": 60
+  },
+  {
+   "a": "lock25",
+   "b": "lock66",
+   "tris": 60
+  },
+  {
+   "a": "lock30",
+   "b": "lock55",
+   "tris": 60
+  },
+  {
+   "a": "lock44",
+   "b": "lock55",
+   "tris": 60
+  },
+  {
+   "a": "lock51",
+   "b": "lock56",
+   "tris": 60
+  },
+  {
+   "a": "lock68",
+   "b": "lock97",
+   "tris": 60
+  },
+  {
+   "a": "lock70",
+   "b": "lock95",
+   "tris": 60
+  },
+  {
+   "a": "lock75",
+   "b": "lock88",
+   "tris": 60
+  },
+  {
+   "a": "lock103",
+   "b": "lock30",
+   "tris": 59
+  },
+  {
+   "a": "lock22",
+   "b": "lock4",
+   "tris": 59
+  },
+  {
+   "a": "crest3",
+   "b": "pauldron",
+   "tris": 58
+  },
+  {
+   "a": "head.001",
+   "b": "lock101",
+   "tris": 58
+  },
+  {
+   "a": "head.001",
+   "b": "lock83",
+   "tris": 58
+  },
+  {
+   "a": "lock11",
+   "b": "lock69",
+   "tris": 58
+  },
+  {
+   "a": "lock17",
+   "b": "lock42",
+   "tris": 58
+  },
+  {
+   "a": "lock18",
+   "b": "lock33",
+   "tris": 58
+  },
+  {
+   "a": "lock2",
+   "b": "lock38",
+   "tris": 58
+  },
+  {
+   "a": "lock21",
+   "b": "lock55",
+   "tris": 58
+  },
+  {
+   "a": "lock27",
+   "b": "lock82",
+   "tris": 58
+  },
+  {
+   "a": "lock34",
+   "b": "lock60",
+   "tris": 58
+  },
+  {
+   "a": "lock4",
+   "b": "lock77",
+   "tris": 58
+  },
+  {
+   "a": "lock55",
+   "b": "lock9",
+   "tris": 58
+  },
+  {
+   "a": "lock7",
+   "b": "lock79",
+   "tris": 58
+  },
+  {
+   "a": "lock74",
+   "b": "lock91",
+   "tris": 58
+  },
+  {
+   "a": "lock78",
+   "b": "lock93",
+   "tris": 58
+  },
+  {
+   "a": "lock46",
+   "b": "lock94",
+   "tris": 57
+  },
+  {
+   "a": "lock49",
+   "b": "lock82",
+   "tris": 57
+  },
+  {
+   "a": "gauntletL",
+   "b": "tabardChest",
+   "tris": 56
+  },
+  {
+   "a": "head.001",
+   "b": "lock20",
+   "tris": 56
+  },
+  {
+   "a": "head.001",
+   "b": "lock24",
+   "tris": 56
+  },
+  {
+   "a": "head.001",
+   "b": "lock26",
+   "tris": 56
+  },
+  {
+   "a": "head.001",
+   "b": "lock3",
+   "tris": 56
+  },
+  {
+   "a": "head.001",
+   "b": "lock42",
+   "tris": 56
+  },
+  {
+   "a": "head.001",
+   "b": "lock48",
+   "tris": 56
+  },
+  {
+   "a": "head.001",
+   "b": "lock5",
+   "tris": 56
+  },
+  {
+   "a": "lock0",
+   "b": "lock16",
+   "tris": 56
+  },
+  {
+   "a": "lock105",
+   "b": "lock32",
+   "tris": 56
+  },
+  {
+   "a": "lock11",
+   "b": "lock43",
+   "tris": 56
+  },
+  {
+   "a": "lock34",
+   "b": "lock77",
+   "tris": 56
+  },
+  {
+   "a": "lock50",
+   "b": "lock90",
+   "tris": 56
+  },
+  {
+   "a": "lock53",
+   "b": "lock73",
+   "tris": 56
+  },
+  {
+   "a": "lock54",
+   "b": "lock92",
+   "tris": 56
+  },
+  {
+   "a": "lock56",
+   "b": "lock98",
+   "tris": 56
+  },
+  {
+   "a": "lock57",
+   "b": "lock70",
+   "tris": 56
+  },
+  {
+   "a": "lock61",
+   "b": "lock79",
+   "tris": 56
+  },
+  {
+   "a": "lock65",
+   "b": "lock75",
+   "tris": 56
+  },
+  {
+   "a": "neck.001",
+   "b": "tunicChest",
+   "tris": 56
+  },
+  {
+   "a": "pouch0",
+   "b": "tabardWaist",
+   "tris": 56
+  },
+  {
+   "a": "pouch2",
+   "b": "tabardWaist",
+   "tris": 56
+  },
+  {
+   "a": "lock103",
+   "b": "lock44",
+   "tris": 55
+  },
+  {
+   "a": "collar",
+   "b": "tunicChest",
+   "tris": 54
+  },
+  {
+   "a": "head.001",
+   "b": "lock47",
+   "tris": 54
+  },
+  {
+   "a": "head.001",
+   "b": "lock56",
+   "tris": 54
+  },
+  {
+   "a": "head.001",
+   "b": "lock74",
+   "tris": 54
+  },
+  {
+   "a": "lock1",
+   "b": "lock88",
+   "tris": 54
+  },
+  {
+   "a": "lock101",
+   "b": "lock68",
+   "tris": 54
+  },
+  {
+   "a": "lock14",
+   "b": "lock30",
+   "tris": 54
+  },
+  {
+   "a": "lock14",
+   "b": "lock88",
+   "tris": 54
+  },
+  {
+   "a": "lock15",
+   "b": "lock43",
+   "tris": 54
+  },
+  {
+   "a": "lock19",
+   "b": "lock65",
+   "tris": 54
+  },
+  {
+   "a": "lock3",
+   "b": "lock74",
+   "tris": 54
+  },
+  {
+   "a": "lock31",
+   "b": "lock80",
+   "tris": 54
+  },
+  {
+   "a": "lock38",
+   "b": "lock60",
+   "tris": 54
+  },
+  {
+   "a": "lock39",
+   "b": "lock80",
+   "tris": 54
+  },
+  {
+   "a": "lock52",
+   "b": "lock77",
+   "tris": 54
+  },
+  {
+   "a": "lock64",
+   "b": "lock87",
+   "tris": 54
+  },
+  {
+   "a": "beltEdge0.035",
+   "b": "skirtouterR",
+   "tris": 53
+  },
+  {
+   "a": "collar",
+   "b": "head.001",
+   "tris": 53
+  },
+  {
+   "a": "head.001",
+   "b": "lock17",
+   "tris": 53
+  },
+  {
+   "a": "lock109",
+   "b": "lock64",
+   "tris": 53
+  },
+  {
+   "a": "lock21",
+   "b": "lock45",
+   "tris": 53
+  },
+  {
+   "a": "lock28",
+   "b": "lock93",
+   "tris": 53
+  },
+  {
+   "a": "lock48",
+   "b": "lock69",
+   "tris": 53
+  },
+  {
+   "a": "head.001",
+   "b": "lock10",
+   "tris": 52
+  },
+  {
+   "a": "head.001",
+   "b": "lock106",
+   "tris": 52
+  },
+  {
+   "a": "head.001",
+   "b": "lock109",
+   "tris": 52
+  },
+  {
+   "a": "head.001",
+   "b": "lock11",
+   "tris": 52
+  },
+  {
+   "a": "lock101",
+   "b": "lock105",
+   "tris": 52
+  },
+  {
+   "a": "lock11",
+   "b": "lock24",
+   "tris": 52
+  },
+  {
+   "a": "lock14",
+   "b": "lock44",
+   "tris": 52
+  },
+  {
+   "a": "lock16",
+   "b": "lock90",
+   "tris": 52
+  },
+  {
+   "a": "lock3",
+   "b": "lock48",
+   "tris": 52
+  },
+  {
+   "a": "lock32",
+   "b": "lock40",
+   "tris": 52
+  },
+  {
+   "a": "lock39",
+   "b": "lock88",
+   "tris": 52
+  },
+  {
+   "a": "lock6",
+   "b": "lock90",
+   "tris": 52
+  },
+  {
+   "a": "lock86",
+   "b": "lock88",
+   "tris": 52
+  },
+  {
+   "a": "tabardEdge-1",
+   "b": "tabardWaist",
+   "tris": 52
+  },
+  {
+   "a": "chin",
+   "b": "jaw",
+   "tris": 51
+  },
+  {
+   "a": "hips",
+   "b": "thighL",
+   "tris": 51
+  },
+  {
+   "a": "lock33",
+   "b": "lock49",
+   "tris": 51
+  },
+  {
+   "a": "lock33",
+   "b": "lock99",
+   "tris": 51
+  },
+  {
+   "a": "lock53",
+   "b": "lock9",
+   "tris": 51
+  },
+  {
+   "a": "cuffRimR",
+   "b": "tunicWaist",
+   "tris": 50
+  },
+  {
+   "a": "flap0",
+   "b": "pouch0",
+   "tris": 50
+  },
+  {
+   "a": "flap2",
+   "b": "pouch2",
+   "tris": 50
+  },
+  {
+   "a": "flap3",
+   "b": "pouch3",
+   "tris": 50
+  },
+  {
+   "a": "gauntletR",
+   "b": "tabardChest",
+   "tris": 50
+  },
+  {
+   "a": "head.001",
+   "b": "lock105",
+   "tris": 50
+  },
+  {
+   "a": "head.001",
+   "b": "lock15",
+   "tris": 50
+  },
+  {
+   "a": "head.001",
+   "b": "lock40",
+   "tris": 50
+  },
+  {
+   "a": "lock109",
+   "b": "lock39",
+   "tris": 50
+  },
+  {
+   "a": "lock11",
+   "b": "lock20",
+   "tris": 50
+  },
+  {
+   "a": "lock15",
+   "b": "lock24",
+   "tris": 50
+  },
+  {
+   "a": "lock25",
+   "b": "lock98",
+   "tris": 50
+  },
+  {
+   "a": "lock30",
+   "b": "lock45",
+   "tris": 50
+  },
+  {
+   "a": "lock45",
+   "b": "lock88",
+   "tris": 50
+  },
+  {
+   "a": "lock48",
+   "b": "lock83",
+   "tris": 50
+  },
+  {
+   "a": "lock57",
+   "b": "lock97",
+   "tris": 50
+  },
+  {
+   "a": "lock71",
+   "b": "lock98",
+   "tris": 50
+  },
+  {
+   "a": "plastronRim",
+   "b": "sleeveL",
+   "tris": 50
+  },
+  {
+   "a": "belt",
+   "b": "skirtouterL",
+   "tris": 49
+  },
+  {
+   "a": "ear1",
+   "b": "head.001",
+   "tris": 49
+  },
+  {
+   "a": "flap1",
+   "b": "pouch1",
+   "tris": 49
+  },
+  {
+   "a": "gauntletL",
+   "b": "tabardWaist",
+   "tris": 49
+  },
+  {
+   "a": "hips",
+   "b": "thighR",
+   "tris": 49
+  },
+  {
+   "a": "lock21",
+   "b": "lock46",
+   "tris": 49
+  },
+  {
+   "a": "lock28",
+   "b": "lock96",
+   "tris": 49
+  },
+  {
+   "a": "lock30",
+   "b": "lock85",
+   "tris": 49
+  },
+  {
+   "a": "lock44",
+   "b": "lock53",
+   "tris": 49
+  },
+  {
+   "a": "collar",
+   "b": "jaw",
+   "tris": 48
+  },
+  {
+   "a": "deltoidL",
+   "b": "lameL2",
+   "tris": 48
+  },
+  {
+   "a": "head.001",
+   "b": "lock41",
+   "tris": 48
+  },
+  {
+   "a": "head.001",
+   "b": "lock54",
+   "tris": 48
+  },
+  {
+   "a": "head.001",
+   "b": "lock61",
+   "tris": 48
+  },
+  {
+   "a": "lock105",
+   "b": "lock62",
+   "tris": 48
+  },
+  {
+   "a": "lock13",
+   "b": "lock70",
+   "tris": 48
+  },
+  {
+   "a": "lock14",
+   "b": "lock9",
+   "tris": 48
+  },
+  {
+   "a": "lock23",
+   "b": "lock3",
+   "tris": 48
+  },
+  {
+   "a": "lock29",
+   "b": "lock55",
+   "tris": 48
+  },
+  {
+   "a": "lock29",
+   "b": "lock66",
+   "tris": 48
+  },
+  {
+   "a": "lock30",
+   "b": "lock75",
+   "tris": 48
+  },
+  {
+   "a": "lock49",
+   "b": "lock67",
+   "tris": 48
+  },
+  {
+   "a": "lock5",
+   "b": "lock51",
+   "tris": 48
+  },
+  {
+   "a": "lock53",
+   "b": "lock65",
+   "tris": 48
+  },
+  {
+   "a": "lock61",
+   "b": "lock76",
+   "tris": 48
+  },
+  {
+   "a": "lock90",
+   "b": "lock94",
+   "tris": 48
+  },
+  {
+   "a": "head.001",
+   "b": "lock35",
+   "tris": 47
+  },
+  {
+   "a": "head.001",
+   "b": "lock51",
+   "tris": 47
+  },
+  {
+   "a": "head.001",
+   "b": "lock91",
+   "tris": 47
+  },
+  {
+   "a": "lock1",
+   "b": "lock21",
+   "tris": 47
+  },
+  {
+   "a": "ankleL",
+   "b": "footL",
+   "tris": 46
+  },
+  {
+   "a": "ankleR",
+   "b": "footR",
+   "tris": 46
+  },
+  {
+   "a": "head.001",
+   "b": "lock31",
+   "tris": 46
+  },
+  {
+   "a": "head.001",
+   "b": "lock32",
+   "tris": 46
+  },
+  {
+   "a": "head.001",
+   "b": "lock62",
+   "tris": 46
+  },
+  {
+   "a": "head.001",
+   "b": "lock80",
+   "tris": 46
+  },
+  {
+   "a": "head.001",
+   "b": "lock84",
+   "tris": 46
+  },
+  {
+   "a": "head.001",
+   "b": "lock92",
+   "tris": 46
+  },
+  {
+   "a": "lock10",
+   "b": "lock92",
+   "tris": 46
+  },
+  {
+   "a": "lock12",
+   "b": "lock70",
+   "tris": 46
+  },
+  {
+   "a": "lock18",
+   "b": "lock44",
+   "tris": 46
+  },
+  {
+   "a": "lock2",
+   "b": "lock93",
+   "tris": 46
+  },
+  {
+   "a": "lock2",
+   "b": "lock96",
+   "tris": 46
+  },
+  {
+   "a": "lock20",
+   "b": "lock23",
+   "tris": 46
+  },
+  {
+   "a": "lock28",
+   "b": "lock38",
+   "tris": 46
+  },
+  {
+   "a": "lock35",
+   "b": "lock56",
+   "tris": 46
+  },
+  {
+   "a": "lock37",
+   "b": "lock61",
+   "tris": 46
+  },
+  {
+   "a": "lock38",
+   "b": "lock77",
+   "tris": 46
+  },
+  {
+   "a": "lock38",
+   "b": "lock78",
+   "tris": 46
+  },
+  {
+   "a": "lock45",
+   "b": "lock9",
+   "tris": 46
+  },
+  {
+   "a": "lock56",
+   "b": "lock66",
+   "tris": 46
+  },
+  {
+   "a": "lock71",
+   "b": "lock83",
+   "tris": 46
+  },
+  {
+   "a": "ear-1",
+   "b": "head.001",
+   "tris": 45
+  },
+  {
+   "a": "head.001",
+   "b": "lock69",
+   "tris": 45
+  },
+  {
+   "a": "lock1",
+   "b": "lock30",
+   "tris": 45
+  },
+  {
+   "a": "belt_switch",
+   "b": "skirtouterL",
+   "tris": 44
+  },
+  {
+   "a": "head.001",
+   "b": "lock23",
+   "tris": 44
+  },
+  {
+   "a": "head.001",
+   "b": "lock59",
+   "tris": 44
+  },
+  {
+   "a": "lock0",
+   "b": "lock42",
+   "tris": 44
+  },
+  {
+   "a": "lock0",
+   "b": "lock81",
+   "tris": 44
+  },
+  {
+   "a": "lock1",
+   "b": "lock65",
+   "tris": 44
+  },
+  {
+   "a": "lock10",
+   "b": "lock101",
+   "tris": 44
+  },
+  {
+   "a": "lock10",
+   "b": "lock108",
+   "tris": 44
+  },
+  {
+   "a": "lock102",
+   "b": "lock49",
+   "tris": 44
+  },
+  {
+   "a": "lock106",
+   "b": "lock66",
+   "tris": 44
+  },
+  {
+   "a": "lock14",
+   "b": "lock73",
+   "tris": 44
+  },
+  {
+   "a": "lock18",
+   "b": "lock25",
+   "tris": 44
+  },
+  {
+   "a": "lock29",
+   "b": "lock90",
+   "tris": 44
+  },
+  {
+   "a": "lock3",
+   "b": "lock52",
+   "tris": 44
+  },
+  {
+   "a": "lock39",
+   "b": "lock67",
+   "tris": 44
+  },
+  {
+   "a": "lock49",
+   "b": "lock93",
+   "tris": 44
+  },
+  {
+   "a": "lock55",
+   "b": "lock94",
+   "tris": 44
+  },
+  {
+   "a": "lock72",
+   "b": "lock97",
+   "tris": 44
+  },
+  {
+   "a": "lock81",
+   "b": "lock90",
+   "tris": 44
+  },
+  {
+   "a": "lock85",
+   "b": "lock88",
+   "tris": 44
+  },
+  {
+   "a": "lock87",
+   "b": "lock99",
+   "tris": 44
+  },
+  {
+   "a": "fingerL1",
+   "b": "palmL",
+   "tris": 43
+  },
+  {
+   "a": "fingerR1",
+   "b": "palmR",
+   "tris": 43
+  },
+  {
+   "a": "lock21",
+   "b": "lock75",
+   "tris": 43
+  },
+  {
+   "a": "belt",
+   "b": "clip",
+   "tris": 42
+  },
+  {
+   "a": "fingerL0",
+   "b": "palmL",
+   "tris": 42
+  },
+  {
+   "a": "fingerR0",
+   "b": "palmR",
+   "tris": 42
+  },
+  {
+   "a": "head.001",
+   "b": "lock108",
+   "tris": 42
+  },
+  {
+   "a": "lock0",
+   "b": "lock106",
+   "tris": 42
+  },
+  {
+   "a": "lock102",
+   "b": "lock28",
+   "tris": 42
+  },
+  {
+   "a": "lock102",
+   "b": "lock39",
+   "tris": 42
+  },
+  {
+   "a": "lock15",
+   "b": "lock20",
+   "tris": 42
+  },
+  {
+   "a": "lock18",
+   "b": "lock71",
+   "tris": 42
+  },
+  {
+   "a": "lock19",
+   "b": "lock73",
+   "tris": 42
+  },
+  {
+   "a": "lock26",
+   "b": "lock80",
+   "tris": 42
+  },
+  {
+   "a": "lock28",
+   "b": "lock67",
+   "tris": 42
+  },
+  {
+   "a": "lock39",
+   "b": "lock87",
+   "tris": 42
+  },
+  {
+   "a": "lock40",
+   "b": "lock86",
+   "tris": 42
+  },
+  {
+   "a": "lock42",
+   "b": "lock66",
+   "tris": 42
+  },
+  {
+   "a": "lock58",
+   "b": "lock97",
+   "tris": 42
+  },
+  {
+   "a": "lock78",
+   "b": "lock82",
+   "tris": 42
+  },
+  {
+   "a": "belt_switch",
+   "b": "skirtinnerL",
+   "tris": 41
+  },
+  {
+   "a": "fingerL2",
+   "b": "palmL",
+   "tris": 41
+  },
+  {
+   "a": "fingerR2",
+   "b": "palmR",
+   "tris": 41
+  },
+  {
+   "a": "jaw",
+   "b": "neck.001",
+   "tris": 41
+  },
+  {
+   "a": "lock30",
+   "b": "lock53",
+   "tris": 41
+  },
+  {
+   "a": "strapEndL1",
+   "b": "strapL1",
+   "tris": 41
+  },
+  {
+   "a": "strapEndR1",
+   "b": "strapR1",
+   "tris": 41
+  },
+  {
+   "a": "strapEndR2",
+   "b": "strapR2",
+   "tris": 41
+  },
+  {
+   "a": "beltEdge0.035",
+   "b": "skirtinnerL",
+   "tris": 40
+  },
+  {
+   "a": "buckleIn",
+   "b": "skirtinnerL",
+   "tris": 40
+  },
+  {
+   "a": "buckleL0",
+   "b": "strapL0",
+   "tris": 40
+  },
+  {
+   "a": "buckleL1",
+   "b": "strapL1",
+   "tris": 40
+  },
+  {
+   "a": "buckleL2",
+   "b": "strapL2",
+   "tris": 40
+  },
+  {
+   "a": "buckleR0",
+   "b": "strapR0",
+   "tris": 40
+  },
+  {
+   "a": "buckleR1",
+   "b": "strapR1",
+   "tris": 40
+  },
+  {
+   "a": "buckleR2",
+   "b": "strapR2",
+   "tris": 40
+  },
+  {
+   "a": "cuffRimL",
+   "b": "tunicChest",
+   "tris": 40
+  },
+  {
+   "a": "head.001",
+   "b": "lock36",
+   "tris": 40
+  },
+  {
+   "a": "head.001",
+   "b": "lock63",
+   "tris": 40
+  },
+  {
+   "a": "lock15",
+   "b": "lock5",
+   "tris": 40
+  },
+  {
+   "a": "lock28",
+   "b": "lock82",
+   "tris": 40
+  },
+  {
+   "a": "lock35",
+   "b": "lock5",
+   "tris": 40
+  },
+  {
+   "a": "lock60",
+   "b": "lock96",
+   "tris": 40
+  },
+  {
+   "a": "strapEndL0",
+   "b": "strapL0",
+   "tris": 40
+  },
+  {
+   "a": "strapEndL2",
+   "b": "strapL2",
+   "tris": 40
+  },
+  {
+   "a": "strapEndR0",
+   "b": "strapR0",
+   "tris": 40
+  },
+  {
+   "a": "belt",
+   "b": "buckle",
+   "tris": 39
+  },
+  {
+   "a": "lameL1",
+   "b": "plastron",
+   "tris": 39
+  },
+  {
+   "a": "lock103",
+   "b": "lock33",
+   "tris": 39
+  },
+  {
+   "a": "lock44",
+   "b": "lock85",
+   "tris": 39
+  },
+  {
+   "a": "lock49",
+   "b": "lock96",
+   "tris": 39
+  },
+  {
+   "a": "belt_neck",
+   "b": "belt_switch",
+   "tris": 38
+  },
+  {
+   "a": "belt_neck",
+   "b": "skirtouterL",
+   "tris": 38
+  },
+  {
+   "a": "fingerL3",
+   "b": "thumbL",
+   "tris": 38
+  },
+  {
+   "a": "fingerR1",
+   "b": "fingerR2",
+   "tris": 38
+  },
+  {
+   "a": "footL",
+   "b": "soleL",
+   "tris": 38
+  },
+  {
+   "a": "footR",
+   "b": "soleR",
+   "tris": 38
+  },
+  {
+   "a": "gauntletR",
+   "b": "tabardWaist",
+   "tris": 38
+  },
+  {
+   "a": "lock18",
+   "b": "lock9",
+   "tris": 38
+  },
+  {
+   "a": "lock23",
+   "b": "lock24",
+   "tris": 38
+  },
+  {
+   "a": "lock36",
+   "b": "lock40",
+   "tris": 38
+  },
+  {
+   "a": "lock40",
+   "b": "lock62",
+   "tris": 38
+  },
+  {
+   "a": "lock42",
+   "b": "lock91",
+   "tris": 38
+  },
+  {
+   "a": "lock65",
+   "b": "lock86",
+   "tris": 38
+  },
+  {
+   "a": "bootL",
+   "b": "buckleL1",
+   "tris": 37
+  },
+  {
+   "a": "clip",
+   "b": "skirtouterR",
+   "tris": 37
+  },
+  {
+   "a": "lock28",
+   "b": "lock89",
+   "tris": 37
+  },
+  {
+   "a": "lock44",
+   "b": "lock45",
+   "tris": 37
+  },
+  {
+   "a": "beltClip",
+   "b": "belt_pommel",
+   "tris": 36
+  },
+  {
+   "a": "chin",
+   "b": "head.001",
+   "tris": 36
+  },
+  {
+   "a": "fingerL2",
+   "b": "fingerL3",
+   "tris": 36
+  },
+  {
+   "a": "fingerR0",
+   "b": "thumbR",
+   "tris": 36
+  },
+  {
+   "a": "heelL",
+   "b": "soleL",
+   "tris": 36
+  },
+  {
+   "a": "heelR",
+   "b": "soleR",
+   "tris": 36
+  },
+  {
+   "a": "lameL0",
+   "b": "plastron",
+   "tris": 36
+  },
+  {
+   "a": "lameR0",
+   "b": "plastron",
+   "tris": 36
+  },
+  {
+   "a": "lock107",
+   "b": "lock4",
+   "tris": 36
+  },
+  {
+   "a": "lock16",
+   "b": "lock55",
+   "tris": 36
+  },
+  {
+   "a": "lock40",
+   "b": "lock59",
+   "tris": 36
+  },
+  {
+   "a": "lock49",
+   "b": "lock87",
+   "tris": 36
+  },
+  {
+   "a": "lock65",
+   "b": "lock85",
+   "tris": 36
+  },
+  {
+   "a": "beltEdge0.035",
+   "b": "skirtinnerR",
+   "tris": 35
+  },
+  {
+   "a": "bootL",
+   "b": "buckleL2",
+   "tris": 35
+  },
+  {
+   "a": "belt",
+   "b": "flap0",
+   "tris": 34
+  },
+  {
+   "a": "belt",
+   "b": "flap3",
+   "tris": 34
+  },
+  {
+   "a": "bootL",
+   "b": "buckleL0",
+   "tris": 34
+  },
+  {
+   "a": "bootR",
+   "b": "buckleR0",
+   "tris": 34
+  },
+  {
+   "a": "bootR",
+   "b": "buckleR1",
+   "tris": 34
+  },
+  {
+   "a": "bootR",
+   "b": "buckleR2",
+   "tris": 34
+  },
+  {
+   "a": "fingerL3",
+   "b": "palmL",
+   "tris": 34
+  },
+  {
+   "a": "fingerR3",
+   "b": "palmR",
+   "tris": 34
+  },
+  {
+   "a": "lock102",
+   "b": "lock27",
+   "tris": 34
+  },
+  {
+   "a": "lock103",
+   "b": "lock88",
+   "tris": 34
+  },
+  {
+   "a": "lock105",
+   "b": "lock59",
+   "tris": 34
+  },
+  {
+   "a": "lock23",
+   "b": "lock43",
+   "tris": 34
+  },
+  {
+   "a": "lock27",
+   "b": "lock67",
+   "tris": 34
+  },
+  {
+   "a": "lock38",
+   "b": "lock49",
+   "tris": 34
+  },
+  {
+   "a": "lock55",
+   "b": "lock57",
+   "tris": 34
+  },
+  {
+   "a": "lock6",
+   "b": "lock66",
+   "tris": 34
+  },
+  {
+   "a": "lock60",
+   "b": "lock93",
+   "tris": 34
+  },
+  {
+   "a": "pouch1",
+   "b": "tabardWaist",
+   "tris": 34
+  },
+  {
+   "a": "cuffRimR",
+   "b": "tunicChest",
+   "tris": 33
+  },
+  {
+   "a": "deltoidR",
+   "b": "sleeveR",
+   "tris": 33
+  },
+  {
+   "a": "eye-1",
+   "b": "head.001",
+   "tris": 33
+  },
+  {
+   "a": "eye1",
+   "b": "head.001",
+   "tris": 33
+  },
+  {
+   "a": "fingerL1",
+   "b": "fingerL2",
+   "tris": 33
+  },
+  {
+   "a": "lock33",
+   "b": "lock85",
+   "tris": 33
+  },
+  {
+   "a": "lock85",
+   "b": "lock9",
+   "tris": 33
+  },
+  {
+   "a": "belt",
+   "b": "clipU",
+   "tris": 32
+  },
+  {
+   "a": "belt",
+   "b": "flap1",
+   "tris": 32
+  },
+  {
+   "a": "belt",
+   "b": "flap2",
+   "tris": 32
+  },
+  {
+   "a": "collarFold",
+   "b": "head.001",
+   "tris": 32
+  },
+  {
+   "a": "cuffSeamL",
+   "b": "skirtouterL",
+   "tris": 32
+  },
+  {
+   "a": "deltoidL",
+   "b": "sleeveL",
+   "tris": 32
+  },
+  {
+   "a": "flap2",
+   "b": "skirtouterL",
+   "tris": 32
+  },
+  {
+   "a": "lock100",
+   "b": "lock97",
+   "tris": 32
+  },
+  {
+   "a": "lock101",
+   "b": "lock40",
+   "tris": 32
+  },
+  {
+   "a": "lock103",
+   "b": "lock93",
+   "tris": 32
+  },
+  {
+   "a": "lock104",
+   "b": "lock7",
+   "tris": 32
+  },
+  {
+   "a": "lock104",
+   "b": "lock70",
+   "tris": 32
+  },
+  {
+   "a": "lock105",
+   "b": "lock36",
+   "tris": 32
+  },
+  {
+   "a": "lock105",
+   "b": "lock63",
+   "tris": 32
+  },
+  {
+   "a": "lock27",
+   "b": "lock7",
+   "tris": 32
+  },
+  {
+   "a": "lock40",
+   "b": "lock63",
+   "tris": 32
+  },
+  {
+   "a": "lock55",
+   "b": "lock6",
+   "tris": 32
+  },
+  {
+   "a": "lock69",
+   "b": "lock74",
+   "tris": 32
+  },
+  {
+   "a": "lock73",
+   "b": "lock99",
+   "tris": 32
+  },
+  {
+   "a": "lock74",
+   "b": "lock98",
+   "tris": 32
+  },
+  {
+   "a": "lock77",
+   "b": "lock96",
+   "tris": 32
+  },
+  {
+   "a": "buckleR0",
+   "b": "skirtouterR",
+   "tris": 31
+  },
+  {
+   "a": "fingerL0",
+   "b": "fingerL1",
+   "tris": 31
+  },
+  {
+   "a": "lock1",
+   "b": "lock44",
+   "tris": 31
+  },
+  {
+   "a": "fingerR0",
+   "b": "fingerR1",
+   "tris": 30
+  },
+  {
+   "a": "fingerR2",
+   "b": "fingerR3",
+   "tris": 30
+  },
+  {
+   "a": "flap1",
+   "b": "skirtouterR",
+   "tris": 30
+  },
+  {
+   "a": "lock0",
+   "b": "lock56",
+   "tris": 30
+  },
+  {
+   "a": "lock103",
+   "b": "lock96",
+   "tris": 30
+  },
+  {
+   "a": "lock109",
+   "b": "lock36",
+   "tris": 30
+  },
+  {
+   "a": "lock22",
+   "b": "lock70",
+   "tris": 30
+  },
+  {
+   "a": "lock24",
+   "b": "lock84",
+   "tris": 30
+  },
+  {
+   "a": "lock34",
+   "b": "lock78",
+   "tris": 30
+  },
+  {
+   "a": "lock37",
+   "b": "lock97",
+   "tris": 30
+  },
+  {
+   "a": "lock40",
+   "b": "lock92",
+   "tris": 30
+  },
+  {
+   "a": "lock43",
+   "b": "lock84",
+   "tris": 30
+  },
+  {
+   "a": "lock45",
+   "b": "lock65",
+   "tris": 30
+  },
+  {
+   "a": "lock64",
+   "b": "lock80",
+   "tris": 30
+  },
+  {
+   "a": "lock64",
+   "b": "lock82",
+   "tris": 30
+  },
+  {
+   "a": "lock73",
+   "b": "lock86",
+   "tris": 30
+  },
+  {
+   "a": "lock93",
+   "b": "lock99",
+   "tris": 30
+  },
+  {
+   "a": "lock96",
+   "b": "lock99",
+   "tris": 30
+  },
+  {
+   "a": "belt",
+   "b": "buckleIn",
+   "tris": 29
+  },
+  {
+   "a": "brow-1",
+   "b": "head.001",
+   "tris": 29
+  },
+  {
+   "a": "brow1",
+   "b": "head.001",
+   "tris": 29
+  },
+  {
+   "a": "buckleL0",
+   "b": "skirtouterL",
+   "tris": 29
+  },
+  {
+   "a": "buckleR0",
+   "b": "hemouterR",
+   "tris": 29
+  },
+  {
+   "a": "deltoidR",
+   "b": "lameR1",
+   "tris": 29
+  },
+  {
+   "a": "flap1",
+   "b": "tabardWaist",
+   "tris": 29
+  },
+  {
+   "a": "lock49",
+   "b": "lock89",
+   "tris": 29
+  },
+  {
+   "a": "belt",
+   "b": "pouch0",
+   "tris": 28
+  },
+  {
+   "a": "belt",
+   "b": "pouch2",
+   "tris": 28
+  },
+  {
+   "a": "deltoidL",
+   "b": "lameL0",
+   "tris": 28
+  },
+  {
+   "a": "lock0",
+   "b": "lock6",
+   "tris": 28
+  },
+  {
+   "a": "lock10",
+   "b": "lock62",
+   "tris": 28
+  },
+  {
+   "a": "lock100",
+   "b": "lock61",
+   "tris": 28
+  },
+  {
+   "a": "lock101",
+   "b": "lock65",
+   "tris": 28
+  },
+  {
+   "a": "lock105",
+   "b": "lock92",
+   "tris": 28
+  },
+  {
+   "a": "lock109",
+   "b": "lock27",
+   "tris": 28
+  },
+  {
+   "a": "lock28",
+   "b": "lock87",
+   "tris": 28
+  },
+  {
+   "a": "lock33",
+   "b": "lock45",
+   "tris": 28
+  },
+  {
+   "a": "lock4",
+   "b": "lock78",
+   "tris": 28
+  },
+  {
+   "a": "lock77",
+   "b": "lock93",
+   "tris": 28
+  },
+  {
+   "a": "plastronRim",
+   "b": "sleeveR",
+   "tris": 28
+  },
+  {
+   "a": "pouch3",
+   "b": "skirtouterL",
+   "tris": 28
+  },
+  {
+   "a": "belt",
+   "b": "pouch1",
+   "tris": 27
+  },
+  {
+   "a": "belt",
+   "b": "pouch3",
+   "tris": 27
+  },
+  {
+   "a": "buckle",
+   "b": "buckleIn",
+   "tris": 26
+  },
+  {
+   "a": "clip",
+   "b": "clipU",
+   "tris": 26
+  },
+  {
+   "a": "flap3",
+   "b": "tabardWaist",
+   "tris": 26
+  },
+  {
+   "a": "lock0",
+   "b": "lock29",
+   "tris": 26
+  },
+  {
+   "a": "lock103",
+   "b": "lock73",
+   "tris": 26
+  },
+  {
+   "a": "lock107",
+   "b": "lock34",
+   "tris": 26
+  },
+  {
+   "a": "lock14",
+   "b": "lock65",
+   "tris": 26
+  },
+  {
+   "a": "lock16",
+   "b": "lock66",
+   "tris": 26
+  },
+  {
+   "a": "lock2",
+   "b": "lock89",
+   "tris": 26
+  },
+  {
+   "a": "lock20",
+   "b": "lock84",
+   "tris": 26
+  },
+  {
+   "a": "lock23",
+   "b": "lock98",
+   "tris": 26
+  },
+  {
+   "a": "lock47",
+   "b": "lock61",
+   "tris": 26
+  },
+  {
+   "a": "lock66",
+   "b": "lock81",
+   "tris": 26
+  },
+  {
+   "a": "lock85",
+   "b": "lock93",
+   "tris": 26
+  },
+  {
+   "a": "pouch3",
+   "b": "tabardWaist",
+   "tris": 26
+  },
+  {
+   "a": "beltEdge0.035",
+   "b": "clip",
+   "tris": 25
+  },
+  {
+   "a": "buckleL0",
+   "b": "hemouterL",
+   "tris": 25
+  },
+  {
+   "a": "buckleL2",
+   "b": "strapEndL2",
+   "tris": 24
+  },
+  {
+   "a": "buckleR2",
+   "b": "strapEndR2",
+   "tris": 24
+  },
+  {
+   "a": "lock1",
+   "b": "lock33",
+   "tris": 24
+  },
+  {
+   "a": "lock10",
+   "b": "lock86",
+   "tris": 24
+  },
+  {
+   "a": "lock108",
+   "b": "lock40",
+   "tris": 24
+  },
+  {
+   "a": "lock109",
+   "b": "lock63",
+   "tris": 24
+  },
+  {
+   "a": "lock18",
+   "b": "lock21",
+   "tris": 24
+  },
+  {
+   "a": "lock2",
+   "b": "lock33",
+   "tris": 24
+  },
+  {
+   "a": "lock38",
+   "b": "lock95",
+   "tris": 24
+  },
+  {
+   "a": "lock44",
+   "b": "lock75",
+   "tris": 24
+  },
+  {
+   "a": "lock54",
+   "b": "lock61",
+   "tris": 24
+  },
+  {
+   "a": "lock61",
+   "b": "lock72",
+   "tris": 24
+  },
+  {
+   "a": "lock70",
+   "b": "lock81",
+   "tris": 24
+  },
+  {
+   "a": "beltEdge0.09",
+   "b": "clip",
+   "tris": 23
+  },
+  {
+   "a": "lock1",
+   "b": "lock9",
+   "tris": 23
+  },
+  {
+   "a": "collarFold",
+   "b": "jaw",
+   "tris": 22
+  },
+  {
+   "a": "lameR1",
+   "b": "plastron",
+   "tris": 22
+  },
+  {
+   "a": "lock18",
+   "b": "lock30",
+   "tris": 22
+  },
+  {
+   "a": "lock52",
+   "b": "lock83",
+   "tris": 22
+  },
+  {
+   "a": "lock56",
+   "b": "lock91",
+   "tris": 22
+  },
+  {
+   "a": "lock58",
+   "b": "lock61",
+   "tris": 22
+  },
+  {
+   "a": "lock85",
+   "b": "lock96",
+   "tris": 22
+  },
+  {
+   "a": "belt_grip",
+   "b": "skirtouterL",
+   "tris": 21
+  },
+  {
+   "a": "cuffSeamR",
+   "b": "skirtouterR",
+   "tris": 20
+  },
+  {
+   "a": "lock0",
+   "b": "lock13",
+   "tris": 20
+  },
+  {
+   "a": "lock10",
+   "b": "lock19",
+   "tris": 20
+  },
+  {
+   "a": "lock103",
+   "b": "lock89",
+   "tris": 20
+  },
+  {
+   "a": "lock12",
+   "b": "lock34",
+   "tris": 20
+  },
+  {
+   "a": "lock12",
+   "b": "lock4",
+   "tris": 20
+  },
+  {
+   "a": "lock14",
+   "b": "lock33",
+   "tris": 20
+  },
+  {
+   "a": "lock15",
+   "b": "lock83",
+   "tris": 20
+  },
+  {
+   "a": "lock19",
+   "b": "lock40",
+   "tris": 20
+  },
+  {
+   "a": "lock19",
+   "b": "lock88",
+   "tris": 20
+  },
+  {
+   "a": "lock23",
+   "b": "lock83",
+   "tris": 20
+  },
+  {
+   "a": "lock3",
+   "b": "lock71",
+   "tris": 20
+  },
+  {
+   "a": "lock33",
+   "b": "lock60",
+   "tris": 20
+  },
+  {
+   "a": "lock33",
+   "b": "lock77",
+   "tris": 20
+  },
+  {
+   "a": "lock41",
+   "b": "lock61",
+   "tris": 20
+  },
+  {
+   "a": "lock42",
+   "b": "lock69",
+   "tris": 20
+  },
+  {
+   "a": "lock46",
+   "b": "lock72",
+   "tris": 20
+  },
+  {
+   "a": "lock53",
+   "b": "lock88",
+   "tris": 20
+  },
+  {
+   "a": "lock60",
+   "b": "lock89",
+   "tris": 20
+  },
+  {
+   "a": "lock70",
+   "b": "lock8",
+   "tris": 20
+  },
+  {
+   "a": "lock75",
+   "b": "lock9",
+   "tris": 20
+  },
+  {
+   "a": "lock77",
+   "b": "lock89",
+   "tris": 20
+  },
+  {
+   "a": "lock85",
+   "b": "lock89",
+   "tris": 20
+  },
+  {
+   "a": "lock94",
+   "b": "lock97",
+   "tris": 20
+  },
+  {
+   "a": "skirtouterR",
+   "b": "strapEndR0",
+   "tris": 20
+  },
+  {
+   "a": "crest1",
+   "b": "crest3",
+   "tris": 19
+  },
+  {
+   "a": "cuffSeamR",
+   "b": "skirtouterB",
+   "tris": 19
+  },
+  {
+   "a": "ear-1",
+   "b": "lock108",
+   "tris": 19
+  },
+  {
+   "a": "deltoidL",
+   "b": "plastron",
+   "tris": 18
+  },
+  {
+   "a": "deltoidR",
+   "b": "plastron",
+   "tris": 18
+  },
+  {
+   "a": "hips",
+   "b": "tabardEdge-1",
+   "tris": 18
+  },
+  {
+   "a": "lock1",
+   "b": "lock93",
+   "tris": 18
+  },
+  {
+   "a": "lock101",
+   "b": "lock73",
+   "tris": 18
+  },
+  {
+   "a": "lock16",
+   "b": "lock98",
+   "tris": 18
+  },
+  {
+   "a": "lock18",
+   "b": "lock52",
+   "tris": 18
+  },
+  {
+   "a": "lock21",
+   "b": "lock97",
+   "tris": 18
+  },
+  {
+   "a": "lock33",
+   "b": "lock75",
+   "tris": 18
+  },
+  {
+   "a": "lock4",
+   "b": "lock50",
+   "tris": 18
+  },
+  {
+   "a": "lock64",
+   "b": "lock67",
+   "tris": 18
+  },
+  {
+   "a": "lock64",
+   "b": "lock7",
+   "tris": 18
+  },
+  {
+   "a": "lock7",
+   "b": "lock8",
+   "tris": 18
+  },
+  {
+   "a": "lock82",
+   "b": "lock86",
+   "tris": 18
+  },
+  {
+   "a": "beltEdge0.035",
+   "b": "pouch0",
+   "tris": 17
+  },
+  {
+   "a": "beltEdge0.035",
+   "b": "pouch1",
+   "tris": 17
+  },
+  {
+   "a": "beltEdge0.035",
+   "b": "pouch2",
+   "tris": 16
+  },
+  {
+   "a": "beltEdge0.035",
+   "b": "pouch3",
+   "tris": 16
+  },
+  {
+   "a": "head.001",
+   "b": "nose",
+   "tris": 16
+  },
+  {
+   "a": "hips",
+   "b": "tabardEdge1",
+   "tris": 16
+  },
+  {
+   "a": "lameL1",
+   "b": "sleeveL",
+   "tris": 16
+  },
+  {
+   "a": "lameL2",
+   "b": "sleeveL",
+   "tris": 16
+  },
+  {
+   "a": "lameR1",
+   "b": "sleeveR",
+   "tris": 16
+  },
+  {
+   "a": "lock29",
+   "b": "lock70",
+   "tris": 16
+  },
+  {
+   "a": "lock33",
+   "b": "lock53",
+   "tris": 16
+  },
+  {
+   "a": "lock44",
+   "b": "lock46",
+   "tris": 16
+  },
+  {
+   "a": "lock76",
+   "b": "lock97",
+   "tris": 16
+  },
+  {
+   "a": "lock79",
+   "b": "lock97",
+   "tris": 16
+  },
+  {
+   "a": "beltEdge0.035",
+   "b": "buckle",
+   "tris": 15
+  },
+  {
+   "a": "bootL",
+   "b": "strapEndL0",
+   "tris": 15
+  },
+  {
+   "a": "hips",
+   "b": "pouch0",
+   "tris": 15
+  },
+  {
+   "a": "plastron",
+   "b": "tabardChest",
+   "tris": 15
+  },
+  {
+   "a": "skirtouterL",
+   "b": "strapL0",
+   "tris": 15
+  },
+  {
+   "a": "lock11",
+   "b": "lock83",
+   "tris": 14
+  },
+  {
+   "a": "lock17",
+   "b": "lock5",
+   "tris": 14
+  },
+  {
+   "a": "lock25",
+   "b": "lock83",
+   "tris": 14
+  },
+  {
+   "a": "lock37",
+   "b": "lock46",
+   "tris": 14
+  },
+  {
+   "a": "lock4",
+   "b": "lock95",
+   "tris": 14
+  },
+  {
+   "a": "lock49",
+   "b": "lock73",
+   "tris": 14
+  },
+  {
+   "a": "lock57",
+   "b": "lock90",
+   "tris": 14
+  },
+  {
+   "a": "lock86",
+   "b": "lock87",
+   "tris": 14
+  },
+  {
+   "a": "palmR",
+   "b": "thumbR",
+   "tris": 14
+  },
+  {
+   "a": "tabardChest",
+   "b": "tabardEdge-1",
+   "tris": 14
+  },
+  {
+   "a": "belt_neck",
+   "b": "skirtinnerL",
+   "tris": 13
+  },
+  {
+   "a": "hips",
+   "b": "pouch2",
+   "tris": 13
+  },
+  {
+   "a": "chin",
+   "b": "collarFold",
+   "tris": 12
+  },
+  {
+   "a": "fingerL2",
+   "b": "thumbL",
+   "tris": 12
+  },
+  {
+   "a": "fingerR1",
+   "b": "thumbR",
+   "tris": 12
+  },
+  {
+   "a": "lameL0",
+   "b": "lameL2",
+   "tris": 12
+  },
+  {
+   "a": "lameL0",
+   "b": "tunicChest",
+   "tris": 12
+  },
+  {
+   "a": "lock102",
+   "b": "lock64",
+   "tris": 12
+  },
+  {
+   "a": "lock102",
+   "b": "lock78",
+   "tris": 12
+  },
+  {
+   "a": "lock103",
+   "b": "lock38",
+   "tris": 12
+  },
+  {
+   "a": "lock107",
+   "b": "lock38",
+   "tris": 12
+  },
+  {
+   "a": "lock12",
+   "b": "lock38",
+   "tris": 12
+  },
+  {
+   "a": "lock13",
+   "b": "lock4",
+   "tris": 12
+  },
+  {
+   "a": "lock16",
+   "b": "lock70",
+   "tris": 12
+  },
+  {
+   "a": "lock17",
+   "b": "lock20",
+   "tris": 12
+  },
+  {
+   "a": "lock17",
+   "b": "lock24",
+   "tris": 12
+  },
+  {
+   "a": "lock22",
+   "b": "lock7",
+   "tris": 12
+  },
+  {
+   "a": "lock34",
+   "b": "lock95",
+   "tris": 12
+  },
+  {
+   "a": "lock46",
+   "b": "lock58",
+   "tris": 12
+  },
+  {
+   "a": "lock49",
+   "b": "lock88",
+   "tris": 12
+  },
+  {
+   "a": "lock53",
+   "b": "lock93",
+   "tris": 12
+  },
+  {
+   "a": "lock88",
+   "b": "lock99",
+   "tris": 12
+  },
+  {
+   "a": "lock89",
+   "b": "lock99",
+   "tris": 12
+  },
+  {
+   "a": "palmL",
+   "b": "thumbL",
+   "tris": 12
+  },
+  {
+   "a": "plastron",
+   "b": "tunicChest",
+   "tris": 12
+  },
+  {
+   "a": "skirtouterR",
+   "b": "strapR0",
+   "tris": 12
+  },
+  {
+   "a": "beltEdge0.09",
+   "b": "buckle",
+   "tris": 10
+  },
+  {
+   "a": "lock1",
+   "b": "lock72",
+   "tris": 10
+  },
+  {
+   "a": "lock1",
+   "b": "lock89",
+   "tris": 10
+  },
+  {
+   "a": "lock101",
+   "b": "lock88",
+   "tris": 10
+  },
+  {
+   "a": "lock104",
+   "b": "lock82",
+   "tris": 10
+  },
+  {
+   "a": "lock105",
+   "b": "lock19",
+   "tris": 10
+  },
+  {
+   "a": "lock106",
+   "b": "lock91",
+   "tris": 10
+  },
+  {
+   "a": "lock13",
+   "b": "lock34",
+   "tris": 10
+  },
+  {
+   "a": "lock19",
+   "b": "lock67",
+   "tris": 10
+  },
+  {
+   "a": "lock20",
+   "b": "lock51",
+   "tris": 10
+  },
+  {
+   "a": "lock25",
+   "b": "lock55",
+   "tris": 10
+  },
+  {
+   "a": "lock30",
+   "b": "lock46",
+   "tris": 10
+  },
+  {
+   "a": "lock39",
+   "b": "lock82",
+   "tris": 10
+  },
+  {
+   "a": "lock46",
+   "b": "lock9",
+   "tris": 10
+  },
+  {
+   "a": "lock49",
+   "b": "lock65",
+   "tris": 10
+  },
+  {
+   "a": "lock50",
+   "b": "lock66",
+   "tris": 10
+  },
+  {
+   "a": "lock6",
+   "b": "lock70",
+   "tris": 10
+  },
+  {
+   "a": "lock67",
+   "b": "lock78",
+   "tris": 10
+  },
+  {
+   "a": "lock79",
+   "b": "lock80",
+   "tris": 10
+  },
+  {
+   "a": "plastronRim",
+   "b": "tabardChest",
+   "tris": 10
+  },
+  {
+   "a": "gauntletL",
+   "b": "tunicChest",
+   "tris": 9
+  },
+  {
+   "a": "gauntletR",
+   "b": "tunicChest",
+   "tris": 8
+  },
+  {
+   "a": "lameR0",
+   "b": "lameR1",
+   "tris": 8
+  },
+  {
+   "a": "lameR1",
+   "b": "lameR2",
+   "tris": 8
+  },
+  {
+   "a": "lock102",
+   "b": "lock22",
+   "tris": 8
+  },
+  {
+   "a": "lock105",
+   "b": "lock86",
+   "tris": 8
+  },
+  {
+   "a": "lock11",
+   "b": "lock3",
+   "tris": 8
+  },
+  {
+   "a": "lock19",
+   "b": "lock87",
+   "tris": 8
+  },
+  {
+   "a": "lock20",
+   "b": "lock52",
+   "tris": 8
+  },
+  {
+   "a": "lock24",
+   "b": "lock51",
+   "tris": 8
+  },
+  {
+   "a": "lock25",
+   "b": "lock3",
+   "tris": 8
+  },
+  {
+   "a": "lock25",
+   "b": "lock90",
+   "tris": 8
+  },
+  {
+   "a": "lock40",
+   "b": "lock64",
+   "tris": 8
+  },
+  {
+   "a": "lock45",
+   "b": "lock93",
+   "tris": 8
+  },
+  {
+   "a": "lock48",
+   "b": "lock98",
+   "tris": 8
+  },
+  {
+   "a": "lock61",
+   "b": "lock68",
+   "tris": 8
+  },
+  {
+   "a": "lock67",
+   "b": "lock86",
+   "tris": 8
+  },
+  {
+   "a": "lock72",
+   "b": "lock75",
+   "tris": 8
+  },
+  {
+   "a": "gauntletL",
+   "b": "tunicWaist",
+   "tris": 7
+  },
+  {
+   "a": "flap0",
+   "b": "hips",
+   "tris": 6
+  },
+  {
+   "a": "hemouterL",
+   "b": "strapL0",
+   "tris": 6
+  },
+  {
+   "a": "lameL0",
+   "b": "lameL1",
+   "tris": 6
+  },
+  {
+   "a": "lock1",
+   "b": "lock58",
+   "tris": 6
+  },
+  {
+   "a": "lock1",
+   "b": "lock68",
+   "tris": 6
+  },
+  {
+   "a": "lock107",
+   "b": "lock96",
+   "tris": 6
+  },
+  {
+   "a": "lock11",
+   "b": "lock98",
+   "tris": 6
+  },
+  {
+   "a": "lock12",
+   "b": "lock96",
+   "tris": 6
+  },
+  {
+   "a": "lock13",
+   "b": "lock66",
+   "tris": 6
+  },
+  {
+   "a": "lock24",
+   "b": "lock52",
+   "tris": 6
+  },
+  {
+   "a": "lock34",
+   "b": "lock50",
+   "tris": 6
+  },
+  {
+   "a": "lock43",
+   "b": "lock52",
+   "tris": 6
+  },
+  {
+   "a": "lock46",
+   "b": "lock68",
+   "tris": 6
+  },
+  {
+   "a": "lock65",
+   "b": "lock99",
+   "tris": 6
+  },
+  {
+   "a": "lock68",
+   "b": "lock75",
+   "tris": 6
+  },
+  {
+   "a": "lock78",
+   "b": "lock87",
+   "tris": 6
+  },
+  {
+   "a": "tabardEdge-1",
+   "b": "tunicChest",
+   "tris": 6
+  },
+  {
+   "a": "flap0",
+   "b": "skirtouterR",
+   "tris": 4
+  },
+  {
+   "a": "lock101",
+   "b": "lock54",
+   "tris": 4
+  },
+  {
+   "a": "lock103",
+   "b": "lock65",
+   "tris": 4
+  },
+  {
+   "a": "lock14",
+   "b": "lock68",
+   "tris": 4
+  },
+  {
+   "a": "lock28",
+   "b": "lock34",
+   "tris": 4
+  },
+  {
+   "a": "lock28",
+   "b": "lock73",
+   "tris": 4
+  },
+  {
+   "a": "lock3",
+   "b": "lock51",
+   "tris": 4
+  },
+  {
+   "a": "lock33",
+   "b": "lock46",
+   "tris": 4
+  },
+  {
+   "a": "lock34",
+   "b": "lock49",
+   "tris": 4
+  },
+  {
+   "a": "lock43",
+   "b": "lock51",
+   "tris": 4
+  },
+  {
+   "a": "lock45",
+   "b": "lock68",
+   "tris": 4
+  },
+  {
+   "a": "lock45",
+   "b": "lock89",
+   "tris": 4
+  },
+  {
+   "a": "lock53",
+   "b": "lock89",
+   "tris": 4
+  },
+  {
+   "a": "lock56",
+   "b": "lock69",
+   "tris": 4
+  },
+  {
+   "a": "lock81",
+   "b": "lock98",
+   "tris": 4
+  },
+  {
+   "a": "flap2",
+   "b": "hips",
+   "tris": 3
+  },
+  {
+   "a": "gauntletR",
+   "b": "tunicWaist",
+   "tris": 2
+  }
+ ]
+}

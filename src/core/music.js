@@ -153,7 +153,7 @@ export class Music {
   /** Crossfade the loop to a situation (no-op if it is already playing). */
   play(situation) {
     if (this.cur && this.cur.situation === situation && (situation !== 'jukebox' || this.cur.url === this.juke.url)) return;
-    if (this.cur) this.fade(this.track(this.cur.url), 0);
+    if (this.cur && this.cur.url) this.fade(this.track(this.cur.url), 0);
     const url = situation === 'silence' ? null : this.pick(situation);
     this.cur = { situation, url };
     if (!url) return;

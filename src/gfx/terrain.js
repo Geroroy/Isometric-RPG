@@ -3,7 +3,7 @@
 // paving patterns, roads and craters and finally ordered-dithered to a
 // reduced palette for an old-school look. Remaster graphics (density 2) build
 // chunks at twice the pixel density in full colour with a finer grain.
-import { HALF_W, HALF_H } from '../core/iso.js';
+import { HALF_W, HALF_H, Z_PX } from '../core/iso.js';
 import { BIOME } from '../world/worldgen.js';
 import { valueNoise, hash2, clamp } from '../core/math.js';
 
@@ -26,9 +26,49 @@ const PAL = {
   [BIOME.CITY_UP]: [186, 180, 166],
   [BIOME.CITY_LOW]: [70, 66, 62],
   [BIOME.VOID]: [10, 12, 22],
+  [BIOME.CITY_MOSAIC]: [84, 86, 98],
+  [BIOME.CITY_MUD]: [58, 50, 42],
+  [BIOME.CITY_SWAMP]: [46, 54, 36],
+  [BIOME.CITY_DIRT]: [92, 82, 66],
 };
+const NEON_VEIN = [[255, 79, 168], [79, 230, 255]]; // the plaza's veins: pink or blue by cell
 const ROAD = [128, 108, 84];
 const EDGE = [62, 57, 54];
+
+// the undercity street's floor texture (gfx/citySprites.js), sampled in world
+// coordinates so it lies flat and tiles: { data: ImageData, tiles }
+let FLOOR = null;
+// the underworld's ground (gfx/citySprites.js: square textures cut from the concept sheets),
+// sampled in world space per biome: a list of variants per biome, picked per cell, `tiles`
+// world tiles per repeat
+let GROUND = null;
+export function setGroundTextures(g) {
+  if (!g) return;
+  // variants with weights (the plain plate carries most of the floor; grates, vents and the
+  // lettered plate are accents), the cell size in tiles; every cell also turns, mirrors and
+  // shifts its tone by its own hash, so no two neighbours read the same
+  const pick = (entries, tiles) => {
+    const list = [];
+    for (const [n, w] of entries) if (g[n]) list.push({ T: g[n], w });
+    const sum = list.reduce((a, e) => a + e.w, 0);
+    let acc = 0;
+    for (const e of list) e.upto = acc += e.w / sum;
+    return { list, tiles };
+  };
+  GROUND = {
+    [BIOME.CITY_UP]: { ...pick([['metalPlatePlain', 0.6], ['metalPlateAurebesh', 0.25], ['metalPlateVent', 0.15]], 2), gain: 1.22 }, // the terrace: cleaner, lit like day
+    [BIOME.CITY_LOW]: pick([['metalPlatePlain', 0.55], ['metalPlateAurebesh', 0.1], ['metalPlateGrate', 0.2], ['metalPlateVent', 0.15]], 2),
+    [BIOME.CITY_MOSAIC]: pick([['metalPlatePlain', 0.5], ['metalPlateGrate', 0.3], ['metalPlateVent', 0.2]], 2), // the plaza: more grates
+    [BIOME.CITY_MUD]: pick([['mudConduit', 1]], 3),
+    [BIOME.CITY_SWAMP]: pick([['swamp', 1]], 3),
+    [BIOME.CITY_DIRT]: pick([['dirtTiles', 1]], 3),
+  };
+  for (const k of Object.keys(GROUND)) if (!GROUND[k].list.length) delete GROUND[k];
+}
+export function setFloorTexture(f) {
+  if (!f) return;
+  FLOOR = f;
+}
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => v / 16 - 0.5);
 
@@ -46,6 +86,9 @@ export class Terrain {
     this.L = new Float32Array(n); // lava weight
     this.V = new Float32Array(n); // the city's drop (dark, far lights)
     this.U = new Float32Array(n); // city upper level (inlaid stone)
+    this.Lw = new Float32Array(n); // city lower level (the floor texture)
+    this.Mo = new Float32Array(n); // the undercity plaza's neon mosaic
+    this.Mu = new Float32Array(n); // the undercity's mud alleys
     for (let y = 0; y < world.h; y++) {
       for (let x = 0; x < world.w; x++) {
         const i = y * world.w + x;
@@ -55,9 +98,12 @@ export class Terrain {
         this.R[i] = c[0] + v;
         this.G[i] = c[1] + v;
         this.B[i] = c[2] + v * 0.9;
-        this.P[i] = b === BIOME.RUIN || b === BIOME.BASE || b === BIOME.HANGAR || b === BIOME.MUSTAFAR || b === BIOME.CITY_UP || b === BIOME.CITY_LOW ? 1 : 0;
+        this.P[i] = b === BIOME.RUIN || b === BIOME.BASE || b === BIOME.HANGAR || b === BIOME.MUSTAFAR || b === BIOME.CITY_UP || (b === BIOME.CITY_LOW && !FLOOR) ? 1 : 0;
+        this.Lw[i] = b === BIOME.CITY_LOW && FLOOR ? 1 : 0;
         this.V[i] = b === BIOME.VOID ? 1 : 0;
         this.U[i] = b === BIOME.CITY_UP ? 1 : 0;
+        this.Mo[i] = b === BIOME.CITY_MOSAIC ? 1 : 0;
+        this.Mu[i] = b === BIOME.CITY_MUD || b === BIOME.CITY_SWAMP || b === BIOME.CITY_DIRT ? 1 : 0;
         if (b === BIOME.VOID) {
           // no grain in the drop
           this.R[i] = c[0];
@@ -109,6 +155,128 @@ export class Terrain {
     return r.value;
   }
 
+  /**
+   * The side of a platform seen below its rim from a pixel over the drop (docs/MAP_EDGES.md):
+   * from the pixel's ground point step back up the screen (the −x, −y diagonal) to the first
+   * platform tile; the distance k there is the depth D below the rim (D = k·2·HALF_H / Z_PX).
+   * Coruscant's platforms are the tops of towers: the face is a facade — durasteel panels, a
+   * bright lip, floor bands, lit windows, red warning beacons under the rim — fading into the
+   * haze and then to clear. Writes [r, g, b, a] to `out`; false when no platform is close.
+   */
+  facade(fx, fy, out) {
+    const w = this.world;
+    const W = w.w;
+    let tx = Math.floor(fx);
+    let ty = Math.floor(fy);
+    let k = 0;
+    let face = 0;
+    for (let n = 0; n < 40; n++) {
+      const kx = fx - tx;
+      const ky = fy - ty;
+      if (kx < ky) {
+        k = kx;
+        tx--;
+        face = 0; // entered through the tile's +x face (faces the lower right: in shade)
+      } else {
+        k = ky;
+        ty--;
+        face = 1; // through its +y face (faces the lower left: lit)
+      }
+      if (k > 11 || tx < 0 || ty < 0) return false;
+      if (w.biome[ty * W + tx] !== BIOME.VOID) break;
+      if (n === 39) return false;
+    }
+    const D = (k * 2 * HALF_H) / Z_PX; // world units below the rim
+    const s = face ? fx - k : fy - k; // along the face
+    const upper = fy - k < 90; // the upper plaza's tower or the undercity's
+    const lit = face ? 0.92 : 0.62;
+    let r = 64;
+    let g = 66;
+    let b = 76;
+    // the tower's floors: pilasters every 1.5 tiles along the face, a slab line every 0.55 units
+    // down, and between them a ribbon of windows in segments (lit or dark, warm or cold)
+    const ps = (s / 1.5) % 1;
+    const fl = (D - 0.5) / 0.55;
+    const ff = fl - Math.floor(fl);
+    if (ps < 0.08) {
+      r += 10;
+      g += 10;
+      b += 10;
+    }
+    if (D > 0.5 && ff < 0.16) {
+      r -= 20;
+      g -= 20;
+      b -= 18;
+    }
+    r += (hash2(Math.floor(s / 1.5), Math.floor(fl / 6), 83) - 0.5) * 10;
+    r *= lit;
+    g *= lit;
+    b *= lit;
+    // the lip and the shadow under it
+    if (D < 0.09) {
+      r = 168 * lit;
+      g = 160 * lit;
+      b = 146 * lit;
+    } else if (D < 0.5) {
+      const t = (0.5 - D) / 0.41;
+      r *= 1 - 0.55 * t;
+      g *= 1 - 0.55 * t;
+      b *= 1 - 0.55 * t;
+    }
+    let wr = 0;
+    let wg = 0;
+    let wb = 0;
+    if (D > 0.6 && ff > 0.42 && ff < 0.7 && ps > 0.1) {
+      const seg = Math.floor(s / 0.375);
+      const us = s / 0.375 - seg;
+      if (us > 0.08) {
+        const row = Math.floor(fl);
+        const h = hash2(seg, row, 84 + face);
+        if (h > (upper ? 0.55 : 0.72)) {
+          const c = hash2(seg >> 1, row, 86);
+          if (upper) [wr, wg, wb] = c > 0.35 ? [255, 210, 145] : [200, 222, 255];
+          else [wr, wg, wb] = c > 0.8 ? [255, 90, 180] : c > 0.5 ? [140, 255, 170] : [255, 170, 80];
+          const k2 = (0.45 + 0.4 * hash2(seg, row, 87)) * Math.exp(-D / 6);
+          wr *= k2;
+          wg *= k2;
+          wb *= k2;
+        }
+      }
+    }
+    // red warning beacons just under the rim, every few tiles
+    if (D > 0.18 && D < 0.42) {
+      const cb = Math.floor(s / 3);
+      if (hash2(cb, face, 88) > 0.45) {
+        const bs = s / 3 - cb;
+        if (bs > 0.48 && bs < 0.56) {
+          wr = 255;
+          wg = 50;
+          wb = 40;
+        }
+      }
+    }
+    // haze: the facade sinks into the city's air, then clears for the backdrop
+    const hz = 1 - Math.exp(-D / 3.2);
+    const H = upper ? [70, 54, 74] : [20, 28, 34];
+    r += (H[0] - r) * hz + wr;
+    g += (H[1] - g) * hz + wg;
+    b += (H[2] - b) * hz + wb;
+    out[0] = clamp(r, 0, 255);
+    out[1] = clamp(g, 0, 255);
+    out[2] = clamp(b, 0, 255);
+    out[3] = 255 * clamp(1 - (D - 4.5) / 3.5, 0, 1);
+    return out[3] > 0;
+  }
+
+  /** The floor's own brightness at a world point, 0..1 (its tile colour before the light map). */
+  lumAt(x, y) {
+    const w = this.world;
+    const tx = Math.max(0, Math.min(w.w - 1, Math.floor(x)));
+    const ty = Math.max(0, Math.min(w.h - 1, Math.floor(y)));
+    const i = ty * w.w + tx;
+    return Math.max(0, Math.min(1, (this.R[i] + this.G[i] + this.B[i]) / 765));
+  }
+
   /** Builds a chunk, yielding every few rows (prefetch spreads it over frames). */
   *buildGen(cx, cy) {
     const S = this.S;
@@ -126,6 +294,8 @@ export class Terrain {
     const sx0 = (x0 - (y0 + CH)) * HALF_W;
     const sy0 = (x0 + y0) * HALF_H;
     const q = 255 / 30;
+    const city = !!this.world.city;
+    const fc = [0, 0, 0, 0];
     for (let py = 0; py < PH; py++) {
       const sy = sy0 + py / S;
       for (let px = 0; px < PW; px++) {
@@ -133,6 +303,18 @@ export class Terrain {
         const fx = (sx / HALF_W + sy / HALF_H) / 2;
         const fy = (sy / HALF_H - sx / HALF_W) / 2;
         if (fx < x0 || fx >= x0 + CH || fy < y0 || fy >= y0 + CH) continue;
+        if (city && this.world.biome[Math.floor(fy) * this.world.w + Math.floor(fx)] === BIOME.VOID) {
+          // the drop: the side of the platform above this pixel, if any is close enough, else
+          // clear — the renderer's backdrop (gfx/cityBackdrop.js) shows through
+          const i = (py * PW + px) * 4;
+          if (this.facade(fx, fy, fc)) {
+            d[i] = fc[0];
+            d[i + 1] = fc[1];
+            d[i + 2] = fc[2];
+            d[i + 3] = fc[3];
+          }
+          continue;
+        }
         const u = fx - 0.5;
         const v = fy - 0.5;
         let r = this.sample(this.R, u, v);
@@ -143,8 +325,10 @@ export class Terrain {
         const cry = this.sample(this.K, u, v);
         const base = this.sample(this.Bs, u, v);
         const lava = this.sample(this.L, u, v);
-        const drop = this.sample(this.V, u, v);
+        const drop = 0; // (the drop is drawn by facade() and the backdrop)
         const upper = this.sample(this.U, u, v);
+        const mosaic = this.sample(this.Mo, u, v);
+        const mud = this.sample(this.Mu, u, v);
         const grain = hd ? hash2(Math.floor(sx * S), Math.floor(sy * S), 99) : hash2(sx, sy, 99);
         const blot = valueNoise(fx * 1.7, fy * 1.7, 13) - 0.5;
         // blotchy mid-frequency variation
@@ -220,27 +404,105 @@ export class Terrain {
           g += 6;
           b += 6;
         }
-        // the drop: near black, the far-below city as scattered warm and cold
-        // lights, a faint haze at the platform edges
-        if (drop > 0.02) {
-          const k = clamp(drop, 0, 1);
-          const haze = (1 - k) * 40;
-          r = r * (1 - k) + (10 + haze) * k;
-          g = g * (1 - k) + (12 + haze) * k;
-          b = b * (1 - k) + (24 + haze * 1.2) * k;
-          if (k > 0.9) {
-            const spark = hash2(Math.floor(fx * 6), Math.floor(fy * 6), 77);
-            if (spark > 0.985) {
-              const warm = hash2(Math.floor(fx * 6), Math.floor(fy * 6), 78) > 0.4;
-              r = warm ? 230 : 140;
-              g = warm ? 170 : 190;
-              b = warm ? 90 : 255;
-            } else if (spark > 0.97) {
-              r += 30;
-              g += 26;
-              b += 30;
-            }
+        // the platform's rim (city): a bright lip on the edges over the drop that face the camera,
+        // a thin light line on the far edges
+        if (city) {
+          const tx = Math.floor(fx);
+          const ty = Math.floor(fy);
+          const ax = fx - tx;
+          const ay = fy - ty;
+          const vd = (x, y) => this.world.biome[y * this.world.w + x] === BIOME.VOID;
+          let lip = 0;
+          if ((ax > 0.9 && vd(tx + 1, ty)) || (ay > 0.9 && vd(tx, ty + 1))) lip = 1;
+          else if ((ax < 0.05 && vd(tx - 1, ty)) || (ay < 0.05 && vd(tx, ty - 1))) lip = 0.5;
+          if (lip) {
+            r += (176 - r) * 0.6 * lip;
+            g += (168 - g) * 0.6 * lip;
+            b += (150 - b) * 0.6 * lip;
           }
+        }
+        // the underworld's ground textures (the concept sheets' tiles), by the tile's biome:
+        // the variant by cell, the texel by world position, shaded by the same blotches
+        let texd = false;
+        if (GROUND) {
+          const bi = this.world.biome[Math.floor(fy) * this.world.w + Math.floor(fx)];
+          const gt = GROUND[bi];
+          if (gt) {
+            const cx = Math.floor(fx / gt.tiles);
+            const cy = Math.floor(fy / gt.tiles);
+            const pickN = hash2(cx, cy, 71);
+            let T = gt.list[gt.list.length - 1].T;
+            for (const e of gt.list) if (pickN <= e.upto) { T = e.T; break; }
+            let u = (((fx / gt.tiles) % 1) + 1) % 1;
+            let v = (((fy / gt.tiles) % 1) + 1) % 1;
+            const rot = Math.floor(hash2(cx, cy, 72) * 4); // a quarter turn per cell
+            if (rot === 1) [u, v] = [1 - v, u];
+            else if (rot === 2) [u, v] = [1 - u, 1 - v];
+            else if (rot === 3) [u, v] = [v, 1 - u];
+            if (hash2(cx, cy, 73) > 0.5) u = 1 - u; // and a mirror
+            const tx = Math.min(T.width - 1, Math.floor(u * T.width));
+            const ty = Math.min(T.height - 1, Math.floor(v * T.height));
+            const j = (ty * T.width + tx) * 4;
+            // the cell's own tone, the blotches, and slow stains (oil, rust, damp) across cells
+            const stain = valueNoise(fx * 0.33, fy * 0.33, 75) - 0.5;
+            const sh = (0.86 + 0.26 * hash2(cx, cy, 74)) * (1 + blot * 0.22) * (1 + stain * 0.5) * (gt.gain || 1);
+            r = T.data[j] * sh * (1 + stain * 0.25);
+            g = T.data[j + 1] * sh;
+            b = T.data[j + 2] * sh * (1 - stain * 0.2);
+            texd = true;
+          }
+        }
+        // the undercity plaza: cracked mosaic slabs, the cracks glowing neon (pink or blue by
+        // cell), grout lines every tile (without the sheet's textures)
+        if (mosaic > 0.05 && !texd) {
+          const m = Math.min(1, mosaic * 1.3);
+          const n1 = valueNoise(fx * 1.35, fy * 1.35, 61);
+          const vein = 1 - Math.abs(n1 - 0.5) * 2;
+          const crack = clamp((vein - 0.9) * 10, 0, 1) * m;
+          const gx = ((fx % 1) + 1) % 1;
+          const gy = ((fy % 1) + 1) % 1;
+          if (gx < 0.06 || gy < 0.06) {
+            r -= 18 * m;
+            g -= 18 * m;
+            b -= 16 * m;
+          }
+          if (crack > 0) {
+            const c = NEON_VEIN[hash2(Math.floor(fx / 3), Math.floor(fy / 3), 62) > 0.5 ? 1 : 0];
+            const k = crack * (0.4 + 0.4 * valueNoise(fx * 3.1, fy * 3.1, 64));
+            r += (c[0] - r) * k;
+            g += (c[1] - g) * k;
+            b += (c[2] - b) * k;
+          }
+        }
+        // the mud alleys: wet earth over conduits, a bluish sheen where it is wettest, ruts
+        if (mud > 0.05 && !texd) {
+          const m = Math.min(1, mud * 1.3);
+          const wet = valueNoise(fx * 2.2, fy * 2.2, 63);
+          if (wet > 0.58) {
+            const k = clamp((wet - 0.58) * 6, 0, 1) * m;
+            r += (70 - r) * k;
+            g += (74 - g) * k;
+            b += (96 - b) * k;
+          }
+          const rut = valueNoise(fx * 0.8, fy * 5.5, 65);
+          if (rut > 0.72) {
+            r -= 14 * m;
+            g -= 12 * m;
+            b -= 10 * m;
+          }
+        }
+        // the undercity street: the floor texture, shaded by the same blotches
+        const lowW = FLOOR && !texd ? this.sample(this.Lw, u, v) : 0;
+        if (lowW > 0.01) {
+          const T = FLOOR.data;
+          const tx = Math.floor((((fx / FLOOR.tiles) % 1) + 1) % 1 * T.width);
+          const ty = Math.floor((((fy / FLOOR.tiles) % 1) + 1) % 1 * T.height);
+          const j = (ty * T.width + tx) * 4;
+          const k = Math.min(1, lowW * 1.5) * (1 - drop);
+          const sh = 1 + blot * 0.15;
+          r += (T.data[j] * sh - r) * k;
+          g += (T.data[j + 1] * sh - g) * k;
+          b += (T.data[j + 2] * sh - b) * k;
         }
         // crystal sparkle
         if (cry > 0.5 && grain > 0.994 && blot > 0) {

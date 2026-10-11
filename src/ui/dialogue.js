@@ -24,6 +24,7 @@ export class DialogueUI {
     this.el.addEventListener('pointerdown', (e) => e.stopPropagation());
     this.textEl.addEventListener('click', () => this.skip());
     game.on('dialogue', (npc) => this.open(npc));
+    game.on('death', () => this.isOpen && this.close()); // a conversation doesn't outlive Anakin
   }
 
   get isOpen() {

@@ -1,0 +1,3 @@
+HAIR old: 1 objects, 4752 triangles -> backup tools/sprites/out/anakin_tunic_hair_v1_backup.blend
+HAIR new: 11 groups, 61 clumps, 13848 triangles (0.47x the reference hair mesh of 29764; limit 1.5x)
+HAIR wrote tools/sprites/out/anakin_tunic_hairv2.glb
