@@ -5,6 +5,8 @@
 // the mouse). Each effect can be switched off in the options; with all off,
 // or without WebGL, the world canvas shows as before and nothing here runs.
 
+import { MAP_V2 } from '../world/mapVersion.js';
+
 const STORE = 'cw.post';
 export const POST_DEFAULTS = { grade: true, bloom: true, vignette: true, grain: true, fps: false };
 
@@ -20,6 +22,10 @@ export const GRADES = {
   geonosis: { gain: [1.04, 1.0, 0.92], contrast: 1.08, sat: 0.95, shadow: [0.0, 0.012, -0.01], high: [0.025, 0.015, -0.01], bloom: 0.3 },
   mustafar: { gain: [1.06, 0.97, 0.9], contrast: 1.14, sat: 1.05, shadow: [0.03, -0.01, -0.01], high: [0.04, 0.02, -0.02], bloom: 0.45 },
 };
+
+// the rebuilt city (?map=v2) under its own grade: its buildings carry their own painted neon, so the
+// bloom on top is halved and the colour kept a little quieter — a calm street, not a fairground
+if (MAP_V2) GRADES.undercity = { ...GRADES.undercity, sat: 0.86, bloom: 0.22, contrast: 1.06 };
 
 /** Which grade the current place uses. */
 export function gradeOf(game) {

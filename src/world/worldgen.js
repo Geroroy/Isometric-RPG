@@ -337,7 +337,7 @@ export class World {
       if (!any && this.inBounds(Math.floor(x), Math.floor(y))) this.blocked[Math.floor(y) * MAP_W + Math.floor(x)] = 1;
       p.rect = [Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
     }
-    for (const [dx, dy, z, r, g, b, rad, flicker] of def.lights || []) this.lights.push({ x: x + dx, y: y + dy, z, r, g, b, rad, flicker });
+    for (const [dx, dy, z, r, g, b, rad, flicker] of def.lights || []) this.lights.push(calmLight({ x: x + dx, y: y + dy, z, r, g, b, rad, flicker }, name));
     for (const [dx, dy, z] of def.steam || []) (this.steam ||= []).push({ x: x + dx, y: y + dy, z, t: this.rng.next() * 3 });
     if (def.sound) (this.sounds ||= []).push({ ...def.sound, x: x + def.sound.at[0], y: y + def.sound.at[1] });
     p.depth = x + y;
@@ -643,6 +643,23 @@ export const CITY = {
 // the rebuilt city (?map=v2): the fixed points moved with its layout
 if (MAP_V2) Object.assign(CITY, UNDERCITY_V2.city);
 
+/**
+ * The rebuilt city's lights, calmer (?map=v2): the street set's stall and sign lights were saturated
+ * neon pools at full strength — softened toward their grey, dimmed and shortened, with no flicker but
+ * a trace. The 1:1 buildings' own lights are calm already (bake.py) and pass as they are.
+ */
+function calmLight(l, sheet) {
+  if (!MAP_V2 || /^(shops|towers|plants)_/.test(sheet)) return l;
+  const m = (l.r + l.g + l.b) / 3;
+  const k = 0.62;
+  l.r = Math.round((m + (l.r - m) * 0.5) * k);
+  l.g = Math.round((m + (l.g - m) * 0.5) * k);
+  l.b = Math.round((m + (l.b - m) * 0.5) * k);
+  l.rad = Math.round(l.rad * 0.8);
+  l.flicker = Math.min(l.flicker, 0.02);
+  return l;
+}
+
 export class CityHub extends World {
   /** The data's props (data/undercity.json): p = a sprite of the underworld set, m = a model prop. */
   placeProps(list) {
@@ -719,7 +736,7 @@ export class CityHub extends World {
     for (const [x0, x1, y] of U.closed || []) for (let x = x0; x < x1; x++) if (!this.blocked[y * MAP_W + x]) this.blocked[y * MAP_W + x] = 1;
     for (const [x, y, z] of U.steam || []) this.steam.push({ x, y, z, t: rng.next() * 3 });
     this.puddles = U.puddles.map(([x, y, r]) => ({ x, y, r, drops: [] }));
-    for (const [x, y, z, r, g, b, rad, flicker] of U.lights) this.lights.push({ x, y, z, r, g, b, rad, flicker });
+    for (const [x, y, z, r, g, b, rad, flicker] of U.lights) this.lights.push(calmLight({ x, y, z, r, g, b, rad, flicker }, ''));
     for (const poi of U.pois) this.pois.push({ ...poi });
     // the upper plaza is lit like day
     for (let x = up.x - up.hw + 4; x <= up.x + up.hw - 4; x += 9) for (const y of [up.y - 7, up.y + 6]) this.lights.push({ x, y, z: 6, r: 255, g: 246, b: 228, rad: 300, flicker: 0 });
