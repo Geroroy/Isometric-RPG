@@ -79,7 +79,7 @@ export class Cinema {
       const cam = typeof c.cam === 'function' ? c.cam() : c.cam; // a function: worked out when the cue fires
       const from = this.cam ? { ...this.curCam() } : { x: cam.x, y: cam.y };
       this.cam = { from, to: cam, t0: this.t, dur: cam.dur || 0 };
-      if (cam.zoom && this.game.renderer) this.game.renderer.setZoom(cam.zoom);
+      if (cam.zoom && this.game.renderer) this.game.renderer.setZoom(this.game.renderer.shotZoom(cam.zoom), true);
     }
     if (c.do) c.do(this);
   }

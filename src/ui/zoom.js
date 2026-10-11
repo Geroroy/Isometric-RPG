@@ -1,8 +1,22 @@
 // View zoom: ＋/− buttons, mouse wheel, -/=/0 keys and two-finger pinch on
 // phones. The level is remembered per device type (phone vs. desktop).
+//
+// The screen is drawn at a whole number of device pixels per game pixel (renderer.devScale, rounded
+// from the zoom), so a fixed zoom factor per press could land on the same whole number and change
+// nothing (at 1080p a ×1.15 step from 3× rounded back to 3×). A press therefore moves to the next
+// whole scale up or down — one more or one fewer device pixel per game pixel — and sets the zoom
+// that gives exactly that; a pinch still zooms freely.
 import { ZOOM_MIN, ZOOM_MAX } from '../gfx/renderer.js';
 
-const STEP = 1.15;
+// saved zooms: the desktop key changed when the PC view went from 450 to 360 rows (zoom 1 is now a
+// larger picture; a zoom saved against the old base would not mean what the player chose)
+const KEYS = { touch: 'cw.zoom.touch', desktop: 'cw.zoom.desktop.v2' };
+const OLD_KEYS = ['cw.zoom.desktop'];
+try {
+  for (const k of OLD_KEYS) localStorage.removeItem(k);
+} catch {
+  /* storage unavailable */
+}
 
 export class ZoomControl {
   constructor(renderer, touch) {
@@ -48,7 +62,7 @@ export class ZoomControl {
   }
 
   key() {
-    return this.renderer.touchMode ? 'cw.zoom.touch' : 'cw.zoom.desktop';
+    return this.renderer.touchMode ? KEYS.touch : KEYS.desktop;
   }
 
   /** Restore the saved zoom for this device type (call after touch mode is known). */
@@ -83,7 +97,14 @@ export class ZoomControl {
 
   step(dir) {
     if (this.borrowed) return;
-    this.set(this.renderer.zoom * (dir > 0 ? STEP : 1 / STEP));
+    const r = this.renderer;
+    // the zoom at which the next whole scale is exactly reached (rounding then lands on it)
+    const z = (r.devScale + (dir > 0 ? 1 : -1)) * (r.baseH() / r.deviceH());
+    if (z < ZOOM_MIN - 1e-6 || z > ZOOM_MAX + 1e-6 || r.devScale + dir < 1 || r.devScale + dir > 14) {
+      this.toast(r.zoom, dir > 0 ? 'max' : 'min'); // already as far as it goes
+      return;
+    }
+    this.set(z);
     this.save();
   }
 
@@ -93,10 +114,10 @@ export class ZoomControl {
     this.save();
   }
 
-  toast(z) {
+  toast(z, limit = null) {
     const t = this.toastEl;
-    const atMin = z <= ZOOM_MIN + 1e-6;
-    const atMax = z >= ZOOM_MAX - 1e-6;
+    const atMin = limit === 'min' || z <= ZOOM_MIN + 1e-6;
+    const atMax = limit === 'max' || z >= ZOOM_MAX - 1e-6;
     t.textContent = `화면 배율 ${Math.round(z * 100)}%${atMax ? ' (최대)' : atMin ? ' (최소)' : ''}`;
     t.classList.remove('show');
     void t.offsetWidth;

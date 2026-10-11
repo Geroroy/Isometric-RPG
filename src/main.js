@@ -257,7 +257,7 @@ async function boot() {
       document.body.classList.toggle('title', onTitle);
       if (!onTitle) zoom.restore(); // back to the player's own zoom
     }
-    if (onTitle && renderer.zoom !== 0.6) renderer.setZoom(0.6); // a wider, cinematic shot
+    if (onTitle && renderer.zoom !== renderer.shotZoom(0.6)) renderer.setZoom(renderer.shotZoom(0.6), true); // a wider, cinematic shot
     titleT += dt;
     const dr = renderer.drift;
     const tx = onTitle ? Math.sin(titleT * 0.05) * 150 : 0;

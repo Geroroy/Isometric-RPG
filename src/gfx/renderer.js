@@ -23,6 +23,9 @@ const TRAIL_LIFE = 0.13; // seconds a saber swing's afterimage lasts
 const SHADOW_ALPHA = 0.75; // a sheet's rendered shadow (the shadow catcher's own alpha)
 export const ZOOM_MIN = 0.5;
 export const ZOOM_MAX = 2.5;
+// PC: about this many game pixels show vertically at zoom 1 — a 1080p screen is 3× (640×360),
+// 1440p 4×, 4K 6× (characters ~50-57 game px tall, ~160 px on a 1080p screen)
+export const PC_BASE_H = 360;
 
 export class Renderer {
   constructor(game, assets, canvas, overlay) {
@@ -86,21 +89,39 @@ export class Renderer {
   }
 
   /**
-   * How many device pixels one game pixel covers. Integer upscaling keeps the
-   * pixels crisp on high-DPI phones. The view shows about BASE_H game pixels
-   * vertically (fewer on phones so characters read at arm's length — tuned for
-   * a Galaxy S25 Ultra in landscape), divided by the user's zoom.
+   * How many game pixels show vertically at zoom 1: PC_BASE_H on a PC; on touch ~240 rows on a phone
+   * (characters read at arm's length — tuned for a Galaxy S25 Ultra in landscape), up to 450 on tablets.
    */
-  computeDevScale() {
-    const H = window.innerHeight * (window.devicePixelRatio || 1);
-    // touch: ~240 rows on a phone (S25 Ultra), up to the PC view on tablets
-    const baseH = this.touchMode ? Math.max(240, Math.min(450, window.innerHeight * 0.58)) : 450;
-    return Math.max(1, Math.min(14, Math.round(H / (baseH / this.zoom))));
+  baseH() {
+    return this.touchMode ? Math.max(240, Math.min(450, window.innerHeight * 0.58)) : PC_BASE_H;
   }
 
-  /** Change the zoom; only reallocates the canvases when the pixel scale changes. */
-  setZoom(z) {
-    this.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+  /** The screen's height in device pixels. */
+  deviceH() {
+    return window.innerHeight * (window.devicePixelRatio || 1);
+  }
+
+  /**
+   * How many device pixels one game pixel covers. Integer upscaling keeps the
+   * pixels crisp on high-DPI phones. The view shows about baseH() game pixels
+   * vertically, divided by the user's zoom.
+   */
+  computeDevScale() {
+    return Math.max(1, Math.min(14, Math.round(this.deviceH() / (this.baseH() / this.zoom))));
+  }
+
+  /**
+   * A scripted shot's zoom (the title screen, cutscenes' `cam.zoom`): those were framed against a
+   * 450-row view, so on a PC (now PC_BASE_H rows at zoom 1) they are scaled to show the same.
+   */
+  shotZoom(z) {
+    return this.touchMode ? z : (z * PC_BASE_H) / 450;
+  }
+
+  /** Change the zoom; only reallocates the canvases when the pixel scale changes. `shot`: a scripted
+   * shot's zoom (shotZoom), allowed a little past the player's range. */
+  setZoom(z, shot = false) {
+    this.zoom = shot ? Math.max(0.3, Math.min(3, z)) : Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
     if (this.computeDevScale() !== this.devScale) this.resize();
     return this.zoom;
   }
