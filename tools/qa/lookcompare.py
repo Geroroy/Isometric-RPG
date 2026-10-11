@@ -12,6 +12,8 @@ bdir, adir, out = sys.argv[1:4]
 os.makedirs(out, exist_ok=True)
 BG = (20, 22, 26)
 GOLD = (255, 220, 120)
+LA = os.environ.get('BEFORE_LABEL', 'BEFORE')  # e.g. BEFORE_LABEL=armor AFTER_LABEL=cw_s1
+LB = os.environ.get('AFTER_LABEL', 'AFTER (hair v2)')
 
 
 def pose_names():
@@ -34,8 +36,8 @@ def grid(names, path, scale=1, crop=None, cols=4):
         c.paste(b, (0, 22))
         c.paste(a, (b.width + 6, 22))
         d = ImageDraw.Draw(c)
-        d.text((4, 5), f'{n} · BEFORE', fill=(200, 200, 200))
-        d.text((b.width + 10, 5), f'{n} · AFTER (hair v2)', fill=GOLD)
+        d.text((4, 5), f'{n} · {LA}', fill=(200, 200, 200))
+        d.text((b.width + 10, 5), f'{n} · {LB}', fill=GOLD)
         cells.append(c)
     W, H = cells[0].size
     rows = (len(cells) + cols - 1) // cols
@@ -59,8 +61,8 @@ if 'scene' in names:
     S.paste(b, (0, 24))
     S.paste(a, (0, b.height + 50))
     d = ImageDraw.Draw(S)
-    d.text((6, 6), 'BEFORE', fill=(200, 200, 200))
-    d.text((6, b.height + 32), 'AFTER (hair v2)', fill=GOLD)
+    d.text((6, 6), LA, fill=(200, 200, 200))
+    d.text((6, b.height + 32), LB, fill=GOLD)
     S.save(os.path.join(out, 'compare_scene.png'))
 
 
@@ -77,7 +79,7 @@ if len(sys.argv) > 5:
     import json
     K, CW, CH = 4, 40, 64
     for anim, frame in (('idleOff', 0), ('run', 1)):
-        rows = [('BEFORE', sheet_frames(sys.argv[4], anim, frame)), ('AFTER (hair v2)', sheet_frames(sys.argv[5], anim, frame))]
+        rows = [(LA, sheet_frames(sys.argv[4], anim, frame)), (LB, sheet_frames(sys.argv[5], anim, frame))]
         n = len(rows[0][1])
         S = Image.new('RGBA', (n * CW * K, len(rows) * (CH * K + 24)), (74, 78, 86, 255))
         d = ImageDraw.Draw(S)
