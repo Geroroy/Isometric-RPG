@@ -157,15 +157,99 @@ function glowSprite(pal, style) {
   return c;
 }
 
+// ---------------------------------------------------------------------------- ignition
+
+/**
+ * The ignition (docs/SABER_STYLE.md "점화"), seconds: the hilt's white spark, the core running
+ * out of the hilt (ease-out: most of the length in the first frames), the glow overshooting and
+ * settling once the blade is full.
+ */
+export const IGNITE = { spark: 0.07, grow: 0.2, settle: 0.3 };
+
+const ign = { grow: 1, spark: 0, bulge: 0, bloom: 1, light: 1, spread: 1 };
+/**
+ * The ignition's state `t` seconds after the blade came on, or null once it is over:
+ *  grow   0..1 of the blade's length that is out (ease-out cubic)
+ *  spark  1..0 the hilt's flash, gone in IGNITE.spark
+ *  bulge  the tip's momentary thickening while the core runs out, snapping back after
+ *  bloom  the glow's strength: overshoots as the blade completes, settles to 1
+ *  light  the light it throws (floor, characters, light map): brightest at the spark
+ *  spread the floor pool's size: wider at the spark, settling to 1
+ * (one shared object: read it before the next call)
+ */
+export function ignition(t) {
+  if (!(t >= 0) || t > IGNITE.grow + IGNITE.settle) return null;
+  const g = Math.min(1, t / IGNITE.grow);
+  ign.grow = 1 - (1 - g) ** 3;
+  ign.spark = t < IGNITE.spark ? 1 - t / IGNITE.spark : 0;
+  ign.bulge = g < 1 ? 0.65 : 0.65 * Math.max(0, 1 - (t - IGNITE.grow) / 0.08);
+  ign.bloom = 1 + 0.7 * Math.exp(-Math.max(0, t - IGNITE.grow * 0.7) / 0.12) * Math.min(1, t / 0.05 + 0.3);
+  ign.light = 1 + 1.5 * Math.exp(-t / 0.1);
+  ign.spread = 1 + 0.45 * Math.exp(-t / 0.14);
+  return ign;
+}
+
+// the spark: a white burst with a lens flare (a long horizontal streak, a short vertical one,
+// faint diagonals) and the blade colour at its fringe — one sprite, drawn 'lighter'
+const SPK = 96;
+const sparks = new Map();
+function sparkSprite(pal) {
+  let c = sparks.get(pal.rim);
+  if (c) return c;
+  c = document.createElement('canvas');
+  c.width = c.height = SPK;
+  const x = c.getContext('2d');
+  const img = x.createImageData(SPK, SPK);
+  const [r, g, b] = hex(pal.rim);
+  const h = SPK / 2;
+  for (let py = 0; py < SPK; py++) {
+    for (let px = 0; px < SPK; px++) {
+      const dx = px + 0.5 - h;
+      const dy = py + 0.5 - h;
+      const d = Math.hypot(dx, dy);
+      const core = Math.exp(-(d * d) / 18); // the white heart
+      const fringe = Math.exp(-(d * d) / 90) * 0.55; // the colour round it
+      const streak = Math.exp(-(dy * dy) / 1.6) * Math.exp(-Math.abs(dx) / 22) * 0.9 + Math.exp(-(dx * dx) / 1.6) * Math.exp(-Math.abs(dy) / 9) * 0.6;
+      const diag = (Math.exp(-((dx - dy) * (dx - dy)) / 2.2) + Math.exp(-((dx + dy) * (dx + dy)) / 2.2)) * Math.exp(-d / 14) * 0.35;
+      const w = Math.min(1, core + streak + diag);
+      const a = Math.min(1, w + fringe);
+      const o = (py * SPK + px) * 4;
+      img.data[o] = 255 * w + r * (1 - w);
+      img.data[o + 1] = 255 * w + g * (1 - w);
+      img.data[o + 2] = 255 * w + b * (1 - w);
+      img.data[o + 3] = 255 * a;
+    }
+  }
+  x.putImageData(img, 0, 0);
+  sparks.set(pal.rim, c);
+  return c;
+}
+
+/** The ignition spark at the hilt (x, y), `k` = ign.spark: full at T=0, expanding as it dies. */
+export function drawSpark(ctx, x, y, pal, k) {
+  if (k <= 0) return;
+  const prev = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'lighter';
+  const R = 14 * (1 + (1 - k) * 0.9);
+  ctx.globalAlpha = Math.min(1, k * 1.2);
+  ctx.drawImage(sparkSprite(pal), x - R, y - R, R * 2, R * 2);
+  // the flare's long streak
+  ctx.globalAlpha = k * k;
+  ctx.drawImage(sparkSprite(pal), x - R * 2.6, y - R * 0.45, R * 5.2, R * 0.9);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = prev;
+}
+
 // ---------------------------------------------------------------------------- blade
 
 /**
  * The blade: a dark coloured edge under it (normal blend: keeps it readable on a bright floor),
- * the glow sprite (screen), the coloured rim and the white core (lines).
+ * the glow sprite (screen), the coloured rim and the white core (lines). `ign`: the ignition's
+ * state (ignition()) — the glow overshoots (bloom) and the tip runs fat (bulge) while it grows.
  */
-export function drawBlade(ctx, x1, y1, x2, y2, pal, k, time) {
+export function drawBlade(ctx, x1, y1, x2, y2, pal, k, time, ign = null) {
   const st = TRAILS[SABER.trail] || TRAILS.tcw;
-  const fl = flickerAt(time);
+  const fl = flickerAt(time) * (ign ? ign.bloom : 1);
   const dx = x2 - x1;
   const dy = y2 - y1;
   const len = Math.hypot(dx, dy) || 1;
@@ -197,6 +281,20 @@ export function drawBlade(ctx, x1, y1, x2, y2, pal, k, time) {
   ctx.strokeStyle = pal.core;
   ctx.lineWidth = pal.coreW || 1.3;
   ctx.stroke();
+  if (ign && ign.bulge > 0.02) {
+    // the running tip: the last stretch of the core fatter, and a hot blob of glow on the end
+    const q = Math.max(0, 1 - 9 / len);
+    ctx.lineWidth = (pal.coreW || 1.3) * (1 + 1.3 * ign.bulge);
+    ctx.beginPath();
+    ctx.moveTo(x1 + dx * q, y1 + dy * q);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = Math.min(1, 0.9 * ign.bulge * k);
+    const tw = w * (1.1 + ign.bulge);
+    ctx.drawImage(glowSprite(pal, SABER.trail), x2 - tw / 2, y2 - tw / 2, tw, tw);
+    ctx.globalAlpha = 1;
+  }
   ctx.lineCap = 'butt';
   ctx.globalCompositeOperation = prev;
 }
@@ -435,4 +533,4 @@ export function drawClash(ctx, x, y, k, pal = PALETTES.tcw.blue) {
 // ---------------------------------------------------------------------------- the blades' light
 
 // QA (tools/qa/saberlab.mjs): the clash drawing and the settings, from the page
-if (typeof window !== 'undefined') window.__saberStyle = { SABER, TRAILS, PALETTES, setSaberOpt, drawClash, drawBlade, paletteFor };
+if (typeof window !== 'undefined') window.__saberStyle = { SABER, TRAILS, PALETTES, IGNITE, setSaberOpt, drawClash, drawBlade, paletteFor, ignition };

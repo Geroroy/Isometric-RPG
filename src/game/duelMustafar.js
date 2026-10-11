@@ -241,6 +241,7 @@ export class MustafarDuel extends Duel {
 
   ignite(u) {
     u.saberLit = true;
+    u.saberIgnite = true;
     this.game.audio.play('ignite', u);
   }
 

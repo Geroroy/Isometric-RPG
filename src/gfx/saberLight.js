@@ -159,10 +159,10 @@ export function sweepOf(u, now) {
  * the additive pool fades as the floor brightens (drawGroundTint carries the light there).
  * `blend`: the composite (the light map wants 'lighter').
  */
-export function drawGround(ctx, gx, gy, dx, dy, t, p, sweep, k = 1, blend = 'lighter', lum = 0) {
+export function drawGround(ctx, gx, gy, dx, dy, t, p, sweep, k = 1, blend = 'lighter', lum = 0, spread = 1) {
   const prev = ctx.globalCompositeOperation;
   const R = p.r0 * p.reach;
-  const sh = poolShape(dx, dy, R);
+  const sh = poolShape(dx, dy, R, spread);
   const fresh = sweep ? sweep.fresh : 0;
   const a = p.groundA * k * (1 + 0.4 * fresh) * (1 - 0.55 * lum);
   ctx.globalCompositeOperation = blend;
@@ -180,10 +180,10 @@ export function drawGround(ctx, gx, gy, dx, dy, t, p, sweep, k = 1, blend = 'lig
  * its own brightness and takes the light's colour), in proportion to the floor's brightness
  * `lum`. Drawn on the bare floor, before the sprites, so only the floor takes it.
  */
-export function drawGroundTint(ctx, gx, gy, dx, dy, t, p, sweep, k = 1, lum = 0) {
+export function drawGroundTint(ctx, gx, gy, dx, dy, t, p, sweep, k = 1, lum = 0, spread = 1) {
   if (lum <= 0.2) return;
   const prev = ctx.globalCompositeOperation;
-  const sh = poolShape(dx, dy, p.r0 * p.reach);
+  const sh = poolShape(dx, dy, p.r0 * p.reach, spread);
   const fresh = sweep ? sweep.fresh : 0;
   ctx.globalCompositeOperation = 'color';
   drawLightIso(ctx, gx, gy, t, p, p.tintA * k * (1 + 0.4 * fresh) * lum, sh.along, sh.across, sh.ang);
@@ -193,11 +193,11 @@ export function drawGroundTint(ctx, gx, gy, dx, dy, t, p, sweep, k = 1, lum = 0)
 const G = 0.8; // the floor's pool, a little tighter than the light in the air
 const shape = { along: 1, across: 1, ang: 0 };
 // the pool's ellipse: along the blade's ground projection (its screen x fully, its screen y
-// partly — height or depth), across narrower
-function poolShape(dx, dy, R) {
+// partly — height or depth), across narrower; `spread` scales it (the ignition's flash)
+function poolShape(dx, dy, R, spread = 1) {
   const proj = (Math.abs(dx) + 0.45 * Math.abs(dy)) / (R * 0.75);
-  shape.along = G * (1 + 0.9 * Math.min(1.2, proj));
-  shape.across = G * 0.85;
+  shape.along = G * spread * (1 + 0.9 * Math.min(1.2, proj));
+  shape.across = G * spread * 0.85;
   shape.ang = Math.atan2(dy, dx);
   return shape;
 }

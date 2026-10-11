@@ -498,6 +498,7 @@ export class Player extends Unit {
     if (on === this.saberLit || this.dead || this.saberOut) return;
     if (!on && this.game.duel) return; // the duel is all blade
     this.saberLit = on;
+    if (on) this.saberIgnite = true; // the renderer plays the ignition (spark, growth, bloom)
     this.game.audio.play(on ? 'ignite' : 'retract');
     this.setAnim(this.anim.replace(/Off$/, ''), this.animSpeed);
   }

@@ -12,7 +12,7 @@ import { glowSprite } from './fx.js';
 import { transientLights, relightUnits } from './relight.js';
 import { SIG } from '../game/units.js';
 import { canvasFont } from '../ui/fonts.js';
-import { SABER, PALETTES, trailWindow, paletteFor, flickerAt, drawBlade, drawTrail, drawClash, record } from './saberStyle.js';
+import { SABER, PALETTES, trailWindow, paletteFor, flickerAt, ignition, drawBlade, drawSpark, drawTrail, drawClash, record } from './saberStyle.js';
 import { preset, tintFor, drawLight, drawGround, drawGroundTint, sweepOf, lightCharacter } from './saberLight.js';
 
 const AMBIENT = [150, 146, 178];
@@ -182,6 +182,7 @@ export class Renderer {
     this.smooth(false);
     ctx.fillStyle = '#07070a';
     ctx.fillRect(0, 0, W, H);
+    for (const u of g.activeUnits) this.igniteOf(u); // the blades' ignition clocks, before any light is drawn
     this.terrain.draw(ctx, cam.x, cam.y, W, H);
     g.fx.drawDecals(ctx, cam);
     if (g.world.puddles) this.drawPuddles(ctx, cam, dt);
@@ -296,7 +297,7 @@ export class Renderer {
     if (this.relight !== false) {
       ctx.globalCompositeOperation = 'lighter';
       this.smooth(true);
-      relightUnits(ctx, g, cam, transientLights(g, cam), W, H);
+      relightUnits(ctx, g, cam, transientLights(g, cam, this.time), W, H);
       ctx.globalCompositeOperation = 'source-over';
     }
     this.drawHitFlashes(ctx);
@@ -666,7 +667,8 @@ export class Renderer {
       const t = tintFor(u.saberColor);
       const p = preset();
       const sweep = sweepOf(u, this.time);
-      const a = (0.75 + (sweep ? 0.3 * sweep.fresh : 0) + (u.deflectFlash > 0 ? 0.4 : 0)) * p.mapA * fl;
+      const o = this.saberPool(u, cam);
+      const a = (0.75 + (sweep ? 0.3 * sweep.fresh : 0) + (u.deflectFlash > 0 ? 0.4 : 0)) * p.mapA * fl * o.light;
       for (const k of ['saber', 'saber2']) {
         const bb = f.markers[k + 'Base'];
         const ee = f.markers[k + 'Tip'];
@@ -674,8 +676,7 @@ export class Renderer {
         // the blade's middle, a little towards the tip
         drawLight(l, sx + (bb[0] + ee[0]) * 0.5 + (ee[0] - bb[0]) * 0.15, sy + (bb[1] + ee[1]) * 0.5 + (ee[1] - bb[1]) * 0.15, t, p, a);
       }
-      const o = this.saberPool(u, cam);
-      drawGround(l, o.gx, o.gy, o.dx, o.dy, t, p, sweep, a * 0.6, 'lighter');
+      drawGround(l, o.gx, o.gy, o.dx, o.dy, t, p, sweep, a * 0.6, 'lighter', 0, o.spread);
     }
     for (const t of g.throws) spot(t.x, t.y, t.z, 90, 160, 255, 60, 0.6);
     for (const b of g.bolts) spot(b.x, b.y, b.z, b.color === 'red' ? 255 : 90, b.color === 'red' ? 70 : 140, b.color === 'red' ? 60 : 255, 26, 0.6);
@@ -704,6 +705,24 @@ export class Renderer {
    * the blade core; the glow is added only along the stretches the baker
    * found in front of the body, so a blade behind Anakin's back stays hidden.
    */
+  /**
+   * The blade's ignition clock: stamped when the blade comes on (units.setSaber raises
+   * `saberIgnite`; a direct `saberLit = true` is caught by the change), read as the ignition's
+   * state (saberStyle.ignition) for the frames it lasts. A unit first seen lit does not ignite.
+   */
+  igniteOf(u) {
+    const lit = !!u.saberColor && u.saberLit !== false;
+    if (lit && (u.saberIgnite || u.wasLit === false)) u.igniteT = this.time;
+    u.saberIgnite = false;
+    u.wasLit = lit;
+    return lit && u.igniteT != null ? ignition(this.time - u.igniteT) : null;
+  }
+
+  /** The ignition's state for a unit this frame (igniteOf stamped it at the frame's start). */
+  igniting(u) {
+    return u.igniteT != null && u.saberLit !== false ? ignition(this.time - u.igniteT) : null;
+  }
+
   drawSabers(ctx, cam, dt) {
     for (const u of this.game.activeUnits) {
       const tr = u.saberTrail;
@@ -711,6 +730,7 @@ export class Renderer {
         for (const t of tr) t.t += dt;
         while (tr.length && tr[0].t > TRAIL_LIFE) tr.shift();
       }
+      const ign = this.igniting(u);
       if (!u.saberColor || u.dead || u.hidden || u.saberOut || u.saberLit === false) continue;
       const f = u.frame();
       const s = worldToScreen(u.x, u.y, u.z);
@@ -734,10 +754,15 @@ export class Renderer {
           if (swinging) u.trailUntil = this.time + trailWindow() + 0.05;
           if (this.time <= (u.trailUntil || 0)) drawTrail(ctx, hist, this.time, cam, pal);
           const flash = u.deflectFlash > 0 ? 1.6 : u.clashFlash > 0 ? 1.8 : 1;
+          // igniting: only the stretch that has run out of the hilt so far, the tip fat and
+          // the glow overshooting (drawBlade), the white spark at the hilt
+          const grow = ign ? ign.grow : 1;
           for (const [s0, s1] of segs) {
-            if (s1 - s0 < 0.02) continue;
-            drawBlade(ctx, bx + (tx - bx) * s0, by + (ty - by) * s0, bx + (tx - bx) * s1, by + (ty - by) * s1, pal, flash, this.time);
+            const e1 = Math.min(s1, grow);
+            if (e1 - s0 < 0.02) continue;
+            drawBlade(ctx, bx + (tx - bx) * s0, by + (ty - by) * s0, bx + (tx - bx) * e1, by + (ty - by) * e1, pal, flash, this.time, e1 === grow ? ign : null);
           }
+          if (ign && ign.spark > 0) drawSpark(ctx, bx, by, pal, ign.spark);
           continue;
         }
         // swing trail (world-anchored so it survives camera motion)
@@ -787,7 +812,7 @@ export class Renderer {
     const b = f.markers.saberBase;
     const e = f.markers.saberTip;
     if (!b || !e) return null;
-    const o = this.pool || (this.pool = { t: null, p: null, sweep: null, gx: 0, gy: 0, dx: 0, dy: 0, lx: 0, ly: 0, lum: 0 });
+    const o = this.pool || (this.pool = { t: null, p: null, sweep: null, gx: 0, gy: 0, dx: 0, dy: 0, lx: 0, ly: 0, lum: 0, light: 1, spread: 1 });
     const amb = this.game.world.ambient || AMBIENT;
     const s = worldToScreen(u.x, u.y, u.z);
     const g0 = worldToScreen(u.x, u.y, 0);
@@ -803,6 +828,10 @@ export class Renderer {
     o.dx = e[0] - b[0];
     o.dy = e[1] - b[1];
     o.lum = Math.min(1, this.terrain.lumAt(u.x, u.y) * ((amb[0] + amb[1] + amb[2]) / 765) * 1.7);
+    // igniting: the light flashes with the spark and settles, the pool wider for a moment
+    const ign = this.igniting(u);
+    o.light = ign ? ign.light : 1;
+    o.spread = ign ? ign.spread : 1;
     return o;
   }
 
@@ -812,7 +841,7 @@ export class Renderer {
     for (const u of this.game.activeUnits) {
       const o = this.saberPool(u, cam);
       if (!o || o.lum <= 0.2) continue;
-      drawGroundTint(ctx, o.gx, o.gy, o.dx, o.dy, o.t, o.p, o.sweep, (SABER.glow || 1) * fl, o.lum);
+      drawGroundTint(ctx, o.gx, o.gy, o.dx, o.dy, o.t, o.p, o.sweep, (SABER.glow || 1) * fl * o.light, o.lum, o.spread);
     }
   }
 
@@ -831,7 +860,7 @@ export class Renderer {
       // the floor: the light's ellipse added over the lit picture (the light map only darkens or
       // tints; this is the glow that punches through on a dark floor), along the blade, streaked
       // while swinging; a bright floor took the hue instead (drawSaberFloorTint)
-      drawGround(ctx, o.gx, o.gy, o.dx, o.dy, t, p, sweep, (SABER.glow || 1) * fl, 'lighter', o.lum);
+      drawGround(ctx, o.gx, o.gy, o.dx, o.dy, t, p, sweep, (SABER.glow || 1) * fl * o.light, 'lighter', o.lum, o.spread);
       // the characters it reaches (itself and the nearest others, at most four)
       ctx.globalCompositeOperation = 'lighter';
       const R = (p.r0 * p.reach) / PX_PER_UNIT; // world units the light reaches
@@ -842,7 +871,7 @@ export class Renderer {
         if (Math.hypot(v.x - u.x, v.y - u.y) <= R) near.push(v);
       }
       if (near.length > 4) near.sort((a, c) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(c.x - u.x, c.y - u.y)).length = 4;
-      const boost = (1 + (sweep ? 0.35 * sweep.fresh : 0)) * fl;
+      const boost = (1 + (sweep ? 0.35 * sweep.fresh : 0)) * fl * o.light;
       for (const v of near) {
         const vf = v.frame();
         const vs = worldToScreen(v.x, v.y, v.z);

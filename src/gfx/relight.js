@@ -9,6 +9,7 @@
 // this adds the direction.
 import { worldToScreen, PX_PER_UNIT } from '../core/iso.js';
 import { preset, tintFor, falloff } from './saberLight.js';
+import { ignition } from './saberStyle.js';
 
 const GAIN = 1.25;
 const SIN = 0.5; // sin 30°, the camera's elevation
@@ -44,7 +45,7 @@ function pixels(f) {
  * The transient lights of this frame, in screen space: { sx, sy, z (world
  * height), wx, wy, rgb, rad (px), a }.
  */
-export function transientLights(game, cam) {
+export function transientLights(game, cam, now = 0) {
   const out = [];
   const push = (x, y, z, rgb, rad, a) => {
     const s = worldToScreen(x, y, z);
@@ -65,7 +66,8 @@ export function transientLights(game, cam) {
       // reflected tints (near / far), plus a rim term below
       const p = preset();
       const t = tintFor(u.saberColor);
-      out.push({ sx: s.x + (b[0] + e[0]) / 2 - cam.x, sy: s.y + (b[1] + e[1]) / 2 - cam.y, wx: u.x, wy: u.y, z: 1.1 + u.z, rgb: t.farRGB, near: t.nearRGB, p, rad: p.r0 * p.reach, a: 2.0, tz: 8 });
+      const ign = u.igniteT != null ? ignition(now - u.igniteT) : null; // the ignition's flash
+      out.push({ sx: s.x + (b[0] + e[0]) / 2 - cam.x, sy: s.y + (b[1] + e[1]) / 2 - cam.y, wx: u.x, wy: u.y, z: 1.1 + u.z, rgb: t.farRGB, near: t.nearRGB, p, rad: p.r0 * p.reach, a: 2.0 * (ign ? ign.light : 1), tz: 8 });
     }
   }
   return out;
