@@ -1,53 +1,74 @@
 // Entry point: bake sprites, build the world, then run the game loop.
-import './style.css';
-import './ui/theme.css'; // the UI design system (docs/UI_SYSTEM.md): restyles what style.css lays out
-import { fontsReady } from './ui/fonts.js'; // the HUD's fonts (Orbitron, Share Tech Mono, Rajdhani…), bundled
-import { applySkin } from './ui/skin.js';
-import { bakeAssets, bakeDuelAssets, bakeSkin, bakeCharacter, CHARACTERS } from './gfx/assets.js';
-import { loadSheets } from './gfx/sheet.js';
-import { loadCitySprites } from './gfx/citySprites.js';
-import { setCityFootprints } from './world/cityProps.js';
-import { setFloorTexture, setGroundTextures } from './gfx/terrain.js';
-import { savedLook } from './ui/appearance.js';
-import { iconURL } from './ui/icons.js';
-import { DuelHUD } from './ui/duelHud.js';
-import { Game } from './game/game.js';
-import { Renderer } from './gfx/renderer.js';
-import { Post } from './gfx/post.js';
-import { Portrait } from './gfx/portrait.js';
-import { HUD } from './ui/hud.js';
-import { Input } from './core/input.js';
-import { Audio } from './core/audio.js';
-import { Music } from './core/music.js';
-import { Ambience } from './core/ambience.js';
-import { JukeboxUI } from './ui/jukebox.js';
-import { DebugUI } from './ui/debug.js';
-import { TouchControls, isTouchDevice, hasMouse } from './ui/touch.js';
-import { MobileHUD } from './ui/mobileHud.js';
-import { Fullscreen } from './ui/fullscreen.js';
-import { ZoomControl } from './ui/zoom.js';
-import { PortraitPhoto } from './ui/portraitPhoto.js';
-import { DialogueUI } from './ui/dialogue.js';
-import { CinemaUI } from './ui/cinemaUI.js';
-import { startDialogue } from './game/dialogue.js';
-import { SABER } from './gfx/saberStyle.js';
+import "./style.css";
+import "./ui/theme.css"; // the UI design system (docs/UI_SYSTEM.md): restyles what style.css lays out
+import { fontsReady } from "./ui/fonts.js"; // the HUD's fonts (Orbitron, Share Tech Mono, Rajdhani…), bundled
+import { applySkin } from "./ui/skin.js";
+import {
+  bakeAssets,
+  bakeDuelAssets,
+  bakeSkin,
+  bakeCharacter,
+  CHARACTERS,
+} from "./gfx/assets.js";
+import { loadSheets } from "./gfx/sheet.js";
+import { loadCitySprites } from "./gfx/citySprites.js";
+import { setCityFootprints } from "./world/cityProps.js";
+import { setFloorTexture, setGroundTextures } from "./gfx/terrain.js";
+import { savedLook } from "./ui/appearance.js";
+import { iconURL } from "./ui/icons.js";
+import { DuelHUD } from "./ui/duelHud.js";
+import { Game } from "./game/game.js";
+import { Renderer } from "./gfx/renderer.js";
+import { Post } from "./gfx/post.js";
+import { Portrait } from "./gfx/portrait.js";
+import { HUD } from "./ui/hud.js";
+import { Input } from "./core/input.js";
+import { Audio } from "./core/audio.js";
+import { Music } from "./core/music.js";
+import { Ambience } from "./core/ambience.js";
+import { JukeboxUI } from "./ui/jukebox.js";
+import { DebugUI } from "./ui/debug.js";
+import { TouchControls, isTouchDevice, hasMouse } from "./ui/touch.js";
+import { MobileHUD } from "./ui/mobileHud.js";
+import { Fullscreen } from "./ui/fullscreen.js";
+import { ZoomControl } from "./ui/zoom.js";
+import { PortraitPhoto } from "./ui/portraitPhoto.js";
+import { DialogueUI } from "./ui/dialogue.js";
+import { CinemaUI } from "./ui/cinemaUI.js";
+import { startDialogue } from "./game/dialogue.js";
+import { SABER } from "./gfx/saberStyle.js";
 
 applySkin();
-const loading = document.getElementById('loading');
-const bar = document.querySelector('#loading .bar div');
-const label = document.querySelector('#loading .label');
+const loading = document.getElementById("loading");
+const bar = document.querySelector("#loading .bar div");
+const label = document.querySelector("#loading .label");
 
 // '#duel' / '#duel-mustafar' select a Movie Duel (a hash works on any host); switching reloads
-const DUEL = location.hash === '#duel' ? 'geonosis' : location.hash === '#duel-mustafar' ? 'mustafar' : null;
-const MODE = DUEL ? 'duel' : 'campaign';
-window.addEventListener('hashchange', () => location.reload());
+const DUEL =
+  location.hash === "#duel"
+    ? "geonosis"
+    : location.hash === "#duel-mustafar"
+      ? "mustafar"
+      : null;
+const MODE = DUEL ? "duel" : "campaign";
+window.addEventListener("hashchange", () => location.reload());
 
 const DUEL_TITLES = {
-  geonosis: ['#duel', '지오노시스의 결투', 'MOVIE DUEL · EPISODE II — 지오노시스의 결투 · 두쿠 백작의 비밀 격납고', '지오노시스 격납고 준비 중…'],
-  mustafar: ['#duel-mustafar', '무스타파의 결투', 'MOVIE DUEL · EPISODE III — 무스타파의 결투 · 아나킨 vs 오비완', '무스타파 채굴 시설 준비 중…'],
+  geonosis: [
+    "#duel",
+    "지오노시스의 결투",
+    "MOVIE DUEL · EPISODE II — 지오노시스의 결투 · 두쿠 백작의 비밀 격납고",
+    "지오노시스 격납고 준비 중…",
+  ],
+  mustafar: [
+    "#duel-mustafar",
+    "무스타파의 결투",
+    "MOVIE DUEL · EPISODE III — 무스타파의 결투 · 아나킨 vs 오비완",
+    "무스타파 채굴 시설 준비 중…",
+  ],
 };
 const duelMenu = (d) => {
-  const other = d === 'geonosis' ? 'mustafar' : 'geonosis';
+  const other = d === "geonosis" ? "mustafar" : "geonosis";
   return `
   <button id="startBtn" class="tm-item sel" type="button"><span>결투 시작</span></button>
   <a class="tm-item" href="${DUEL_TITLES[other][0]}"><span>다른 결투</span><small>${DUEL_TITLES[other][1]}</small></a>
@@ -56,59 +77,84 @@ const duelMenu = (d) => {
 };
 
 async function boot() {
-  document.querySelector('.title-crest').src = iconURL('command');
-  if (MODE === 'duel') {
-    document.querySelector('.title-menu').innerHTML = duelMenu(DUEL);
-    document.querySelector('.title-legal').innerHTML = `${DUEL_TITLES[DUEL][2]}<br />비상업 팬 프로젝트. STAR WARS © &amp; ™ LUCASFILM LTD. 모든 권리는 각 권리자에게 있습니다.`;
-    document.body.classList.add('duel');
+  document.querySelector(".title-crest").src = iconURL("command");
+  if (MODE === "duel") {
+    document.querySelector(".title-menu").innerHTML = duelMenu(DUEL);
+    document.querySelector(".title-legal").innerHTML =
+      `${DUEL_TITLES[DUEL][2]}<br />비상업 팬 프로젝트. STAR WARS © &amp; ™ LUCASFILM LTD. 모든 권리는 각 권리자에게 있습니다.`;
+    document.body.classList.add("duel");
   }
   const onProgress = (k, text) => {
-    bar.style.width = Math.round(k * 100) + '%';
+    bar.style.width = Math.round(k * 100) + "%";
     label.textContent = text;
   };
   await fontsReady(); // the HUD's fonts in before the first frame (canvas text keeps what it is drawn with)
   const assets = await bakeAssets(onProgress);
   // characters rendered in Blender: sprite sheet + frame JSON (after the bake
   // has been cached — the cache stores baked canvases only)
-  Object.assign(assets.sprites, await loadSheets(Object.keys(CHARACTERS), onProgress));
+  Object.assign(
+    assets.sprites,
+    await loadSheets(Object.keys(CHARACTERS), onProgress),
+  );
   // the Coruscant undercity's Blender-rendered buildings and street
-  if (MODE === 'campaign') {
+  if (MODE === "campaign") {
     assets.city = await loadCitySprites(onProgress);
     setCityFootprints(assets.city);
     setFloorTexture(assets.city.floor);
     setGroundTextures(assets.city.ground);
   }
-  if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, DUEL)).sprites);
+  if (MODE === "duel")
+    Object.assign(
+      assets.sprites,
+      (await bakeDuelAssets(onProgress, DUEL)).sprites,
+    );
   // the equipped appearance (the Movie Duel keeps the default look)
-  const look = MODE === 'campaign' ? savedLook() : null;
-  if (look && !assets.sprites[look.sprite]) assets.sprites[look.sprite] = await bakeSkin(look.sprite, (k) => onProgress(k, '외형 준비 중…'));
+  const look = MODE === "campaign" ? savedLook() : null;
+  if (look && !assets.sprites[look.sprite])
+    assets.sprites[look.sprite] = await bakeSkin(look.sprite, (k) =>
+      onProgress(k, "외형 준비 중…"),
+    );
   // QA: a character baked from the pose code instead of its sheet — a new animation before its render.
   // ?qaBake=anakin (all of it) or anakin:sig (only that animation, put into the sheet's set);
   // a build can carry it as VITE_QA_BAKE (a playable preview of a move).
-  const qaBake = new URLSearchParams(location.search).get('qaBake') || import.meta.env.VITE_QA_BAKE;
+  const qaBake =
+    new URLSearchParams(location.search).get("qaBake") ||
+    import.meta.env.VITE_QA_BAKE;
   if (qaBake) {
-    for (const item of qaBake.split(',')) {
-      const [n, only] = item.split(':');
+    for (const item of qaBake.split(",")) {
+      const [n, only] = item.split(":");
       if (only && !assets.sprites[n]) continue; // that set isn't part of this mode
-      const baked = await bakeCharacter(n, (k) => onProgress(k, '새 동작 준비 중…'), only ? only.split('+') : null);
+      const baked = await bakeCharacter(
+        n,
+        (k) => onProgress(k, "새 동작 준비 중…"),
+        only ? only.split("+") : null,
+      );
       if (only) Object.assign(assets.sprites[n].anims, baked.anims);
       else assets.sprites[n] = baked;
     }
   }
-  label.textContent = MODE === 'duel' ? DUEL_TITLES[DUEL][3] : '코러산트 · 크리스토프시스 생성 중…';
+  label.textContent =
+    MODE === "duel"
+      ? DUEL_TITLES[DUEL][3]
+      : "코러산트 · 크리스토프시스 생성 중…";
   await new Promise((r) => setTimeout(r, 20));
 
   const audio = new Audio();
   const game = new Game(assets, audio, MODE, DUEL || undefined);
   // the city hub ⇄ Christophsis: new ground, props and map
-  game.on('world', () => {
+  game.on("world", () => {
     renderer.setWorld();
     hud.onWorld();
   });
   if (look) game.player.sprite = look.sprite;
-  const canvas = document.getElementById('world');
-  const overlay = document.getElementById('overlay');
-  const renderer = (game.renderer = new Renderer(game, assets, canvas, overlay));
+  const canvas = document.getElementById("world");
+  const overlay = document.getElementById("overlay");
+  const renderer = (game.renderer = new Renderer(
+    game,
+    assets,
+    canvas,
+    overlay,
+  ));
   const post = (renderer.post = new Post(canvas, game)); // LUT, bloom, vignette, grain (options)
   const portrait = new Portrait();
   const photo = new PortraitPhoto(portrait);
@@ -128,20 +174,23 @@ async function boot() {
 
   const measure = () => {
     // keep Anakin centred in the part of the screen above the console (the zoom limits use it too)
-    renderer.consoleH = document.querySelector('.console').offsetHeight;
-    document.documentElement.style.setProperty('--console-h', renderer.consoleH + 'px');
+    renderer.consoleH = document.querySelector(".console").offsetHeight;
+    document.documentElement.style.setProperty(
+      "--console-h",
+      renderer.consoleH + "px",
+    );
     renderer.resize();
   };
-  window.addEventListener('resize', measure);
+  window.addEventListener("resize", measure);
   // Controls follow the device actually used: a tablet with a Bluetooth mouse
   // plays like a PC, touching the screen switches back to the touch UI.
   if (isTouchDevice() && !hasMouse()) touch.enable();
   else zoom.restore();
   window.addEventListener(
-    'pointerdown',
+    "pointerdown",
     (e) => {
-      if (e.pointerType === 'mouse') touch.disable();
-      else if (e.pointerType === 'touch') touch.enable();
+      if (e.pointerType === "mouse") touch.disable();
+      else if (e.pointerType === "touch") touch.enable();
     },
     { capture: true, passive: true },
   );
@@ -149,52 +198,59 @@ async function boot() {
 
   // warm up visible terrain chunks before revealing the game
   renderer.render(0);
-  loading.classList.add('done');
+  loading.classList.add("done");
   setTimeout(() => loading.remove(), 800);
 
-  const help = document.getElementById('help');
+  const help = document.getElementById("help");
   // music starts with the first touch / key (browsers block autoplay)
   const music = (game.music = new Music(audio));
   const ambience = new Ambience(audio);
   new CinemaUI(game);
-  game.on('cinema', (on) => on || zoom.restore()); // back to the player's zoom after a cutscene
+  game.on("cinema", (on) => on || zoom.restore()); // back to the player's zoom after a cutscene
   const jukebox = (hud.jukeUI = new JukeboxUI(hud, music, audio));
   hud.debugUI = new DebugUI(hud, game, music, audio);
-  game.on('jukebox', () => setTimeout(() => hud.toggle('juke', true), 0)); // after the dialogue closes
+  game.on("jukebox", () => setTimeout(() => hud.toggle("juke", true), 0)); // after the dialogue closes
   music.onUnlock = (url) => {
     const c = music.catalog.find((x) => x.url === url);
-    if (c && !document.body.classList.contains('title')) hud.log(`♪ 칸티나 주크박스에 추가: ${c.title}`, 'gold');
+    if (c && !document.body.classList.contains("title"))
+      hud.log(`♪ 칸티나 주크박스에 추가: ${c.title}`, "gold");
   };
   const wake = () => {
     audio.unlock();
-    music.init(game, () => !help.classList.contains('hidden'));
+    music.init(game, () => !help.classList.contains("hidden"));
   };
-  window.addEventListener('pointerdown', wake, { once: true, capture: true });
-  window.addEventListener('keydown', wake, { once: true, capture: true });
-  const startBtn = document.getElementById('startBtn');
-  const controls = document.getElementById('controls');
-  document.getElementById('controlsBtn').onclick = () => controls.classList.remove('hidden');
-  controls.querySelector('.ct-close').onclick = () => controls.classList.add('hidden');
+  window.addEventListener("pointerdown", wake, { once: true, capture: true });
+  window.addEventListener("keydown", wake, { once: true, capture: true });
+  const startBtn = document.getElementById("startBtn");
+  const controls = document.getElementById("controls");
+  document.getElementById("controlsBtn").onclick = () =>
+    controls.classList.remove("hidden");
+  controls.querySelector(".ct-close").onclick = () =>
+    controls.classList.add("hidden");
   // main menu after Jedi: Survivor: one item is selected at a time (hover,
   // arrow keys or W/S), Enter / Space activates it
-  const items = [...document.querySelectorAll('.tm-item')];
+  const items = [...document.querySelectorAll(".tm-item")];
   let sel = 0;
   const select = (i) => {
     sel = (i + items.length) % items.length;
-    items.forEach((b, k) => b.classList.toggle('sel', k === sel));
+    items.forEach((b, k) => b.classList.toggle("sel", k === sel));
   };
   items.forEach((b, i) => {
-    b.addEventListener('pointerenter', () => select(i));
-    b.addEventListener('focus', () => select(i));
+    b.addEventListener("pointerenter", () => select(i));
+    b.addEventListener("focus", () => select(i));
   });
   window.addEventListener(
-    'keydown',
+    "keydown",
     (e) => {
-      if (help.classList.contains('hidden') || !controls.classList.contains('hidden')) return;
+      if (
+        help.classList.contains("hidden") ||
+        !controls.classList.contains("hidden")
+      )
+        return;
       const k = e.key.toLowerCase();
-      if (k === 'arrowup' || k === 'w') select(sel - 1);
-      else if (k === 'arrowdown' || k === 's') select(sel + 1);
-      else if (k === 'enter' || k === ' ') items[sel].click();
+      if (k === "arrowup" || k === "w") select(sel - 1);
+      else if (k === "arrowdown" || k === "s") select(sel + 1);
+      else if (k === "enter" || k === " ") items[sel].click();
       else return;
       e.preventDefault();
       e.stopImmediatePropagation();
@@ -204,18 +260,22 @@ async function boot() {
   let started = false;
   startBtn.onclick = (e) => {
     e.stopPropagation();
-    help.classList.add('hidden');
-    controls.classList.add('hidden');
+    help.classList.add("hidden");
+    controls.classList.add("hidden");
     if (started) return; // reopened with F1 / HELP: just resume
     started = true;
-    startBtn.querySelector('span').textContent = '계속';
+    startBtn.querySelector("span").textContent = "계속";
     audio.unlock();
     // phones and tablets go fullscreen right away; on PC use the button or F
     if (isTouchDevice()) fullscreen.enter();
-    audio.play('ignite');
+    audio.play("ignite");
     // let a user sound bank finish loading so the opening line can be voiced
     if (game.duel) game.duel.start();
-    else Promise.race([audio.bankReady, new Promise((r) => setTimeout(r, 1500))]).then(() => game.say('intro'));
+    else
+      Promise.race([
+        audio.bankReady,
+        new Promise((r) => setTimeout(r, 1500)),
+      ]).then(() => game.say("intro"));
   };
 
   window.__game = game; // handy for debugging in the console
@@ -237,7 +297,18 @@ async function boot() {
   // the frame's systems, made once (not a fresh array of closures every frame)
   let dt = 0;
   let paused = false;
-  const steps = [() => paused || game.update(dt), () => renderer.render(dt), () => post.render(dt), () => hud.update(dt), () => touch.enabled && mobile.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update(), () => duelHud && duelHud.update(dt)];
+  const steps = [
+    () => paused || game.update(dt),
+    () => renderer.render(dt),
+    () => post.render(dt),
+    () => hud.update(dt),
+    () => touch.enabled && mobile.update(dt),
+    () => dialogue.update(dt),
+    () => music.update(),
+    () => ambience.update(game),
+    () => jukebox.update(),
+    () => duelHud && duelHud.update(dt),
+  ];
   const loop = (now) => {
     if (hiddenTab) return; // restarted when the tab shows again
     requestAnimationFrame(loop);
@@ -252,12 +323,13 @@ async function boot() {
     input.update(dt);
     touch.update(dt);
     // the title screen sits over the live world: hide the HUD, drift the camera
-    const onTitle = !help.classList.contains('hidden');
-    if (onTitle !== document.body.classList.contains('title')) {
-      document.body.classList.toggle('title', onTitle);
+    const onTitle = !help.classList.contains("hidden");
+    if (onTitle !== document.body.classList.contains("title")) {
+      document.body.classList.toggle("title", onTitle);
       if (!onTitle) zoom.restore(); // back to the player's own zoom
     }
-    if (onTitle && renderer.zoom !== renderer.shotZoom(0.6)) renderer.setZoom(renderer.shotZoom(0.6), true); // a wider, cinematic shot
+    if (onTitle && renderer.zoom !== renderer.shotZoom(0.6))
+      renderer.setZoom(renderer.shotZoom(0.6), true); // a wider, cinematic shot
     titleT += dt;
     const dr = renderer.drift;
     const tx = onTitle ? Math.sin(titleT * 0.05) * 150 : 0;
@@ -265,7 +337,16 @@ async function boot() {
     dr.x += (tx - dr.x) * Math.min(1, dt * (onTitle ? 1 : 3));
     dr.y += (ty - dr.y) * Math.min(1, dt * (onTitle ? 1 : 3));
     // menus pause the action (the map does not)
-    paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
+    paused =
+      onTitle ||
+      hud.open.tree ||
+      hud.open.char ||
+      hud.open.settings ||
+      hud.open.cards ||
+      hud.open.look ||
+      hud.open.juke ||
+      hud.open.debug ||
+      dialogue.isOpen;
     // one failing system must not freeze the whole game: report it once, keep running
     for (const step of steps) {
       try {
@@ -281,14 +362,15 @@ async function boot() {
   requestAnimationFrame(loop);
   // a hidden tab: no frames, no sound (the music and ambience stop with the audio clock)
   const pausedEls = [];
-  document.addEventListener('visibilitychange', () => {
+  document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       hiddenTab = true;
-      if (audio.ctx && audio.ctx.state === 'running') audio.ctx.suspend();
-      for (const t of music.tracks.values()) if (!t.el.paused) (t.el.pause(), pausedEls.push(t.el));
+      if (audio.ctx && audio.ctx.state === "running") audio.ctx.suspend();
+      for (const t of music.tracks.values())
+        if (!t.el.paused) (t.el.pause(), pausedEls.push(t.el));
     } else if (hiddenTab) {
       hiddenTab = false;
-      if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
+      if (audio.ctx && audio.ctx.state === "suspended") audio.ctx.resume();
       for (const el of pausedEls.splice(0)) el.play().catch(() => {});
       prev = null;
       requestAnimationFrame(loop);
@@ -297,12 +379,39 @@ async function boot() {
   window.__ready = true;
 }
 
-// Offline cache / installable app (only on a real web host, never in dev).
-if (import.meta.env.PROD && 'serviceWorker' in navigator && window.isSecureContext) {
-  navigator.serviceWorker.register('./sw.js?v=' + __BUILD__).catch(() => {}); // a new build: a fresh cache (sw.js)
+// Offline cache / installable app (only on a real web host, never in dev). The worker caches files by
+// content (sw.js): a new build's worker knows which files changed. When the page is still served by an
+// older build's worker, wait (briefly) for this build's to take over before loading anything, so no
+// changed file comes from the old cache.
+function serviceWorkerReady() {
+  if (
+    !(
+      import.meta.env.PROD &&
+      "serviceWorker" in navigator &&
+      window.isSecureContext
+    )
+  )
+    return Promise.resolve();
+  const sw = navigator.serviceWorker;
+  const reg = sw.register("./sw.js?v=" + __BUILD__).catch(() => null);
+  const ctl = sw.controller;
+  if (!ctl || new URL(ctl.scriptURL).searchParams.get("v") === __BUILD__)
+    return Promise.resolve();
+  return Promise.race([
+    reg.then(
+      (r) =>
+        r &&
+        new Promise((res) =>
+          sw.addEventListener("controllerchange", res, { once: true }),
+        ),
+    ),
+    new Promise((res) => setTimeout(res, 4000)),
+  ]);
 }
 
-boot().catch((err) => {
-  console.error(err);
-  label.textContent = '오류: ' + err.message;
-});
+serviceWorkerReady()
+  .then(boot)
+  .catch((err) => {
+    console.error(err);
+    label.textContent = "오류: " + err.message;
+  });
