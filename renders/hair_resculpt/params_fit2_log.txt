@@ -1,0 +1,1 @@
+start                        0.6990  front:0.710 right:0.643 left:0.604 back:0.839  

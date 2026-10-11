@@ -115,8 +115,16 @@ def drape(pts, thk):
     return out
 
 
+LS = P.get('lift_shape', {})
+
+
 def env(th, ph, lift):
-    """A point of the hair envelope round the head (theta from the crown, phi round)."""
+    """A point of the hair envelope round the head (theta from the crown, phi round). 'lift_shape'
+    adds volume by direction — 'back' behind, 'side' over the ears (negative: closer), 'top' on the
+    crown — for a head shaped unlike the reference's."""
+    lift += (LS.get('back', 0.0) * max(0.0, -math.cos(ph)) * math.sin(min(th, math.pi / 2))
+             + LS.get('side', 0.0) * math.sin(ph) ** 2 * math.sin(min(th, math.pi / 2))
+             + LS.get('top', 0.0) * max(0.0, math.cos(th)))
     e = C + Vector(((R.x + lift) * math.sin(th) * math.cos(ph), (R.y + lift) * math.sin(th) * math.sin(ph), (R.z + lift) * math.cos(th)))
     if FIT:
         d = (e - C).normalized()
@@ -131,14 +139,15 @@ def env(th, ph, lift):
     return e
 
 
-def guide(th, ph, lift):
-    """The envelope above the hang line; below it the hair falls straight down, tucking in a little."""
+def guide(th, ph, lift, taper=None):
+    """The envelope above the hang line; below it the hair falls straight down, tucking in a little
+    (a group's own 'hang_taper' over the global one; negative flares it out, as a bob's ends)."""
     if th <= TH_H:
         return env(th, ph, lift)
     top = env(TH_H, ph, lift)
     d = (th - TH_H) * R.z
     rad = Vector((top.x - C.x, top.y - C.y, 0))
-    k = 1 - P['hang_taper'] * min(1.0, d / 0.12) * 0.5
+    k = 1 - (P['hang_taper'] if taper is None else taper) * min(1.0, d / 0.12) * 0.5
     return Vector((C.x + rad.x * k, C.y + rad.y * k, top.z - d))
 
 
@@ -221,7 +230,7 @@ def clump(root, end, g, rng, alt=0):
         # the root is sunk into the scalp and the clump rises out of it over the first stretch, so no
         # open end shows where a lower layer starts under the one above
         rise = smooth(min(1.0, t / P.get('root_rise', 0.15)))
-        pts.append(guide(th, ph, (lift0 + vol) * rise - thk * 0.7 * (1 - rise)))
+        pts.append(guide(th, ph, (lift0 + vol) * rise - thk * 0.7 * (1 - rise), g.get('hang_taper')))
     # wave and flick: offsets across the clump (on the surface) and outwards
     out = []
     for k, p in enumerate(pts):

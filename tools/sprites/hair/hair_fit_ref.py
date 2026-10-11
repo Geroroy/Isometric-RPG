@@ -1,6 +1,7 @@
 """
 Fits the hair's parameters to the reference's silhouettes: a coordinate search over a few knobs
-(lengths, volumes, how far forward the side hair falls, how low the bangs come, widths), each step
+(lengths, volumes, how far forward the side hair falls, how low the bangs come, widths, volume
+by direction), each step
 building the hair (hair_v2.py) and scoring it against the reference (hair_match.py, the mean IoU
 over the views). Starts from params.json, writes the best to out.json, a log beside it.
   python3 hair_fit_ref.py base.glb params.json out.json [rounds=3]
@@ -56,6 +57,13 @@ def side_back(P, d):
         g['end_phi'] = [x + s * d for x in g['end_phi']]
 
 
+def lift_shape(key):
+    def f(P, d):
+        P.setdefault('lift_shape', {})
+        P['lift_shape'][key] = P['lift_shape'].get(key, 0.0) + d
+    return f
+
+
 # knob -> (apply(P, value), step)
 KNOBS = {
     'len_side': (add_end(SIDES + FALLS), 0.1),
@@ -69,6 +77,9 @@ KNOBS = {
     'side_back': (side_back, 0.12),
     'wid_side': (mul(SIDES + FALLS, ('width',)), 0.15),
     'flick': (mul(SIDES + FALLS + BACK + CORNERS, ('flick',)), 0.4),
+    'ls_back': (lift_shape('back'), 0.008),
+    'ls_side': (lift_shape('side'), 0.004),
+    'ls_top': (lift_shape('top'), 0.004),
 }
 
 
