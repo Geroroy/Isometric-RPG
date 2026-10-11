@@ -30,3 +30,6 @@ smoother: wave amplitude capped at 3 mm, wider clumps that overlap (crown 15 cm,
 ## iter 10
 back to iter 6's clumps, only smaller: lift and volume x0.55, envelope 5-6 mm off the scalp
 
+## iter 11
+fit to the scalp: the envelope follows the head mesh and ears 2 mm off them (was an ellipsoid ~14 mm out: the hair floated)
+

@@ -15,7 +15,9 @@ scalp: each group of hair_v2_params.json spreads n clumps between root and end r
 clump is a tube with a lens-shaped section (convex on top, flat below) along its guide, wide in
 the middle and tapering to a point, with a wave, a volume lift and a flick at the end. Under the
 clumps a tight dark shell hides the scalp between them. The hair is skinned to the 'head' bone
-(weight 1), like the rest of the head. Everything else in the file is exported unchanged.
+(weight 1), like the rest of the head. With "fit_scalp" the envelope follows the head mesh and the ears
+("scalp_offset" off them) rather than the ellipsoid of "radii", so the hair lies on the scalp instead of
+floating round it (hair_fit.py checks it). Everything else in the file is exported unchanged.
 Prints the triangle counts (the old hair mesh, the new hair). The outfits' old hair is mostly
 render-time curves (~10,000 strands) over a 4,752-triangle shell, so the budget is taken against
 the heaviest hair mesh of the set, the Clone Wars armour's (29,764 triangles; limit 1.5x).
@@ -30,6 +32,7 @@ import sys
 
 import bpy  # noqa: I001
 from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 
 print = functools.partial(builtins.print, flush=True)  # noqa: A001
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -65,9 +68,35 @@ R = Vector(P['head']['radii'])
 TH_H = P['hang_theta']
 
 
+# 'fit_scalp': the envelope follows the head mesh itself (and the ears), `scalp_offset` off it, instead of
+# the ellipsoid of 'radii' — so the hair lies on the scalp rather than floating round it. Built from the
+# meshes' rest-pose vertices, the space the hair is made in.
+FIT = P.get('fit_scalp', False)
+if FIT:
+    vs, fs = [], []
+    for o in scene.objects:
+        if o.type == 'MESH' and (o.name == 'head' or o.name.startswith('ear')):
+            n0 = len(vs)
+            vs += [o.matrix_world @ v.co for v in o.data.vertices]
+            fs += [tuple(n0 + i for i in p.vertices) for p in o.data.polygons]
+    SCALP = BVHTree.FromPolygons(vs, fs)
+    OFF = P.get('scalp_offset', 0.003)
+
+
 def env(th, ph, lift):
     """A point of the hair envelope round the head (theta from the crown, phi round)."""
-    return C + Vector(((R.x + lift) * math.sin(th) * math.cos(ph), (R.y + lift) * math.sin(th) * math.sin(ph), (R.z + lift) * math.cos(th)))
+    e = C + Vector(((R.x + lift) * math.sin(th) * math.cos(ph), (R.y + lift) * math.sin(th) * math.sin(ph), (R.z + lift) * math.cos(th)))
+    if FIT:
+        d = (e - C).normalized()
+        hit = SCALP.ray_cast(C, d)[0]
+        if hit is not None:
+            # the furthest surface along the ray (an ear stands off the head): cast on from just past the hit
+            far = SCALP.ray_cast(hit + d * 1e-4, d)[0]
+            while far is not None:
+                hit = far
+                far = SCALP.ray_cast(hit + d * 1e-4, d)[0]
+            return hit + d * (OFF + lift)
+    return e
 
 
 def guide(th, ph, lift):

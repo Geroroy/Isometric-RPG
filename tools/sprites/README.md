@@ -147,7 +147,8 @@ glTF는 헤어 커브를 담지 못하므로 렌더 때 붙입니다: `render_sp
 튜닉·로브 외형에 렌더 때 붙던 헤어 커브 대신 씁니다. 두피 위 가이드 커브를 따라 굵은 웨이브 다발(위는 볼록하고 아래는 납작한
 렌즈 단면의 튜브)을 겹쳐 쌓습니다. 정수리 다발은 뒤·옆 끝까지 이어지고, 바깥 끝은 바깥으로 살짝 뻗칩니다. 앞머리는 그의 왼쪽
 가르마에서 이마를 가로질러 오른쪽 관자놀이로 넘어가고, 한두 가닥이 이마로 흘러내립니다. 아래에는 머리색 셸이 깔립니다.
-머리 뼈 `head`에 가중치 1로 붙고, 다른 메시는 그대로 다시 내보냅니다(애니메이션 17개, 노드·스킨 같음). 원본 GLB는 덮어쓰지
+헤어 감싸는 면은 `fit_scalp`로 실제 머리 메시(귀 포함)를 따라 `scalp_offset`(2 mm)만큼 띄웁니다 — 타원체로 두면
+1.4 cm쯤 떠서 헤어가 머리 위에 붕 뜬 것처럼 보였습니다. 머리 뼈 `head`에 가중치 1로 붙고, 다른 메시는 그대로 다시 내보냅니다(애니메이션 17개, 노드·스킨 같음). 원본 GLB는 덮어쓰지
 않고, 지운 헤어는 `_hair_v1_backup.blend`로 남깁니다.
 
 | 파일 | 역할 |
@@ -156,6 +157,9 @@ glTF는 헤어 커브를 담지 못하므로 렌더 때 붙입니다: `render_sp
 | `hair/hair_v2_params.json` | 모든 조형 값: 그룹별 개수·뿌리/끝 범위·폭·두께·높이·웨이브·뻗침·볼륨, 팔레트, 셸, 끝 모양 |
 | `hair/hair_review.py model.glb dir label [hair.blend]` | 정면·오른쪽·왼쪽·후면·3/4 클로즈업 + 게임 아이소 시점(스프라이트 실제 크기, 2배 렌더 후 축소) |
 | `hair/hair_sheet.py` · `hair/hair_iter.sh N tunic\|robe "메모"` | 레퍼런스·이전·새 헤어 비교 시트를 `renders/hair_iter_N/`에 |
+| `hair/hair_fit.py model.glb [step] [out.json]` | 헤어가 모델에 붙어 있는지 검사: 모든 애니메이션 프레임에서 머리 뼈 기준 이동(따로 놀기, 0이어야 함), 셸과 두피 간격(앞 헤어라인 6 mm 이하, 뒤로 늘어진 끝은 보고만), 목·칼라·요크·몸통 관통 |
+| `hair/hair_poses.py model.glb out.png [anim:frame …]` | 극단 자세(공격·점프·피격·사망·시그니처) 머리·어깨 클로즈업 한 장 — 눈으로 확인 |
+| `hair/hair_cw_s1_params.json` · `hair/s1_iter.sh N "메모"` | 클론워즈 시즌 1 외형(`cw_s1`) 헤어와 반복 시트(`renders/cw_s1_iter_N/`) |
 
 ```
 .bvenv/bin/python tools/sprites/hair/hair_v2.py tools/sprites/out/anakin_tunic.glb tools/sprites/out/anakin_tunic_hairv2.glb

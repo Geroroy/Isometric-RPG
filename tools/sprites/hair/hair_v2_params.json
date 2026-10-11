@@ -25,7 +25,7 @@
   "root": "#130d09"
  },
  "shell": {
-  "lift": 0.008,
+  "lift": 0.0,
   "nu": 32,
   "nv": 14,
   "hang": 0.1,
@@ -325,5 +325,7 @@
  "root_rise": 0.15,
  "flick_up": 0.15,
  "tip_close": 0.6,
- "layer_step": 0.005
+ "layer_step": 0.005,
+ "fit_scalp": true,
+ "scalp_offset": 0.002
 }
