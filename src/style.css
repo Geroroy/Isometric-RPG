@@ -882,36 +882,6 @@ body.touch .radar-region {
   border-color: #fff;
   background: rgba(255, 255, 255, 0.12);
 }
-#zoomToast {
-  position: fixed;
-  left: 50%;
-  top: 26%;
-  transform: translateX(-50%);
-  padding: 6px 16px;
-  font-family: var(--font-tech);
-  font-weight: 600;
-  font-size: 15px;
-  letter-spacing: 0.08em;
-  background: var(--glass-strong);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  opacity: 0;
-  pointer-events: none !important;
-  z-index: 35;
-}
-#zoomToast.show {
-  animation: toast 1.2s ease forwards;
-}
-@keyframes toast {
-  0%,
-  60% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
 /* ============================================================ full-screen menus */
 .overlay {
   position: fixed;
@@ -2916,11 +2886,6 @@ kbd {
   border-radius: 4px;
   box-shadow: inset 1px 1px 0 rgba(235, 245, 255, 0.2), inset -1px -1px 0 rgba(0, 0, 0, 0.6);
   backdrop-filter: none;
-}
-#zoomToast {
-  color: var(--ink);
-  background: #071019;
-  border: 2px solid #343a40;
 }
 .death {
   background: radial-gradient(ellipse at center, rgba(40, 6, 4, 0.75), rgba(0, 0, 0, 0.94));

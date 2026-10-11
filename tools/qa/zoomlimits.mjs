@@ -24,7 +24,7 @@ const browser = await chromium.launch({ executablePath: exe, args: ['--use-gl=an
 const page = await (await browser.newContext({ viewport: { width: 1920, height: 1080 } })).newPage();
 const errs = [];
 page.on('pageerror', (e) => errs.push(e.message));
-await page.goto('http://127.0.0.1:5173/');
+await page.goto(process.env.QA_URL || 'http://127.0.0.1:5173/');
 await page.waitForFunction(() => window.__ready, null, { timeout: 900000 });
 await page.click('#startBtn');
 await page.waitForTimeout(1500);

@@ -44,10 +44,6 @@ export class ZoomControl {
     mk('zoomOut', '−', '축소 (-)', () => this.step(-1));
     mk('zoomIn', '+', '확대 (+)', () => this.step(1));
 
-    this.toastEl = document.createElement('div');
-    this.toastEl.id = 'zoomToast';
-    document.getElementById('hud').appendChild(this.toastEl);
-
     // mouse wheel over the game world
     document.getElementById('world').addEventListener(
       'wheel',
@@ -84,10 +80,8 @@ export class ZoomControl {
     }
   }
 
-  set(z, toast = true) {
-    const v = this.renderer.setZoom(z);
-    if (toast) this.toast(v);
-    return v;
+  set(z) {
+    return this.renderer.setZoom(z);
   }
 
   /** The title screen and cutscenes set their own zoom: not the player's to change or save. */
@@ -100,10 +94,7 @@ export class ZoomControl {
     const r = this.renderer;
     // the zoom at which the next whole scale is exactly reached (rounding then lands on it)
     const z = (r.devScale + (dir > 0 ? 1 : -1)) * (r.baseH() / r.deviceH());
-    if (z < ZOOM_MIN - 1e-6 || z > ZOOM_MAX + 1e-6 || r.devScale + dir < 1 || r.devScale + dir > 14) {
-      this.toast(r.zoom, dir > 0 ? 'max' : 'min'); // already as far as it goes
-      return;
-    }
+    if (z < ZOOM_MIN - 1e-6 || z > ZOOM_MAX + 1e-6 || r.devScale + dir < 1 || r.devScale + dir > 14) return; // as far as it goes
     this.set(z);
     this.save();
   }
@@ -112,16 +103,6 @@ export class ZoomControl {
     if (this.borrowed) return;
     this.set(1);
     this.save();
-  }
-
-  toast(z, limit = null) {
-    const t = this.toastEl;
-    const atMin = limit === 'min' || z <= ZOOM_MIN + 1e-6;
-    const atMax = limit === 'max' || z >= ZOOM_MAX - 1e-6;
-    t.textContent = `화면 배율 ${Math.round(z * 100)}%${atMax ? ' (최대)' : atMin ? ' (최소)' : ''}`;
-    t.classList.remove('show');
-    void t.offsetWidth;
-    t.classList.add('show');
   }
 
   // Two-finger pinch anywhere on the world (not on buttons or panels).
