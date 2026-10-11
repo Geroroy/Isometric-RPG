@@ -94,6 +94,7 @@ export class SkylineTraffic {
     this.next = 0;
     this.time = 0;
     this.warm = false;
+    this.axis = 1;
   }
 
   spawn(cam, W, H, t0 = 0, isSky = null) {
@@ -103,25 +104,54 @@ export class SkylineTraffic {
     const rng = this.rng;
     const vx = cam.x * T.f;
     const vy = cam.y * T.f;
-    c.sx = rng.next() < 0.5 ? -2 : 2; // screen step per row: x two, y one, down or up
+    // screen step per row: x two, y one. The sky's traffic runs in streams: every craft on the one
+    // diagonal of this view (this.axis: \ or /), either way along it — streams never cross
     c.sy = rng.next() < 0.5 ? -1 : 1;
+    c.sx = 2 * c.sy * this.axis;
     // a line through a point in the middle band, run from one side of the view to the other — a
     // point where the sky shows (isSky: the drop past the platforms' walls), when there is one
+    // and clear of the others: not along a line another flies (≥ 24 px across it, either way along
+    // it) and not where another one is now (≥ 60 px), so a small patch of sky never fills with a jam
+    const rows = (W + 2 * MARGIN) / 2; // rows it takes to cross the whole view and then some
+    const k0 = t0 * rows;
+    const nx = -c.sy / Math.hypot(2, 1);
+    const ny = c.sx / Math.hypot(2, 1);
+    const others = this.pool.filter((o) => o.active && o !== c);
     let px = 0;
     let py = 0;
-    for (let n = 0; n < 16; n++) {
-      px = W * (0.04 + rng.next() * 0.92);
-      py = H * (T.band[0] + rng.next() * (T.band[1] - T.band[0]));
-      if (!isSky || isSky(px, py)) break;
+    let best = -1;
+    for (let n = 0; n < 24; n++) {
+      const qx = W * (0.04 + rng.next() * 0.92);
+      const qy = H * (T.band[0] + rng.next() * (T.band[1] - T.band[0]));
+      const sky = !isSky || isSky(qx, qy);
+      const ax = vx + qx - (c.sx * rows) / 2 + c.sx * k0; // where it starts now
+      const ay = vy + qy - (c.sy * rows) / 2 + c.sy * k0;
+      let clear = true;
+      for (const o of others) {
+        const ox = o.x0 + o.sx * o.k;
+        const oy = o.y0 + o.sy * o.k;
+        if (Math.hypot(ox - ax, oy - ay) < 60) clear = false;
+        else if (o.sx * o.sy === c.sx * c.sy && Math.abs((vx + qx - ox) * nx + (vy + qy - oy) * ny) < 24) clear = false;
+        if (!clear) break;
+      }
+      const score = (clear ? 2 : 0) + (sky ? 1 : 0);
+      if (score > best) {
+        best = score;
+        px = qx;
+        py = qy;
+      }
+      if (score === 3) break;
     }
+    if (best < 2) return; // nowhere clear: skip this one
     const cx = vx + px;
     const cy = vy + py;
-    c.rows = (W + 2 * MARGIN) / 2; // rows it takes to cross the whole view and then some
+    c.rows = rows;
     c.x0 = Math.round(cx - (c.sx * c.rows) / 2);
     c.y0 = Math.round(cy - (c.sy * c.rows) / 2);
     c.v = T.speed[0] + rng.next() * (T.speed[1] - T.speed[0]); // rows a second
-    c.k = t0 * c.rows;
+    c.k = k0;
     c.view = pickCraft(rng, this).views[viewOf(c.sx, c.sy)];
+    c.front = rng.next() < 0.5; // (with the building backdrop: in front of its nearest layer, or behind)
     c.active = true;
   }
 
@@ -138,6 +168,7 @@ export class SkylineTraffic {
       this.key = key;
       for (const c of this.pool) c.active = false;
       this.warm = false;
+      this.axis = mode === 'low' ? -1 : 1; // the plaza's streams run \, the undercity's /
     }
     if (!this.warm) {
       // already flying when the level opens
@@ -156,12 +187,13 @@ export class SkylineTraffic {
     }
   }
 
-  draw(ctx, ti, cam) {
+  /** `front`: only the craft in front of (true) or behind (false) the nearest building layer; all if unset. */
+  draw(ctx, ti, cam, front) {
     if (!meta) return;
     const T = TIERS[ti];
     const vx = Math.round(cam.x * T.f);
     const vy = Math.round(cam.y * T.f);
-    const list = this.pool.filter((c) => c.active).sort((a, b) => a.y0 + a.sy * a.k - (b.y0 + b.sy * b.k));
+    const list = this.pool.filter((c) => c.active && (front === undefined || c.front === front)).sort((a, b) => a.y0 + a.sy * a.k - (b.y0 + b.sy * b.k));
     for (const c of list) {
       const k = Math.round(c.k); // whole rows: x moves exactly two per row
       drawCraft(ctx, c.view, c.x0 - vx + c.sx * k, c.y0 - vy + c.sy * k, 0.5);

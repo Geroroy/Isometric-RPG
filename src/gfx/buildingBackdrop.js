@@ -9,7 +9,8 @@
 import { RNG } from '../core/math.js';
 
 const BASE = import.meta.env.BASE_URL;
-export const BUILDING_PROTO = typeof location !== 'undefined' && new URLSearchParams(location.search).get('proto') === 'bg';
+// on with ?proto=bg, or in a build made with VITE_PROTO_BG=1 (a test build for review)
+export const BUILDING_PROTO = import.meta.env.VITE_PROTO_BG === '1' || (typeof location !== 'undefined' && new URLSearchParams(location.search).get('proto') === 'bg');
 
 // lattice cell (CX × CY, 2:1), periods M × N cells (the tile: M·CX × N·CY), fill share, avenues
 // every `ave` cells (0: none), how many lattice steps apart twins stand at least, parallax factor

@@ -154,8 +154,9 @@ export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0, isSky = null) {
     const oy = -((((cam.y * f) % SIZE) + SIZE) % SIZE);
     for (let y = oy; y < H; y += SIZE) for (let x = ox; x < W; x += SIZE) ctx.drawImage(c, Math.round(x), Math.round(y));
     if (drawBuildingLayer(ctx, 'far', cam, W, H, mode) && drawBuildingLayer(ctx, 'mid', cam, W, H, mode)) {
-      for (let ti = 0; ti < TIERS.length; ti++) traffic.draw(ctx, ti, cam);
+      for (let ti = 0; ti < TIERS.length; ti++) traffic.draw(ctx, ti, cam, false);
       drawBuildingLayer(ctx, 'near', cam, W, H, mode);
+      for (let ti = 0; ti < TIERS.length; ti++) traffic.draw(ctx, ti, cam, true); // half the craft past the near plant
       return;
     }
   }
