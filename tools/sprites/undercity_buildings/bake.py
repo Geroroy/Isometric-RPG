@@ -1,7 +1,8 @@
 """Bake the cut undercity buildings (assets/city/buildings/cut/, extract.py) into city sprites at the
 game's own scale — 1 m = 24.5 px up, a tile (1 m) 40 × 20 px, a person 1.85 m ≈ 52 px — in the
-format the game loads (gfx/citySprites.js): public/sprites/undercity/<id>.json + _body.webp +
-_neon.webp, listed by index.json.
+format the game loads (gfx/citySprites.js): public/sprites/undercity/atlas.json — every building's
+meta and its rectangle on the pages — with the pages body_<n>.webp and neon_<n>.webp (2048 px square,
+the same rectangles on both; a few files instead of three per building).
 
 Scale (measured on the sheets against that metre): the shops are drawn at about the game's own
 metre already (a bar stool ~18 px = 0.75 m, a storey 70-90 px), the tenement towers at ~13 px a
@@ -119,9 +120,7 @@ def main():
     for f in os.listdir(OUT):
         os.remove(f'{OUT}/{f}')
     index = json.load(open(f'{SRC}/index.json'))
-    blank = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
-    blank.save(f'{OUT}/_blank.png')
-    listing = {}
+    sprites = []
     rows = []
     for bid, v in sorted(index.items()):
         k = SCALE[v['sheet']]
@@ -142,23 +141,47 @@ def main():
         lit = emissive(g[..., :3], a)
         neon = np.dstack([g[..., :3], a * lit]).clip(0, 255).astype(np.uint8)
         body = g.clip(0, 255).astype(np.uint8)
-        # WebP (lossy colour, exact alpha): a fifth of the PNGs' size for these painted sheets
-        Image.fromarray(body, 'RGBA').save(f'{OUT}/{bid}_body.webp', quality=90, alpha_quality=100, method=6)
-        Image.fromarray(neon, 'RGBA').save(f'{OUT}/{bid}_neon.webp', quality=90, alpha_quality=100, method=6)
         meta = {
             'name': bid, 'label': v['name'], 'kind': v['kind'], 'k': 1.0, 'anchor': anchor,
             'tiles': [round(a_t, 2), round(b_t, 2)],
             'footprint': [[round(p[0], 2), round(p[1], 2)] for p in foot], 'flat': False,
             'heightM': round((fy - 0) / PX_UNIT, 1),
-            'layers': {'body': f'{bid}_body.webp', 'neon': f'{bid}_neon.webp', 'reflect': '_blank.png'},
             'neon': {'base': 1.0, 'hum': 0.04, 'speed': 6, 'flicker': {'rate': 0.06, 'dur': [0.04, 0.16], 'level': 0.35}},
             'lights': lights_of(g[..., :3], lit, anchor, a_t, b_t),
             'scale': k, 'source': f"assets/city/buildings/undercity_{v['sheet']}_sheet.png cell {v['cell']}",
         }
-        json.dump(meta, open(f'{OUT}/{bid}.json', 'w'))
-        listing[bid] = f'{bid}.json'
+        sprites.append((bid, body, neon, meta))
         rows.append((bid, w, h, a_t, b_t, meta['heightM']))
-    json.dump(listing, open(f'{OUT}/index.json', 'w'), indent=1)
+    # shelf-pack onto 2048 px pages, tallest first; the neon pages share the body pages' rectangles
+    PAGE = 2048
+    pages = []
+    order = sorted(sprites, key=lambda t: -t[1].shape[0])
+    x = y = rowh = 0
+    page = 0
+    for bid, body, neon, meta in order:
+        h, w = body.shape[:2]
+        if x + w > PAGE:
+            x, y, rowh = 0, y + rowh + 2, 0
+        if y + h > PAGE:
+            page, x, y, rowh = page + 1, 0, 0, 0
+        while len(pages) <= page:
+            pages.append((np.zeros((PAGE, PAGE, 4), np.uint8), np.zeros((PAGE, PAGE, 4), np.uint8)))
+        pages[page][0][y:y + h, x:x + w] = body
+        pages[page][1][y:y + h, x:x + w] = neon
+        meta['page'] = page
+        meta['rect'] = [x, y, w, h]
+        x += w + 2
+        rowh = max(rowh, h)
+    files = {'body': [], 'neon': []}
+    for i, (bp, npg) in enumerate(pages):
+        used = max(1, max(m['rect'][1] + m['rect'][3] for _, _, _, m in sprites if m['page'] == i))
+        for kind, arr in (('body', bp), ('neon', npg)):
+            name = f'{kind}_{i}.webp'
+            # WebP (lossy colour, exact alpha): a fifth of PNG's size for these painted sheets
+            Image.fromarray(arr[:used], 'RGBA').save(f'{OUT}/{name}', quality=90, alpha_quality=100, method=6)
+            files[kind].append(name)
+    listing = {'pages': files, 'sprites': {bid: meta for bid, _, _, meta in sorted(sprites, key=lambda t: t[0])}}
+    json.dump(listing, open(f'{OUT}/atlas.json', 'w'))
     tot = sum(os.path.getsize(f'{OUT}/{f}') for f in os.listdir(OUT))
     print(f'{len(rows)} sprites, {tot / 1e6:.1f} MB')
     for r in rows:

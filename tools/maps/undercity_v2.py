@@ -26,11 +26,7 @@ LIFT_UP = (82, 77.5)
 LIFT_LOW = (82, 97.5)
 PAD = (117, 62)
 
-B = {}
-for f in os.listdir(UC):
-    if f.endswith('.json') and f != 'index.json':
-        m = json.load(open(f'{UC}/{f}'))
-        B[m['name']] = m
+B = json.load(open(f'{UC}/atlas.json'))['sprites']
 S = {}
 for f in os.listdir(UW):
     if f.endswith('.json') and f != 'index.json':

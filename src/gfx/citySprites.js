@@ -120,19 +120,19 @@ export async function loadCitySprites(onProgress) {
     console.warn('언더월드 스프라이트: ' + e.message);
   }
   if (MAP_V2) {
+    // the 1:1 buildings come packed (tools/sprites/undercity_buildings/bake.py): atlas.json with every
+    // building's meta and rectangle, on a few body and neon pages
     const cb = import.meta.env.BASE_URL + UC_DIR;
     try {
-      const index = await (await fetch(cb + 'index.json')).json();
-      const names = Object.keys(index);
-      const loaded = await Promise.all(
-        names.map((n) =>
-          loadOne(cb, index[n]).catch((e) => {
-            console.warn(e.message);
-            return null;
-          }),
-        ),
-      );
-      names.forEach((n, i) => loaded[i] && (out[n] = loaded[i]));
+      const atlas = await (await fetch(cb + 'atlas.json')).json();
+      const [body, neon] = await Promise.all(['body', 'neon'].map((k) => Promise.all(atlas.pages[k].map((f) => loadImg(cb + f)))));
+      const blank = document.createElement('canvas');
+      blank.width = blank.height = 1;
+      for (const [name, meta] of Object.entries(atlas.sprites)) {
+        const [sx, sy, w, h] = meta.rect;
+        const frame = (page) => ({ page, sx, sy, w, h, ox: meta.anchor[0], oy: meta.anchor[1] });
+        out[name] = { meta, body: frame(body[meta.page]), neon: frame(neon[meta.page]), reflect: { page: blank, sx: 0, sy: 0, w: 1, h: 1, ox: 0, oy: 0 } };
+      }
       onProgress(1, '코러산트 언더시티: 건물');
     } catch (e) {
       console.warn('언더시티 건물: ' + e.message);
