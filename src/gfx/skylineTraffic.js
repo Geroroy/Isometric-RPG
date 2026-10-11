@@ -1,9 +1,11 @@
 // Coruscant's air traffic (docs/SKYLINE_TRAFFIC.md): the craft of the two eight-view vehicle sheets
 // (tools/sprites/traffic/extract.py — eight craft, every one in eight views, background and ground
 // shadow cut away, scaled to game size offline) flying
-//   - the level's own air lanes (LaneTraffic, where streaks of light used to run): every lane flown
-//     through the drop, just under the platforms' rim, moved off any walkway it crossed — a craft
-//     over a walkway reads as standing on it in this view, so traffic stays behind the map and props;
+//   - the level's own air lanes (LaneTraffic, where streaks of light used to run): the lanes through
+//     the drop just under the platforms' rim, moved off any walkway they crossed, depth-sorted with the
+//     props; the lanes high over the undercity's streets above everything, each craft casting its
+//     sheet's soft ground shadow on the street straight below it — without that a craft over a
+//     walkway reads as standing on it in this view;
 //   - far off over the city (SkylineTraffic): smaller craft between the backdrop's tower layers.
 // Drawn as pre-rendered sprites at their own pixels (the far ones from the atlas halved offline) —
 // never resampled or tinted at run time, no drawn-in light. Every craft flies a straight line along
@@ -27,6 +29,7 @@ const CLASSES = {
 let meta = null;
 let full = null;
 let halfImg = null;
+let shadowImg = null;
 let loading = false;
 function load() {
   if (loading) return;
@@ -38,11 +41,12 @@ function load() {
       i.onerror = rej;
       i.src = BASE + src;
     });
-  Promise.all([fetch(BASE + 'sprites/traffic/traffic.json').then((r) => r.json()), img('sprites/traffic/traffic.png'), img('sprites/traffic/traffic_half.png')])
-    .then(([m, a, b]) => {
+  Promise.all([fetch(BASE + 'sprites/traffic/traffic.json').then((r) => r.json()), img('sprites/traffic/traffic.png'), img('sprites/traffic/traffic_half.png'), img('sprites/traffic/traffic_shadow.png')])
+    .then(([m, a, b, sh]) => {
       meta = m;
       full = a;
       halfImg = b;
+      shadowImg = sh;
     })
     .catch((e) => console.warn('air traffic: no sprites', e));
 }
@@ -154,12 +158,17 @@ export class SkylineTraffic {
 const EXT = 30; // lanes run on this far past the level's ends: craft come in and go out off-screen
 const POOL = 260; // every lane's cars at once
 const LEN = 4.5; // a craft's length along its lane, world units (no closer than this)
+// the overhead lanes' heights, tiles (the shadow sits z × 24.5 px below): east-west lanes lower than
+// north-south ones, so where two cross the craft pass well above and below each other
+const OVER_Z = { x: [4.5, 5.5], y: [6.5, 7.5] };
 
 /**
  * The craft along the level's air lanes (world.traffic, worldgen.js: (x0, y0) -> (x1, y1) at height z,
- * a lane speed, a mean gap). A lane is straightened onto its main axis, keeps its direction, is
- * carried on past both ends of the level, lowered under the platforms' rim and moved sideways off any
- * walkway (and 1.5 tiles from the lanes beside it); one that finds no clear line stays empty. Each car
+ * a lane speed, a mean gap; `over`: high over the undercity's streets). A lane is straightened onto its
+ * main axis, keeps its direction and is carried on past both ends of the level. A lane through the drop
+ * is lowered under the platforms' rim and moved sideways off any walkway (and 1.5 tiles from the lanes
+ * beside it; one that finds no clear line stays empty); an overhead lane keeps its line, at OVER_Z
+ * over the street, its craft drawn above everything with their shadows on the ground below. Each car
  * has its class's pace with its own spread, brakes for a slower car ahead, and enters at irregular
  * (exponential) gaps once the one before has moved on.
  */
@@ -181,17 +190,17 @@ export class LaneTraffic {
       const sgn = (alongX ? L.x1 - L.x0 : L.y1 - L.y0) >= 0 ? 1 : -1;
       const lo = alongX ? Math.min(L.x0, L.x1) : Math.min(L.y0, L.y1);
       const hi = alongX ? Math.max(L.x0, L.x1) : Math.max(L.y0, L.y1);
-      const kind = 'drop'; // (the overhead lanes too: see the header)
+      const kind = L.over ? 'over' : 'drop';
       let other = alongX ? (L.y0 + L.y1) / 2 : (L.x0 + L.x1) / 2;
       // and kept 1.5 tiles from the parallel lanes already placed (craft on two lanes never overlap)
       const free = (o) => clear(alongX, o, lo, hi) && !placed.some((p) => p.alongX === alongX && p.kind === kind && Math.abs(p.other - o) < 1.5);
-      if (!free(other)) {
+      if (kind === 'drop' && !free(other)) {
         const off = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20].flatMap((o) => [o, -o]).find((o) => free(other + o));
         if (off !== undefined) other += off;
       }
       // no room anywhere near: the lane is left empty rather than fly over a walkway
-      const dead = !clear(alongX, other, lo, hi);
-      if (!dead) placed.push({ alongX, kind, other });
+      const dead = kind === 'drop' && !clear(alongX, other, lo, hi);
+      if (!dead && kind === 'drop') placed.push({ alongX, kind, other });
       // screen step per pixel row of travel: +x down-right, -x up-left, +y down-left, -y up-right
       const sx = alongX ? 2 * sgn : -2 * sgn;
       const sy = sgn;
@@ -204,7 +213,8 @@ export class LaneTraffic {
         inHi: EXT + hi - lo,
         len: hi - lo + 2 * EXT,
         other,
-        z: -0.5 - Math.min(L.z, 8) * 0.4, // just under the rim, a little deeper for the higher lanes
+        // the drop's just under the rim (a little deeper for the higher lanes); the overhead ones up high
+        z: kind === 'over' ? ((r) => r[0] + (r[1] - r[0]) * Math.min(1, Math.max(0, (L.z - 9) / 3)))(OVER_Z[alongX ? 'x' : 'y']) : -0.5 - Math.min(L.z, 8) * 0.4,
         kind,
         sx,
         sy,
@@ -287,15 +297,20 @@ export class LaneTraffic {
     for (const ln of this.lanes) {
       if (ln.kind !== kind) continue;
       const o = ln.alongX ? worldToScreen(ln.start, ln.other, ln.z) : worldToScreen(ln.other, ln.start, ln.z);
+      const g = ln.alongX ? worldToScreen(ln.start, ln.other, 0) : worldToScreen(ln.other, ln.start, 0);
+      const drop = Math.round(g.y) - Math.round(o.y); // the shadow, this far below the craft (whole pixels)
       const ox = Math.round(o.x) - cam.x;
       const oy = Math.round(o.y) - cam.y;
       for (const c of ln.cars) {
         const k = Math.round(c.d * HALF_H); // pixel rows along the lane; x moves two per row
         const sx = ox + ln.sx * k;
         const sy = oy + ln.sy * k;
-        if (sx < -120 || sy < -120 || sx > W + 120 || sy > H + 120) continue;
+        // off the view only when the craft and its shadow both are (an overhead craft can be in view
+        // with its shadow below the bottom edge, or the other way round)
+        const out = (y) => y < -120 || y > H + 120;
+        if (sx < -120 || sx > W + 120 || (out(sy) && out(sy + drop))) continue;
         const [wx, wy] = this.world(ln, c);
-        list.push([wx + wy, sx, sy, ln, c]);
+        list.push([wx + wy, sx, sy, ln, c, drop]);
       }
     }
     return list;
@@ -304,6 +319,32 @@ export class LaneTraffic {
   /** Draw one car from visible(). */
   drawItem(ctx, item) {
     drawCraft(ctx, item[4].v0, item[1], item[2], 1);
+  }
+
+  /**
+   * The overhead craft's shadows on the street below them (before the props, so a prop covers its
+   * part): the sheet's soft shadow of that view, centred on the ground point, faded over the drop
+   * (by how much ground there is round it, so it thins out at a platform's edge rather than vanishing).
+   */
+  drawShadows(ctx, cam, W, H, world) {
+    if (!meta || !shadowImg) return;
+    ctx.globalCompositeOperation = 'source-over';
+    for (const it of this.visible('over', cam, W, H)) {
+      const [, sx, sy, ln, c, drop] = it;
+      const s = c.v0.shadow;
+      if (!s) continue;
+      const [wx, wy] = this.world(ln, c);
+      let ground = 1;
+      if (world) {
+        let n = 0;
+        for (const [dx, dy] of [[0, 0], [0.7, 0], [-0.7, 0], [0, 0.7], [0, -0.7]]) if (world.biomeAt(wx + dx, wy + dy) !== VOID) n++;
+        ground = n / 5;
+      }
+      if (!ground) continue;
+      ctx.globalAlpha = ground;
+      ctx.drawImage(shadowImg, s.x, s.y, s.w, s.h, Math.round(sx - s.w / 2), Math.round(sy + drop - s.h / 2), s.w, s.h);
+    }
+    ctx.globalAlpha = 1;
   }
 
   /** Draw every car of a kind, farther first. */

@@ -196,7 +196,8 @@ export class Renderer {
       ctx.fillStyle = '#07070a';
       ctx.fillRect(0, 0, W, H);
     }
-    // the speeders in the level's air lanes, through the drop: depth-sorted with the props and units below
+    // the speeders in the level's air lanes: those through the drop depth-sorted with the props and
+    // units below; those over the undercity's streets drawn above everything, their shadows on the street
     if (g.world.traffic) {
       if (!this.lanes || this.lanes.src !== g.world.traffic) this.lanes = new LaneTraffic(g.world.traffic, g.world);
       this.lanes.update(dt);
@@ -209,6 +210,7 @@ export class Renderer {
 
     const inView = (x, y, w, h) => x + w > cam.x - 4 && x < cam.x + W + 4 && y + h > cam.y - 4 && y < cam.y + H + 4;
 
+    if (this.lanes) this.lanes.drawShadows(ctx, cam, W, H, g.world);
     // --- flat layer: pads, debris, corpses
     // the depth-sorted list reuses its entries from frame to frame (no garbage per object per frame)
     const standing = this.standing || (this.standing = []);
@@ -341,6 +343,7 @@ export class Renderer {
     this.drawThrows(ctx, cam);
     g.fx.drawAdd(ctx, cam);
     ctx.globalCompositeOperation = 'source-over';
+    if (this.lanes) this.lanes.draw(ctx, cam, W, H, 'over'); // the craft over the streets
 
     // --- aircraft (above everything)
     this.drawStrikes(ctx, cam);
@@ -719,6 +722,9 @@ export class Renderer {
     for (const t of g.throws) spot(t.x, t.y, t.z, 90, 160, 255, 60, 0.6);
     for (const b of g.bolts) spot(b.x, b.y, b.z, b.color === 'red' ? 255 : 90, b.color === 'red' ? 70 : 140, b.color === 'red' ? 60 : 255, 26, 0.6);
     for (const fl of g.fx.lights) spot(fl.x, fl.y, fl.z, fl.r, fl.g, fl.b, fl.rad, 0.8 * (1 - fl.t / fl.life));
+    // the craft over the undercity's streets light the street under them (their shadow is a dark core
+    // in that pool: on the dark floor the light is what shows where they are)
+    if (this.lanes) for (const [x, y] of this.lanes.positions('over')) if (Math.abs(x - p.x) < 18 && Math.abs(y - p.y) < 18) spot(x, y, 0, 200, 215, 255, 72, 0.5);
     for (const u of g.activeUnits) if (u.choke) spot(u.x, u.y, 1.2 + u.z, 160, 60, 60, 40, 0.5);
     // composite
     const ctx = this.ctx;

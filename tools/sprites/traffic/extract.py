@@ -12,6 +12,9 @@ Cleaned: the flat grey background and the soft ground shadow under each craft (d
 pixels reached from the outline) are cut away and the outline is matted against the grey (alpha from
 the distance to it, the grey taken out of the colour). Then every sprite is scaled to game size by
 SCALE (Lanczos, premultiplied) — once, here; the game draws the pixels as they are.
+The sheet's own soft ground shadow under each view is kept too, as a translucent black sprite
+(traffic_shadow.png; alpha from how much darker than the grey it is, the craft and anything coloured
+left out, scaled the same, at SHADOW_ALPHA): the game lays it on the street under the overhead craft.
    python3 tools/sprites/traffic/extract.py [--contact out.png]
 """
 import json
@@ -36,6 +39,7 @@ CRAFT = {
     (1, 3): ('racerBlue', 'swoop'),
 }
 VIEWS = ['S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE']
+SHADOW_ALPHA = 0.85  # the darkest of the sheet's shadow, as opacity
 SCALE = 0.5  # sheet px -> game px: a craft ~70-80 px long on screen, as a 4 m speeder beside 55 px people
 
 
@@ -108,6 +112,51 @@ def cut(rgb, m, bg):
     return np.dstack([np.clip(col, 0, 255), alpha * 255])
 
 
+def shadow_of(rgb, bg, box, craft):
+    """The sheet's ground shadow under a craft (box: its rect; craft: its mask over the whole sheet) as
+    an alpha map: neutral, smooth pixels darker than the grey, below and round the craft."""
+    from numpy.lib.stride_tricks import sliding_window_view
+    x0, y0, x1, y1 = box
+    H, W = rgb.shape[:2]
+    wx0, wx1 = max(0, x0 - 20), min(W, x1 + 20)
+    wy0, wy1 = max(0, y0 + (y1 - y0) // 3), min(H, int(y1 + (y1 - y0) * 0.7) + 10)
+    win = rgb[wy0:wy1, wx0:wx1]
+    lum = win.mean(2)
+    chroma = win.max(2) - win.min(2)
+    std = sliding_window_view(np.pad(lum, 2, mode='edge'), (5, 5)).std(axis=(2, 3))
+    c = craft[wy0:wy1, wx0:wx1]
+    p = np.pad(c, 3)
+    near = np.zeros_like(c)
+    for dy in range(-3, 4):
+        for dx in range(-3, 4):
+            near |= p[3 + dy:3 + dy + c.shape[0], 3 + dx:3 + dx + c.shape[1]]
+    a = np.clip((bg.mean() - lum - 2) / 36.0, 0, 1)
+    a[(chroma > 14) | (std > 8) | (lum < 90) | near] = 0
+    # the shadow is one soft blob: keep the heaviest connected part
+    lab, parts = components(a > 0.08)
+    if not parts:
+        return None
+    best = max(parts, key=lambda q: a[lab == q[0]].sum())
+    a = np.where(lab == best[0], a, 0)
+    # the craft hid the top of it on the sheet (a notched edge): rebuild it as the soft ellipse the
+    # visible part belongs to — its width, the depth of its lower half and its darkness
+    ys, xs = np.nonzero(a > 0.12)
+    if len(xs) < 20:
+        return None
+    w = a[ys, xs]
+    cx = (xs * w).sum() / w.sum()
+    cy = (ys * w).sum() / w.sum()
+    rx = (np.percentile(xs, 97) - np.percentile(xs, 3)) / 2
+    ry = max((np.percentile(ys, 97) - cy) * 1.15, rx * 0.22)
+    peak = np.percentile(w, 90)
+    hw, hh = int(rx * 1.15) + 2, int(ry * 1.15) + 2
+    gy, gx = np.mgrid[-hh:hh + 1, -hw:hw + 1]
+    r = np.sqrt((gx / rx) ** 2 + (gy / ry) ** 2)
+    img = np.zeros(gx.shape + (4,))
+    img[..., 3] = peak * np.clip((1.08 - r) / 0.55, 0, 1) ** 1.3 * 255
+    return img
+
+
 def resize(img, k):
     """Premultiplied Lanczos resize of a float RGBA array."""
     h, w = img.shape[:2]
@@ -152,6 +201,7 @@ def groups(vals, n):
 
 def main():
     sprites = {}  # (name, view) -> rgba (game size)
+    shadows = {}  # (name, view) -> rgba (game size): the sheet's ground shadow
     contact = []
     for si, path in enumerate(SHEETS):
         rgb = np.asarray(Image.open(path).convert('RGB')).astype(float)
@@ -174,6 +224,14 @@ def main():
                 n, area, x0, y0, x1, y1 = per[v][:6]
                 piece = cut(rgb[y0:y1, x0:x1], lab[y0:y1, x0:x1] == n, bg)
                 sprites[(name, v)] = resize(piece, SCALE)
+                craft_mask = np.zeros(lab.shape, bool)
+                craft_mask[y0:y1, x0:x1] = piece[..., 3] > 0
+                sh = shadow_of(rgb, bg, (x0, y0, x1, y1), craft_mask)
+                if sh is not None:
+                    sh = resize(sh, SCALE).astype(float)
+                    sh[..., :3] = 0
+                    sh[..., 3] *= SHADOW_ALPHA
+                    shadows[(name, v)] = sh.astype(np.uint8)
                 contact.append(((name, v), piece))
 
     # shelf-pack, even coordinates (the half atlas maps exactly)
@@ -201,12 +259,28 @@ def main():
         rear = [int(np.median(xs[sel])), int(np.median(ys[sel]))]
         entry = craft.setdefault(name, {'cls': CRAFT[next(kk for kk, vv in CRAFT.items() if vv[0] == name)][1], 'views': {}})
         entry['views'][VIEWS[v]] = {'x': px, 'y': py, 'w': w, 'h': h, 'rear': rear}
+    # the shadows: their own atlas, a rect per view
+    x, y, rowh = 2, 2, 0
+    splace = {}
+    for key, img in shadows.items():
+        h, w = img.shape[:2]
+        if x + w + 2 > 1024:
+            x, y, rowh = 2, y + rowh + 4, 0
+        splace[key] = (x, y, w, h)
+        x += w + 4
+        rowh = max(rowh, h)
+    satlas = np.zeros((y + rowh + 2, 1024, 4), np.uint8)
+    for (name, v), img in shadows.items():
+        px, py, w, h = splace[(name, v)]
+        satlas[py:py + h, px:px + w] = img
+        craft[name]['views'][VIEWS[v]]['shadow'] = {'x': px, 'y': py, 'w': w, 'h': h}
     os.makedirs(OUT, exist_ok=True)
+    Image.fromarray(satlas).save(os.path.join(OUT, 'traffic_shadow.png'), optimize=True)
     Image.fromarray(atlas).save(os.path.join(OUT, 'traffic.png'), optimize=True)
     Image.fromarray(half(atlas)).save(os.path.join(OUT, 'traffic_half.png'), optimize=True)
     meta = {'_doc': 'Air traffic (tools/sprites/traffic/extract.py): per craft its class and 8 views (S SW W NW N NE E SE = nose direction on screen), rect and rear point in atlas px.', 'craft': craft}
     json.dump(meta, open(os.path.join(OUT, 'traffic.json'), 'w'), separators=(',', ':'))
-    print('traffic atlas', W, 'x', Hh, len(craft), 'craft x 8 views')
+    print('traffic atlas', W, 'x', Hh, len(craft), 'craft x 8 views;', len(shadows), 'shadows')
 
     if '--contact' in sys.argv:
         out = sys.argv[sys.argv.index('--contact') + 1]
