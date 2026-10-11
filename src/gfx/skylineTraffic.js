@@ -83,7 +83,7 @@ function drawCraft(ctx, v, x, y, k) {
 // --- far off over the city -----------------------------------------------------------------------
 
 /** The far traffic: drawn after this backdrop tower layer, with this parallax. */
-export const TIERS = [{ after: 1, f: 0.16, max: 16, rate: 0.8, band: [0.08, 0.62], speed: [9, 18] }];
+export const TIERS = [{ after: 1, f: 0.16, max: 24, rate: 1.2, band: [0.06, 0.7], speed: [9, 18] }];
 const MARGIN = 60; // beyond the view's edge, tier px
 
 /** Small craft crossing the distant city on straight iso diagonals (tier space = parallax space). */
@@ -96,7 +96,7 @@ export class SkylineTraffic {
     this.warm = false;
   }
 
-  spawn(cam, W, H, t0 = 0) {
+  spawn(cam, W, H, t0 = 0, isSky = null) {
     const T = TIERS[0];
     const c = this.pool.find((p) => !p.active);
     if (!c) return;
@@ -105,9 +105,17 @@ export class SkylineTraffic {
     const vy = cam.y * T.f;
     c.sx = rng.next() < 0.5 ? -2 : 2; // screen step per row: x two, y one, down or up
     c.sy = rng.next() < 0.5 ? -1 : 1;
-    // a line through a point in the middle band, run from one side of the view to the other
-    const cx = vx + W * (0.2 + rng.next() * 0.6);
-    const cy = vy + H * (T.band[0] + rng.next() * (T.band[1] - T.band[0]));
+    // a line through a point in the middle band, run from one side of the view to the other — a
+    // point where the sky shows (isSky: the drop past the platforms' walls), when there is one
+    let px = 0;
+    let py = 0;
+    for (let n = 0; n < 16; n++) {
+      px = W * (0.04 + rng.next() * 0.92);
+      py = H * (T.band[0] + rng.next() * (T.band[1] - T.band[0]));
+      if (!isSky || isSky(px, py)) break;
+    }
+    const cx = vx + px;
+    const cy = vy + py;
     c.rows = (W + 2 * MARGIN) / 2; // rows it takes to cross the whole view and then some
     c.x0 = Math.round(cx - (c.sx * c.rows) / 2);
     c.y0 = Math.round(cy - (c.sy * c.rows) / 2);
@@ -117,16 +125,24 @@ export class SkylineTraffic {
     c.active = true;
   }
 
-  update(dt, cam, W, H, mode) {
+  update(dt, cam, W, H, mode, isSky = null) {
     if (!meta) return load();
     dt = Math.min(dt, 0.1);
     this.time += dt;
     const T = TIERS[0];
     const busy = mode === 'low' ? 0.6 : 1;
+    // a new view (the title's wide shot → the game's, a zoom step, the other level): the sky starts
+    // over, already full, for this view — not the craft spread over the last one's
+    const key = W + 'x' + H + mode;
+    if (this.key !== key) {
+      this.key = key;
+      for (const c of this.pool) c.active = false;
+      this.warm = false;
+    }
     if (!this.warm) {
       // already flying when the level opens
       this.warm = true;
-      for (let i = 0; i < Math.round(T.max * 0.6 * busy); i++) this.spawn(cam, W, H, this.rng.next());
+      for (let i = 0; i < Math.round(T.max * 0.6 * busy); i++) this.spawn(cam, W, H, this.rng.next(), isSky);
     }
     for (const c of this.pool) {
       if (!c.active) continue;
@@ -135,7 +151,7 @@ export class SkylineTraffic {
     }
     this.next -= dt;
     if (this.next <= 0) {
-      this.spawn(cam, W, H);
+      this.spawn(cam, W, H, 0, isSky);
       this.next = -Math.log(1 - this.rng.next() * 0.999) / (T.rate * busy);
     }
   }

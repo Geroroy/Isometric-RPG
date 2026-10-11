@@ -129,9 +129,11 @@ function layerCanvas(mode, li) {
 let skyKey = '';
 let sky = null;
 const traffic = new SkylineTraffic();
+if (typeof window !== 'undefined') window.__skyTraffic = traffic; // (tools/qa)
 /** The backdrop for the visible screen: `mode` 'up' (the plaza's dusk) or 'low' (the undercity's
- * smog); `dt` advances its traffic (0: frozen, as for a still). */
-export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0) {
+ * smog); `dt` advances its traffic (0: frozen, as for a still); `isSky(x, y)` (view px): whether the
+ * sky shows there, for the traffic to fly where it is seen. */
+export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0, isSky = null) {
   const P = PAL[mode];
   if (skyKey !== mode + H) {
     sky = ctx.createLinearGradient(0, 0, 0, H);
@@ -142,7 +144,7 @@ export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0) {
   }
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
-  traffic.update(dt, cam, W, H, mode);
+  traffic.update(dt, cam, W, H, mode, isSky);
   // PROTOTYPE (?proto=bg): the deepest dotted layer stays (the far city's lights), then the
   // building sheets' layers — landmarks, city blocks, the sky traffic between them and the near plant
   if (BUILDING_PROTO) {

@@ -3,6 +3,7 @@
 // glow pass for sabers, blaster bolts and Force effects. Characters with a
 // Blender sprite sheet (gfx/sheet.js) cast their own rendered shadow.
 import { worldToScreen, screenToWorld, PX_PER_UNIT, Z_PX, HALF_W, HALF_H } from '../core/iso.js';
+import { BIOME } from '../world/worldgen.js';
 import { Terrain } from './terrain.js';
 import { PROPS } from './models/props.js';
 import { dist } from '../core/math.js';
@@ -14,6 +15,9 @@ import { SIG } from '../game/units.js';
 import { canvasFont } from '../ui/fonts.js';
 import { drawCityBackdrop } from './cityBackdrop.js';
 import { LaneTraffic } from './skylineTraffic.js';
+// the level's air lanes (through the drop, over the undercity's streets, with their shadows): off —
+// the speeders fly only in the city beyond the platforms (gfx/cityBackdrop.js, SkylineTraffic)
+const LANE_TRAFFIC = false;
 import { SABER, PALETTES, trailWindow, paletteFor, flickerAt, ignition, drawBlade, drawSpark, drawTrail, drawClash, record } from './saberStyle.js';
 import { preset, tintFor, drawLight, drawGround, drawGroundTint, sweepOf, lightCharacter } from './saberLight.js';
 
@@ -264,14 +268,24 @@ export class Renderer {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.smooth(false);
     const mode = p.y > 90 ? 'low' : 'up';
-    if (g.world.city) drawCityBackdrop(ctx, cam, W, H, mode, dt); // the city beyond the rims, its far traffic
+    if (g.world.city) {
+      // the city beyond the rims, its far traffic flying where the sky shows: over the drop and past
+      // the platforms' walls (the walls hang ~9 tiles' worth of screen down from a rim)
+      const wd = g.world;
+      const isSky = (sx, sy) => {
+        const q = screenToWorld(sx + cam.x, sy + cam.y);
+        for (let k = 0; k <= 8; k++) if (wd.biomeAt(q.x - k, q.y - k) !== BIOME.VOID) return false;
+        return true;
+      };
+      drawCityBackdrop(ctx, cam, W, H, mode, dt, isSky);
+    }
     else {
       ctx.fillStyle = '#07070a';
       ctx.fillRect(0, 0, W, H);
     }
     // the speeders in the level's air lanes: those through the drop depth-sorted with the props and
     // units below; those over the undercity's streets drawn above everything, their shadows on the street
-    if (g.world.traffic) {
+    if (LANE_TRAFFIC && g.world.traffic) {
       if (!this.lanes || this.lanes.src !== g.world.traffic) this.lanes = new LaneTraffic(g.world.traffic, g.world);
       this.lanes.update(dt);
     } else this.lanes = null;
