@@ -127,10 +127,10 @@ async function boot() {
   touch.onEnable = () => zoom.restore();
 
   const measure = () => {
-    renderer.resize();
-    // keep Anakin centred in the part of the screen above the console
+    // keep Anakin centred in the part of the screen above the console (the zoom limits use it too)
     renderer.consoleH = document.querySelector('.console').offsetHeight;
     document.documentElement.style.setProperty('--console-h', renderer.consoleH + 'px');
+    renderer.resize();
   };
   window.addEventListener('resize', measure);
   // Controls follow the device actually used: a tablet with a Bluetooth mouse

@@ -5,8 +5,8 @@
 // from the zoom), so a fixed zoom factor per press could land on the same whole number and change
 // nothing (at 1080p a ×1.15 step from 3× rounded back to 3×). A press therefore moves to the next
 // whole scale up or down — one more or one fewer device pixel per game pixel — and sets the zoom
-// that gives exactly that; a pinch still zooms freely.
-import { ZOOM_MIN, ZOOM_MAX } from '../gfx/renderer.js';
+// that gives exactly that; a pinch still zooms freely. How far either way goes is the renderer's
+// VIEW_LIMITS (the view's size in game pixels), so it depends on the screen.
 
 // saved zooms: the desktop key changed when the PC view went from 450 to 360 rows (zoom 1 is now a
 // larger picture; a zoom saved against the old base would not mean what the player chose)
@@ -92,10 +92,9 @@ export class ZoomControl {
   step(dir) {
     if (this.borrowed) return;
     const r = this.renderer;
-    // the zoom at which the next whole scale is exactly reached (rounding then lands on it)
-    const z = (r.devScale + (dir > 0 ? 1 : -1)) * (r.baseH() / r.deviceH());
-    if (z < ZOOM_MIN - 1e-6 || z > ZOOM_MAX + 1e-6 || r.devScale + dir < 1 || r.devScale + dir > 14) return; // as far as it goes
-    this.set(z);
+    const s = r.devScale + (dir > 0 ? 1 : -1);
+    if (!r.scaleAllowed(s)) return; // as far as it goes
+    this.set(r.zoomFor(s)); // the zoom at which that whole scale is exactly reached
     this.save();
   }
 

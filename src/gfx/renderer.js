@@ -21,8 +21,13 @@ const AMBIENT = [150, 146, 178];
 const byDepth = (a, b) => a.depth - b.depth;
 const TRAIL_LIFE = 0.13; // seconds a saber swing's afterimage lasts
 const SHADOW_ALPHA = 0.75; // a sheet's rendered shadow (the shadow catcher's own alpha)
-export const ZOOM_MIN = 0.5;
-export const ZOOM_MAX = 2.5;
+// How far the player may zoom, by what the view shows (docs/GAME_DESIGN.md 2.1.1, measured by
+// tools/qa/zoomlimits.mjs). Out: at most 540 × 1024 game px — a larger view outgrows the units'
+// activation box (game.js updateActive, ±34 tiles) and people pop in and out on screen (from 576 rows
+// at 16:9, 1138 columns at 21:9). In: at least 240 rows (a game pixel no coarser than the closest view
+// the art is tuned at, a phone's default), and only while an enemy at blaster range (B1, 7 tiles) still
+// shows its feet and body above the console in every direction. Zoom 1 is always allowed.
+export const VIEW_LIMITS = { maxRows: 540, maxCols: 1024, minRows: 240, reach: 7 };
 // PC: about this many game pixels show vertically at zoom 1 — a 1080p screen is 3× (640×360),
 // 1440p 4×, 4K 6× (characters ~50-57 game px tall, ~160 px on a 1080p screen)
 export const PC_BASE_H = 360;
@@ -107,7 +112,47 @@ export class Renderer {
    * vertically, divided by the user's zoom.
    */
   computeDevScale() {
-    return Math.max(1, Math.min(14, Math.round(this.deviceH() / (this.baseH() / this.zoom))));
+    const s = this.scaleFor(this.zoom);
+    return this.shot ? s : this.limitScale(s);
+  }
+
+  scaleFor(zoom) {
+    return Math.max(1, Math.min(14, Math.round(this.deviceH() / (this.baseH() / zoom))));
+  }
+
+  /** The zoom that lands exactly on a whole scale. */
+  zoomFor(scale) {
+    return (scale * this.baseH()) / this.deviceH();
+  }
+
+  /** Whether the player may zoom to this whole scale (VIEW_LIMITS); zoom 1's scale always may. */
+  scaleAllowed(s) {
+    if (s < 1 || s > 14) return false;
+    if (s === this.scaleFor(1)) return true;
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.ceil((window.innerWidth * dpr) / s);
+    const h = Math.ceil((window.innerHeight * dpr) / s);
+    const L = VIEW_LIMITS;
+    if (h > L.maxRows || w > L.maxCols || h < L.minRows) return false;
+    // an enemy at blaster range in each of 8 directions: feet and body centre (27 px up) in view,
+    // with the camera where render() puts it (the player at 55% / 60% of the height above the console)
+    const viewH = h - (this.touchMode ? 0 : (this.consoleH * dpr) / s);
+    const py = viewH * (this.touchMode ? 0.6 : 0.55);
+    for (let k = 0; k < 8; k++) {
+      const ux = Math.cos((k * Math.PI) / 4) * L.reach;
+      const uy = Math.sin((k * Math.PI) / 4) * L.reach;
+      const sx = w / 2 + (ux - uy) * HALF_W;
+      const sy = py + (ux + uy) * HALF_H;
+      if (sx < 0 || sx > w || sy - 27 < 0 || sy > viewH) return false;
+    }
+    return true;
+  }
+
+  /** The nearest allowed scale, moving toward zoom 1's. */
+  limitScale(s) {
+    const d = this.scaleFor(1);
+    while (s !== d && !this.scaleAllowed(s)) s += Math.sign(d - s);
+    return s;
   }
 
   /**
@@ -119,9 +164,16 @@ export class Renderer {
   }
 
   /** Change the zoom; only reallocates the canvases when the pixel scale changes. `shot`: a scripted
-   * shot's zoom (shotZoom), allowed a little past the player's range. */
+   * shot's zoom (shotZoom), not held to VIEW_LIMITS. */
   setZoom(z, shot = false) {
-    this.zoom = shot ? Math.max(0.3, Math.min(3, z)) : Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+    this.shot = shot;
+    this.zoom = Math.max(0.3, Math.min(3, z));
+    if (!shot) {
+      // past a limit: the zoom of the last allowed scale (a pinch stops there)
+      const s = this.scaleFor(this.zoom);
+      const lim = this.limitScale(s);
+      if (lim !== s) this.zoom = this.zoomFor(lim);
+    }
     if (this.computeDevScale() !== this.devScale) this.resize();
     return this.zoom;
   }
