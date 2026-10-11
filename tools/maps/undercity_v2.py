@@ -208,6 +208,60 @@ for it in P.items:
         blocked[math.floor(it['y'])][math.floor(it['x'])] = 1
 # the lifts and the pad (model props: turbolift blocks nothing, the pad is flat)
 
+# --- no walking where a building would hide the player: a tile behind a building (its box at smaller
+# x or y, docs/CORUSCANT_REBUILD.md) whose person-sized column (feet to head, 52 px) falls mostly on the
+# building's opaque pixels is closed — the level shows its people instead of hiding them
+from PIL import Image as _Image
+_atlas = json.load(open(f'{UC}/atlas.json'))
+_pages = [_Image.open(f'{UC}/{f}').getchannel('A') for f in _atlas['pages']['body']]
+_alpha = {}
+
+
+def _alpha_of(name):
+    if name not in _alpha:
+        m = B[name]
+        x, y, w, h = m['rect']
+        _alpha[name] = _pages[m['page']].crop((x, y, x + w, y + h)).load()
+    return _alpha[name]
+
+
+def _behind(tx, ty, r):
+    # the tile (a 1 x 1 box) is behind the building's box r
+    xb, yb = tx + 1 <= r[0] + 0.05, ty + 1 <= r[1] + 0.05
+    xf, yf = tx >= r[2] - 0.05, ty >= r[3] - 0.05
+    return (xb and not yf) or (yb and not xf)
+
+
+hidden = 0
+_fp = [row[:] for row in blocked]  # the footprints' own blocking (the game does that itself)
+bld = [it for it in P.items if it['p'] in B]
+for y in range(LOW[1], LOW[3]):
+    for x in range(LOW[0], LOW[2]):
+        if blocked[y][x]:
+            continue
+        cx, cy = x + 0.5, y + 0.5
+        for it in bld:
+            r = it['rect']
+            if not _behind(x, y, r):
+                continue
+            m = B[it['p']]
+            # the tile's feet in the sprite's pixels
+            fx = (cx - it['x'] - (cy - it['y'])) * 20 + m['anchor'][0]
+            fy = (cx - it['x'] + cy - it['y']) * 10 + m['anchor'][1]
+            if fx < 0 or fx >= m['rect'][2] or fy - 52 >= m['rect'][3] or fy < 0:
+                continue
+            a = _alpha_of(it['p'])
+            cov = 0
+            for t in (0.15, 0.4, 0.65, 0.9):
+                py = int(fy - 52 * t)
+                if 0 <= py < m['rect'][3] and a[int(fx), py] > 128:
+                    cov += 1
+            if cov >= 3:
+                blocked[y][x] = 1
+                hidden += 1
+                break
+print(f'closed {hidden} tiles hidden behind buildings')
+
 
 def reach(start):
     seen = set()
@@ -225,6 +279,25 @@ def reach(start):
 
 low_reach = reach((int(LIFT_LOW[0] + 1.6), int(LIFT_LOW[1] + 3)))
 up_reach = reach((int(PAD[0] - 4), int(PAD[1] + 1.5)))
+# pockets cut off by the closing above: closed too (no one is placed where no one can walk to)
+for (x0, y0, x1, y1) in (LOW, UP):
+    for y in range(y0, y1):
+        for x in range(x0, x1):
+            if blocked[y][x] == 0 and (x, y) not in low_reach and (x, y) not in up_reach:
+                blocked[y][x] = 1
+                hidden += 1
+# what the game must close besides the footprints: rows of [x0, x1, y] runs
+closed_runs = []
+for y in range(MAP):
+    x = 0
+    while x < MAP:
+        if blocked[y][x] == 1 and _fp[y][x] == 0:
+            x0 = x
+            while x < MAP and blocked[y][x] == 1 and _fp[y][x] == 0:
+                x += 1
+            closed_runs.append([x0, x, y])
+        else:
+            x += 1
 free_low = sum(1 for y in range(LOW[1], LOW[3]) for x in range(LOW[0], LOW[2]) if blocked[y][x] == 0)
 free_up = sum(1 for y in range(UP[1], UP[3]) for x in range(UP[0], UP[2]) if blocked[y][x] == 0)
 
@@ -313,14 +386,14 @@ for pa in patrols:
 
 lights = [
     [shaft[0], shaft[1], 7, 200, 225, 255, 170, 0.01],  # the shaft of daylight
-    [lift_low[0], lift_low[1] - 1, 2.4, 140, 210, 255, 90, 0.03],
-    [overlook[0], overlook[1], 2.0, 120, 200, 255, 110, 0.04],
+    [lift_low[0], lift_low[1] - 1, 2.4, 120, 160, 190, 70, 0.02],
+    [overlook[0], overlook[1], 2.0, 110, 150, 180, 80, 0.02],
 ]
 for it in P.items:
     if it['level'] == 'low' and it['p'] == 'lightPost':
-        lights.append([it['x'], it['y'], 3.4, 255, 200, 140, 95, 0.05])
+        lights.append([it['x'], it['y'], 3.4, 190, 165, 135, 70, 0.02])
     if it['level'] == 'low' and it['p'] == 'lightPostHolo':
-        lights.append([it['x'], it['y'], 3.0, 120, 220, 255, 90, 0.08])
+        lights.append([it['x'], it['y'], 3.0, 110, 160, 185, 60, 0.03])
 puddles = [[64.0, 113.5, 1.4], [86.5, 112.0, 1.1], [118.0, 113.6, 1.2], [70.5, 127.6, 1.0], [133.5, 127.4, 1.2], [56.6, 132.0, 1.0], [110.0, 143.0, 1.3]]
 steam = [[w['x'] + 1.0, w['rect'][3] - 1.0, 4.5] for w in works[:3]]
 pois = [
@@ -358,6 +431,7 @@ data = {
         'market': {'x': PLAZA[0], 'y': PLAZA[1] - 6, 'rad': 18},
     },
     'ground': ground,
+    'closed': closed_runs,  # [x0, x1, y]: tiles hidden behind buildings, and pockets cut off by them
     'props': [{'p': it['p'], 'x': it['x'], 'y': it['y'], **({'steam': True} if it.get('steam') else {})} for it in P.items if it['level'] == 'low'],
     'lights': [[round(v, 2) if isinstance(v, float) else v for v in l] for l in lights],
     'puddles': puddles,

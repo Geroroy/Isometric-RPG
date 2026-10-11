@@ -14,9 +14,10 @@ Per building, from its outline at game scale:
   footprint — the base's left, front and right corners give its sides a × b in tiles; the collision
               outline is that rectangle less MARGIN on each side (one can walk up to the walls)
   anchor    — the footprint's centre on the sprite (the prop's world point)
-  neon      — the lit parts (signs, lamps, windows: bright, or bright and saturated) as their own
-              layer, drawn again after the lighting pass so the night does not dim them
-  lights    — up to three street lights in the colours of its biggest lit parts, at their height
+  neon      — the signs and lamps (bright and strongly coloured) as their own layer, drawn again after
+              the lighting pass at 0.62 so the night does not dim them; the windows stay in the body
+  lights    — one dim street light in the softened colour of its biggest sign, at its height
+  The towers and plants come from assets/city/buildings/hr (ESRGAN, upscale.py) when it is there.
    python3 tools/sprites/undercity_buildings/bake.py
 """
 import json
@@ -66,8 +67,9 @@ def emissive(rgb, a):
     mx = rgb.max(2) / 255
     mn = rgb.min(2) / 255
     sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1e-3), 0)
-    lit = np.clip((mx - 0.62) / 0.25, 0, 1) * np.clip((sat - 0.25) / 0.3, 0, 1)  # neon, lamps, warm windows
-    lit = np.maximum(lit, np.clip((mx - 0.86) / 0.1, 0, 1))  # anything near white-hot
+    # only the signs and lamps (bright and strongly coloured): the warm windows stay in the body and
+    # take the night's light like the walls (a glow over every window was too much)
+    lit = np.clip((mx - 0.78) / 0.15, 0, 1) * np.clip((sat - 0.5) / 0.25, 0, 1)
     return lit * (a > 200)
 
 
@@ -97,13 +99,15 @@ def lights_of(rgb, lit, anchor, a_t, b_t):
                 parts.append(pts)
     parts.sort(key=len, reverse=True)
     out = []
-    for pts in parts[:3]:
+    for pts in parts[:1]:  # one light a building, from its biggest sign: a calm street, not a fair
         if len(pts) < 6:
             break
         ys = np.array([p[0] for p in pts]) * 4
         xs = np.array([p[1] for p in pts]) * 4
         col = rgb[ys, xs].mean(0)
         col = col / max(col.max(), 1) * 255
+        col = col.mean() + (col - col.mean()) * 0.55  # less saturated
+        col = col * 0.6  # and dimmer
         sx, sy = xs.mean() - anchor[0], ys.mean() - anchor[1]
         # on the footprint's front faces: u + v = (a + b) / 2 (the front corner's depth), u − v from x
         s = (a_t + b_t) / 2
@@ -111,7 +115,7 @@ def lights_of(rgb, lit, anchor, a_t, b_t):
         u = np.clip((s + d) / 2, -a_t / 2, a_t / 2)
         v = np.clip((s - d) / 2, -b_t / 2, b_t / 2)
         z = max(0.6, ((u + v) * 10 - sy) / PX_UNIT)
-        out.append([round(float(u), 2), round(float(v), 2), round(float(min(z, 8)), 2), int(col[0]), int(col[1]), int(col[2]), int(min(140, 50 + len(pts) * 1.2)), 0.06])
+        out.append([round(float(u), 2), round(float(v), 2), round(float(min(z, 8)), 2), int(col[0]), int(col[1]), int(col[2]), int(min(80, 40 + len(pts) * 0.6)), 0.02])
     return out
 
 
@@ -127,9 +131,15 @@ def main():
         img = np.asarray(Image.open(f'{SRC}/{bid}.png').convert('RGBA')).astype(float)
         h0, w0 = img.shape[:2]
         w, h = round(w0 * k), round(h0 * k)
-        g = resize(img, w, h) if k != 1 else img
-        if k > 1.3:
-            g = sharpen(g)
+        hr = f'assets/city/buildings/hr/{bid}.png'
+        if k != 1 and os.path.exists(hr):
+            # ESRGAN'd to this size already (upscale.py): no resampling here
+            g = np.asarray(Image.open(hr).convert('RGBA')).astype(float)
+            w, h = g.shape[1], g.shape[0]
+        else:
+            g = resize(img, w, h) if k != 1 else img
+            if k > 1.3:
+                g = sharpen(g)
         a = g[..., 3]
         mm = a > 127
         (lx, ly), (fx, fy), (rx, ry) = corners(mm)
@@ -146,7 +156,7 @@ def main():
             'tiles': [round(a_t, 2), round(b_t, 2)],
             'footprint': [[round(p[0], 2), round(p[1], 2)] for p in foot], 'flat': False,
             'heightM': round((fy - 0) / PX_UNIT, 1),
-            'neon': {'base': 1.0, 'hum': 0.04, 'speed': 6, 'flicker': {'rate': 0.06, 'dur': [0.04, 0.16], 'level': 0.35}},
+            'neon': {'base': 0.62, 'hum': 0.02, 'speed': 4, 'flicker': {'rate': 0.015, 'dur': [0.04, 0.12], 'level': 0.5}},
             'lights': lights_of(g[..., :3], lit, anchor, a_t, b_t),
             'scale': k, 'source': f"assets/city/buildings/undercity_{v['sheet']}_sheet.png cell {v['cell']}",
         }

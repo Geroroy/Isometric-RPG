@@ -83,6 +83,8 @@ export class Renderer {
       p.sy = s.y;
       p.rect = [s.x - c.body.ox, s.y - c.body.oy, c.body.w, c.body.h];
       p.sortDepth = p.x + p.y + (p.rect && c.meta.footprint ? Math.min(...extent(c.meta.footprint)) * 0.35 : 0);
+      p.box = boxOf(p.x, p.y, c.meta.footprint);
+      this.propOrder = null;
       return;
     }
     {
@@ -96,6 +98,8 @@ export class Renderer {
       const def = PROPS[p.type];
       const rect = def.rectByAngle ? def.rectByAngle[p.angleIdx] : def.rect;
       p.sortDepth = p.x + p.y + (rect ? Math.min(rect[0], rect[1]) * 0.35 : 0);
+      p.box = rect ? [p.x - rect[0] / 2, p.y - rect[1] / 2, p.x + rect[0] / 2, p.y + rect[1] / 2] : [p.x - 0.3, p.y - 0.3, p.x + 0.3, p.y + 0.3];
+      this.propOrder = null;
     }
   }
 
@@ -318,12 +322,18 @@ export class Renderer {
       e.car = car;
       ns++;
     };
+    if (!this.propOrder || this.propOrder.world !== g.world || this.propOrder.n !== g.world.props.length) this.orderProps(g.world);
+    const shown = this.shownProps || (this.shownProps = []);
+    shown.length = 0;
     for (const pr of g.world.props) {
       if (pr.hidden) continue; // placed but not shown yet (scripted)
       const r = pr.rect;
       if (!inView(r[0], r[1], r[2], r[3])) continue;
       if (pr.flat) this.drawFrame(pr.frame, pr.sx, pr.sy);
-      else put(pr.sortDepth, pr, null, null, null);
+      else {
+        put(pr.drawDepth ?? pr.sortDepth, pr, null, null, null);
+        shown.push(pr);
+      }
     }
     for (const u of g.activeUnits) {
       if (!u.dead) continue;
@@ -365,29 +375,30 @@ export class Renderer {
     }
 
     // --- depth-sorted standing objects
-    for (const u of g.activeUnits) if (!u.dead && !u.hidden) put(u.x + u.y, null, u, null, null);
+    for (const u of g.activeUnits) if (!u.dead && !u.hidden) put((u.drawDepth = this.unitDepth(u, shown)), null, u, null, null);
     for (const pk of g.pickups) put(pk.x + pk.y, null, null, pk, null);
     for (const m of g.fx.scorches) put(m.depth ?? m.x + m.y, null, null, null, m);
     if (this.lanes) for (const it of this.lanes.visible('drop', cam, W, H)) put(it[0], null, null, null, null, it);
     standing.length = ns;
     standing.sort(byDepth);
-    const pDepth = p.x + p.y;
+    const pDepth = p.drawDepth ?? p.x + p.y;
+    const pf = !p.dead && !p.hidden ? p.frame() : null;
+    let seeThrough = false;
     for (const d of standing) {
       if (d.prop) {
         const pr = d.prop;
-        // Diablo-style: fade structures that hide the player.
+        // a structure drawn after the player that covers him: drawn with a soft see-through hole
+        // round him (the player stays clear; not a ghost blended into the building)
         let alpha = 1;
-        if (d.depth > pDepth && !p.dead) {
-          const r = pr.rect;
-          if (ps.x > r[0] + 4 && ps.x < r[0] + r[2] - 4 && ps.y - 30 > r[1] && ps.y - 20 < r[1] + r[3] && r[3] > 30) alpha = 0.45;
-        }
-        ctx.globalAlpha = alpha;
-        // parked speeders hover: a slow bob of a pixel or so
+        const r = pr.rect;
         const bob = pr.sheet && SHEET_PROPS[pr.sheet].bob ? Math.round(Math.sin(this.time * SHEET_PROPS[pr.sheet].bob + pr.phase) * 1.2) : 0;
-        this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
+        if (pf && d.depth > pDepth && r[3] > 30 && ps.x + 8 > r[0] && ps.x - 8 < r[0] + r[2] && ps.y > r[1] + 8 && ps.y - pf.h < r[1] + r[3] && this.coversPlayer(pr, ps, pf)) {
+          this.drawCutout(pr, ps, pf, bob);
+          alpha = 0.5;
+          seeThrough = true;
+        } else this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
         pr.alpha = alpha;
         pr.bob = bob;
-        ctx.globalAlpha = 1;
       } else if (d.unit) {
         this.drawUnit(d.unit);
       } else if (d.scorch) {
@@ -400,8 +411,8 @@ export class Renderer {
         this.drawFrame(this.assets.props[pk.type][0], s.x, s.y);
       }
     }
-    // Player silhouette through occluders.
-    if (!p.dead && !p.hidden) {
+    // Player silhouette through occluders (those without a see-through hole: units, small props).
+    if (!p.dead && !p.hidden && !seeThrough) {
       ctx.globalAlpha = 0.28;
       this.drawFrame(p.frame(), ps.x, ps.y);
       ctx.globalAlpha = 1;
@@ -443,6 +454,98 @@ export class Renderer {
 
     // --- full-resolution overlay text
     this.drawOverlay();
+  }
+
+  /**
+   * Draw depths for the standing props, consistent with their footprints (boxOrder): a long building
+   * is in front of whatever stands wholly behind its box, whatever their centres. Kept once per set of
+   * props: drawDepth starts at the centre's depth and is raised past every box that must come before.
+   */
+  orderProps(world) {
+    const list = world.props.filter((p) => !p.flat && p.box);
+    for (const p of list) p.drawDepth = p.sortDepth;
+    // relax along the "behind" relation (a few passes settle it; the layouts have no cycles)
+    const near = (a, b) => Math.abs(a.sx - b.sx) < (a.rect[2] + b.rect[2]) / 2 && Math.abs(a.rect[1] + a.rect[3] / 2 - b.rect[1] - b.rect[3] / 2) < (a.rect[3] + b.rect[3]) / 2;
+    const pairs = [];
+    for (let i = 0; i < list.length; i++)
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i];
+        const b = list[j];
+        if (!near(a, b)) continue;
+        const o = boxOrder(a.box, b.box);
+        if (o < 0) pairs.push([a, b]);
+        else if (o > 0) pairs.push([b, a]);
+      }
+    for (let pass = 0; pass < 8; pass++) {
+      let moved = false;
+      for (const [a, b] of pairs)
+        if (b.drawDepth <= a.drawDepth) {
+          b.drawDepth = a.drawDepth + 0.01;
+          moved = true;
+        }
+      if (!moved) break;
+    }
+    this.propOrder = { world, n: world.props.length };
+  }
+
+  /** A unit's draw depth: its own (x + y), kept after every prop box it stands in front of and before every one it stands behind. */
+  unitDepth(u, props) {
+    let d = u.x + u.y;
+    let lo = -Infinity;
+    let hi = Infinity;
+    const ub = [u.x - 0.25, u.y - 0.25, u.x + 0.25, u.y + 0.25];
+    const sx = (u.x - u.y) * 20;
+    const sy = (u.x + u.y) * 10;
+    for (const p of props) {
+      const r = p.rect;
+      if (sx + 14 < r[0] || sx - 14 > r[0] + r[2] || sy < r[1] || sy - 70 > r[1] + r[3]) continue;
+      const o = boxOrder(ub, p.box);
+      const pd = p.drawDepth ?? p.sortDepth;
+      if (o > 0) lo = Math.max(lo, pd);
+      else if (o < 0) hi = Math.min(hi, pd);
+    }
+    if (d <= lo) d = lo + 0.005;
+    if (d >= hi) d = hi - 0.005;
+    return d;
+  }
+
+  /** Whether a prop's opaque pixels cover the player's body (a few points down its middle). */
+  coversPlayer(pr, ps, pf) {
+    const f = pr.frame;
+    const data = (f.alphaData ||= alphaOf(f));
+    if (!data) return true;
+    let hit = 0;
+    for (const t of [0.2, 0.45, 0.7, 0.9]) {
+      const x = Math.round(ps.x - (pr.sx - f.ox));
+      const y = Math.round(ps.y - pf.h * t - (pr.sy - f.oy));
+      if (x >= 0 && y >= 0 && x < f.w && y < f.h && data[y * f.w + x] > 128) hit++;
+    }
+    return hit >= 2;
+  }
+
+  /** A prop drawn with a soft hole round the player (destination-out radial gradient on a scratch canvas). */
+  drawCutout(pr, ps, pf, bob) {
+    const f = pr.frame;
+    const c = (this.cutCanvas ||= document.createElement('canvas'));
+    if (c.width < f.w || c.height < f.h) {
+      c.width = Math.max(c.width, f.w);
+      c.height = Math.max(c.height, f.h);
+    }
+    const x = c.getContext('2d');
+    x.globalCompositeOperation = 'copy';
+    x.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, f.w, f.h);
+    x.globalCompositeOperation = 'destination-out';
+    const cx = ps.x - (pr.sx - f.ox);
+    const cy = ps.y - pf.h * 0.5 - (pr.sy + bob - f.oy);
+    const R = Math.max(26, pf.h * 0.75);
+    const g = x.createRadialGradient(cx, cy, R * 0.45, cx, cy, R);
+    g.addColorStop(0, 'rgba(0,0,0,0.88)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    x.fillStyle = g;
+    x.fillRect(cx - R, cy - R, R * 2, R * 2);
+    x.globalCompositeOperation = 'source-over';
+    this.smooth(false);
+    this.ctx.drawImage(c, 0, 0, f.w, f.h, Math.round(pr.sx - f.ox - this.cam.x), Math.round(pr.sy + bob - f.oy - this.cam.y), f.w, f.h);
   }
 
   drawFrame(f, x, y) {
@@ -1214,6 +1317,47 @@ function wrap(o, text, max) {
 }
 
 /** Width and depth of a footprint polygon. */
+/** A frame's alpha channel (once, for the occlusion test); null when its page cannot be read. */
+function alphaOf(f) {
+  try {
+    const c = document.createElement('canvas');
+    c.width = f.w;
+    c.height = f.h;
+    const x = c.getContext('2d');
+    x.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, f.w, f.h);
+    const d = x.getImageData(0, 0, f.w, f.h).data;
+    const a = new Uint8Array(f.w * f.h);
+    for (let i = 0; i < a.length; i++) a[i] = d[i * 4 + 3];
+    return a;
+  } catch {
+    return null;
+  }
+}
+
+/** A footprint's world box [x0, y0, x1, y1] at (x, y). */
+function boxOf(x, y, poly) {
+  if (!poly) return [x - 0.3, y - 0.3, x + 0.3, y + 0.3];
+  const xs = poly.map((p) => p[0]);
+  const ys = poly.map((p) => p[1]);
+  return [x + Math.min(...xs), y + Math.min(...ys), x + Math.max(...xs), y + Math.max(...ys)];
+}
+
+/**
+ * Which of two boxes is drawn first: -1 when a stands behind b, 1 when in front, 0 when they do not
+ * decide each other. Screen-down is +x and +y, so a box wholly at smaller x (or y) than another is
+ * behind it — unless it is also at larger y (or x): then they stand side by side on screen.
+ */
+function boxOrder(a, b) {
+  const e = 0.05;
+  const xb = a[2] <= b[0] + e;
+  const xf = a[0] >= b[2] - e;
+  const yb = a[3] <= b[1] + e;
+  const yf = a[1] >= b[3] - e;
+  if ((xb && !yf) || (yb && !xf)) return -1;
+  if ((xf && !yb) || (yf && !xb)) return 1;
+  return 0;
+}
+
 function extent(poly) {
   const xs = poly.map((p) => p[0]);
   const ys = poly.map((p) => p[1]);

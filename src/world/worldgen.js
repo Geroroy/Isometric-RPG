@@ -715,6 +715,8 @@ export class CityHub extends World {
     for (let y = ry0; y < ry1; y++) for (const x of [rx0, rx1 - 1]) if (this.biome[y * MAP_W + x] !== BIOME.VOID) this.blocked[y * MAP_W + x] = 1;
     this.addProp('turbolift', liftLow.x, liftLow.y);
     this.placeProps(U.props);
+    // where a building would hide the player (the rebuilt map: data's `closed`, tools/maps/undercity_v2.py)
+    for (const [x0, x1, y] of U.closed || []) for (let x = x0; x < x1; x++) if (!this.blocked[y * MAP_W + x]) this.blocked[y * MAP_W + x] = 1;
     for (const [x, y, z] of U.steam || []) this.steam.push({ x, y, z, t: rng.next() * 3 });
     this.puddles = U.puddles.map(([x, y, r]) => ({ x, y, r, drops: [] }));
     for (const [x, y, z, r, g, b, rad, flicker] of U.lights) this.lights.push({ x, y, z, r, g, b, rad, flicker });
