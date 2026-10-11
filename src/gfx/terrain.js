@@ -6,6 +6,7 @@
 import { HALF_W, HALF_H, Z_PX } from '../core/iso.js';
 import { BIOME } from '../world/worldgen.js';
 import { valueNoise, hash2, clamp } from '../core/math.js';
+import { BUILDING_PROTO } from './buildingBackdrop.js';
 
 const CH = 16; // tiles per chunk side
 const CW = CH * 2 * HALF_W; // chunk canvas width (640)
@@ -189,6 +190,7 @@ export class Terrain {
     const D = (k * 2 * HALF_H) / Z_PX; // world units below the rim
     const s = face ? fx - k : fy - k; // along the face
     const upper = fy - k < 90; // the upper plaza's tower or the undercity's
+    if (BUILDING_PROTO && GROUND) return this.facadePlated(D, s, face, upper, out);
     const lit = face ? 0.92 : 0.62;
     let r = 64;
     let g = 66;
@@ -257,6 +259,59 @@ export class Terrain {
     }
     // haze: the facade sinks into the city's air, then clears for the backdrop
     const hz = 1 - Math.exp(-D / 3.2);
+    const H = upper ? [70, 54, 74] : [20, 28, 34];
+    r += (H[0] - r) * hz + wr;
+    g += (H[1] - g) * hz + wg;
+    b += (H[2] - b) * hz + wb;
+    out[0] = clamp(r, 0, 255);
+    out[1] = clamp(g, 0, 255);
+    out[2] = clamp(b, 0, 255);
+    out[3] = 255 * clamp(1 - (D - 4.5) / 3.5, 0, 1);
+    return out[3] > 0;
+  }
+
+  /**
+   * PROTOTYPE (?proto=bg): the facade built of the ground's tile sprites (the concept sheets'
+   * metal plates, public/sprites/underworld/ground): each wall panel is one whole tile stood
+   * upright, 2 × 2 units — the floor's own texel size (2 units per tile) — picked, mirrored and
+   * toned per panel with the floor's weights, lit as a wall (the lower-left face lit, the
+   * lower-right in shade), a bright lip at the top and its shadow; deeper down the panels sink into
+   * the city's air as before. No drawn windows: the plates are the wall.
+   */
+  facadePlated(D, s, face, upper, out) {
+    const gt = GROUND[upper ? BIOME.CITY_UP : BIOME.CITY_LOW] || GROUND[BIOME.CITY_LOW];
+    const P = 2;
+    const cx = Math.floor(s / P);
+    const cy = Math.floor(D / P);
+    let u = s / P - cx;
+    const v = D / P - cy;
+    const pickN = hash2(cx, cy + 1000 * face, 71);
+    let T = gt.list[gt.list.length - 1].T;
+    for (const e of gt.list) if (pickN <= e.upto) { T = e.T; break; }
+    if (hash2(cx, cy, 73) > 0.5) u = 1 - u;
+    const tx = Math.min(T.width - 1, Math.floor(u * T.width));
+    const ty = Math.min(T.height - 1, Math.floor(v * T.height));
+    const j = (ty * T.width + tx) * 4;
+    const lit = face ? 0.95 : 0.64;
+    const tone = (0.86 + 0.26 * hash2(cx, cy, 74)) * lit * (gt.gain || 1);
+    let r = T.data[j] * tone;
+    let g = T.data[j + 1] * tone;
+    let b = T.data[j + 2] * tone;
+    const wr = 0;
+    const wg = 0;
+    const wb = 0;
+    // the lip, and the shadow it throws on the first plates
+    if (D < 0.09) {
+      r = r * 1.6 + 40;
+      g = g * 1.55 + 38;
+      b = b * 1.5 + 34;
+    } else if (D < 0.5) {
+      const t = (0.5 - D) / 0.41;
+      r *= 1 - 0.5 * t;
+      g *= 1 - 0.5 * t;
+      b *= 1 - 0.5 * t;
+    }
+    const hz = 1 - Math.exp(-Math.max(0, D - 1) / 3);
     const H = upper ? [70, 54, 74] : [20, 28, 34];
     r += (H[0] - r) * hz + wr;
     g += (H[1] - g) * hz + wg;

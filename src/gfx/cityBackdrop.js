@@ -8,6 +8,7 @@
 // traffic far off (gfx/skylineTraffic.js) flies between the layers.
 import { RNG } from '../core/math.js';
 import { SkylineTraffic, TIERS } from './skylineTraffic.js';
+import { BUILDING_PROTO, drawBuildingLayer } from './buildingBackdrop.js';
 
 const SIZE = 384;
 const PAL = {
@@ -142,6 +143,20 @@ export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0) {
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
   traffic.update(dt, cam, W, H, mode);
+  // PROTOTYPE (?proto=bg): the deepest dotted layer stays (the far city's lights), then the
+  // building sheets' layers — landmarks, city blocks, the sky traffic between them and the near plant
+  if (BUILDING_PROTO) {
+    const c = layerCanvas(mode, 0);
+    const f = LAYERS[0].f;
+    const ox = -((((cam.x * f) % SIZE) + SIZE) % SIZE);
+    const oy = -((((cam.y * f) % SIZE) + SIZE) % SIZE);
+    for (let y = oy; y < H; y += SIZE) for (let x = ox; x < W; x += SIZE) ctx.drawImage(c, Math.round(x), Math.round(y));
+    if (drawBuildingLayer(ctx, 'far', cam, W, H, mode) && drawBuildingLayer(ctx, 'mid', cam, W, H, mode)) {
+      for (let ti = 0; ti < TIERS.length; ti++) traffic.draw(ctx, ti, cam);
+      drawBuildingLayer(ctx, 'near', cam, W, H, mode);
+      return;
+    }
+  }
   for (let li = 0; li < LAYERS.length; li++) {
     const c = layerCanvas(mode, li);
     const f = LAYERS[li].f;

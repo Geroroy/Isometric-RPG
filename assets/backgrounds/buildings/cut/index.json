@@ -1,0 +1,1202 @@
+{
+ "city_00": {
+  "sheet": "city",
+  "cell": 0,
+  "name": "apartmentBlock",
+  "kind": "city",
+  "rect": [
+   44,
+   73,
+   250,
+   244
+  ],
+  "w": 250,
+  "h": 244,
+  "foot": [
+   125.0,
+   243
+  ],
+  "base": [
+   125.0,
+   180.5
+  ],
+  "footW": 250,
+  "area": 37914,
+  "size": "M"
+ },
+ "city_01": {
+  "sheet": "city",
+  "cell": 1,
+  "name": "billboardTower",
+  "kind": "city",
+  "rect": [
+   360,
+   31,
+   236,
+   286
+  ],
+  "w": 236,
+  "h": 286,
+  "foot": [
+   118.0,
+   285
+  ],
+  "base": [
+   118.0,
+   226.0
+  ],
+  "footW": 236,
+  "area": 33485,
+  "size": "M"
+ },
+ "city_02": {
+  "sheet": "city",
+  "cell": 2,
+  "name": "smokestackPlant",
+  "kind": "industrial",
+  "rect": [
+   663,
+   51,
+   244,
+   265
+  ],
+  "w": 244,
+  "h": 265,
+  "foot": [
+   122.0,
+   264
+  ],
+  "base": [
+   122.0,
+   203.0
+  ],
+  "footW": 244,
+  "area": 31923,
+  "size": "M"
+ },
+ "city_03": {
+  "sheet": "city",
+  "cell": 3,
+  "name": "latticeMast",
+  "kind": "city",
+  "rect": [
+   1006,
+   13,
+   193,
+   327
+  ],
+  "w": 193,
+  "h": 327,
+  "foot": [
+   96.0,
+   326
+  ],
+  "base": [
+   96.0,
+   278.0
+  ],
+  "footW": 192,
+  "area": 23262,
+  "size": "S"
+ },
+ "city_04": {
+  "sheet": "city",
+  "cell": 4,
+  "name": "roundOffice",
+  "kind": "city",
+  "rect": [
+   39,
+   357,
+   253,
+   249
+  ],
+  "w": 253,
+  "h": 249,
+  "foot": [
+   126.5,
+   248
+  ],
+  "base": [
+   126.5,
+   184.8
+  ],
+  "footW": 253,
+  "area": 36069,
+  "size": "M"
+ },
+ "city_05": {
+  "sheet": "city",
+  "cell": 5,
+  "name": "clusterFlats",
+  "kind": "city",
+  "rect": [
+   363,
+   362,
+   223,
+   252
+  ],
+  "w": 223,
+  "h": 252,
+  "foot": [
+   111.5,
+   251
+  ],
+  "base": [
+   111.5,
+   195.2
+  ],
+  "footW": 223,
+  "area": 37091,
+  "size": "M"
+ },
+ "city_06": {
+  "sheet": "city",
+  "cell": 6,
+  "name": "domePlantSpire",
+  "kind": "industrial",
+  "rect": [
+   671,
+   347,
+   231,
+   265
+  ],
+  "w": 231,
+  "h": 265,
+  "foot": [
+   115.5,
+   264
+  ],
+  "base": [
+   115.5,
+   206.2
+  ],
+  "footW": 231,
+  "area": 29384,
+  "size": "M"
+ },
+ "city_07": {
+  "sheet": "city",
+  "cell": 7,
+  "name": "archHangar",
+  "kind": "industrial",
+  "rect": [
+   960,
+   399,
+   267,
+   203
+  ],
+  "w": 267,
+  "h": 203,
+  "foot": [
+   133.5,
+   202
+  ],
+  "base": [
+   133.5,
+   135.2
+  ],
+  "footW": 267,
+  "area": 27998,
+  "size": "S"
+ },
+ "city_08": {
+  "sheet": "city",
+  "cell": 8,
+  "name": "taperedTower",
+  "kind": "city",
+  "rect": [
+   48,
+   628,
+   200,
+   282
+  ],
+  "w": 200,
+  "h": 282,
+  "foot": [
+   100.0,
+   281
+  ],
+  "base": [
+   100.0,
+   231.0
+  ],
+  "footW": 200,
+  "area": 23776,
+  "size": "L"
+ },
+ "city_09": {
+  "sheet": "city",
+  "cell": 9,
+  "name": "silos",
+  "kind": "industrial",
+  "rect": [
+   337,
+   689,
+   266,
+   206
+  ],
+  "w": 266,
+  "h": 206,
+  "foot": [
+   133.0,
+   205
+  ],
+  "base": [
+   133.0,
+   138.5
+  ],
+  "footW": 266,
+  "area": 33564,
+  "size": "S"
+ },
+ "city_10": {
+  "sheet": "city",
+  "cell": 10,
+  "name": "gardenHighrise",
+  "kind": "city",
+  "rect": [
+   679,
+   652,
+   228,
+   262
+  ],
+  "w": 228,
+  "h": 262,
+  "foot": [
+   114.0,
+   261
+  ],
+  "base": [
+   114.0,
+   204.0
+  ],
+  "footW": 228,
+  "area": 32103,
+  "size": "L"
+ },
+ "city_11": {
+  "sheet": "city",
+  "cell": 11,
+  "name": "officePad",
+  "kind": "city",
+  "rect": [
+   976,
+   640,
+   244,
+   276
+  ],
+  "w": 244,
+  "h": 276,
+  "foot": [
+   122.0,
+   275
+  ],
+  "base": [
+   122.0,
+   214.0
+  ],
+  "footW": 244,
+  "area": 29335,
+  "size": "M"
+ },
+ "city_12": {
+  "sheet": "city",
+  "cell": 12,
+  "name": "mall",
+  "kind": "city",
+  "rect": [
+   24,
+   991,
+   274,
+   212
+  ],
+  "w": 274,
+  "h": 212,
+  "foot": [
+   136.5,
+   211
+  ],
+  "base": [
+   136.5,
+   142.8
+  ],
+  "footW": 273,
+  "area": 37171,
+  "size": "M"
+ },
+ "city_13": {
+  "sheet": "city",
+  "cell": 13,
+  "name": "twinHighrise",
+  "kind": "city",
+  "rect": [
+   368,
+   933,
+   224,
+   277
+  ],
+  "w": 224,
+  "h": 277,
+  "foot": [
+   112.0,
+   276
+  ],
+  "base": [
+   112.0,
+   220.0
+  ],
+  "footW": 224,
+  "area": 32612,
+  "size": "L"
+ },
+ "city_14": {
+  "sheet": "city",
+  "cell": 14,
+  "name": "observatory",
+  "kind": "city",
+  "rect": [
+   664,
+   978,
+   250,
+   221
+  ],
+  "w": 250,
+  "h": 221,
+  "foot": [
+   125.0,
+   220
+  ],
+  "base": [
+   125.0,
+   157.5
+  ],
+  "footW": 250,
+  "area": 30410,
+  "size": "M"
+ },
+ "city_15": {
+  "sheet": "city",
+  "cell": 15,
+  "name": "podTower",
+  "kind": "city",
+  "rect": [
+   1006,
+   941,
+   191,
+   276
+  ],
+  "w": 191,
+  "h": 276,
+  "foot": [
+   95.5,
+   275
+  ],
+  "base": [
+   95.5,
+   227.2
+  ],
+  "footW": 191,
+  "area": 30688,
+  "size": "L"
+ },
+ "industrial_00": {
+  "sheet": "industrial",
+  "cell": 0,
+  "name": "kiosk",
+  "kind": "industrial",
+  "rect": [
+   44,
+   55,
+   247,
+   247
+  ],
+  "w": 247,
+  "h": 247,
+  "foot": [
+   129.0,
+   246
+  ],
+  "base": [
+   129.0,
+   187.0
+  ],
+  "footW": 236,
+  "area": 30878,
+  "size": "S"
+ },
+ "industrial_01": {
+  "sheet": "industrial",
+  "cell": 1,
+  "name": "pillarTower",
+  "kind": "industrial",
+  "rect": [
+   407,
+   23,
+   143,
+   278
+  ],
+  "w": 143,
+  "h": 278,
+  "foot": [
+   71.5,
+   277
+  ],
+  "base": [
+   71.5,
+   241.2
+  ],
+  "footW": 143,
+  "area": 19955,
+  "size": "M"
+ },
+ "industrial_02": {
+  "sheet": "industrial",
+  "cell": 2,
+  "name": "refinery",
+  "kind": "industrial",
+  "rect": [
+   660,
+   70,
+   229,
+   230
+  ],
+  "w": 229,
+  "h": 230,
+  "foot": [
+   114.5,
+   229
+  ],
+  "base": [
+   114.5,
+   171.8
+  ],
+  "footW": 229,
+  "area": 27485,
+  "size": "M"
+ },
+ "industrial_03": {
+  "sheet": "industrial",
+  "cell": 3,
+  "name": "landingRing",
+  "kind": "industrial",
+  "rect": [
+   958,
+   88,
+   264,
+   197
+  ],
+  "w": 264,
+  "h": 197,
+  "foot": [
+   132.0,
+   196
+  ],
+  "base": [
+   132.0,
+   130.0
+  ],
+  "footW": 264,
+  "area": 30977,
+  "size": "S"
+ },
+ "industrial_04": {
+  "sheet": "industrial",
+  "cell": 4,
+  "name": "gantryGate",
+  "kind": "industrial",
+  "rect": [
+   37,
+   353,
+   247,
+   237
+  ],
+  "w": 247,
+  "h": 237,
+  "foot": [
+   123.5,
+   236
+  ],
+  "base": [
+   123.5,
+   174.2
+  ],
+  "footW": 247,
+  "area": 26644,
+  "size": "S"
+ },
+ "industrial_05": {
+  "sheet": "industrial",
+  "cell": 5,
+  "name": "radarDome",
+  "kind": "industrial",
+  "rect": [
+   362,
+   356,
+   238,
+   234
+  ],
+  "w": 238,
+  "h": 234,
+  "foot": [
+   119.0,
+   233
+  ],
+  "base": [
+   119.0,
+   173.5
+  ],
+  "footW": 238,
+  "area": 31344,
+  "size": "M"
+ },
+ "industrial_06": {
+  "sheet": "industrial",
+  "cell": 6,
+  "name": "tankTower",
+  "kind": "industrial",
+  "rect": [
+   688,
+   331,
+   178,
+   278
+  ],
+  "w": 178,
+  "h": 278,
+  "foot": [
+   89.0,
+   277
+  ],
+  "base": [
+   89.0,
+   232.5
+  ],
+  "footW": 178,
+  "area": 24780,
+  "size": "S"
+ },
+ "industrial_07": {
+  "sheet": "industrial",
+  "cell": 7,
+  "name": "tubeHangar",
+  "kind": "industrial",
+  "rect": [
+   959,
+   374,
+   258,
+   216
+  ],
+  "w": 258,
+  "h": 216,
+  "foot": [
+   130.5,
+   215
+  ],
+  "base": [
+   130.5,
+   151.2
+  ],
+  "footW": 255,
+  "area": 30319,
+  "size": "S"
+ },
+ "industrial_08": {
+  "sheet": "industrial",
+  "cell": 8,
+  "name": "gardenBlock",
+  "kind": "city",
+  "rect": [
+   61,
+   660,
+   210,
+   240
+  ],
+  "w": 210,
+  "h": 240,
+  "foot": [
+   105.0,
+   239
+  ],
+  "base": [
+   105.0,
+   186.5
+  ],
+  "footW": 210,
+  "area": 29927,
+  "size": "M"
+ },
+ "industrial_09": {
+  "sheet": "industrial",
+  "cell": 9,
+  "name": "reactor",
+  "kind": "industrial",
+  "rect": [
+   354,
+   694,
+   251,
+   207
+  ],
+  "w": 251,
+  "h": 207,
+  "foot": [
+   125.5,
+   206
+  ],
+  "base": [
+   125.5,
+   143.2
+  ],
+  "footW": 251,
+  "area": 32500,
+  "size": "M"
+ },
+ "industrial_10": {
+  "sheet": "industrial",
+  "cell": 10,
+  "name": "commSpire",
+  "kind": "industrial",
+  "rect": [
+   712,
+   628,
+   149,
+   301
+  ],
+  "w": 149,
+  "h": 301,
+  "foot": [
+   74.5,
+   300
+  ],
+  "base": [
+   74.5,
+   262.8
+  ],
+  "footW": 149,
+  "area": 18691,
+  "size": "S"
+ },
+ "industrial_11": {
+  "sheet": "industrial",
+  "cell": 11,
+  "name": "turretBunker",
+  "kind": "industrial",
+  "rect": [
+   990,
+   701,
+   188,
+   200
+  ],
+  "w": 188,
+  "h": 200,
+  "foot": [
+   94.0,
+   199
+  ],
+  "base": [
+   94.0,
+   152.0
+  ],
+  "footW": 188,
+  "area": 20493,
+  "size": "S"
+ },
+ "industrial_12": {
+  "sheet": "industrial",
+  "cell": 12,
+  "name": "tankFarm",
+  "kind": "industrial",
+  "rect": [
+   43,
+   958,
+   224,
+   234
+  ],
+  "w": 224,
+  "h": 234,
+  "foot": [
+   112.0,
+   233
+  ],
+  "base": [
+   112.0,
+   177.0
+  ],
+  "footW": 224,
+  "area": 26033,
+  "size": "S"
+ },
+ "industrial_13": {
+  "sheet": "industrial",
+  "cell": 13,
+  "name": "garage",
+  "kind": "industrial",
+  "rect": [
+   362,
+   986,
+   237,
+   199
+  ],
+  "w": 237,
+  "h": 199,
+  "foot": [
+   118.5,
+   198
+  ],
+  "base": [
+   118.5,
+   138.8
+  ],
+  "footW": 237,
+  "area": 32082,
+  "size": "S"
+ },
+ "industrial_14": {
+  "sheet": "industrial",
+  "cell": 14,
+  "name": "needleSpire",
+  "kind": "industrial",
+  "rect": [
+   694,
+   944,
+   185,
+   261
+  ],
+  "w": 185,
+  "h": 261,
+  "foot": [
+   92.5,
+   260
+  ],
+  "base": [
+   92.5,
+   213.8
+  ],
+  "footW": 185,
+  "area": 21547,
+  "size": "M"
+ },
+ "industrial_15": {
+  "sheet": "industrial",
+  "cell": 15,
+  "name": "fanUnit",
+  "kind": "industrial",
+  "rect": [
+   971,
+   982,
+   241,
+   210
+  ],
+  "w": 241,
+  "h": 210,
+  "foot": [
+   120.5,
+   209
+  ],
+  "base": [
+   120.5,
+   148.8
+  ],
+  "footW": 241,
+  "area": 30244,
+  "size": "S"
+ },
+ "landmark_00": {
+  "sheet": "landmark",
+  "cell": 0,
+  "name": "senateDome",
+  "kind": "landmark",
+  "rect": [
+   21,
+   62,
+   343,
+   239
+  ],
+  "w": 343,
+  "h": 239,
+  "foot": [
+   171.0,
+   238
+  ],
+  "base": [
+   171.0,
+   152.5
+  ],
+  "footW": 342,
+  "area": 50888,
+  "size": "L"
+ },
+ "landmark_01": {
+  "sheet": "landmark",
+  "cell": 1,
+  "name": "cathedralSpires",
+  "kind": "landmark",
+  "rect": [
+   419,
+   11,
+   180,
+   312
+  ],
+  "w": 180,
+  "h": 312,
+  "foot": [
+   89.5,
+   311
+  ],
+  "base": [
+   89.5,
+   266.2
+  ],
+  "footW": 179,
+  "area": 21514,
+  "size": "L"
+ },
+ "landmark_02": {
+  "sheet": "landmark",
+  "cell": 2,
+  "name": "ziggurat",
+  "kind": "landmark",
+  "rect": [
+   659,
+   26,
+   270,
+   295
+  ],
+  "w": 270,
+  "h": 295,
+  "foot": [
+   135.0,
+   294
+  ],
+  "base": [
+   135.0,
+   226.5
+  ],
+  "footW": 270,
+  "area": 37943,
+  "size": "L"
+ },
+ "landmark_03": {
+  "sheet": "landmark",
+  "cell": 3,
+  "name": "bulletTower",
+  "kind": "landmark",
+  "rect": [
+   1004,
+   11,
+   186,
+   311
+  ],
+  "w": 186,
+  "h": 311,
+  "foot": [
+   93.0,
+   310
+  ],
+  "base": [
+   93.0,
+   263.5
+  ],
+  "footW": 186,
+  "area": 26124,
+  "size": "L"
+ },
+ "landmark_04": {
+  "sheet": "landmark",
+  "cell": 4,
+  "name": "twinSpires",
+  "kind": "landmark",
+  "rect": [
+   53,
+   314,
+   221,
+   310
+  ],
+  "w": 221,
+  "h": 310,
+  "foot": [
+   110.5,
+   309
+  ],
+  "base": [
+   110.5,
+   253.8
+  ],
+  "footW": 221,
+  "area": 35002,
+  "size": "L"
+ },
+ "landmark_05": {
+  "sheet": "landmark",
+  "cell": 5,
+  "name": "rotunda",
+  "kind": "landmark",
+  "rect": [
+   329,
+   358,
+   292,
+   255
+  ],
+  "w": 292,
+  "h": 255,
+  "foot": [
+   145.5,
+   254
+  ],
+  "base": [
+   145.5,
+   181.2
+  ],
+  "footW": 291,
+  "area": 44043,
+  "size": "L"
+ },
+ "landmark_06": {
+  "sheet": "landmark",
+  "cell": 6,
+  "name": "padTower",
+  "kind": "landmark",
+  "rect": [
+   681,
+   354,
+   223,
+   279
+  ],
+  "w": 223,
+  "h": 279,
+  "foot": [
+   121.0,
+   278
+  ],
+  "base": [
+   121.0,
+   227.5
+  ],
+  "footW": 202,
+  "area": 31742,
+  "size": "M"
+ },
+ "landmark_07": {
+  "sheet": "landmark",
+  "cell": 7,
+  "name": "roundTower",
+  "kind": "landmark",
+  "rect": [
+   1015,
+   335,
+   171,
+   300
+  ],
+  "w": 171,
+  "h": 300,
+  "foot": [
+   85.5,
+   299
+  ],
+  "base": [
+   85.5,
+   256.2
+  ],
+  "footW": 171,
+  "area": 26269,
+  "size": "L"
+ },
+ "landmark_08": {
+  "sheet": "landmark",
+  "cell": 8,
+  "name": "archTowers",
+  "kind": "landmark",
+  "rect": [
+   32,
+   666,
+   266,
+   252
+  ],
+  "w": 266,
+  "h": 252,
+  "foot": [
+   133.0,
+   251
+  ],
+  "base": [
+   133.0,
+   184.5
+  ],
+  "footW": 266,
+  "area": 38277,
+  "size": "L"
+ },
+ "landmark_09": {
+  "sheet": "landmark",
+  "cell": 9,
+  "name": "gardenSpire",
+  "kind": "landmark",
+  "rect": [
+   381,
+   634,
+   191,
+   300
+  ],
+  "w": 191,
+  "h": 300,
+  "foot": [
+   95.5,
+   299
+  ],
+  "base": [
+   95.5,
+   251.2
+  ],
+  "footW": 191,
+  "area": 31751,
+  "size": "L"
+ },
+ "landmark_10": {
+  "sheet": "landmark",
+  "cell": 10,
+  "name": "domeComplex",
+  "kind": "landmark",
+  "rect": [
+   645,
+   684,
+   312,
+   217
+  ],
+  "w": 312,
+  "h": 217,
+  "foot": [
+   155.5,
+   216
+  ],
+  "base": [
+   155.5,
+   138.2
+  ],
+  "footW": 311,
+  "area": 32518,
+  "size": "L"
+ },
+ "landmark_11": {
+  "sheet": "landmark",
+  "cell": 11,
+  "name": "needleTower",
+  "kind": "landmark",
+  "rect": [
+   1036,
+   647,
+   136,
+   286
+  ],
+  "w": 136,
+  "h": 286,
+  "foot": [
+   67.5,
+   285
+  ],
+  "base": [
+   67.5,
+   251.2
+  ],
+  "footW": 135,
+  "area": 11610,
+  "size": "M"
+ },
+ "landmark_12": {
+  "sheet": "landmark",
+  "cell": 12,
+  "name": "citadel",
+  "kind": "landmark",
+  "rect": [
+   37,
+   958,
+   254,
+   264
+  ],
+  "w": 254,
+  "h": 264,
+  "foot": [
+   127.0,
+   263
+  ],
+  "base": [
+   127.0,
+   199.5
+  ],
+  "footW": 254,
+  "area": 37265,
+  "size": "L"
+ },
+ "landmark_13": {
+  "sheet": "landmark",
+  "cell": 13,
+  "name": "sailTower",
+  "kind": "landmark",
+  "rect": [
+   382,
+   944,
+   202,
+   278
+  ],
+  "w": 202,
+  "h": 278,
+  "foot": [
+   101.0,
+   277
+  ],
+  "base": [
+   101.0,
+   226.5
+  ],
+  "footW": 202,
+  "area": 25769,
+  "size": "L"
+ },
+ "landmark_14": {
+  "sheet": "landmark",
+  "cell": 14,
+  "name": "triCylinders",
+  "kind": "landmark",
+  "rect": [
+   699,
+   944,
+   187,
+   277
+  ],
+  "w": 187,
+  "h": 277,
+  "foot": [
+   93.5,
+   276
+  ],
+  "base": [
+   93.5,
+   229.2
+  ],
+  "footW": 187,
+  "area": 31164,
+  "size": "L"
+ },
+ "landmark_15": {
+  "sheet": "landmark",
+  "cell": 15,
+  "name": "spirePyramid",
+  "kind": "landmark",
+  "rect": [
+   974,
+   944,
+   257,
+   273
+  ],
+  "w": 257,
+  "h": 273,
+  "foot": [
+   128.0,
+   272
+  ],
+  "base": [
+   128.0,
+   208.0
+  ],
+  "footW": 256,
+  "area": 34894,
+  "size": "L"
+ }
+}
