@@ -26,13 +26,34 @@ const PAL = {
   [BIOME.CITY_UP]: [186, 180, 166],
   [BIOME.CITY_LOW]: [70, 66, 62],
   [BIOME.VOID]: [10, 12, 22],
+  [BIOME.CITY_MOSAIC]: [84, 86, 98],
+  [BIOME.CITY_MUD]: [58, 50, 42],
+  [BIOME.CITY_SWAMP]: [46, 54, 36],
+  [BIOME.CITY_DIRT]: [92, 82, 66],
 };
+const NEON_VEIN = [[255, 79, 168], [79, 230, 255]]; // the plaza's veins: pink or blue by cell
 const ROAD = [128, 108, 84];
 const EDGE = [62, 57, 54];
 
 // the undercity street's floor texture (gfx/citySprites.js), sampled in world
 // coordinates so it lies flat and tiles: { data: ImageData, tiles }
 let FLOOR = null;
+// the underworld's ground (gfx/citySprites.js: square textures cut from the concept sheets),
+// sampled in world space per biome: a list of variants per biome, picked per cell, `tiles`
+// world tiles per repeat
+let GROUND = null;
+export function setGroundTextures(g) {
+  if (!g) return;
+  const pick = (names, tiles) => ({ list: names.map((n) => g[n]).filter(Boolean), tiles });
+  GROUND = {
+    [BIOME.CITY_LOW]: pick(['metalPlateAurebesh', 'metalPlateGrate', 'metalPlateVent', 'metalPlateAurebesh'], 2),
+    [BIOME.CITY_MOSAIC]: pick(['metalPlateGrate', 'metalPlateVent', 'metalPlateGrate', 'metalPlateAurebesh'], 2), // the plaza: the grated plates
+    [BIOME.CITY_MUD]: pick(['mudConduit'], 3),
+    [BIOME.CITY_SWAMP]: pick(['swamp'], 3),
+    [BIOME.CITY_DIRT]: pick(['dirtTiles'], 3),
+  };
+  for (const k of Object.keys(GROUND)) if (!GROUND[k].list.length) delete GROUND[k];
+}
 export function setFloorTexture(f) {
   FLOOR = f;
 }
@@ -54,6 +75,8 @@ export class Terrain {
     this.V = new Float32Array(n); // the city's drop (dark, far lights)
     this.U = new Float32Array(n); // city upper level (inlaid stone)
     this.Lw = new Float32Array(n); // city lower level (the floor texture)
+    this.Mo = new Float32Array(n); // the undercity plaza's neon mosaic
+    this.Mu = new Float32Array(n); // the undercity's mud alleys
     for (let y = 0; y < world.h; y++) {
       for (let x = 0; x < world.w; x++) {
         const i = y * world.w + x;
@@ -67,6 +90,8 @@ export class Terrain {
         this.Lw[i] = b === BIOME.CITY_LOW && FLOOR ? 1 : 0;
         this.V[i] = b === BIOME.VOID ? 1 : 0;
         this.U[i] = b === BIOME.CITY_UP ? 1 : 0;
+        this.Mo[i] = b === BIOME.CITY_MOSAIC ? 1 : 0;
+        this.Mu[i] = b === BIOME.CITY_MUD || b === BIOME.CITY_SWAMP || b === BIOME.CITY_DIRT ? 1 : 0;
         if (b === BIOME.VOID) {
           // no grain in the drop
           this.R[i] = c[0];
@@ -163,6 +188,8 @@ export class Terrain {
         const lava = this.sample(this.L, u, v);
         const drop = this.sample(this.V, u, v);
         const upper = this.sample(this.U, u, v);
+        const mosaic = this.sample(this.Mo, u, v);
+        const mud = this.sample(this.Mu, u, v);
         const grain = hd ? hash2(Math.floor(sx * S), Math.floor(sy * S), 99) : hash2(sx, sy, 99);
         const blot = valueNoise(fx * 1.7, fy * 1.7, 13) - 0.5;
         // blotchy mid-frequency variation
@@ -260,8 +287,66 @@ export class Terrain {
             }
           }
         }
+        // the underworld's ground textures (the concept sheets' tiles), by the tile's biome:
+        // the variant by cell, the texel by world position, shaded by the same blotches
+        let texd = false;
+        if (GROUND) {
+          const bi = this.world.biome[Math.floor(fy) * this.world.w + Math.floor(fx)];
+          const gt = GROUND[bi];
+          if (gt) {
+            const cell = hash2(Math.floor(fx / gt.tiles), Math.floor(fy / gt.tiles), 71);
+            const T = gt.list[Math.min(gt.list.length - 1, Math.floor(cell * gt.list.length))];
+            const tx = Math.floor(((((fx / gt.tiles) % 1) + 1) % 1) * T.width);
+            const ty = Math.floor(((((fy / gt.tiles) % 1) + 1) % 1) * T.height);
+            const j = (ty * T.width + tx) * 4;
+            const sh = 1 + blot * 0.2;
+            r = T.data[j] * sh;
+            g = T.data[j + 1] * sh;
+            b = T.data[j + 2] * sh;
+            texd = true;
+          }
+        }
+        // the undercity plaza: cracked mosaic slabs, the cracks glowing neon (pink or blue by
+        // cell), grout lines every tile (without the sheet's textures)
+        if (mosaic > 0.05 && !texd) {
+          const m = Math.min(1, mosaic * 1.3);
+          const n1 = valueNoise(fx * 1.35, fy * 1.35, 61);
+          const vein = 1 - Math.abs(n1 - 0.5) * 2;
+          const crack = clamp((vein - 0.9) * 10, 0, 1) * m;
+          const gx = ((fx % 1) + 1) % 1;
+          const gy = ((fy % 1) + 1) % 1;
+          if (gx < 0.06 || gy < 0.06) {
+            r -= 18 * m;
+            g -= 18 * m;
+            b -= 16 * m;
+          }
+          if (crack > 0) {
+            const c = NEON_VEIN[hash2(Math.floor(fx / 3), Math.floor(fy / 3), 62) > 0.5 ? 1 : 0];
+            const k = crack * (0.4 + 0.4 * valueNoise(fx * 3.1, fy * 3.1, 64));
+            r += (c[0] - r) * k;
+            g += (c[1] - g) * k;
+            b += (c[2] - b) * k;
+          }
+        }
+        // the mud alleys: wet earth over conduits, a bluish sheen where it is wettest, ruts
+        if (mud > 0.05 && !texd) {
+          const m = Math.min(1, mud * 1.3);
+          const wet = valueNoise(fx * 2.2, fy * 2.2, 63);
+          if (wet > 0.58) {
+            const k = clamp((wet - 0.58) * 6, 0, 1) * m;
+            r += (70 - r) * k;
+            g += (74 - g) * k;
+            b += (96 - b) * k;
+          }
+          const rut = valueNoise(fx * 0.8, fy * 5.5, 65);
+          if (rut > 0.72) {
+            r -= 14 * m;
+            g -= 12 * m;
+            b -= 10 * m;
+          }
+        }
         // the undercity street: the floor texture, shaded by the same blotches
-        const lowW = FLOOR ? this.sample(this.Lw, u, v) : 0;
+        const lowW = FLOOR && !texd ? this.sample(this.Lw, u, v) : 0;
         if (lowW > 0.01) {
           const T = FLOOR.data;
           const tx = Math.floor((((fx / FLOOR.tiles) % 1) + 1) % 1 * T.width);

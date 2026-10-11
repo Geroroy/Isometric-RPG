@@ -1,3 +1,4 @@
+import { BIOME } from '../world/worldgen.js';
 // Units: the player (Anakin), Separatist droids and Republic allies.
 import { dist, angleDiff, rand, clamp } from '../core/math.js';
 import { dirIndex } from '../core/iso.js';
@@ -563,6 +564,9 @@ export class Player extends Unit {
   moveSpeed() {
     let s = 4.6 * (1 + (this.buffs.speed ? this.buffs.speed.move : 0));
     if (this.buffs.barrier) s *= 0.75;
+    const bio = this.game.world.biomeAt(this.x, this.y);
+    if (bio === BIOME.CITY_MUD) s *= 0.72; // the undercity's mud
+    else if (bio === BIOME.CITY_SWAMP) s *= 0.6; // its standing water
     return s;
   }
   deflectChance() {

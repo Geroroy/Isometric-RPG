@@ -7,7 +7,7 @@ import { bakeAssets, bakeDuelAssets, bakeSkin, bakeCharacter, CHARACTERS } from 
 import { loadSheets } from './gfx/sheet.js';
 import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
-import { setFloorTexture } from './gfx/terrain.js';
+import { setFloorTexture, setGroundTextures } from './gfx/terrain.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
@@ -76,6 +76,7 @@ async function boot() {
     assets.city = await loadCitySprites(onProgress);
     setCityFootprints(assets.city);
     setFloorTexture(assets.city.floor);
+    setGroundTextures(assets.city.ground);
   }
   if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, DUEL)).sprites);
   // the equipped appearance (the Movie Duel keeps the default look)

@@ -1,0 +1,52 @@
+{
+ "name": "verticalPipes",
+ "size": 126,
+ "window": 126.0,
+ "k": 0.85,
+ "anchor": [
+  63.0,
+  128.6
+ ],
+ "sort": [
+  63.0,
+  153
+ ],
+ "footprint": [
+  [
+   -0.9,
+   -0.7
+  ],
+  [
+   0.9,
+   -0.7
+  ],
+  [
+   0.9,
+   0.7
+  ],
+  [
+   -0.9,
+   0.7
+  ]
+ ],
+ "flat": false,
+ "layers": {
+  "body": "verticalPipes_body.png",
+  "neon": "verticalPipes_neon.png",
+  "reflect": "verticalPipes_reflect.png"
+ },
+ "neon": {
+  "base": 1.0,
+  "hum": 0.05,
+  "speed": 9,
+  "flicker": {
+   "rate": 0.12,
+   "dur": [
+    0.04,
+    0.22
+   ],
+   "level": 0.12
+  }
+ },
+ "source": "sheet B cell (23,445)-(261,637)"
+}

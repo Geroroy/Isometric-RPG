@@ -1,0 +1,52 @@
+{
+ "name": "ventStack",
+ "size": 107,
+ "window": 107.0,
+ "k": 0.85,
+ "anchor": [
+  53.5,
+  106.6
+ ],
+ "sort": [
+  53.5,
+  126
+ ],
+ "footprint": [
+  [
+   -0.7,
+   -0.6
+  ],
+  [
+   0.7,
+   -0.6
+  ],
+  [
+   0.7,
+   0.6
+  ],
+  [
+   -0.7,
+   0.6
+  ]
+ ],
+ "flat": false,
+ "layers": {
+  "body": "ventStack_body.png",
+  "neon": "ventStack_neon.png",
+  "reflect": "ventStack_reflect.png"
+ },
+ "neon": {
+  "base": 1.0,
+  "hum": 0.05,
+  "speed": 9,
+  "flicker": {
+   "rate": 0.12,
+   "dur": [
+    0.04,
+    0.22
+   ],
+   "level": 0.12
+  }
+ },
+ "source": "sheet A cell (267,637)-(380,830)"
+}

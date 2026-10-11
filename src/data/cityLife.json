@@ -1,58 +1,867 @@
 {
   "_doc": "The city hub's daily life (game/cityLife.js). places: named spots in world tiles — `at` is one point or a list (one is picked), `r` scatters around it. residents: `n` people of one sprite following `routine` in a loop — each step walks (by path) to `go` and stays there `stay` [min, max] seconds doing `do` (idle, chat, work, sell, sit, watch, browse). Special places: @stall (the vendor's own stall), @home (a door picked once per person). patrols: Coruscant Guard troopers walking `route` (waiting `wait` at each point); they stop for the player and speak (`check`). lines: what people say, by kind. events: seconds between random events.",
   "places": {
-    "factoryGate": { "at": [[66.6, 111.4], [66.6, 113.6], [67.4, 112.5]], "r": 0.4, "face": [-1, 0] },
-    "marketStreet": { "at": [[70, 107.6], [76, 107.4], [88, 108.2], [94, 107.6], [101, 107.8], [107, 107.4], [116, 107.6], [122, 108.2]], "r": 0.8 },
-    "cantinaSquare": { "at": [[104.0, 127.6], [106.0, 128.6], [110.8, 128.4], [112.6, 127.2], [103.0, 129.4], [108.0, 129.6]], "r": 0.5 },
-    "shaftLight": { "at": [96, 112], "r": 1.2 },
-    "billboards": { "at": [[87.6, 109.4], [114.6, 109.4], [73.4, 116.0], [96.0, 123.4]], "r": 0.4, "watch": true },
-    "alleys": { "at": [[74.5, 121.8], [83.0, 121.6], [93.0, 121.4], [115.5, 121.6], [73.0, 101.6], [112.5, 101.6]], "r": 0.3 },
-    "liftLow": { "at": [83.6, 100.4], "r": 0.6 },
-    "homesLow": { "at": [[68.0, 101.4], [90.0, 101.4], [99.0, 101.4], [108.0, 101.4], [117.0, 101.4], [68.0, 121.3], [78.0, 121.3], [88.0, 121.3], [120.0, 121.3], [68.0, 129.8], [78.0, 129.8], [88.0, 129.8]], "r": 0.2 },
-    "plaza": { "at": [[90, 63], [98, 63], [94, 69], [88, 67], [100, 68]], "r": 1.2 },
-    "railing": { "at": [[76, 77.6], [86, 77.6], [96, 77.6], [106, 77.6], [114, 77.6]], "r": 0.3, "face": [0.7, 0.7] },
-    "padView": { "at": [[110.5, 68.5], [111, 56], [121.5, 69]], "r": 0.5 },
-    "planters": { "at": [[81, 57.8], [87, 73.8], [105, 73.8], [109, 55.8], [77, 69.8]], "r": 0.3 },
-    "liftUp": { "at": [83.6, 75.6], "r": 0.6 }
+    "factoryGate": {
+      "at": [
+        [
+          118.4,
+          107.0
+        ],
+        [
+          120.6,
+          107.4
+        ],
+        [
+          116.8,
+          106.2
+        ]
+      ],
+      "r": 0.4,
+      "face": [
+        0,
+        -1
+      ]
+    },
+    "marketStreet": {
+      "at": [
+        [
+          92,
+          108
+        ],
+        [
+          97,
+          106.5
+        ],
+        [
+          103,
+          107
+        ],
+        [
+          106,
+          111
+        ],
+        [
+          104,
+          116
+        ],
+        [
+          97,
+          117
+        ],
+        [
+          92,
+          114
+        ],
+        [
+          99,
+          111
+        ]
+      ],
+      "r": 0.8
+    },
+    "cantinaSquare": {
+      "at": [
+        [
+          113.5,
+          128.6
+        ],
+        [
+          116,
+          130.2
+        ],
+        [
+          119.5,
+          129.4
+        ],
+        [
+          121.5,
+          128.0
+        ],
+        [
+          115,
+          130.4
+        ],
+        [
+          110.5,
+          127.0
+        ]
+      ],
+      "r": 0.5
+    },
+    "shaftLight": {
+      "at": [
+        98,
+        112
+      ],
+      "r": 1.2
+    },
+    "billboards": {
+      "at": [
+        [
+          93.6,
+          104.2
+        ],
+        [
+          111.6,
+          106.8
+        ],
+        [
+          105.2,
+          123.4
+        ],
+        [
+          107.8,
+          127.2
+        ]
+      ],
+      "r": 0.4,
+      "watch": true
+    },
+    "alleys": {
+      "at": [
+        [
+          74.5,
+          114.5
+        ],
+        [
+          82,
+          113.8
+        ],
+        [
+          73.5,
+          126.2
+        ],
+        [
+          78.6,
+          128.6
+        ],
+        [
+          121,
+          109.4
+        ],
+        [
+          127.5,
+          119.5
+        ],
+        [
+          86,
+          103.0
+        ],
+        [
+          112,
+          101.8
+        ]
+      ],
+      "r": 0.3
+    },
+    "liftLow": {
+      "at": [
+        83.6,
+        100.4
+      ],
+      "r": 0.6
+    },
+    "homesLow": {
+      "at": [
+        [
+          62.0,
+          100.6
+        ],
+        [
+          71.5,
+          100.6
+        ],
+        [
+          106.0,
+          100.6
+        ],
+        [
+          130.0,
+          100.6
+        ],
+        [
+          61.0,
+          110.8
+        ],
+        [
+          70.5,
+          111.0
+        ],
+        [
+          79.8,
+          110.8
+        ],
+        [
+          68.5,
+          124.6
+        ],
+        [
+          76.0,
+          124.2
+        ],
+        [
+          84.5,
+          125.8
+        ],
+        [
+          119.0,
+          106.4
+        ],
+        [
+          127.0,
+          106.8
+        ],
+        [
+          135.0,
+          118.3
+        ],
+        [
+          134.2,
+          112.8
+        ],
+        [
+          134.5,
+          129.8
+        ]
+      ],
+      "r": 0.2
+    },
+    "plaza": {
+      "at": [
+        [
+          90,
+          63
+        ],
+        [
+          98,
+          63
+        ],
+        [
+          94,
+          69
+        ],
+        [
+          88,
+          67
+        ],
+        [
+          100,
+          68
+        ]
+      ],
+      "r": 1.2
+    },
+    "railing": {
+      "at": [
+        [
+          76,
+          77.6
+        ],
+        [
+          86,
+          77.6
+        ],
+        [
+          96,
+          77.6
+        ],
+        [
+          106,
+          77.6
+        ],
+        [
+          114,
+          77.6
+        ]
+      ],
+      "r": 0.3,
+      "face": [
+        0.7,
+        0.7
+      ]
+    },
+    "padView": {
+      "at": [
+        [
+          110.5,
+          68.5
+        ],
+        [
+          111,
+          56
+        ],
+        [
+          121.5,
+          69
+        ]
+      ],
+      "r": 0.5
+    },
+    "planters": {
+      "at": [
+        [
+          81,
+          57.8
+        ],
+        [
+          87,
+          73.8
+        ],
+        [
+          105,
+          73.8
+        ],
+        [
+          109,
+          55.8
+        ],
+        [
+          77,
+          69.8
+        ]
+      ],
+      "r": 0.3
+    },
+    "liftUp": {
+      "at": [
+        83.6,
+        75.6
+      ],
+      "r": 0.6
+    }
   },
   "residents": [
-    { "sprite": "citWorker", "name": "하층 노동자", "n": 5, "level": "low", "speed": 1.9, "kind": "worker",
-      "routine": [{ "go": "factoryGate", "stay": [25, 45], "do": "work" }, { "go": "marketStreet", "stay": [8, 16], "do": "browse" }, { "go": "cantinaSquare", "stay": [25, 45], "do": "chat" }, { "go": "@home", "stay": [12, 25], "do": "idle" }] },
-    { "sprite": "citWorker2", "name": "하층 노동자", "n": 4, "level": "low", "speed": 1.9, "kind": "worker",
-      "routine": [{ "go": "cantinaSquare", "stay": [20, 35], "do": "chat" }, { "go": "factoryGate", "stay": [30, 50], "do": "work" }, { "go": "shaftLight", "stay": [8, 14], "do": "idle" }, { "go": "@home", "stay": [10, 20], "do": "idle" }] },
-    { "sprite": "citVendor", "name": "노점상", "n": 12, "level": "low", "speed": 1.4, "kind": "vendor",
-      "routine": [{ "go": "@stall", "stay": [90, 180], "do": "sell" }, { "go": "shaftLight", "stay": [8, 14], "do": "idle" }] },
-    { "sprite": "citDrifter", "name": "떠돌이", "n": 6, "level": "low", "speed": 1.1, "kind": "drifter",
-      "routine": [{ "go": "alleys", "stay": [30, 60], "do": "sit" }, { "go": "shaftLight", "stay": [15, 30], "do": "idle" }, { "go": "cantinaSquare", "stay": [15, 30], "do": "idle" }] },
-    { "sprite": "citAlien", "name": "외계 시민", "n": 4, "level": "low", "speed": 1.6, "kind": "citizen",
-      "routine": [{ "go": "marketStreet", "stay": [10, 20], "do": "browse" }, { "go": "billboards", "stay": [6, 12], "do": "watch" }, { "go": "cantinaSquare", "stay": [20, 40], "do": "chat" }, { "go": "liftLow", "stay": [3, 6], "do": "idle" }] },
-    { "sprite": "citNoble", "name": "상층 거주민", "n": 6, "level": "up", "speed": 1.4, "kind": "noble",
-      "routine": [{ "go": "plaza", "stay": [15, 30], "do": "chat" }, { "go": "railing", "stay": [10, 20], "do": "watch" }, { "go": "planters", "stay": [8, 14], "do": "idle" }, { "go": "padView", "stay": [8, 16], "do": "watch" }] },
-    { "sprite": "citNoble2", "name": "상층 거주민", "n": 5, "level": "up", "speed": 1.4, "kind": "noble",
-      "routine": [{ "go": "railing", "stay": [12, 22], "do": "watch" }, { "go": "plaza", "stay": [15, 30], "do": "chat" }, { "go": "planters", "stay": [6, 12], "do": "idle" }] },
-    { "sprite": "citAide", "name": "의원 보좌관", "n": 6, "level": "up", "speed": 2.0, "kind": "aide",
-      "routine": [{ "go": "liftUp", "stay": [3, 6], "do": "idle" }, { "go": "plaza", "stay": [4, 8], "do": "chat" }, { "go": "padView", "stay": [4, 8], "do": "idle" }] },
-    { "sprite": "citAlien", "name": "외계 시민", "n": 2, "level": "up", "speed": 1.5, "kind": "citizen",
-      "routine": [{ "go": "plaza", "stay": [12, 24], "do": "chat" }, { "go": "railing", "stay": [10, 18], "do": "watch" }] }
+    {
+      "sprite": "citWorker",
+      "name": "하층 노동자",
+      "n": 5,
+      "level": "low",
+      "speed": 1.9,
+      "kind": "worker",
+      "routine": [
+        {
+          "go": "factoryGate",
+          "stay": [
+            25,
+            45
+          ],
+          "do": "work"
+        },
+        {
+          "go": "marketStreet",
+          "stay": [
+            8,
+            16
+          ],
+          "do": "browse"
+        },
+        {
+          "go": "cantinaSquare",
+          "stay": [
+            25,
+            45
+          ],
+          "do": "chat"
+        },
+        {
+          "go": "@home",
+          "stay": [
+            12,
+            25
+          ],
+          "do": "idle"
+        }
+      ]
+    },
+    {
+      "sprite": "citWorker2",
+      "name": "하층 노동자",
+      "n": 4,
+      "level": "low",
+      "speed": 1.9,
+      "kind": "worker",
+      "routine": [
+        {
+          "go": "cantinaSquare",
+          "stay": [
+            20,
+            35
+          ],
+          "do": "chat"
+        },
+        {
+          "go": "factoryGate",
+          "stay": [
+            30,
+            50
+          ],
+          "do": "work"
+        },
+        {
+          "go": "shaftLight",
+          "stay": [
+            8,
+            14
+          ],
+          "do": "idle"
+        },
+        {
+          "go": "@home",
+          "stay": [
+            10,
+            20
+          ],
+          "do": "idle"
+        }
+      ]
+    },
+    {
+      "sprite": "citVendor",
+      "name": "노점상",
+      "n": 12,
+      "level": "low",
+      "speed": 1.4,
+      "kind": "vendor",
+      "routine": [
+        {
+          "go": "@stall",
+          "stay": [
+            90,
+            180
+          ],
+          "do": "sell"
+        },
+        {
+          "go": "shaftLight",
+          "stay": [
+            8,
+            14
+          ],
+          "do": "idle"
+        }
+      ]
+    },
+    {
+      "sprite": "citDrifter",
+      "name": "떠돌이",
+      "n": 6,
+      "level": "low",
+      "speed": 1.1,
+      "kind": "drifter",
+      "routine": [
+        {
+          "go": "alleys",
+          "stay": [
+            30,
+            60
+          ],
+          "do": "sit"
+        },
+        {
+          "go": "shaftLight",
+          "stay": [
+            15,
+            30
+          ],
+          "do": "idle"
+        },
+        {
+          "go": "cantinaSquare",
+          "stay": [
+            15,
+            30
+          ],
+          "do": "idle"
+        }
+      ]
+    },
+    {
+      "sprite": "citAlien",
+      "name": "외계 시민",
+      "n": 4,
+      "level": "low",
+      "speed": 1.6,
+      "kind": "citizen",
+      "routine": [
+        {
+          "go": "marketStreet",
+          "stay": [
+            10,
+            20
+          ],
+          "do": "browse"
+        },
+        {
+          "go": "billboards",
+          "stay": [
+            6,
+            12
+          ],
+          "do": "watch"
+        },
+        {
+          "go": "cantinaSquare",
+          "stay": [
+            20,
+            40
+          ],
+          "do": "chat"
+        },
+        {
+          "go": "liftLow",
+          "stay": [
+            3,
+            6
+          ],
+          "do": "idle"
+        }
+      ]
+    },
+    {
+      "sprite": "citNoble",
+      "name": "상층 거주민",
+      "n": 6,
+      "level": "up",
+      "speed": 1.4,
+      "kind": "noble",
+      "routine": [
+        {
+          "go": "plaza",
+          "stay": [
+            15,
+            30
+          ],
+          "do": "chat"
+        },
+        {
+          "go": "railing",
+          "stay": [
+            10,
+            20
+          ],
+          "do": "watch"
+        },
+        {
+          "go": "planters",
+          "stay": [
+            8,
+            14
+          ],
+          "do": "idle"
+        },
+        {
+          "go": "padView",
+          "stay": [
+            8,
+            16
+          ],
+          "do": "watch"
+        }
+      ]
+    },
+    {
+      "sprite": "citNoble2",
+      "name": "상층 거주민",
+      "n": 5,
+      "level": "up",
+      "speed": 1.4,
+      "kind": "noble",
+      "routine": [
+        {
+          "go": "railing",
+          "stay": [
+            12,
+            22
+          ],
+          "do": "watch"
+        },
+        {
+          "go": "plaza",
+          "stay": [
+            15,
+            30
+          ],
+          "do": "chat"
+        },
+        {
+          "go": "planters",
+          "stay": [
+            6,
+            12
+          ],
+          "do": "idle"
+        }
+      ]
+    },
+    {
+      "sprite": "citAide",
+      "name": "의원 보좌관",
+      "n": 6,
+      "level": "up",
+      "speed": 2.0,
+      "kind": "aide",
+      "routine": [
+        {
+          "go": "liftUp",
+          "stay": [
+            3,
+            6
+          ],
+          "do": "idle"
+        },
+        {
+          "go": "plaza",
+          "stay": [
+            4,
+            8
+          ],
+          "do": "chat"
+        },
+        {
+          "go": "padView",
+          "stay": [
+            4,
+            8
+          ],
+          "do": "idle"
+        }
+      ]
+    },
+    {
+      "sprite": "citAlien",
+      "name": "외계 시민",
+      "n": 2,
+      "level": "up",
+      "speed": 1.5,
+      "kind": "citizen",
+      "routine": [
+        {
+          "go": "plaza",
+          "stay": [
+            12,
+            24
+          ],
+          "do": "chat"
+        },
+        {
+          "go": "railing",
+          "stay": [
+            10,
+            18
+          ],
+          "do": "watch"
+        }
+      ]
+    }
   ],
   "patrols": [
-    { "name": "코러산트 경비대", "level": "low", "route": [[69, 107.6], [126, 107.6], [126, 113.4], [69, 113.4]], "wait": [1.5, 3] },
-    { "name": "코러산트 경비대", "level": "low", "route": [[100, 129.5], [115, 129.5], [115, 126.2], [92, 126.2], [92, 122.8], [72, 122.8], [72, 114.6], [100, 114.6]], "wait": [1.5, 3] },
-    { "name": "코러산트 경비대", "level": "low", "route": [[70, 102], [125, 102], [95, 102], [84, 100.6]], "wait": [2, 4] },
-    { "name": "코러산트 경비대", "level": "up", "route": [[78, 60], [104, 60], [104, 72], [78, 72]], "wait": [2, 4] },
-    { "name": "코러산트 경비대", "level": "up", "route": [[76, 76.8], [116, 76.8]], "wait": [3, 5] }
+    {
+      "name": "코러산트 경비대",
+      "level": "low",
+      "route": [
+        [
+          91,
+          107
+        ],
+        [
+          105,
+          106
+        ],
+        [
+          105.5,
+          115.5
+        ],
+        [
+          94,
+          118
+        ]
+      ],
+      "wait": [
+        1.5,
+        3
+      ]
+    },
+    {
+      "name": "코러산트 경비대",
+      "level": "low",
+      "route": [
+        [
+          112,
+          129
+        ],
+        [
+          121.5,
+          128.5
+        ],
+        [
+          126,
+          122
+        ],
+        [
+          128,
+          116
+        ],
+        [
+          121,
+          110
+        ],
+        [
+          112,
+          112
+        ]
+      ],
+      "wait": [
+        1.5,
+        3
+      ]
+    },
+    {
+      "name": "코러산트 경비대",
+      "level": "low",
+      "route": [
+        [
+          84,
+          101
+        ],
+        [
+          85.0,
+          105.5
+        ],
+        [
+          80,
+          114
+        ],
+        [
+          68,
+          116
+        ],
+        [
+          72,
+          126
+        ],
+        [
+          82,
+          128
+        ]
+      ],
+      "wait": [
+        2,
+        4
+      ]
+    },
+    {
+      "name": "코러산트 경비대",
+      "level": "up",
+      "route": [
+        [
+          78,
+          60
+        ],
+        [
+          104,
+          60
+        ],
+        [
+          104,
+          72
+        ],
+        [
+          78,
+          72
+        ]
+      ],
+      "wait": [
+        2,
+        4
+      ]
+    },
+    {
+      "name": "코러산트 경비대",
+      "level": "up",
+      "route": [
+        [
+          76,
+          76.8
+        ],
+        [
+          116,
+          76.8
+        ]
+      ],
+      "wait": [
+        3,
+        5
+      ]
+    }
   ],
   "lines": {
-    "check": ["정지. 신분 확인하겠습니다. …제다이 장군님이시군요. 실례했습니다.", "코러산트 경비대입니다. 이 구역은 순찰 중입니다, 장군님.", "장군님, 하층은 밤에 위험합니다. 조심하십시오.", "통행 기록 확인. …이상 없습니다. 지나가십시오."],
-    "patrolIdle": ["구역 이상 무.", "순찰 계속.", "다음 지점으로 이동."],
-    "vendor": ["장군님! 신선한 과일이에요, 오늘 아침에 올라온 거라고요!", "부품 있어요, 부품! 싸게 드려요!", "광선검 손질 기름 있습니다, 장군님!", "잠깐만 보고 가세요, 한 번만요!", "이거 행운의 부적이에요. 전쟁터에선 필요하실걸요?"],
-    "low": ["햇빛 본 게 언제였더라…", "윗동네 사람들은 여기가 있는 줄도 몰라.", "제다이가 여기까지 내려오다니, 별일이네.", "공장이 또 문을 닫았어. 전쟁 물자만 찍어 낸다더니.", "저 빛 아래 서 봐. 하루에 몇 분 안 들어와.", "물값이 또 올랐대.", "여기선 아무도 이름을 안 물어봐."],
-    "worker": ["교대 끝나면 녹슨 등불에서 한잔하자고.", "오늘도 열두 시간이야.", "감독관 눈에 띄지 마."],
-    "drifter": ["크레딧 좀… 아니면 일거리라도.", "전쟁이 끝나면 좀 나아질까?", "날 신경 쓰지 마쇼."],
-    "up": ["저 아래 얘기는 그만해요. 식사 자리에서까지.", "의원님 연회 초대장, 받으셨어요?", "제다이 장군님이시다… 전쟁 소식은 좋은가요?", "이 높이에선 공기마저 다르죠.", "전쟁 채권이 또 올랐더군요."],
-    "flee": ["광선검이다!", "비켜, 비켜!", "제다이가 칼을 뽑았어!", "무슨 일이야?!", "살려 줘!"],
-    "whisper": ["…칼을 켰어.", "무슨 일이 있나 봐.", "가까이 가지 마.", "제다이가 왜 여기서…"],
-    "calmDown": ["…휴, 끈 모양이네.", "괜히 놀랐잖아.", "제다이들이란."]
+    "check": [
+      "정지. 신분 확인하겠습니다. …제다이 장군님이시군요. 실례했습니다.",
+      "코러산트 경비대입니다. 이 구역은 순찰 중입니다, 장군님.",
+      "장군님, 하층은 밤에 위험합니다. 조심하십시오.",
+      "통행 기록 확인. …이상 없습니다. 지나가십시오."
+    ],
+    "patrolIdle": [
+      "구역 이상 무.",
+      "순찰 계속.",
+      "다음 지점으로 이동."
+    ],
+    "vendor": [
+      "장군님! 신선한 과일이에요, 오늘 아침에 올라온 거라고요!",
+      "부품 있어요, 부품! 싸게 드려요!",
+      "광선검 손질 기름 있습니다, 장군님!",
+      "잠깐만 보고 가세요, 한 번만요!",
+      "이거 행운의 부적이에요. 전쟁터에선 필요하실걸요?"
+    ],
+    "low": [
+      "햇빛 본 게 언제였더라…",
+      "윗동네 사람들은 여기가 있는 줄도 몰라.",
+      "제다이가 여기까지 내려오다니, 별일이네.",
+      "공장이 또 문을 닫았어. 전쟁 물자만 찍어 낸다더니.",
+      "저 빛 아래 서 봐. 하루에 몇 분 안 들어와.",
+      "물값이 또 올랐대.",
+      "여기선 아무도 이름을 안 물어봐."
+    ],
+    "worker": [
+      "교대 끝나면 녹슨 등불에서 한잔하자고.",
+      "오늘도 열두 시간이야.",
+      "감독관 눈에 띄지 마."
+    ],
+    "drifter": [
+      "크레딧 좀… 아니면 일거리라도.",
+      "전쟁이 끝나면 좀 나아질까?",
+      "날 신경 쓰지 마쇼."
+    ],
+    "up": [
+      "저 아래 얘기는 그만해요. 식사 자리에서까지.",
+      "의원님 연회 초대장, 받으셨어요?",
+      "제다이 장군님이시다… 전쟁 소식은 좋은가요?",
+      "이 높이에선 공기마저 다르죠.",
+      "전쟁 채권이 또 올랐더군요."
+    ],
+    "flee": [
+      "광선검이다!",
+      "비켜, 비켜!",
+      "제다이가 칼을 뽑았어!",
+      "무슨 일이야?!",
+      "살려 줘!"
+    ],
+    "whisper": [
+      "…칼을 켰어.",
+      "무슨 일이 있나 봐.",
+      "가까이 가지 마.",
+      "제다이가 왜 여기서…"
+    ],
+    "calmDown": [
+      "…휴, 끈 모양이네.",
+      "괜히 놀랐잖아.",
+      "제다이들이란."
+    ]
   },
-  "events": { "interval": [30, 120] }
+  "events": {
+    "interval": [
+      30,
+      120
+    ]
+  }
 }

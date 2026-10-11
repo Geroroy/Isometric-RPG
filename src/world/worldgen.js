@@ -5,6 +5,8 @@
 import { RNG, fbm, dist, distToSegment, clamp } from '../core/math.js';
 import { PROPS } from '../gfx/models/props.js';
 import { SHEET_PROPS, cityFootprint, inPoly } from './cityProps.js';
+import UNDERCITY from '../data/undercity.json';
+if (typeof window !== 'undefined') window.__undercity = UNDERCITY; // QA (tools/qa/undercity_ascii.mjs)
 
 export const MAP_W = 192;
 export const MAP_H = 192;
@@ -24,6 +26,10 @@ export const BIOME = {
   CITY_UP: 11, // the city hub's upper level: polished stone
   CITY_LOW: 12, // the lower level: grimy duracrete
   VOID: 13, // the drop between the levels / off the platforms
+  CITY_MOSAIC: 14, // the undercity plaza's pavement: cracked mosaic with neon veins
+  CITY_MUD: 15, // the undercity's wet alleys: mud over conduits, puddles (slow)
+  CITY_SWAMP: 16, // the undercity's sump: standing water and moss (slow)
+  CITY_DIRT: 17, // the undercity's packed dirt (the residential court)
 };
 
 export const BIOME_NAMES = {
@@ -41,6 +47,10 @@ export const BIOME_NAMES = {
   11: '코러산트 · 상층 플라자',
   12: '코러산트 · 언더시티',
   13: '코러산트 · 끝없는 낭떠러지',
+  14: '코러산트 · 네온 시장 광장',
+  15: '코러산트 · 진흙 골목',
+  16: '코러산트 · 하수 웅덩이',
+  17: '코러산트 · 흙바닥 안뜰',
 };
 
 export const BASE_POS = { x: 150, y: 152 };
@@ -618,19 +628,19 @@ export class MustafarArena extends World {
 export const CITY = {
   up: { x: 98, y: 64, hw: 26, hh: 15 }, // upper plaza (tile half-sizes)
   pad: { x: 117, y: 62 }, // Jedi landing pad
-  low: { x: 96, y: 113, hw: 32, hh: 18 }, // lower level
+  low: { x: 98, y: 113.5, hw: 40, hh: 19.5 }, // the undercity (data/undercity.json: x 58-138, y 94-133)
   liftUp: { x: 82, y: 77.5 },
   liftLow: { x: 82, y: 97.5 },
-  bar: { x: 108, y: 121 }, // the cantina ("녹슨 등불"): its ground centre
-  barDoor: { x: 108.4, y: 125.2 }, // in front of its door, on the square
-  shaft: { x: 96, y: 112 }, // the one place light reaches the street
+  bar: { x: 117, y: 123 }, // the cantina ("녹슨 등불"): its ground centre
+  barDoor: { x: 117.4, y: 127.6 }, // in front of its door, on the square
+  shaft: { x: 98, y: 112 }, // the one place light reaches the street: the plaza's centre
 };
 
 export class CityHub extends World {
   generate() {
     this.rng = new RNG(this.seed);
     const rng = this.rng;
-    const { up, low, pad, liftUp, liftLow, bar, shaft } = CITY;
+    const { up, low, pad, liftUp, liftLow } = CITY;
     this.ambient = [96, 100, 128];
     this.grade = 'coruscant'; // the undercity below y 90 grades as 'undercity'
     this.city = true;
@@ -649,9 +659,6 @@ export class CityHub extends World {
       }
     }
     this.pois.push({ ...pad, r: 6, name: '코러산트 · 제다이 착륙장' });
-    this.pois.push({ ...bar, r: 5, name: '코러산트 · 녹슨 등불 바' });
-    this.pois.push({ x: low.x, y: 106.5, r: 9, name: '코러산트 · 언더시티 시장' });
-    this.pois.push({ ...shaft, r: 3.5, name: '코러산트 · 빛이 드는 골목' });
 
     // --- upper plaza ------------------------------------------------------
     this.addProp('landingPad', pad.x, pad.y);
@@ -669,58 +676,48 @@ export class CityHub extends World {
     for (let x = up.x - up.hw + 1; x <= up.x + up.hw - 1; x += 2) if (Math.abs(x - liftUp.x) > 1.5) this.addProp('railing', x, up.y + up.hh + 0.2, { angleIdx: 0 });
     this.addProp('turbolift', liftUp.x, liftUp.y);
 
-    // --- lower level: the undercity -----------------------------------------
-    // Blender-rendered assets (gfx/citySprites.js): tenement towers along the
-    // north and south edges, the market street under neon between them, the
-    // cantina on its own little square to the south-east, a factory gate at
-    // the west end, holo billboards at the corners, speeder bikes parked by
-    // the cantina, crates, barrels, steam grates and junk in the alleys.
-    const T = (k) => 'tenement' + (k % 3);
-    let k = 0;
-    for (const x of [68, 90, 99, 108, 117, 125]) this.addSheetProp(T(k++), x, 98.6); // north row (the lift's landing stays free)
-    for (const x of [68, 78, 88, 120, 126]) this.addSheetProp(T(k++), x, 118.5); // south rows
-    for (const x of [68, 78, 88]) this.addSheetProp(T(k++), x, 127);
-    this.addProp('turbolift', liftLow.x, liftLow.y);
-    // the cantina ("녹슨 등불"): its door opens south onto a small square
-    this.addSheetProp('cantina', bar.x, bar.y);
-    // the market street in the Star Wars manner: stalls built from salvage — a
-    // podracer engine roasting ronto, an escape pod selling spotchka, a
-    // freighter's cockpit as a diner, cargo containers, repulsor carts and
-    // skiffs, a tent with a vaporator — each its own food, never the same
-    // kind twice in a row, at uneven spacing; the south side mixes facings
-    // (`_r`: turned to serve along the street), seats between
-    const north = [[67.6, 'tentStew'], [71.8, 'hoverBlueMilk'], [76.4, 'cargoMeat'], [87.0, 'dinerNerf'], [91.6, 'podSpotchka'], [101.0, 'roasterRonto'], [105.6, 'hoverFruit'], [110.2, 'cargoMilk'], [114.8, 'skiffAle'], [119.2, 'tentGorg'], [124.4, 'dinerBantha']];
-    const south = [[68.4, 'seatsA'], [72.8, 'roasterNuna_r'], [76.4, 'hoverBlueMilk_r'], [88.8, 'podJawaJuice'], [91.8, 'seatsB'], [101.4, 'skiffFruit'], [105.4, 'dinerBantha_r'], [110.0, 'cargoBread_r'], [115.0, 'seatsA'], [119.0, 'hoverFruit_r'], [123.4, 'skiffAle_r']];
-    for (const [x, name] of north) this.addSheetProp(name, x, 104.4 + rng.range(-0.25, 0.15));
-    for (const [x, name] of south) this.addSheetProp(name, x, 110.6 + rng.range(-0.15, 0.25));
-    // holo billboards at the street corners
-    for (const [x, y] of [[86.5, 107.6], [113.5, 107.4], [73, 114], [96, 121.5]]) this.addSheetProp('billboard', x, y);
-    // the factory gate at the west end (workers come and go), a cluster of junk by it
-    this.addSheetProp('junctionBox', 64.8, 112.5);
-    this.addSheetProp('crates', 65.6, 115.5);
-    this.addSheetProp('barrels', 66.0, 108.5);
-    // speeders parked by the cantina and at the market's east end
-    this.addSheetProp('speeder0', bar.x + 6.0, bar.y + 4.6);
-    this.addSheetProp('speeder1', bar.x - 5.6, bar.y + 5.2);
-    this.addSheetProp('speeder0', 126.5, 113.5);
-    // alley clutter
-    for (const [x, y] of [[bar.x + 5.0, bar.y - 2.2], [93.5, 116.0], [74.5, 123.0], [114.5, 115.5]]) this.addSheetProp('crates', x, y);
-    for (const [x, y] of [[bar.x - 4.6, bar.y + 1.2], [103.5, 115.6], [83.5, 123.5]]) this.addSheetProp('barrels', x, y);
-    for (const [x, y] of [[92.5, 123.0], [111.0, 116.0], [72.5, 108.5]]) this.addSheetProp('trashBin', x, y);
-    for (const [x, y] of [[84.0, 116.2], [100.5, 116.5], [118.0, 123.5]]) this.addSheetProp('droidParts', x, y);
-    for (const [x, y] of [[103.8, 113.6], [124.5, 116.0], [94.0, 101.8]]) this.addSheetProp('junctionBox', x, y);
-    // steam grates in the streets
-    for (const [x, y] of [[78.5, 112.0], [91.0, 113.5], [106.5, 112.5], [121.0, 112.0], [99.5, 126.5], [84.5, 128.5]]) this.addSheetProp('ventGrate', x, y);
-    for (let i = 0; i < 12; i++) this.addProp('trashPile', rng.range(low.x - low.hw + 1, low.x + low.hw - 1), rng.pick([108.0, 112.5, 122.5, 130]), { noBlock: true });
-    // puddles under the drips: the renderer draws their ripples
-    this.puddles = [[95.0, 111.0, 1.4], [97.5, 113.6, 0.9], [80.0, 109.5, 1.0], [110.5, 109.0, 1.1], [101.0, 128.6, 1.2], [70.5, 121.8, 0.8], [124.0, 108.6, 0.9]].map(([x, y, r]) => ({ x, y, r, drops: [] }));
-    // light: neon pockets over the street; one cold shaft from above
-    const neon = [[255, 80, 170], [80, 230, 255], [255, 180, 70], [160, 120, 255]];
-    for (let i = 0; i < 18; i++) {
-      const [r, g, b] = rng.pick(neon);
-      this.lights.push({ x: rng.range(low.x - low.hw + 2, low.x + low.hw - 2), y: rng.pick([104, 107.5, 111, 114, 121.5, 129]), z: 2.2, r, g, b, rad: rng.range(60, 100), flicker: rng.chance(0.3) ? 0.2 : 0.04 });
+    // --- lower level: the undercity (data/undercity.json, docs/UNDERCITY_MAP.md) --------
+    // Zoned round a neon market plaza (mosaic pavement, the food stalls, trade terminals), with
+    // muddy back alleys and a residential court to the west, a workshop alley to the north-east,
+    // the cantina's square to the south-east and industrial vent zones in the corners; closed by
+    // the mega-structure's pillars and pipe walls to the north, tenement stacks and clogged alley
+    // ends to the sides, and the chasm (with guardrails) to the south.
+    const U = UNDERCITY;
+    const inP = (x, y, poly) => inPoly(x, y, poly);
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        const i = y * MAP_W + x;
+        if (this.biome[i] !== BIOME.CITY_LOW) continue;
+        const cx = x + 0.5;
+        const cy = y + 0.5;
+        let b = BIOME.CITY_LOW;
+        for (const c of U.ground.chasm) if (inP(cx, cy, c.poly)) b = BIOME.VOID;
+        if (b === BIOME.CITY_LOW) for (const c of U.ground.mosaic) if (inP(cx, cy, c.poly)) b = BIOME.CITY_MOSAIC;
+        if (b === BIOME.CITY_LOW) for (const c of U.ground.mud) if (inP(cx, cy, c.poly)) b = BIOME.CITY_MUD;
+        if (b === BIOME.CITY_LOW) for (const c of U.ground.swamp || []) if (inP(cx, cy, c.poly)) b = BIOME.CITY_SWAMP;
+        if (b === BIOME.CITY_LOW) for (const c of U.ground.dirt || []) if (inP(cx, cy, c.poly)) b = BIOME.CITY_DIRT;
+        this.biome[i] = b;
+        this.blocked[i] = b === BIOME.VOID ? 2 : 0;
+      }
     }
-    this.lights.push({ x: shaft.x, y: shaft.y, z: 6, r: 200, g: 225, b: 255, rad: 150, flicker: 0.01 });
+    // the outermost ring stays off limits (the pillars and pipes stand on it; no one on the lip)
+    const [rx0, ry0, rx1] = U.grid.region;
+    for (let x = rx0; x < rx1; x++) if (this.biome[ry0 * MAP_W + x] !== BIOME.VOID) this.blocked[ry0 * MAP_W + x] = 1;
+    for (let y = ry0; y < 134; y++) for (const x of [rx0, rx1 - 1]) if (this.biome[y * MAP_W + x] !== BIOME.VOID) this.blocked[y * MAP_W + x] = 1;
+    this.addProp('turbolift', liftLow.x, liftLow.y);
+    for (const q of U.props) {
+      if (q.p) {
+        this.addSheetProp(q.p, q.x, q.y, { noBlock: !!q.noBlock });
+        if (q.steam) (this.steam ||= []).push({ x: q.x, y: q.y, z: 1.8, t: rng.next() * 3 });
+      } else {
+        this.addProp(q.m, q.x, q.y, { angleIdx: q.a, noBlock: !!q.noBlock });
+        if (q.steam) (this.steam ||= []).push({ x: q.x + 0.1, y: q.y + 0.1, z: 2.0, t: rng.next() * 3 });
+      }
+    }
+    for (const [x, y, z] of U.steam || []) this.steam.push({ x, y, z, t: rng.next() * 3 });
+    this.puddles = U.puddles.map(([x, y, r]) => ({ x, y, r, drops: [] }));
+    for (const [x, y, z, r, g, b, rad, flicker] of U.lights) this.lights.push({ x, y, z, r, g, b, rad, flicker });
+    for (const poi of U.pois) this.pois.push({ ...poi });
     // the upper plaza is lit like day
     for (let x = up.x - up.hw + 4; x <= up.x + up.hw - 4; x += 9) for (const y of [up.y - 7, up.y + 6]) this.lights.push({ x, y, z: 6, r: 255, g: 246, b: 228, rad: 300, flicker: 0 });
 
@@ -731,7 +728,7 @@ export class CityHub extends World {
         if (this.blocked[y * MAP_W + x]) continue;
         const b = this.biome[y * MAP_W + x];
         if (b === BIOME.CITY_UP && dist(x, y, pad.x, pad.y) > 5) this.walk.up.push({ x: x + 0.5, y: y + 0.5 });
-        else if (b === BIOME.CITY_LOW) this.walk.low.push({ x: x + 0.5, y: y + 0.5 });
+        else if (b >= BIOME.CITY_LOW && b !== BIOME.VOID) this.walk.low.push({ x: x + 0.5, y: y + 0.5 });
       }
     }
     // turbolifts between the levels

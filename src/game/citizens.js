@@ -9,6 +9,7 @@
 import { Unit } from './units.js';
 import { dist, rand, chance } from '../core/math.js';
 import LIFE from '../data/cityLife.json';
+if (typeof window !== 'undefined') window.__cityLife = LIFE; // QA (tools/qa/undercity_ascii.mjs)
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const FLEE_R = 6.5; // a lit saber this close sends people running

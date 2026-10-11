@@ -1,0 +1,52 @@
+{
+ "name": "tradeKiosk",
+ "size": 115,
+ "window": 115.0,
+ "k": 1.1,
+ "anchor": [
+  57.5,
+  96.5
+ ],
+ "sort": [
+  57.5,
+  125
+ ],
+ "footprint": [
+  [
+   -1.3,
+   -1.1
+  ],
+  [
+   1.3,
+   -1.1
+  ],
+  [
+   1.3,
+   1.1
+  ],
+  [
+   -1.3,
+   1.1
+  ]
+ ],
+ "flat": false,
+ "layers": {
+  "body": "tradeKiosk_body.png",
+  "neon": "tradeKiosk_neon.png",
+  "reflect": "tradeKiosk_reflect.png"
+ },
+ "neon": {
+  "base": 1.0,
+  "hum": 0.05,
+  "speed": 9,
+  "flicker": {
+   "rate": 0.12,
+   "dur": [
+    0.04,
+    0.22
+   ],
+   "level": 0.12
+  }
+ },
+ "source": "sheet A cell (617,445)-(738,637)"
+}

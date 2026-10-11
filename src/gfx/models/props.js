@@ -1334,6 +1334,7 @@ export function buildFighter() {
   return g;
 }
 
+
 export const PROPS = {
   rock: { build: rock, variants: 8, block: 0.5 },
   boulder: { build: boulder, variants: 5, block: 1.2 },

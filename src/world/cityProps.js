@@ -51,6 +51,47 @@ export const SHEET_PROPS = {
   junctionBox: { lights: [[0.3, 0, 1.1, 120, 255, 140, 24, 0.3]] },
 };
 
+// --- the Coruscant underworld set (public/sprites/underworld, cut from the concept sheets by
+// tools/sprites/underworld/extract.py; the layout is data/undercity.json). Offsets in tiles.
+const UW = {
+  aptModuleA: { lights: [[1.2, 0.6, 2.6, 255, 70, 210, 60, 0.2], [-1.0, 0.8, 1.8, 80, 230, 255, 50, 0.1]] },
+  aptStackB: { lights: [[-1.1, 0.7, 2.4, 255, 70, 210, 60, 0.2], [1.2, 0.8, 1.6, 120, 220, 255, 50, 0.1]] },
+  aptBalconyC: { lights: [[0.6, 1.0, 1.4, 255, 60, 220, 70, 0.3]] },
+  aptModuleC: { lights: [[1.3, 0.6, 2.4, 80, 230, 255, 60, 0.1], [-1.2, 0.9, 1.8, 255, 180, 70, 50, 0.1]] },
+  buildingBlock: { lights: [[0.4, 1.2, 1.6, 255, 60, 220, 70, 0.3], [-2.0, 0.6, 2.6, 80, 230, 255, 50, 0.1]] },
+  ramenStand: { lights: [[0.2, 0.9, 1.6, 255, 80, 170, 90, 0.15]], steam: [[-0.5, -0.1, 1.4]], vendor: [0.2, 1.4], food: 'ramen' },
+  pawnShop: { lights: [[0.0, 1.2, 1.7, 255, 180, 70, 80, 0.1]] },
+  pawnShopE: { lights: [[0.0, 1.0, 1.6, 255, 180, 70, 70, 0.1]] },
+  marketStall: { lights: [[0.2, 1.3, 1.8, 120, 255, 140, 70, 0.15]], vendor: [0.3, 1.9], food: 'market' },
+  tradeKiosk: { lights: [[0.0, 1.1, 1.5, 120, 255, 140, 60, 0.1]], vendor: [0.2, 1.5], food: 'kiosk' },
+  denseMarket: { lights: [[0.6, 1.2, 2.4, 255, 180, 70, 80, 0.15], [-0.8, 1.0, 1.6, 255, 80, 170, 60, 0.2]], vendor: [0.0, 1.9], food: 'market' },
+  skewerCart: { lights: [[0.0, 0.2, 0.8, 255, 140, 60, 60, 0.2]], steam: [[0.2, 0.0, 1.0]], vendor: [0.2, 1.1], food: 'skewers', sound: { name: 'steam', at: [0.2, 0], rad: 5, vol: 0.3 } },
+  skewerCartB: { lights: [[0.0, 0.2, 0.8, 255, 140, 60, 60, 0.2]], steam: [[0.1, 0.0, 1.0]], vendor: [0.2, 1.1], food: 'skewers' },
+  dumplingStall: { lights: [[0.0, 0.4, 1.4, 255, 190, 110, 70, 0.1]], steam: [[-0.3, 0.1, 1.2], [0.4, 0.1, 1.2]], vendor: [0.2, 1.3], food: 'dumplings' },
+  blueMilkStand: { lights: [[0.0, 0.3, 1.2, 140, 200, 255, 70, 0.05]], vendor: [0.2, 1.3], food: 'blueMilk' },
+  groguWagon: { lights: [[0.4, 0.3, 1.6, 255, 80, 200, 70, 0.15], [-0.6, 0.2, 1.4, 80, 230, 255, 60, 0.1]], vendor: [0.3, 1.4], food: 'snack' },
+  verticalPipes: {},
+  conduitBundle: { flat: true },
+  steamVent: { steam: [[0.0, -0.1, 1.5], [0.3, 0.0, 1.5]], lights: [[0, 0, 0.3, 255, 110, 50, 30, 0.2]], sound: { name: 'steam', at: [0, 0], rad: 7, vol: 0.6 } },
+  ventStack: { steam: [[0.0, 0.0, 2.2]], sound: { name: 'steam', at: [0, 0], rad: 6, vol: 0.4 } },
+  crateStack: {},
+  crateBarrels: {},
+  barrelPile: {},
+  scrapHeap: {},
+  tradeTerminal: { lights: [[0.0, 0.3, 1.0, 90, 220, 255, 40, 0.1]] },
+  trashCompactor: { steam: [[0.4, -0.2, 1.4]], lights: [[0.6, 0.6, 0.5, 255, 110, 60, 24, 0.3]] },
+  compactorUnit: { steam: [[0.2, -0.2, 1.2]], lights: [[0.4, 0.5, 0.5, 120, 255, 140, 20, 0.3]] },
+  conduitArray: { lights: [[0.2, 0.4, 1.0, 120, 255, 140, 30, 0.3]] },
+  lightPost: { lights: [[0.1, 0.0, 2.8, 120, 255, 140, 110, 0.05], [0.4, 0.2, 1.8, 90, 220, 255, 36, 0.1]] },
+  lightPostHolo: { lights: [[0.0, 0.0, 2.6, 255, 200, 120, 90, 0.05], [0.3, 0.2, 2.0, 255, 170, 70, 40, 0.1]] },
+  abandonedSpeeder: {},
+  speederBike: {},
+  neonSignSet: { lights: [[-0.3, 0.3, 2.0, 255, 80, 170, 90, 0.2], [0.5, 0.3, 1.8, 80, 230, 255, 70, 0.1], [0.0, 0.5, 1.2, 255, 220, 80, 50, 0.15]] },
+  barSign: { lights: [[0.0, 0.4, 1.8, 200, 90, 255, 100, 0.35]] },
+  signPost: { lights: [[0.0, 0.0, 2.2, 80, 230, 255, 40, 0.1], [0.0, 0.0, 1.6, 255, 180, 70, 30, 0.15]] },
+};
+Object.assign(SHEET_PROPS, UW);
+
 // a sprite rendered turned 90° (`NAME_r`): what faced +y faces +x, so every
 // offset (x, y) becomes (y, −x)
 const turn = ([x, y, ...rest]) => [y, -x, ...rest];
@@ -83,6 +124,13 @@ export const FOODS = {
   gorgMarket: ['고르그 시장', ['고르그 산 채로 팔아요! 요리는 알아서!', '이 놈은 크고 실해요.', '허트 궁전에 납품하던 물건이라니까요.']],
   skiffFruit: ['스키프 과일전', ['메일루룬, 조간, 무자, 팔리! 스키프 위에서 다 골라요.', '이 스키프, 아직 떠요. 과일만 내리면요.', '장군님, 비타민 챙기셔야죠!']],
   ale: ['코렐리안 에일 스키프', ['코렐리안 에일 한 잔! 클론들도 휴가 땐 여기 와요.', '설러스트 진도 있어요, 독한 걸로.', '경치는 없어도 술은 있어요.']],
+  // the underworld set's stalls
+  ramen: ['누들 가판대', ['뜨끈한 누들 한 그릇! 하층 추위엔 이게 최고예요.', '국물은 반사 뼈로 열두 시간 우렸어요.', '장군님, 매운 걸로 드릴까요?']],
+  skewers: ['꼬치 카트', ['개구리 꼬치! 갓 구웠어요!', '어디 개구리냐고요? …묻지 마세요.', '세 개 사면 하나 더!']],
+  dumplings: ['은하 만두집', ['만두 쪘어요! 김 나는 거 보이시죠?', '속은 너프 고기, 피는 포션 브레드로 빚었어요.', '한 판 포장해 드릴까요, 장군님?']],
+  snack: ['그로구 스낵 왜건', ['테크 크레이트 간식! 아이들이 제일 좋아해요.', '이 왜건 네온은 제가 직접 달았어요.', '포장해 드릴까요? 날개 달린 애들 거예요.']],
+  market: ['시장 노점', ['뭐든 있어요, 뭐든! 물어만 보세요.', '밀수품은 아니에요. 거의요.', '가격은 흥정 가능!']],
+  kiosk: ['고물 교역 키오스크', ['드로이드 부품 삽니다, 팝니다!', '이 홀로프로젝터, 아직 돌아가요. 가끔.', '현금만 받습니다, 장군님.']],
 };
 
 let FOOTPRINTS = {};

@@ -68,7 +68,12 @@ async function loadOne(base, file) {
   return { meta, body: frame(body), neon: frame(neon), reflect: frame(reflect) };
 }
 
-/** Every city sprite and the floor texture (as ImageData). */
+// The Coruscant underworld set (tools/sprites/underworld/extract.py, cut from the concept sheets
+// in reference/): the same per-sprite JSON format, listed by index.json, plus square ground
+// textures sampled in world space by the terrain (ground/ground.json)
+const UW_DIR = 'sprites/underworld/';
+
+/** Every city sprite, the underworld set, the floor texture and the ground textures (ImageData). */
 export async function loadCitySprites(onProgress) {
   const base = import.meta.env.BASE_URL + DIR;
   const out = {};
@@ -80,6 +85,32 @@ export async function loadCitySprites(onProgress) {
     } catch (e) {
       console.warn(e.message); // that prop is left out of the map
     }
+  }
+  const ub = import.meta.env.BASE_URL + UW_DIR;
+  try {
+    const index = await (await fetch(ub + 'index.json')).json();
+    const un = Object.keys(index);
+    for (let i = 0; i < un.length; i++) {
+      onProgress(i / un.length, `코러산트 언더월드: ${un[i]}`);
+      try {
+        out[un[i]] = await loadOne(ub, index[un[i]]);
+      } catch (e) {
+        console.warn(e.message);
+      }
+    }
+    const gi = await (await fetch(ub + 'ground/ground.json')).json();
+    out.ground = {};
+    for (const [name, file] of Object.entries(gi)) {
+      const img = await loadImg(ub + 'ground/' + file);
+      const c = document.createElement('canvas');
+      c.width = img.width;
+      c.height = img.height;
+      const x = c.getContext('2d');
+      x.drawImage(img, 0, 0);
+      out.ground[name] = x.getImageData(0, 0, img.width, img.height);
+    }
+  } catch (e) {
+    console.warn('언더월드 스프라이트: ' + e.message);
   }
   const img = await loadImg(base + FLOOR_TEXTURE);
   const c = document.createElement('canvas');
