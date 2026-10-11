@@ -18,7 +18,12 @@ page.on('console', (m) => {
   if (m.type() === 'error') errs.push('console.error: ' + m.text());
   else if (m.type() === 'warning') warns.push(m.text());
 });
-page.on('requestfailed', (r) => errs.push('requestfailed: ' + r.url()));
+page.on('requestfailed', (r) => {
+  // a music / ambience track cancelled by a track change (the audio element aborts its fetch) is not a fault
+  const f = r.failure();
+  if (f && /ERR_ABORTED/.test(f.errorText) && /\/audio\//.test(r.url())) return warns.push('aborted: ' + r.url());
+  errs.push('requestfailed: ' + r.url() + (f ? ' ' + f.errorText : ''));
+});
 page.on('response', (r) => {
   if (r.status() >= 400) warns.push(`${r.status()} ${r.url()}`);
 });

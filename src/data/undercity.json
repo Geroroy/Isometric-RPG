@@ -1544,5 +1544,260 @@
     117.5
    ]
   ]
+ },
+ "upper": {
+  "_doc": "the upper plaza (CITY_UP, x 72-124, y 49-79): the Jedi landing pad (117, 62) and the turbolift (82, 77.5) are the game's own props; everything else is the underworld set",
+  "props": [
+   {
+    "p": "buildingBlock",
+    "x": 77.0,
+    "y": 51.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "verticalPipes",
+    "x": 82.5,
+    "y": 50.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "aptBalconyC",
+    "x": 87.5,
+    "y": 51.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "denseMarket",
+    "x": 95.5,
+    "y": 51.8,
+    "zone": "upNorth"
+   },
+   {
+    "p": "verticalPipes",
+    "x": 100.5,
+    "y": 50.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "aptModuleC",
+    "x": 105.0,
+    "y": 51.8,
+    "zone": "upNorth"
+   },
+   {
+    "p": "aptStackB",
+    "x": 113.0,
+    "y": 51.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "verticalPipes",
+    "x": 118.5,
+    "y": 50.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "aptModuleA",
+    "x": 122.0,
+    "y": 51.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "aptStackB",
+    "x": 74.0,
+    "y": 58.0,
+    "zone": "upWest"
+   },
+   {
+    "p": "verticalPipes",
+    "x": 73.5,
+    "y": 63.5,
+    "zone": "upWest"
+   },
+   {
+    "p": "aptBalconyC",
+    "x": 74.0,
+    "y": 68.0,
+    "zone": "upWest"
+   },
+   {
+    "p": "steamVent",
+    "x": 73.5,
+    "y": 73.5,
+    "zone": "upWest",
+    "steam": true
+   },
+   {
+    "p": "verticalPipes",
+    "x": 123.0,
+    "y": 56.0,
+    "zone": "upEast"
+   },
+   {
+    "p": "conduitArray",
+    "x": 121.0,
+    "y": 56.6,
+    "zone": "upEast"
+   },
+   {
+    "p": "aptStackB",
+    "x": 122.5,
+    "y": 73.5,
+    "zone": "upEast"
+   },
+   {
+    "p": "lightPost",
+    "x": 78.0,
+    "y": 77.4,
+    "zone": "upEdge"
+   },
+   {
+    "p": "lightPost",
+    "x": 90.0,
+    "y": 77.4,
+    "zone": "upEdge"
+   },
+   {
+    "p": "lightPost",
+    "x": 100.0,
+    "y": 77.4,
+    "zone": "upEdge"
+   },
+   {
+    "p": "lightPost",
+    "x": 110.0,
+    "y": 77.4,
+    "zone": "upEdge"
+   },
+   {
+    "p": "signPost",
+    "x": 118.0,
+    "y": 77.0,
+    "zone": "upEdge"
+   },
+   {
+    "p": "neonSignSet",
+    "x": 121.0,
+    "y": 76.2,
+    "zone": "upEdge"
+   },
+   {
+    "p": "tradeTerminal",
+    "x": 88.0,
+    "y": 62.6,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "tradeTerminal",
+    "x": 100.0,
+    "y": 62.4,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "lightPost",
+    "x": 88.5,
+    "y": 70.2,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "lightPost",
+    "x": 100.0,
+    "y": 70.4,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "signPost",
+    "x": 94.0,
+    "y": 60.8,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "tradeKiosk",
+    "x": 80.0,
+    "y": 60.5,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "neonSignSet",
+    "x": 84.0,
+    "y": 55.5,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "marketStall",
+    "x": 108.0,
+    "y": 73.5,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "crateStack",
+    "x": 104.5,
+    "y": 57.0,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "barrelPile",
+    "x": 103.0,
+    "y": 58.8,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "crateBarrels",
+    "x": 120.0,
+    "y": 69.6,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "scrapHeap",
+    "x": 76.6,
+    "y": 74.6,
+    "zone": "upPlaza"
+   }
+  ],
+  "zones": [
+   {
+    "id": "upPlaza",
+    "name": "상층 플라자",
+    "centre": [
+     94,
+     66
+    ],
+    "r": 9
+   },
+   {
+    "id": "upNorth",
+    "name": "북쪽 사무 블록 벽"
+   },
+   {
+    "id": "upEdge",
+    "name": "낭떠러지 테라스 (남쪽)"
+   },
+   {
+    "id": "upEast",
+    "name": "착륙장 옆 보급소"
+   }
+  ],
+  "points": {
+   "landingPad": [
+    117,
+    62
+   ],
+   "landing": [
+    113.5,
+    63.5
+   ],
+   "liftUp": [
+    82,
+    77.5
+   ],
+   "plazaCentre": [
+    94,
+    66
+   ],
+   "depot": [
+    104.5,
+    57.5
+   ]
+  }
  }
 }

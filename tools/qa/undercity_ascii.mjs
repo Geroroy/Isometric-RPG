@@ -86,13 +86,39 @@ const out = await page.evaluate(async () => {
     for (const pt of life.patrols) if (pt.level === 'low') for (const [x, y] of pt.route) if (!at(x, y)) lifeBad.push(`patrol ${x},${y}`);
   }
   const npcs = g.units.filter((u) => u.kind === 'npc' || u.name).filter((u) => u.y > 90).map((u) => `${u.name || u.kind} ${u.x},${u.y} ${at(u.x, u.y)}`);
+  // the upper level: from the landing beside the pad
+  const seenU = new Uint8Array(W * w.h);
+  const qu = [[113, 63]];
+  seenU[63 * W + 113] = 1;
+  while (qu.length) {
+    const [x, y] = qu.shift();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (free(nx, ny) && !seenU[ny * W + nx]) {
+        seenU[ny * W + nx] = 1;
+        qu.push([nx, ny]);
+      }
+    }
+  }
+  const atU = (x, y) => !!seenU[Math.floor(y) * W + Math.floor(x)];
+  const upBad = [];
+  if (life) {
+    for (const [k, pl] of Object.entries(life.places)) {
+      const pts = Array.isArray(pl.at[0]) ? pl.at : [pl.at];
+      for (const [x, y] of pts) if (y < 90 && !atU(x, y)) upBad.push(`${k} ${x},${y}`);
+    }
+    for (const pt of life.patrols) if (pt.level === 'up') for (const [x, y] of pt.route) if (!atU(x, y)) upBad.push(`patrol ${x},${y}`);
+  }
+  for (const u of g.units) if (u.y < 90 && (u.kind === 'npc' || u.name) && !atU(u.x, u.y)) upBad.push(`npc ${u.name || u.kind} ${u.x},${u.y}`);
+  upBad.push('liftUp ' + atU(82, 76), 'landing ' + atU(113.5, 63.5));
   let walk = 0;
   for (let y = 94; y < 134; y++) for (let x = 58; x < 139; x++) if (seen[y * W + x]) walk++;
-  return { rows, reach, lifeBad, npcs, walk, props: w.props.length, lightsLow: w.lights.filter((l) => l.y > 90).length, steam: (w.steam || []).length };
+  return { rows, reach, lifeBad, upBad, npcs, walk, props: w.props.length, lightsLow: w.lights.filter((l) => l.y > 90).length, steam: (w.steam || []).length };
 });
 console.log('    ' + Array.from({ length: 84 }, (_, i) => (i % 10 === 0 ? String(Math.floor((56 + i) / 10) % 10) : ' ')).join(''));
 console.log('    ' + Array.from({ length: 84 }, (_, i) => String((56 + i) % 10)).join(''));
 for (const r of out.rows) console.log(r);
 console.log('legend: U upper plaza  . metal plate  : plaza (grated plates)  ~ mud  w sump  , dirt  (blank) chasm  # blocked  A apartment module  B shop / block building  F food stall / kiosk  $ trade terminal  L lift  | pipe stack  - conduit bundle (walk over)  V steam vent / stack  K compactor  i light post  n neon sign  s speeder  c crates  b barrels  d scrap heap  j conduit array');
-console.log(JSON.stringify({ reach: out.reach, lifeBad: out.lifeBad, npcs: out.npcs, walkable: out.walk, props: out.props, lightsLow: out.lightsLow, steam: out.steam }, null, 1));
+console.log(JSON.stringify({ reach: out.reach, lifeBad: out.lifeBad, upBad: out.upBad, npcs: out.npcs, walkable: out.walk, props: out.props, lightsLow: out.lightsLow, steam: out.steam }, null, 1));
 await browser.close();

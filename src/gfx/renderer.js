@@ -2,7 +2,7 @@
 // chunky pixels), depth-sorted sprites, Diablo-style light map and additive
 // glow pass for sabers, blaster bolts and Force effects. Characters with a
 // Blender sprite sheet (gfx/sheet.js) cast their own rendered shadow.
-import { worldToScreen, screenToWorld, PX_PER_UNIT, Z_PX } from '../core/iso.js';
+import { worldToScreen, screenToWorld, PX_PER_UNIT, Z_PX, HALF_W, HALF_H } from '../core/iso.js';
 import { Terrain } from './terrain.js';
 import { PROPS } from './models/props.js';
 import { dist } from '../core/math.js';
@@ -12,6 +12,7 @@ import { glowSprite } from './fx.js';
 import { transientLights, relightUnits } from './relight.js';
 import { SIG } from '../game/units.js';
 import { canvasFont } from '../ui/fonts.js';
+import { drawCityBackdrop } from './cityBackdrop.js';
 import { SABER, PALETTES, trailWindow, paletteFor, flickerAt, ignition, drawBlade, drawSpark, drawTrail, drawClash, record } from './saberStyle.js';
 import { preset, tintFor, drawLight, drawGround, drawGroundTint, sweepOf, lightCharacter } from './saberLight.js';
 
@@ -172,6 +173,14 @@ export class Renderer {
     const f = g.camFocus; // a cutscene's camera
     const ps = f ? worldToScreen(f.x, f.y, 0) : worldToScreen(p.x, p.y, p.z * 0.4);
     const viewH = H - (g.cinema ? 0 : this.consoleH) / this.scale; // cutscenes use the whole screen
+    // the camera stays over the level (docs/MAP_EDGES.md): its view centre is held inside the
+    // level's screen box less an inset, so a rim never fills half the screen
+    const cr = !f && g.world.camRegions && this.camRegion(g.world.camRegions, p);
+    if (cr) {
+      const clampTo = (v, lo, hi) => (lo > hi ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, v)));
+      ps.x = clampTo(ps.x, (cr.x0 - cr.y1) * HALF_W + W * 0.22, (cr.x1 - cr.y0) * HALF_W - W * 0.22);
+      ps.y = clampTo(ps.y, (cr.x0 + cr.y0) * HALF_H + viewH * 0.24, (cr.x1 + cr.y1) * HALF_H - viewH * 0.3);
+    }
     const sh = g.fx.shakeAmt;
     const dr = this.drift; // slow title-screen camera move, in game pixels
     this.cam.x = Math.round(ps.x - W / 2 + dr.x + (sh ? (Math.random() - 0.5) * sh : 0));
@@ -180,8 +189,11 @@ export class Renderer {
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.smooth(false);
-    ctx.fillStyle = '#07070a';
-    ctx.fillRect(0, 0, W, H);
+    if (g.world.city) drawCityBackdrop(ctx, cam, W, H, p.y > 90 ? 'low' : 'up'); // the city beyond the rims
+    else {
+      ctx.fillStyle = '#07070a';
+      ctx.fillRect(0, 0, W, H);
+    }
     for (const u of g.activeUnits) this.igniteOf(u); // the blades' ignition clocks, before any light is drawn
     this.terrain.draw(ctx, cam.x, cam.y, W, H);
     g.fx.drawDecals(ctx, cam);
@@ -483,6 +495,22 @@ export class Renderer {
    * layer at its flickering level, the neon's reflection on the wet street,
    * and the billboards' holograms cycling through their ads.
    */
+  /** The camera region (world tiles) the unit is in, or the nearest one. */
+  camRegion(regions, u) {
+    let best = null;
+    let bd = Infinity;
+    for (const r of regions) {
+      const dx = Math.max(r.x0 - u.x, 0, u.x - r.x1);
+      const dy = Math.max(r.y0 - u.y, 0, u.y - r.y1);
+      const d = dx + dy;
+      if (d < bd) {
+        bd = d;
+        best = r;
+      }
+    }
+    return best;
+  }
+
   drawCityGlow(ctx, cam, dt) {
     const W = this.w;
     const H = this.h;

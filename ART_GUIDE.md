@@ -93,6 +93,8 @@ Blender 카메라는 같은 값으로 맞춘다(`render_sprites.py`, `render_bui
 - 코러산트 언더시티는 컨셉 시트에서 잘라낸 스프라이트 세트(`public/sprites/underworld/`, `tools/sprites/underworld/extract.py`)와
   월드 좌표로 샘플링하는 바닥 텍스처만 쓴다. 배치는 `src/data/undercity.json`(`docs/UNDERCITY_MAP.md`): 네온 시장 광장을
   가운데 두고 진흙 뒷골목·안뜰·작업장 골목·바 광장·환기 구역, 북쪽은 파이프·아파트 벽, 남쪽은 낭떠러지. 네온 모자이크 타일은 폐기.
+- 맵 경계(`docs/MAP_EDGES.md`): 빈칸 없음. 낭떠러지는 탑의 옆면(립 → 경고등 → 창문 띠 → 안개, `terrain.js` `facade()`)과
+  3층 시차 도시 원경(`cityBackdrop.js`: 상층 황혼 보라, 하층 청록 스모그)으로 채우고, 카메라는 지금 층 안에 묶는다.
 - 광선검 빛(`src/gfx/saberLight.js`, `docs/SABER_STYLE.md`): 영화식 모델 하나, 색은 그 칼의 색(파랑·빨강·초록·보라).
   역제곱 감쇠 + 뜨거운 코어를 구운 스프라이트로 라이트맵·지면·캐릭터에 같이 쓴다. 지면은 칼날 투영 방향으로 늘린 아이소
   타원(휘두르면 바로 따라오고 궤적 방향으로 줄), 밝은 바닥에선 스프라이트 아래 `color` 블렌드로 색만 바꾼다. 캐릭터는

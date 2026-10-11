@@ -3,7 +3,7 @@
 // paving patterns, roads and craters and finally ordered-dithered to a
 // reduced palette for an old-school look. Remaster graphics (density 2) build
 // chunks at twice the pixel density in full colour with a finer grain.
-import { HALF_W, HALF_H } from '../core/iso.js';
+import { HALF_W, HALF_H, Z_PX } from '../core/iso.js';
 import { BIOME } from '../world/worldgen.js';
 import { valueNoise, hash2, clamp } from '../core/math.js';
 
@@ -56,6 +56,7 @@ export function setGroundTextures(g) {
     return { list, tiles };
   };
   GROUND = {
+    [BIOME.CITY_UP]: { ...pick([['metalPlatePlain', 0.6], ['metalPlateAurebesh', 0.25], ['metalPlateVent', 0.15]], 2), gain: 1.22 }, // the terrace: cleaner, lit like day
     [BIOME.CITY_LOW]: pick([['metalPlatePlain', 0.55], ['metalPlateAurebesh', 0.1], ['metalPlateGrate', 0.2], ['metalPlateVent', 0.15]], 2),
     [BIOME.CITY_MOSAIC]: pick([['metalPlatePlain', 0.5], ['metalPlateGrate', 0.3], ['metalPlateVent', 0.2]], 2), // the plaza: more grates
     [BIOME.CITY_MUD]: pick([['mudConduit', 1]], 3),
@@ -154,6 +155,119 @@ export class Terrain {
     return r.value;
   }
 
+  /**
+   * The side of a platform seen below its rim from a pixel over the drop (docs/MAP_EDGES.md):
+   * from the pixel's ground point step back up the screen (the −x, −y diagonal) to the first
+   * platform tile; the distance k there is the depth D below the rim (D = k·2·HALF_H / Z_PX).
+   * Coruscant's platforms are the tops of towers: the face is a facade — durasteel panels, a
+   * bright lip, floor bands, lit windows, red warning beacons under the rim — fading into the
+   * haze and then to clear. Writes [r, g, b, a] to `out`; false when no platform is close.
+   */
+  facade(fx, fy, out) {
+    const w = this.world;
+    const W = w.w;
+    let tx = Math.floor(fx);
+    let ty = Math.floor(fy);
+    let k = 0;
+    let face = 0;
+    for (let n = 0; n < 40; n++) {
+      const kx = fx - tx;
+      const ky = fy - ty;
+      if (kx < ky) {
+        k = kx;
+        tx--;
+        face = 0; // entered through the tile's +x face (faces the lower right: in shade)
+      } else {
+        k = ky;
+        ty--;
+        face = 1; // through its +y face (faces the lower left: lit)
+      }
+      if (k > 11 || tx < 0 || ty < 0) return false;
+      if (w.biome[ty * W + tx] !== BIOME.VOID) break;
+      if (n === 39) return false;
+    }
+    const D = (k * 2 * HALF_H) / Z_PX; // world units below the rim
+    const s = face ? fx - k : fy - k; // along the face
+    const upper = fy - k < 90; // the upper plaza's tower or the undercity's
+    const lit = face ? 0.92 : 0.62;
+    let r = 64;
+    let g = 66;
+    let b = 76;
+    // the tower's floors: pilasters every 1.5 tiles along the face, a slab line every 0.55 units
+    // down, and between them a ribbon of windows in segments (lit or dark, warm or cold)
+    const ps = (s / 1.5) % 1;
+    const fl = (D - 0.5) / 0.55;
+    const ff = fl - Math.floor(fl);
+    if (ps < 0.08) {
+      r += 10;
+      g += 10;
+      b += 10;
+    }
+    if (D > 0.5 && ff < 0.16) {
+      r -= 20;
+      g -= 20;
+      b -= 18;
+    }
+    r += (hash2(Math.floor(s / 1.5), Math.floor(fl / 6), 83) - 0.5) * 10;
+    r *= lit;
+    g *= lit;
+    b *= lit;
+    // the lip and the shadow under it
+    if (D < 0.09) {
+      r = 168 * lit;
+      g = 160 * lit;
+      b = 146 * lit;
+    } else if (D < 0.5) {
+      const t = (0.5 - D) / 0.41;
+      r *= 1 - 0.55 * t;
+      g *= 1 - 0.55 * t;
+      b *= 1 - 0.55 * t;
+    }
+    let wr = 0;
+    let wg = 0;
+    let wb = 0;
+    if (D > 0.6 && ff > 0.42 && ff < 0.7 && ps > 0.1) {
+      const seg = Math.floor(s / 0.375);
+      const us = s / 0.375 - seg;
+      if (us > 0.08) {
+        const row = Math.floor(fl);
+        const h = hash2(seg, row, 84 + face);
+        if (h > (upper ? 0.55 : 0.72)) {
+          const c = hash2(seg >> 1, row, 86);
+          if (upper) [wr, wg, wb] = c > 0.35 ? [255, 210, 145] : [200, 222, 255];
+          else [wr, wg, wb] = c > 0.8 ? [255, 90, 180] : c > 0.5 ? [140, 255, 170] : [255, 170, 80];
+          const k2 = (0.45 + 0.4 * hash2(seg, row, 87)) * Math.exp(-D / 6);
+          wr *= k2;
+          wg *= k2;
+          wb *= k2;
+        }
+      }
+    }
+    // red warning beacons just under the rim, every few tiles
+    if (D > 0.18 && D < 0.42) {
+      const cb = Math.floor(s / 3);
+      if (hash2(cb, face, 88) > 0.45) {
+        const bs = s / 3 - cb;
+        if (bs > 0.48 && bs < 0.56) {
+          wr = 255;
+          wg = 50;
+          wb = 40;
+        }
+      }
+    }
+    // haze: the facade sinks into the city's air, then clears for the backdrop
+    const hz = 1 - Math.exp(-D / 3.2);
+    const H = upper ? [70, 54, 74] : [20, 28, 34];
+    r += (H[0] - r) * hz + wr;
+    g += (H[1] - g) * hz + wg;
+    b += (H[2] - b) * hz + wb;
+    out[0] = clamp(r, 0, 255);
+    out[1] = clamp(g, 0, 255);
+    out[2] = clamp(b, 0, 255);
+    out[3] = 255 * clamp(1 - (D - 4.5) / 3.5, 0, 1);
+    return out[3] > 0;
+  }
+
   /** The floor's own brightness at a world point, 0..1 (its tile colour before the light map). */
   lumAt(x, y) {
     const w = this.world;
@@ -180,6 +294,8 @@ export class Terrain {
     const sx0 = (x0 - (y0 + CH)) * HALF_W;
     const sy0 = (x0 + y0) * HALF_H;
     const q = 255 / 30;
+    const city = !!this.world.city;
+    const fc = [0, 0, 0, 0];
     for (let py = 0; py < PH; py++) {
       const sy = sy0 + py / S;
       for (let px = 0; px < PW; px++) {
@@ -187,6 +303,18 @@ export class Terrain {
         const fx = (sx / HALF_W + sy / HALF_H) / 2;
         const fy = (sy / HALF_H - sx / HALF_W) / 2;
         if (fx < x0 || fx >= x0 + CH || fy < y0 || fy >= y0 + CH) continue;
+        if (city && this.world.biome[Math.floor(fy) * this.world.w + Math.floor(fx)] === BIOME.VOID) {
+          // the drop: the side of the platform above this pixel, if any is close enough, else
+          // clear — the renderer's backdrop (gfx/cityBackdrop.js) shows through
+          const i = (py * PW + px) * 4;
+          if (this.facade(fx, fy, fc)) {
+            d[i] = fc[0];
+            d[i + 1] = fc[1];
+            d[i + 2] = fc[2];
+            d[i + 3] = fc[3];
+          }
+          continue;
+        }
         const u = fx - 0.5;
         const v = fy - 0.5;
         let r = this.sample(this.R, u, v);
@@ -197,7 +325,7 @@ export class Terrain {
         const cry = this.sample(this.K, u, v);
         const base = this.sample(this.Bs, u, v);
         const lava = this.sample(this.L, u, v);
-        const drop = this.sample(this.V, u, v);
+        const drop = 0; // (the drop is drawn by facade() and the backdrop)
         const upper = this.sample(this.U, u, v);
         const mosaic = this.sample(this.Mo, u, v);
         const mud = this.sample(this.Mu, u, v);
@@ -276,26 +404,21 @@ export class Terrain {
           g += 6;
           b += 6;
         }
-        // the drop: near black, the far-below city as scattered warm and cold
-        // lights, a faint haze at the platform edges
-        if (drop > 0.02) {
-          const k = clamp(drop, 0, 1);
-          const haze = (1 - k) * 40;
-          r = r * (1 - k) + (10 + haze) * k;
-          g = g * (1 - k) + (12 + haze) * k;
-          b = b * (1 - k) + (24 + haze * 1.2) * k;
-          if (k > 0.9) {
-            const spark = hash2(Math.floor(fx * 6), Math.floor(fy * 6), 77);
-            if (spark > 0.985) {
-              const warm = hash2(Math.floor(fx * 6), Math.floor(fy * 6), 78) > 0.4;
-              r = warm ? 230 : 140;
-              g = warm ? 170 : 190;
-              b = warm ? 90 : 255;
-            } else if (spark > 0.97) {
-              r += 30;
-              g += 26;
-              b += 30;
-            }
+        // the platform's rim (city): a bright lip on the edges over the drop that face the camera,
+        // a thin light line on the far edges
+        if (city) {
+          const tx = Math.floor(fx);
+          const ty = Math.floor(fy);
+          const ax = fx - tx;
+          const ay = fy - ty;
+          const vd = (x, y) => this.world.biome[y * this.world.w + x] === BIOME.VOID;
+          let lip = 0;
+          if ((ax > 0.9 && vd(tx + 1, ty)) || (ay > 0.9 && vd(tx, ty + 1))) lip = 1;
+          else if ((ax < 0.05 && vd(tx - 1, ty)) || (ay < 0.05 && vd(tx, ty - 1))) lip = 0.5;
+          if (lip) {
+            r += (176 - r) * 0.6 * lip;
+            g += (168 - g) * 0.6 * lip;
+            b += (150 - b) * 0.6 * lip;
           }
         }
         // the underworld's ground textures (the concept sheets' tiles), by the tile's biome:
@@ -322,7 +445,7 @@ export class Terrain {
             const j = (ty * T.width + tx) * 4;
             // the cell's own tone, the blotches, and slow stains (oil, rust, damp) across cells
             const stain = valueNoise(fx * 0.33, fy * 0.33, 75) - 0.5;
-            const sh = (0.86 + 0.26 * hash2(cx, cy, 74)) * (1 + blot * 0.22) * (1 + stain * 0.5);
+            const sh = (0.86 + 0.26 * hash2(cx, cy, 74)) * (1 + blot * 0.22) * (1 + stain * 0.5) * (gt.gain || 1);
             r = T.data[j] * sh * (1 + stain * 0.25);
             g = T.data[j + 1] * sh;
             b = T.data[j + 2] * sh * (1 - stain * 0.2);

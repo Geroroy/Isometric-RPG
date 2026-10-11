@@ -637,6 +637,15 @@ export const CITY = {
 };
 
 export class CityHub extends World {
+  /** The data's props (data/undercity.json): p = a sprite of the underworld set, m = a model prop. */
+  placeProps(list) {
+    for (const q of list) {
+      if (q.p) this.addSheetProp(q.p, q.x, q.y, { noBlock: !!q.noBlock });
+      else this.addProp(q.m, q.x, q.y, { angleIdx: q.a, noBlock: !!q.noBlock });
+      if (q.steam) (this.steam ||= []).push({ x: q.x, y: q.y, z: 1.8, t: this.rng.next() * 3 });
+    }
+  }
+
   generate() {
     this.rng = new RNG(this.seed);
     const rng = this.rng;
@@ -660,20 +669,12 @@ export class CityHub extends World {
     }
     this.pois.push({ ...pad, r: 6, name: '코러산트 · 제다이 착륙장' });
 
-    // --- upper plaza ------------------------------------------------------
+    // --- upper plaza (data/undercity.json "upper") -----------------------------------
+    // the landing pad and the turbolift are the game's own; the terrace's dressing (office blocks
+    // and stacks along the north edge, pipes, light posts and signs along the drop, terminals and
+    // a kiosk round the centre, the quartermaster's depot by the pad) is the underworld set
     this.addProp('landingPad', pad.x, pad.y);
-    // skyline: towers along the north edge and out in the drop
-    for (let x = up.x - up.hw + 2; x <= up.x + up.hw - 2; x += 5) this.addProp('spire', x + rng.range(-0.6, 0.6), up.y - up.hh + 1.5);
-    for (const [x, y] of [[66, 48], [70, 62], [130, 50], [134, 70], [60, 76], [138, 84], [76, 40], [120, 38]]) this.addProp('spire', x, y, { noBlock: true });
-    // a ring of planters and lamps round the plaza's centre
-    for (let k = 0; k < 8; k++) {
-      const a = (k / 8) * Math.PI * 2;
-      this.addProp(k % 2 ? 'plazaLamp' : 'planter', 94 + Math.cos(a) * 6, 66 + Math.sin(a) * 4.5);
-    }
-    for (const [x, y] of [[80, 56], [86, 72], [104, 72], [108, 54], [76, 68]]) this.addProp('planter', x, y);
-    for (const [x, y] of [[100, 58], [88, 60], [110, 70], [122, 56], [122, 68], [78, 62]]) this.addProp('plazaLamp', x, y);
-    // the railing along the edge over the drop (south side)
-    for (let x = up.x - up.hw + 1; x <= up.x + up.hw - 1; x += 2) if (Math.abs(x - liftUp.x) > 1.5) this.addProp('railing', x, up.y + up.hh + 0.2, { angleIdx: 0 });
+    this.placeProps(UNDERCITY.upper.props);
     this.addProp('turbolift', liftUp.x, liftUp.y);
 
     // --- lower level: the undercity (data/undercity.json, docs/UNDERCITY_MAP.md) --------
@@ -705,15 +706,7 @@ export class CityHub extends World {
     for (let x = rx0; x < rx1; x++) if (this.biome[ry0 * MAP_W + x] !== BIOME.VOID) this.blocked[ry0 * MAP_W + x] = 1;
     for (let y = ry0; y < 134; y++) for (const x of [rx0, rx1 - 1]) if (this.biome[y * MAP_W + x] !== BIOME.VOID) this.blocked[y * MAP_W + x] = 1;
     this.addProp('turbolift', liftLow.x, liftLow.y);
-    for (const q of U.props) {
-      if (q.p) {
-        this.addSheetProp(q.p, q.x, q.y, { noBlock: !!q.noBlock });
-        if (q.steam) (this.steam ||= []).push({ x: q.x, y: q.y, z: 1.8, t: rng.next() * 3 });
-      } else {
-        this.addProp(q.m, q.x, q.y, { angleIdx: q.a, noBlock: !!q.noBlock });
-        if (q.steam) (this.steam ||= []).push({ x: q.x + 0.1, y: q.y + 0.1, z: 2.0, t: rng.next() * 3 });
-      }
-    }
+    this.placeProps(U.props);
     for (const [x, y, z] of U.steam || []) this.steam.push({ x, y, z, t: rng.next() * 3 });
     this.puddles = U.puddles.map(([x, y, r]) => ({ x, y, r, drops: [] }));
     for (const [x, y, z, r, g, b, rad, flicker] of U.lights) this.lights.push({ x, y, z, r, g, b, rad, flicker });
@@ -751,6 +744,11 @@ export class CityHub extends World {
     for (const y of [103, 116.5, 124.5]) this.traffic.push({ x0: 56, y0: y, x1: 136, y1: y + rng.range(-2, 2), z: rng.range(8, 11), speed: rng.range(7, 12), gap: rng.range(10, 18), over: true });
     for (const x of [76, 104, 121]) this.traffic.push({ x0: x, y0: 136, x1: x + rng.range(-3, 3), y1: 90, z: rng.range(9, 12), speed: rng.range(6, 10), gap: rng.range(12, 20), over: true });
     this.spawn = { x: pad.x - 5, y: pad.y + 1.5 };
+    // the camera's regions (renderer: the view stays over the level it is on)
+    this.camRegions = [
+      { x0: up.x - up.hw, y0: up.y - up.hh, x1: up.x + up.hw, y1: up.y + up.hh },
+      { x0: 58, y0: 94, x1: 138, y1: 133 },
+    ];
     this.roadSegs = [];
     this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
   }
