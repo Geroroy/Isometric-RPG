@@ -167,5 +167,7 @@ glTF는 헤어 커브를 담지 못하므로 렌더 때 붙입니다: `render_sp
 sh tools/sprites/hair/hair_iter.sh 9 tunic "메모"     # 비교 시트
 ```
 
-게임에 쓰려면 `render_config.json`의 `anakin_tunic`·`anakin_robe` 항목에서 `glb`를 `*_hairv2.glb`로 바꾸고 `hair`를 지운 뒤
-`render_anakin.py anakin_tunic anakin_robe`로 시트를 다시 굽습니다(먼저 ESTIMATE 확인).
+제다이 기사(`anakin_tunic`)는 이 헤어로 바뀌었습니다: `render_config.json`에서 `glb`가 `anakin_tunic_hairv2.glb`이고 `hair`가 없습니다
+(레퍼런스에 실루엣을 맞춘 리스컬프트 B — 어깨 길이, `renders/hair_resculpt/`). 로브도 바꾸려면 같은 식으로 `anakin_robe`의 `glb`를
+`anakin_robe_hairv2.glb`로 바꾸고 `hair`를 지운 뒤 `render_anakin.py anakin_robe`로 굽습니다(먼저 ESTIMATE 확인; 긴 뒷머리가
+내린 두건에 2~3 cm 묻히므로 로브용 길이를 먼저 맞출 것).
