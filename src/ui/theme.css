@@ -1008,10 +1008,12 @@ input[type='range'] {
   --font-body: 'Rajdhani', 'GmarketSans', 'Pretendard Variable', Pretendard, sans-serif;
   --font-body-ko: 'GmarketSans', 'Pretendard Variable', Pretendard, 'Rajdhani', sans-serif;
   --font-aurebesh: 'Aurebesh', 'Aurebesh AF', 'Orbitron', sans-serif;
-  /* the Korean stacks: geometric square-frame display, monospaced data, modern gothic body */
-  --font-kr-display: 'GmarketSans', 'Orbitron', sans-serif;
-  --font-kr-data: 'D2Coding', 'Chakra Petch', monospace;
-  --font-kr-body: 'Pretendard Variable', 'Pretendard', 'SUIT', sans-serif;
+  /* the Korean stacks: Orbitron first in each, so every Latin letter and digit is Orbitron and
+     only the glyphs it lacks (Hangul) fall through to the Korean face — square-frame display,
+     monospaced data, modern gothic body */
+  --font-kr-display: 'Orbitron', 'GmarketSans', sans-serif;
+  --font-kr-data: 'Orbitron', 'D2Coding', 'Chakra Petch', monospace;
+  --font-kr-body: 'Orbitron', 'Pretendard Variable', 'Pretendard', 'SUIT', sans-serif;
   /* the roles the components use */
   --font-hud: var(--font-body);
   --font-tech: var(--font-display); /* the old "cockpit lettering" role: titles and labels */
@@ -1233,6 +1235,9 @@ html[lang='ko'] .ether small {
   font-family: var(--font-data);
   font-variant-numeric: tabular-nums;
 }
+html[lang='ko'] .gauge b,
+html[lang='ko'] .m-bar b,
+html[lang='ko'] .ether b,
 html[lang='ko'] .ab .cdt,
 html[lang='ko'] .ab-lv,
 html[lang='ko'] .t-btn .lv,

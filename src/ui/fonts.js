@@ -9,10 +9,12 @@
 //            (Chakra Petch 500/600 as the second choice)
 //   body     Rajdhani 500/600     body, dialogue, item text, tooltips (Latin)
 //
-// The Korean UI (<html lang="ko">, theme.css) resolves the same roles to the Korean stacks:
-//   display  GmarketSans 700/500  geometric square-frame titles, set tight (-0.02em), holo glow
-//   data     D2Coding             monospaced digits (Korean included) with the tactical LED glow
-//   body     Pretendard → SUIT    modern gothic body, keep-all line breaking
+// The Korean UI (<html lang="ko">, theme.css) resolves the same roles to the Korean stacks, each
+// with Orbitron first: every Latin letter and digit is Orbitron, Hangul falls through to the
+// Korean face (per-glyph fallback):
+//   display  Orbitron → GmarketSans 700/500  square-frame titles, set tight (-0.02em), holo glow
+//   data     Orbitron → D2Coding             digits in Orbitron (tabular), Korean labels in D2Coding
+//   body     Orbitron → Pretendard → SUIT    Latin in Orbitron, Korean body in Pretendard, keep-all
 //   aurebesh Aurebesh             decoration only: drop a licensed Aurebesh.woff2 into public/fonts/
 //                                 and uncomment its @font-face in theme.css; until then the
 //                                 generated Aurebesh-style glyphs of ui/skin.js stay in use
@@ -20,6 +22,8 @@
 // theme.css declares the stacks as --font-display / --font-data / --font-body / --font-body-ko /
 // --font-aurebesh (and --font-kr-display / --font-kr-data / --font-kr-body); canvas text reads
 // them through font() below, so it follows the page's language too.
+import '@fontsource/orbitron/400.css';
+import '@fontsource/orbitron/500.css';
 import '@fontsource/orbitron/600.css';
 import '@fontsource/orbitron/700.css';
 import '@fontsource/share-tech-mono/400.css';
@@ -31,10 +35,10 @@ import '@fontsource/rajdhani/600.css';
 const KO = typeof document !== 'undefined' && document.documentElement.lang === 'ko';
 export const FONTS = KO
   ? {
-      display: "'GmarketSans', 'Orbitron', sans-serif",
-      data: "'D2Coding', 'Chakra Petch', monospace",
-      body: "'Pretendard Variable', 'Pretendard', 'SUIT', sans-serif",
-      bodyKo: "'Pretendard Variable', 'Pretendard', 'SUIT', sans-serif",
+      display: "'Orbitron', 'GmarketSans', sans-serif",
+      data: "'Orbitron', 'D2Coding', 'Chakra Petch', monospace",
+      body: "'Orbitron', 'Pretendard Variable', 'Pretendard', 'SUIT', sans-serif",
+      bodyKo: "'Orbitron', 'Pretendard Variable', 'Pretendard', 'SUIT', sans-serif",
       aurebesh: "'Aurebesh', 'Aurebesh AF', 'Orbitron', sans-serif",
     }
   : {
@@ -69,7 +73,7 @@ export function canvasFont(weight, px, role) {
 export function fontsReady() {
   if (typeof document === 'undefined' || !document.fonts) return Promise.resolve();
   const wanted = KO
-    ? ["500 16px 'GmarketSans'", "700 16px 'GmarketSans'", "400 16px 'D2Coding'", "500 16px 'Pretendard Variable'", "600 16px 'Pretendard Variable'", "600 16px 'Orbitron'", "500 16px 'Chakra Petch'"]
+    ? ["400 16px 'Orbitron'", "500 16px 'Orbitron'", "600 16px 'Orbitron'", "700 16px 'Orbitron'", "500 16px 'GmarketSans'", "700 16px 'GmarketSans'", "400 16px 'D2Coding'", "500 16px 'Pretendard Variable'", "600 16px 'Pretendard Variable'"]
     : ["600 16px 'Orbitron'", "700 16px 'Orbitron'", "400 16px 'Share Tech Mono'", "500 16px 'Chakra Petch'", "500 16px 'Rajdhani'", "600 16px 'Rajdhani'", "500 16px 'GmarketSans'", "500 16px 'Pretendard Variable'"];
   const sample = KO ? '체력 포스 광선검 0123456789' : undefined;
   return Promise.race([Promise.allSettled(wanted.map((f) => document.fonts.load(f, sample))), new Promise((r) => setTimeout(r, 3000))]);

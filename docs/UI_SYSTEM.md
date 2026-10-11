@@ -61,11 +61,14 @@ PC 콘솔은 flex 한 줄(로그가 `flex: 1`로 늘고 줄며, 170~340 px). 휴
 
 ### 한글 폰트 시스템 (`<html lang="ko">`, 기본)
 
+**영문·숫자는 모든 역할에서 Orbitron**, 한글만 역할별 한글 글꼴: 스택마다 Orbitron을 맨 앞에 두면 브라우저가 글리프 단위로
+대체하므로 Orbitron에 없는 한글만 다음 글꼴로 떨어진다(Orbitron 400/500/600/700 번들).
+
 | 역할 | 토큰 | 글꼴 (모두 무료 라이선스) | 쓰임 · 스타일 |
 |---|---|---|---|
-| Display & Header | `--font-kr-display` | **GmarketSans** 700/500 → Orbitron | HUD 타이틀, 스킬 이름, 메뉴·팝업 제목, 키 라벨. 강한 기하학적 네모꼴, `letter-spacing: -0.02em`, 대문자 변환 없음, 홀로 글로우(`--glow-blue`) |
-| Tactical Data | `--font-kr-data` | **D2Coding** → Chakra Petch (고정폭) | 체력·포스 수치, 쿨다운, 레벨, 스캐너 좌표·지역, 버프·칩, FPS. 자간 0, 숫자 흔들림 없음, 전술 LED 글로우 `--led-blue`(`0 0 5px rgba(0,200,255,.7)`) / 체력은 `--led-green` |
-| Body & Dialogue | `--font-kr-body` | **Pretendard** 500/600 → SUIT | 본문, 아이템 설명, 퀘스트 로그, 대화창, 툴팁. `word-break: keep-all; overflow-wrap: break-word` |
+| Display & Header | `--font-kr-display` | Orbitron → **GmarketSans** 700/500 | HUD 타이틀, 스킬 이름, 메뉴·팝업 제목, 키 라벨. 강한 기하학적 네모꼴, `letter-spacing: -0.02em`, 대문자 변환 없음, 홀로 글로우(`--glow-blue`) |
+| Tactical Data | `--font-kr-data` | Orbitron → **D2Coding** → Chakra Petch | 체력·포스 수치, 쿨다운, 레벨, 스캐너 좌표·지역, 버프·칩, FPS. 숫자는 Orbitron tabular, 한글 라벨은 D2Coding. 자간 0, 전술 LED 글로우 `--led-blue`(`0 0 5px rgba(0,200,255,.7)`) / 체력은 `--led-green` |
+| Body & Dialogue | `--font-kr-body` | Orbitron → **Pretendard** 500/600 → SUIT | 본문, 아이템 설명, 퀘스트 로그, 대화창, 툴팁. 영문·숫자 Orbitron, 한글 Pretendard. `word-break: keep-all; overflow-wrap: break-word` |
 
 - 파일: `public/fonts/`에 번들(GmarketSans Medium/Bold woff2, D2Coding woff2 — 한글·라틴·기호 서브셋 740 KB, SUIT Medium/SemiBold woff2);
   Pretendard는 npm(`ui/skin.js`)에서. `@font-face`는 `local()` → 번들 → CDN(jsDelivr의 noonnu / sun-typeface GitHub) 순서, `font-display: swap`.
