@@ -131,9 +131,8 @@ let sky = null;
 const traffic = new SkylineTraffic();
 if (typeof window !== 'undefined') window.__skyTraffic = traffic; // (tools/qa)
 /** The backdrop for the visible screen: `mode` 'up' (the plaza's dusk) or 'low' (the undercity's
- * smog); `dt` advances its traffic (0: frozen, as for a still); `isSky(x, y)` (view px): whether the
- * sky shows there, for the traffic to fly where it is seen. */
-export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0, isSky = null) {
+ * smog); `dt` advances its traffic (0: frozen, as for a still). */
+export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0) {
   const P = PAL[mode];
   if (skyKey !== mode + H) {
     sky = ctx.createLinearGradient(0, 0, 0, H);
@@ -144,7 +143,7 @@ export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0, isSky = null) {
   }
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
-  traffic.update(dt, cam, W, H, mode, isSky);
+  traffic.update(dt);
   // PROTOTYPE (?proto=bg): the deepest dotted layer stays (the far city's lights), then the
   // building sheets' layers — landmarks, city blocks, the sky traffic between them and the near plant
   if (BUILDING_PROTO) {
@@ -153,10 +152,15 @@ export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0, isSky = null) {
     const ox = -((((cam.x * f) % SIZE) + SIZE) % SIZE);
     const oy = -((((cam.y * f) % SIZE) + SIZE) % SIZE);
     for (let y = oy; y < H; y += SIZE) for (let x = ox; x < W; x += SIZE) ctx.drawImage(c, Math.round(x), Math.round(y));
-    if (drawBuildingLayer(ctx, 'far', cam, W, H, mode) && drawBuildingLayer(ctx, 'mid', cam, W, H, mode)) {
-      for (let ti = 0; ti < TIERS.length; ti++) traffic.draw(ctx, ti, cam, false);
+    // the sky traffic's tiers between them (gfx/skylineTraffic.js): the dots and the quarter-size
+    // craft past the far landmarks, the half-size ones past the city blocks, the big ones in front
+    if (drawBuildingLayer(ctx, 'far', cam, W, H, mode)) {
+      traffic.draw(ctx, 0, cam, W, H, mode);
+      traffic.draw(ctx, 1, cam, W, H, mode);
+      drawBuildingLayer(ctx, 'mid', cam, W, H, mode);
+      traffic.draw(ctx, 2, cam, W, H, mode);
       drawBuildingLayer(ctx, 'near', cam, W, H, mode);
-      for (let ti = 0; ti < TIERS.length; ti++) traffic.draw(ctx, ti, cam, true); // half the craft past the near plant
+      traffic.draw(ctx, 3, cam, W, H, mode);
       return;
     }
   }
@@ -166,6 +170,6 @@ export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0, isSky = null) {
     const ox = -((((cam.x * f) % SIZE) + SIZE) % SIZE);
     const oy = -((((cam.y * f) % SIZE) + SIZE) % SIZE);
     for (let y = oy; y < H; y += SIZE) for (let x = ox; x < W; x += SIZE) ctx.drawImage(c, Math.round(x), Math.round(y));
-    for (let ti = 0; ti < TIERS.length; ti++) if (TIERS[ti].after === li) traffic.draw(ctx, ti, cam);
+    for (let ti = 0; ti < TIERS.length; ti++) if (TIERS[ti].after === li) traffic.draw(ctx, ti, cam, W, H, mode);
   }
 }

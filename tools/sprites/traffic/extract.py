@@ -1,7 +1,7 @@
 """Cut the air traffic out of the two eight-direction vehicle sheets (reference/unsorted/image_3.png and
 image_4.png: four craft per sheet, one row each, every craft in eight views) into the atlas the game
-flies (gfx/skylineTraffic.js): public/sprites/traffic/traffic.png (and traffic_half.png, the same at
-half size, box-filtered, for the far traffic) and traffic.json — per craft its class and, per view,
+flies (gfx/skylineTraffic.js): public/sprites/traffic/traffic.png (and traffic_half.png and
+traffic_quarter.png, the same at half and quarter size, box-filtered, for the deeper sky) and traffic.json — per craft its class and, per view,
 the sprite's rect and its rear point (where the engine glow sits).
 
 The sheets' columns run round the craft: 0 nose to the camera (S), 1 nose down-left (SW), 2 side
@@ -234,17 +234,18 @@ def main():
                     shadows[(name, v)] = sh.astype(np.uint8)
                 contact.append(((name, v), piece))
 
-    # shelf-pack, even coordinates (the half atlas maps exactly)
-    W, x, y, rowh = 2048, 2, 2, 0
+    # shelf-pack on coordinates that are multiples of 4 (the half and quarter atlases map exactly)
+    up4 = lambda v: v + (-v) % 4
+    W, x, y, rowh = 2048, 4, 4, 0
     place = {}
     for key, img in sprites.items():
         h, w = img.shape[:2]
-        if x + w + 2 > W:
-            x, y, rowh = 2, y + rowh + rowh % 2 + 4, 0
+        if x + w + 4 > W:
+            x, y, rowh = 4, y + up4(rowh) + 4, 0
         place[key] = (x, y, w, h)
-        x += w + w % 2 + 4
+        x += up4(w) + 4
         rowh = max(rowh, h)
-    Hh = y + rowh + rowh % 2 + 2
+    Hh = y + up4(rowh) + 4
     atlas = np.zeros((Hh, W, 4), np.uint8)
     craft = {}
     for (name, v), img in sprites.items():
@@ -257,8 +258,10 @@ def main():
         k = xs * dx + ys * dy
         sel = k <= k.min() + 2
         rear = [int(np.median(xs[sel])), int(np.median(ys[sel]))]
+        sel = k >= k.max() - 2  # and the nose (the headlight, gfx/skylineTraffic.js)
+        front = [int(np.median(xs[sel])), int(np.median(ys[sel]))]
         entry = craft.setdefault(name, {'cls': CRAFT[next(kk for kk, vv in CRAFT.items() if vv[0] == name)][1], 'views': {}})
-        entry['views'][VIEWS[v]] = {'x': px, 'y': py, 'w': w, 'h': h, 'rear': rear}
+        entry['views'][VIEWS[v]] = {'x': px, 'y': py, 'w': w, 'h': h, 'rear': rear, 'front': front}
     # the shadows: their own atlas, a rect per view
     x, y, rowh = 2, 2, 0
     splace = {}
@@ -278,7 +281,8 @@ def main():
     Image.fromarray(satlas).save(os.path.join(OUT, 'traffic_shadow.png'), optimize=True)
     Image.fromarray(atlas).save(os.path.join(OUT, 'traffic.png'), optimize=True)
     Image.fromarray(half(atlas)).save(os.path.join(OUT, 'traffic_half.png'), optimize=True)
-    meta = {'_doc': 'Air traffic (tools/sprites/traffic/extract.py): per craft its class and 8 views (S SW W NW N NE E SE = nose direction on screen), rect and rear point in atlas px.', 'craft': craft}
+    Image.fromarray(half(half(atlas))).save(os.path.join(OUT, 'traffic_quarter.png'), optimize=True)  # the far sky's
+    meta = {'_doc': 'Air traffic (tools/sprites/traffic/extract.py): per craft its class and 8 views (S SW W NW N NE E SE = nose direction on screen), rect, rear and front points in atlas px.', 'craft': craft}
     json.dump(meta, open(os.path.join(OUT, 'traffic.json'), 'w'), separators=(',', ':'))
     print('traffic atlas', W, 'x', Hh, len(craft), 'craft x 8 views;', len(shadows), 'shadows')
 

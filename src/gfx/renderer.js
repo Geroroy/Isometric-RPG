@@ -3,7 +3,6 @@
 // glow pass for sabers, blaster bolts and Force effects. Characters with a
 // Blender sprite sheet (gfx/sheet.js) cast their own rendered shadow.
 import { worldToScreen, screenToWorld, PX_PER_UNIT, Z_PX, HALF_W, HALF_H } from '../core/iso.js';
-import { BIOME } from '../world/worldgen.js';
 import { Terrain } from './terrain.js';
 import { PROPS } from './models/props.js';
 import { dist } from '../core/math.js';
@@ -278,17 +277,7 @@ export class Renderer {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.smooth(false);
     const mode = p.y > 90 ? 'low' : 'up';
-    if (g.world.city) {
-      // the city beyond the rims, its far traffic flying where the sky shows: over the drop and past
-      // the platforms' walls (the walls hang ~9 tiles' worth of screen down from a rim)
-      const wd = g.world;
-      const isSky = (sx, sy) => {
-        const q = screenToWorld(sx + cam.x, sy + cam.y);
-        for (let k = 0; k <= 8; k++) if (wd.biomeAt(q.x - k, q.y - k) !== BIOME.VOID) return false;
-        return true;
-      };
-      drawCityBackdrop(ctx, cam, W, H, mode, dt, isSky);
-    }
+    if (g.world.city) drawCityBackdrop(ctx, cam, W, H, mode, dt); // the city beyond the rims, its sky traffic
     else {
       ctx.fillStyle = '#07070a';
       ctx.fillRect(0, 0, W, H);

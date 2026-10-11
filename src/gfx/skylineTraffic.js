@@ -29,6 +29,7 @@ const CLASSES = {
 let meta = null;
 let full = null;
 let halfImg = null;
+let quarterImg = null;
 let shadowImg = null;
 let loading = false;
 function load() {
@@ -41,12 +42,13 @@ function load() {
       i.onerror = rej;
       i.src = BASE + src;
     });
-  Promise.all([fetch(BASE + 'sprites/traffic/traffic.json').then((r) => r.json()), img('sprites/traffic/traffic.png'), img('sprites/traffic/traffic_half.png'), img('sprites/traffic/traffic_shadow.png')])
-    .then(([m, a, b, sh]) => {
+  Promise.all([fetch(BASE + 'sprites/traffic/traffic.json').then((r) => r.json()), img('sprites/traffic/traffic.png'), img('sprites/traffic/traffic_half.png'), img('sprites/traffic/traffic_shadow.png'), img('sprites/traffic/traffic_quarter.png')])
+    .then(([m, a, b, sh, q]) => {
       meta = m;
       full = a;
       halfImg = b;
       shadowImg = sh;
+      quarterImg = q;
     })
     .catch((e) => console.warn('air traffic: no sprites', e));
 }
@@ -70,9 +72,9 @@ function pickCraft(rng, cache) {
 /** The view whose nose points along a screen step (sx, sy) of a 2:1 diagonal. */
 const viewOf = (sx, sy) => (sy > 0 ? (sx > 0 ? 'SE' : 'SW') : sx > 0 ? 'NE' : 'NW');
 
-/** One craft centred on screen point (x, y), from the full atlas (k = 1) or the halved one (k = 0.5). */
+/** One craft centred on screen point (x, y), from the full atlas (k = 1), the halved (0.5) or the quartered one (0.25). */
 function drawCraft(ctx, v, x, y, k) {
-  const img = k === 1 ? full : halfImg;
+  const img = k === 1 ? full : k === 0.5 ? halfImg : quarterImg;
   ctx.globalCompositeOperation = 'source-over'; // (the overhead pass comes straight after the additive effects)
   ctx.globalAlpha = 1;
   const w = Math.ceil(v.w * k);
@@ -80,124 +82,178 @@ function drawCraft(ctx, v, x, y, k) {
   ctx.drawImage(img, v.x * k, v.y * k, w, h, Math.round(x - w / 2), Math.round(y - h / 2), w, h);
 }
 
-// --- far off over the city -----------------------------------------------------------------------
+// --- far off over the city (docs/prompts/sky_traffic_movie.md) ----------------------------------
+//
+// As the night skyline of Attack of the Clones (reference/motion/coruscant_skyline_traffic.gif): the
+// sky is threaded with skyways — bundles of 3-4 parallel lanes stacked a few pixels apart, the
+// neighbouring lanes flowing opposite ways — and steep ramps where streams climb or sink between them;
+// four depth tiers, each with its own parallax, size (headlight dots, quarter, half, full), pace and
+// axis (the tiers alternate \ and /, so streams at different depths cross). Each lane carries a fixed,
+// seeded train of craft repeating every PERIOD px, all at the lane's one speed: positions come from the
+// clock alone, so the same sky continues whatever the view does — no craft is ever spawned or dropped
+// in sight, none overtakes, none jitters. A bright blue-white headlight sits on every nose.
 
-/** The far traffic: drawn after this backdrop tower layer, with this parallax. */
-export const TIERS = [{ after: 1, f: 0.16, max: 24, rate: 1.2, band: [0.06, 0.7], speed: [9, 18] }];
-const MARGIN = 60; // beyond the view's edge, tier px
+/**
+ * The tiers, far → near: parallax f; sprite scale k (0 = a headlight and a dash); axis (+1: lanes run
+ * \ on screen, -1: /); skyways every B px of tier space, `lanes` lanes `gap` px apart; speed range
+ * (tier px a second along x); craft per 1000 px of lane; ramps every `ramp` skyways (0: none), their
+ * extra slope. `after`: the backdrop tower layer it flies after (gfx/cityBackdrop.js).
+ */
+export const TIERS = [
+  { f: 0.07, k: 0, axis: -1, B: 44, lanes: 4, gap: 5, speed: [7, 10], per1000: 1.8, ramp: 3, slope: 0.7, after: 0 },
+  { f: 0.11, k: 0.25, axis: 1, B: 70, lanes: 3, gap: 8, speed: [11, 15], per1000: 2.6, ramp: 4, slope: 0.6, after: 0 },
+  { f: 0.17, k: 0.5, axis: -1, B: 120, lanes: 3, gap: 13, speed: [18, 26], per1000: 2.2, ramp: 0, slope: 0, after: 1 },
+  { f: 0.3, k: 1, axis: 1, B: 460, lanes: 2, gap: 26, speed: [40, 55], per1000: 1.3, ramp: 0, slope: 0, after: 2 },
+];
+const PERIOD = 2400; // a lane's train of craft repeats every this many px (longer than any view)
+const MARGIN = 70; // beyond the view's edge, tier px
 
-/** Small craft crossing the distant city on straight iso diagonals (tier space = parallax space). */
+const hash = (...k) => {
+  let h = 2166136261;
+  for (const v of k) h = Math.imul(h ^ (Math.round(v * 1000) | 0), 16777619);
+  h ^= h >>> 13;
+  h = Math.imul(h, 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+};
+
+let glow = null;
+/** The headlight's soft halo (a small pre-drawn sprite). */
+function glowSprite() {
+  if (glow) return glow;
+  glow = document.createElement('canvas');
+  glow.width = glow.height = 9;
+  const g = glow.getContext('2d');
+  const r = g.createRadialGradient(4.5, 4.5, 0, 4.5, 4.5, 4.5);
+  r.addColorStop(0, 'rgba(210,235,255,0.9)');
+  r.addColorStop(0.35, 'rgba(150,200,255,0.35)');
+  r.addColorStop(1, 'rgba(120,170,255,0)');
+  g.fillStyle = r;
+  g.fillRect(0, 0, 9, 9);
+  return glow;
+}
+
+/** The sky's traffic in tiers of lanes (the clock drives it; the view only picks what shows). */
 export class SkylineTraffic {
   constructor(seed = 7) {
-    this.rng = new RNG(seed);
-    this.pool = Array.from({ length: TIERS[0].max }, () => ({ active: false }));
-    this.next = 0;
+    this.seed = seed;
     this.time = 0;
-    this.warm = false;
-    this.axis = 1;
+    this.craftCache = {};
   }
 
-  spawn(cam, W, H, t0 = 0, isSky = null) {
-    const T = TIERS[0];
-    const c = this.pool.find((p) => !p.active);
-    if (!c) return;
-    const rng = this.rng;
-    const vx = cam.x * T.f;
-    const vy = cam.y * T.f;
-    // screen step per row: x two, y one. The sky's traffic runs in streams: every craft on the one
-    // diagonal of this view (this.axis: \ or /), either way along it — streams never cross
-    c.sy = rng.next() < 0.5 ? -1 : 1;
-    c.sx = 2 * c.sy * this.axis;
-    // a line through a point in the middle band, run from one side of the view to the other — a
-    // point where the sky shows (isSky: the drop past the platforms' walls), when there is one
-    // and clear of the others: not along a line another flies (≥ 24 px across it, either way along
-    // it) and not where another one is now (≥ 60 px), so a small patch of sky never fills with a jam
-    const rows = (W + 2 * MARGIN) / 2; // rows it takes to cross the whole view and then some
-    const k0 = t0 * rows;
-    const nx = -c.sy / Math.hypot(2, 1);
-    const ny = c.sx / Math.hypot(2, 1);
-    const others = this.pool.filter((o) => o.active && o !== c);
-    let px = 0;
-    let py = 0;
-    let best = -1;
-    for (let n = 0; n < 24; n++) {
-      const qx = W * (0.04 + rng.next() * 0.92);
-      const qy = H * (T.band[0] + rng.next() * (T.band[1] - T.band[0]));
-      const sky = !isSky || isSky(qx, qy);
-      const ax = vx + qx - (c.sx * rows) / 2 + c.sx * k0; // where it starts now
-      const ay = vy + qy - (c.sy * rows) / 2 + c.sy * k0;
-      let clear = true;
-      for (const o of others) {
-        const ox = o.x0 + o.sx * o.k;
-        const oy = o.y0 + o.sy * o.k;
-        if (Math.hypot(ox - ax, oy - ay) < 60) clear = false;
-        else if (o.sx * o.sy === c.sx * c.sy && Math.abs((vx + qx - ox) * nx + (vy + qy - oy) * ny) < 24) clear = false;
-        if (!clear) break;
-      }
-      const score = (clear ? 2 : 0) + (sky ? 1 : 0);
-      if (score > best) {
-        best = score;
-        px = qx;
-        py = qy;
-      }
-      if (score === 3) break;
-    }
-    if (best < 2) return; // nowhere clear: skip this one
-    const cx = vx + px;
-    const cy = vy + py;
-    c.rows = rows;
-    c.x0 = Math.round(cx - (c.sx * c.rows) / 2);
-    c.y0 = Math.round(cy - (c.sy * c.rows) / 2);
-    c.v = T.speed[0] + rng.next() * (T.speed[1] - T.speed[0]); // rows a second
-    c.k = k0;
-    c.view = pickCraft(rng, this).views[viewOf(c.sx, c.sy)];
-    c.front = rng.next() < 0.5; // (with the building backdrop: in front of its nearest layer, or behind)
-    c.active = true;
-  }
-
-  update(dt, cam, W, H, mode, isSky = null) {
+  update(dt) {
     if (!meta) return load();
-    dt = Math.min(dt, 0.1);
-    this.time += dt;
-    const T = TIERS[0];
-    const busy = mode === 'low' ? 0.6 : 1;
-    // a new view (the title's wide shot → the game's, a zoom step, the other level): the sky starts
-    // over, already full, for this view — not the craft spread over the last one's
-    const key = W + 'x' + H + mode;
-    if (this.key !== key) {
-      this.key = key;
-      for (const c of this.pool) c.active = false;
-      this.warm = false;
-      this.axis = mode === 'low' ? -1 : 1; // the plaza's streams run \, the undercity's /
-    }
-    if (!this.warm) {
-      // already flying when the level opens
-      this.warm = true;
-      for (let i = 0; i < Math.round(T.max * 0.6 * busy); i++) this.spawn(cam, W, H, this.rng.next(), isSky);
-    }
-    for (const c of this.pool) {
-      if (!c.active) continue;
-      c.k += c.v * dt;
-      if (c.k > c.rows) c.active = false; // across and off the far side: back to the pool
-    }
-    this.next -= dt;
-    if (this.next <= 0) {
-      this.spawn(cam, W, H, 0, isSky);
-      this.next = -Math.log(1 - this.rng.next() * 0.999) / (T.rate * busy);
-    }
+    this.time += Math.min(dt, 0.1);
   }
 
-  /** `front`: only the craft in front of (true) or behind (false) the nearest building layer; all if unset. */
-  draw(ctx, ti, cam, front) {
+  /** A lane's settings, from its tier, skyway and lane index (seeded). */
+  lane(ti, j, i, ramp) {
+    const T = TIERS[ti];
+    const h = (n) => hash(this.seed, ti, j, i, ramp ? 7 : 3, n);
+    const dir = ramp ? (h(1) < 0.5 ? 1 : -1) : (i + j) % 2 ? 1 : -1; // neighbours flow opposite ways
+    const vx = T.speed[0] + h(2) * (T.speed[1] - T.speed[0]);
+    const slope = T.axis / 2 + (ramp ? (h(3) < 0.5 ? -1 : 1) * T.slope : 0);
+    // the train: seeded gaps, at least a craft's length and a half apart
+    const n = Math.max(1, Math.round((T.per1000 * PERIOD) / 1000 * (0.6 + h(4) * 0.8) * (ramp ? 0.7 : 1)));
+    const minGap = T.k ? 120 * T.k : 14;
+    const offs = [];
+    let x = h(5) * PERIOD;
+    for (let k = 0; k < n; k++) {
+      offs.push(x % PERIOD);
+      x += minGap + (-Math.log(1 - h(10 + k) * 0.999) * (PERIOD / n - minGap));
+      if (x - offs[0] > PERIOD - minGap) break;
+    }
+    return { dir, vx, slope, offs, h };
+  }
+
+  /** Draw tier ti for the view (game px): every lane through it, top lanes first. */
+  draw(ctx, ti, cam, W, H, mode = 'up') {
     if (!meta) return;
     const T = TIERS[ti];
-    const vx = Math.round(cam.x * T.f);
-    const vy = Math.round(cam.y * T.f);
-    const list = this.pool.filter((c) => c.active && (front === undefined || c.front === front)).sort((a, b) => a.y0 + a.sy * a.k - (b.y0 + b.sy * b.k));
-    for (const c of list) {
-      const k = Math.round(c.k); // whole rows: x moves exactly two per row
-      drawCraft(ctx, c.view, c.x0 - vx + c.sx * k, c.y0 - vy + c.sy * k, 0.5);
+    const vx = cam.x * T.f;
+    const vy = cam.y * T.f;
+    const x0 = vx - MARGIN;
+    const x1 = vx + W + MARGIN;
+    const busy = mode === 'low' ? 0.6 : 1;
+    const t = this.time;
+    const glowImg = glowSprite();
+    const items = [];
+    for (const ramp of T.ramp ? [false, true] : [false]) {
+      const B = ramp ? T.B * T.ramp : T.B;
+      const nl = ramp ? 1 : T.lanes;
+      // the intercepts c (y = slope·x + c) of the lanes crossing the view
+      const sl = T.axis / 2 + (ramp ? T.slope : 0);
+      const sl2 = T.axis / 2 - (ramp ? T.slope : 0);
+      const ys = [vy - MARGIN, vy + H + MARGIN];
+      let cmin = Infinity;
+      let cmax = -Infinity;
+      for (const q of [sl, sl2]) for (const xx of [x0, x1]) for (const yy of ys) (cmin = Math.min(cmin, yy - q * xx)), (cmax = Math.max(cmax, yy - q * xx));
+      const ph = ramp ? B * 0.37 : 0;
+      for (let j = Math.floor((cmin - ph) / B) - 1; j <= Math.ceil((cmax - ph) / B); j++)
+        for (let i = 0; i < nl; i++) {
+          const L = this.lane(ti, j, i, ramp);
+          if (L.h(9) > busy + 0.15) continue; // the undercity's sky is quieter
+          const c = j * B + ph + i * T.gap;
+          for (let k = 0; k < L.offs.length; k++) {
+            const base = (((L.offs[k] + L.dir * L.vx * t) % PERIOD) + PERIOD) % PERIOD;
+            for (let X = base + PERIOD * Math.ceil((x0 - base) / PERIOD); X <= x1; X += PERIOD) {
+              const Y = L.slope * X + c;
+              if (Y < vy - MARGIN || Y > vy + H + MARGIN) continue;
+              const rep = Math.round((X - L.offs[k] - L.dir * L.vx * t) / PERIOD); // which repeat of the train (a stable id)
+              items.push([c, X, Y, L, k, `${ti}:${ramp ? 'r' : 'l'}${j}.${i}:${k}:${rep}`]);
+            }
+          }
+        }
     }
+    items.sort((a, b) => a[0] - b[0] || a[1] - b[1]); // higher lanes behind lower ones
+    for (const [, X, Y, L, k, id] of items) {
+      // whole pixels on the line: x first, y from it (no shimmer)
+      const sx = Math.round(X - vx);
+      const sy = Math.round(L.slope * Math.round(X) + (Y - L.slope * X)) - Math.round(vy);
+      const view = L.dir > 0 ? (T.axis > 0 ? 'SE' : 'NE') : T.axis > 0 ? 'NW' : 'SW';
+      if (this.log) this.log.push([id, sx, sy, view, L.dir, T.k]); // (tools/qa/skytraffic.mjs)
+      if (T.k === 0) {
+        // a far craft: a dark dash along its heading and its headlight
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = 'rgba(14,14,22,0.85)';
+        ctx.fillRect(sx - 2, sy, 4, 1);
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.drawImage(glowImg, 0, 0, 9, 9, sx + L.dir * 2 - 3, sy - 3, 7, 7);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = '#e4f0ff';
+        ctx.fillRect(sx + L.dir * 2, sy, 1, 1);
+        continue;
+      }
+      const craft = this.craftOf(L, k);
+      const v = craft.views[view];
+      drawCraft(ctx, v, sx, sy, T.k);
+      // the headlight on its nose
+      const fx = sx - Math.ceil(v.w * T.k) / 2 + v.front[0] * T.k;
+      const fy = sy - Math.ceil(v.h * T.k) / 2 + v.front[1] * T.k;
+      const gs = T.k >= 1 ? 13 : T.k >= 0.5 ? 9 : 7;
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.drawImage(glowImg, 0, 0, 9, 9, Math.round(fx - gs / 2), Math.round(fy - gs / 2), gs, gs);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#eef6ff'; // its bright core
+      ctx.fillRect(Math.round(fx), Math.round(fy), 1, 1);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  /** The craft of a lane's k-th place (seeded, by the classes' weights). */
+  craftOf(L, k) {
+    let u = L.h(40 + k);
+    let cls = 'commuter';
+    for (const [name, c] of Object.entries(CLASSES)) {
+      if (u < c.weight) {
+        cls = name;
+        break;
+      }
+      u -= c.weight;
+    }
+    const all = Object.values(meta.craft);
+    const list = (this.craftCache[cls] ||= all.filter((c) => c.cls === cls));
+    const pool = list.length ? list : all;
+    return pool[Math.floor(L.h(60 + k) * pool.length)];
   }
 }
 
