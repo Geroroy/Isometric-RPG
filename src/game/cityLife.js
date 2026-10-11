@@ -10,6 +10,11 @@
 import { Citizen } from './citizens.js';
 import { dist, rand, chance } from '../core/math.js';
 import LIFE from '../data/cityLife.json';
+import UNDERCITY_V2 from '../data/undercity_v2.json';
+import { MAP_V2 } from '../world/mapVersion.js';
+
+// the rebuilt city (?map=v2) has its own places and patrols; the people and their routines stay
+if (MAP_V2) Object.assign(LIFE, { places: UNDERCITY_V2.life.places, patrols: UNDERCITY_V2.life.patrols });
 import { SHEET_PROPS, FOODS } from '../world/cityProps.js';
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];

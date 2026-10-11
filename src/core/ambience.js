@@ -9,9 +9,11 @@
 //              panned to where it is
 // Everything fades out away from the hub (Christophsis, the Movie Duels).
 import { clamp, dist } from './math.js';
+import UNDERCITY_V2 from '../data/undercity_v2.json';
+import { MAP_V2 } from '../world/mapVersion.js';
 
 const LOOPS = ['hum', 'wind', 'traffic', 'murmur', 'steam', 'cantina'];
-const MARKET = { x: 96, y: 108, rad: 16 }; // the murmur's busiest stretch
+const MARKET = MAP_V2 ? UNDERCITY_V2.city.market : { x: 96, y: 108, rad: 16 }; // the murmur's busiest stretch
 
 export class Ambience {
   constructor(audio) {

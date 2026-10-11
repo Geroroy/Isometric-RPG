@@ -138,6 +138,9 @@ let FOOTPRINTS = {};
 /** The sprites' collision outlines (tiles from the origin), once they are loaded. */
 export function setCityFootprints(city) {
   FOOTPRINTS = Object.fromEntries(Object.entries(city).filter(([, v]) => v && v.meta).map(([k, v]) => [k, v.meta.footprint]));
+  // a sprite that carries its own lights (the 1:1 building set, tools/sprites/undercity_buildings/bake.py)
+  // and has no entry here gets one from them
+  for (const [k, v] of Object.entries(city)) if (v && v.meta && !SHEET_PROPS[k]) SHEET_PROPS[k] = { lights: v.meta.lights || [] };
 }
 
 export const cityFootprint = (name) => FOOTPRINTS[name] || null;

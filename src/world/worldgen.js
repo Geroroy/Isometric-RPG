@@ -5,7 +5,11 @@
 import { RNG, fbm, dist, distToSegment, clamp } from '../core/math.js';
 import { PROPS } from '../gfx/models/props.js';
 import { SHEET_PROPS, cityFootprint, inPoly } from './cityProps.js';
-import UNDERCITY from '../data/undercity.json';
+import UNDERCITY_V1 from '../data/undercity.json';
+import UNDERCITY_V2 from '../data/undercity_v2.json';
+import { MAP_V2 } from './mapVersion.js';
+// the rebuilt city (?map=v2, docs/CORUSCANT_REBUILD.md) has its own layout
+const UNDERCITY = MAP_V2 ? UNDERCITY_V2 : UNDERCITY_V1;
 if (typeof window !== 'undefined') window.__undercity = UNDERCITY; // QA (tools/qa/undercity_ascii.mjs)
 
 export const MAP_W = 192;
@@ -474,6 +478,7 @@ export class Arena extends World {
     this.addProp('sepCrate', cx + 7.2, cy - 5);
     this.spawn = { x: cx - 3, y: cy + 3 };
     this.roadSegs = [];
+    this.qaSpots = U.qa || null; // (tools/qa: the rebuilt map's own spots)
     this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
   }
 }
@@ -635,6 +640,8 @@ export const CITY = {
   barDoor: { x: 117.4, y: 127.6 }, // in front of its door, on the square
   shaft: { x: 98, y: 112 }, // the one place light reaches the street: the plaza's centre
 };
+// the rebuilt city (?map=v2): the fixed points moved with its layout
+if (MAP_V2) Object.assign(CITY, UNDERCITY_V2.city);
 
 export class CityHub extends World {
   /** The data's props (data/undercity.json): p = a sprite of the underworld set, m = a model prop. */
@@ -704,7 +711,8 @@ export class CityHub extends World {
     // the outermost ring stays off limits (the pillars and pipes stand on it; no one on the lip)
     const [rx0, ry0, rx1] = U.grid.region;
     for (let x = rx0; x < rx1; x++) if (this.biome[ry0 * MAP_W + x] !== BIOME.VOID) this.blocked[ry0 * MAP_W + x] = 1;
-    for (let y = ry0; y < 134; y++) for (const x of [rx0, rx1 - 1]) if (this.biome[y * MAP_W + x] !== BIOME.VOID) this.blocked[y * MAP_W + x] = 1;
+    const ry1 = U.grid.region[3];
+    for (let y = ry0; y < ry1; y++) for (const x of [rx0, rx1 - 1]) if (this.biome[y * MAP_W + x] !== BIOME.VOID) this.blocked[y * MAP_W + x] = 1;
     this.addProp('turbolift', liftLow.x, liftLow.y);
     this.placeProps(U.props);
     for (const [x, y, z] of U.steam || []) this.steam.push({ x, y, z, t: rng.next() * 3 });
@@ -747,9 +755,10 @@ export class CityHub extends World {
     // the camera's regions (renderer: the view stays over the level it is on)
     this.camRegions = [
       { x0: up.x - up.hw, y0: up.y - up.hh, x1: up.x + up.hw, y1: up.y + up.hh },
-      { x0: 58, y0: 94, x1: 138, y1: 133 },
+      { x0: U.grid.region[0], y0: U.grid.region[1], x1: U.grid.region[2], y1: U.grid.region[3] - 1 },
     ];
     this.roadSegs = [];
+    this.qaSpots = U.qa || null; // (tools/qa: the rebuilt map's own spots)
     this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
   }
 }

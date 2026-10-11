@@ -4,6 +4,8 @@
 // anchor, the footprint and the flicker settings. Also the street's floor
 // texture, which the terrain samples in world coordinates.
 
+import { MAP_V2 } from '../world/mapVersion.js';
+
 const DIR = 'sprites/city/';
 
 /** Asset name -> its JSON (one image pixel per game pixel). */
@@ -73,6 +75,8 @@ async function loadOne(base, file) {
 // in reference/): the same per-sprite JSON format, listed by index.json, plus square ground
 // textures sampled in world space by the terrain (ground/ground.json)
 const UW_DIR = 'sprites/underworld/';
+// the 1:1 building set of the rebuilt city (tools/sprites/undercity_buildings, ?map=v2)
+const UC_DIR = 'sprites/undercity/';
 
 /** Every city sprite, the underworld set, the floor texture and the ground textures (ImageData). */
 export async function loadCitySprites(onProgress) {
@@ -114,6 +118,25 @@ export async function loadCitySprites(onProgress) {
     }
   } catch (e) {
     console.warn('언더월드 스프라이트: ' + e.message);
+  }
+  if (MAP_V2) {
+    const cb = import.meta.env.BASE_URL + UC_DIR;
+    try {
+      const index = await (await fetch(cb + 'index.json')).json();
+      const names = Object.keys(index);
+      const loaded = await Promise.all(
+        names.map((n) =>
+          loadOne(cb, index[n]).catch((e) => {
+            console.warn(e.message);
+            return null;
+          }),
+        ),
+      );
+      names.forEach((n, i) => loaded[i] && (out[n] = loaded[i]));
+      onProgress(1, '코러산트 언더시티: 건물');
+    } catch (e) {
+      console.warn('언더시티 건물: ' + e.message);
+    }
   }
   try {
     if (!LOAD_BLENDER_SET) throw new Error('the old street floor is not loaded');

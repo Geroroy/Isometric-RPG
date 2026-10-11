@@ -3,6 +3,8 @@
 // posts, turn towards Anakin when he comes close and face him while talking.
 import { Unit } from './units.js';
 import { angleDiff, dist } from '../core/math.js';
+import UNDERCITY_V2 from '../data/undercity_v2.json';
+import { MAP_V2 } from '../world/mapVersion.js';
 
 // hub: tile position in the city hub (see CITY in worldgen.js)
 export const NPC_DEFS = {
@@ -16,6 +18,8 @@ export const NPC_DEFS = {
   // Anakin's starfighter (placed by Game: the hub's pad and the Christophsis base)
   fighter: { name: '제다이 스타파이터', title: '아나킨의 전용기 · 출격', sprite: 'fighter' },
 };
+// the rebuilt city (?map=v2): the band plays in front of its cantina
+if (MAP_V2) for (const [id, at] of Object.entries(UNDERCITY_V2.npcs)) if (NPC_DEFS[id]) NPC_DEFS[id].hub = at;
 
 export const TALK_RANGE = 2.2;
 

@@ -66,7 +66,9 @@ await step('turbolift down', async () => {
   const y = await page.evaluate(() => __game.player.y);
   if (y < 90) throw new Error('still on the upper level, y=' + y);
 });
-for (const [name, x, y] of [['plaza', 98, 112], ['west alley', 76, 114], ['court', 75, 126], ['workshop', 121, 106], ['cantina', 117, 128], ['vent SE', 130, 121], ['overlook', 96, 123.5]]) {
+// the undercity's spots: the map's own (world.qaSpots: the rebuilt map, ?map=v2) or the original's
+const SPOTS = (await page.evaluate(() => __game.world.qaSpots && Object.entries(__game.world.qaSpots).map(([k, v]) => [k, v[0], v[1]]))) || [['plaza', 98, 112], ['west alley', 76, 114], ['court', 75, 126], ['workshop', 121, 106], ['cantina', 117, 128], ['vent SE', 130, 121], ['overlook', 96, 123.5]];
+for (const [name, x, y] of SPOTS) {
   await step('undercity: ' + name, async () => {
     await page.evaluate(({ x, y }) => {
       __game.player.x = x;
