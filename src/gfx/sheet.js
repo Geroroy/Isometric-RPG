@@ -16,6 +16,7 @@ export const SHEETS = {
   anakin_vader: 'sprites/anakin_vader_128.json', // the Order 66 cloak, hood raised
   anakin_robe: 'sprites/anakin_robe_128.json', // the same cloak, hood down
   anakin_tunic: 'sprites/anakin_tunic_128.json', // the Jedi Knight's tunic
+  anakin_cw_s1: 'sprites/anakin_cw_s1_128.json', // The Clone Wars season 1 (no browser-baked fallback)
 };
 const CHARS_DIR = 'sprites/chars/';
 
