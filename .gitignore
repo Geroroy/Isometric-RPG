@@ -13,3 +13,6 @@ dist-s2
 dist-notheme
 dist-before-saber
 dist-art
+# hair review renders: only the comparison sheets and parameter snapshots are kept
+renders/**/old_*.png
+renders/**/new_*.png

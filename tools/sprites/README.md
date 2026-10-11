@@ -140,3 +140,28 @@ glTF는 헤어 커브를 담지 못하므로 렌더 때 붙입니다: `render_sp
 
 `hair_preview.py`는 머리 클로즈업(정면·측면·후면·아이소)과 전신 128px(정면·측면·아이소)을 Cycles/EEVEE로 렌더합니다.
 헤어가 붙으면 프레임당 렌더 시간이 약 10% 늘어납니다(16방향 4.7 → 5.2초).
+
+### 시즌 7 헤어 메시 (`hair/`, 에피소드 III 외형용)
+
+클론워즈 시즌 7 아나킨(`reference/anakin_hair/`) 기준의 **메시 헤어**. 클론워즈 갑옷 외형(`anakin`)은 자기 헤어를 그대로 쓰고,
+튜닉·로브 외형에 렌더 때 붙던 헤어 커브 대신 씁니다. 두피 위 가이드 커브를 따라 굵은 웨이브 다발(위는 볼록하고 아래는 납작한
+렌즈 단면의 튜브)을 겹쳐 쌓습니다. 정수리 다발은 뒤·옆 끝까지 이어지고, 바깥 끝은 바깥으로 살짝 뻗칩니다. 앞머리는 그의 왼쪽
+가르마에서 이마를 가로질러 오른쪽 관자놀이로 넘어가고, 한두 가닥이 이마로 흘러내립니다. 아래에는 머리색 셸이 깔립니다.
+머리 뼈 `head`에 가중치 1로 붙고, 다른 메시는 그대로 다시 내보냅니다(애니메이션 17개, 노드·스킨 같음). 원본 GLB는 덮어쓰지
+않고, 지운 헤어는 `_hair_v1_backup.blend`로 남깁니다.
+
+| 파일 | 역할 |
+|---|---|
+| `hair/hair_v2.py IN.glb OUT.glb [params] [backup.blend]` | 헤어 교체. 삼각형 수를 출력하고 예산(가장 무거운 헤어 메시 29,764의 1.5배)을 넘으면 경고 |
+| `hair/hair_v2_params.json` | 모든 조형 값: 그룹별 개수·뿌리/끝 범위·폭·두께·높이·웨이브·뻗침·볼륨, 팔레트, 셸, 끝 모양 |
+| `hair/hair_review.py model.glb dir label [hair.blend]` | 정면·오른쪽·왼쪽·후면·3/4 클로즈업 + 게임 아이소 시점(스프라이트 실제 크기, 2배 렌더 후 축소) |
+| `hair/hair_sheet.py` · `hair/hair_iter.sh N tunic\|robe "메모"` | 레퍼런스·이전·새 헤어 비교 시트를 `renders/hair_iter_N/`에 |
+
+```
+.bvenv/bin/python tools/sprites/hair/hair_v2.py tools/sprites/out/anakin_tunic.glb tools/sprites/out/anakin_tunic_hairv2.glb
+.bvenv/bin/python tools/sprites/hair/hair_v2.py tools/sprites/out/anakin_robe.glb tools/sprites/out/anakin_robe_hairv2.glb
+sh tools/sprites/hair/hair_iter.sh 9 tunic "메모"     # 비교 시트
+```
+
+게임에 쓰려면 `render_config.json`의 `anakin_tunic`·`anakin_robe` 항목에서 `glb`를 `*_hairv2.glb`로 바꾸고 `hair`를 지운 뒤
+`render_anakin.py anakin_tunic anakin_robe`로 시트를 다시 굽습니다(먼저 ESTIMATE 확인).
