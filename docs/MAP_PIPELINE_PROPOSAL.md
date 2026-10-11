@@ -193,7 +193,7 @@ CLAUDE.md 규칙("설정은 render_config.json에서만")을 지키기 위해 �
 - 캐릭터의 젖은 바닥 반사는 사라짐(허용). 투명·홀로 프롭은 `dynamic`으로 남김.
 - Z 패스 비AA 경계 → 실루엣 가장자리 1 px 프린지(침식+바이어스로 완화, 실험 필요).
 - 저장소 크기: 맵당 15~100 MB PNG. `DESIGN_REVIEW.md` 1.1이 이미 `.git` 110 MB를 지적 → Git LFS 또는 베이크 커밋 묶기 결정 필요.
-- "리마스터" HD 밀도 2 모드(`terrain.js` `hd`)는 2배 타일이 필요 → 지원 여부 결정.
+- ~~"리마스터" HD 밀도 2 모드~~ → 취소(그래픽 설정은 하나, `GAME_DESIGN.md` 2.1.1). 2배 타일 불필요.
 - 런타임 LUT: CSS/SVG 필터로 충분한가, WebGL 후처리 패스를 둘 것인가.
 - 크리스토프시스: 절차 산포 수백 개를 JSON으로 고정할지, 바닥만 베이크하고 산포는 스프라이트로 둘지.
 - Blender 5.2 컴포지터 API(`scene.compositing_node_group`, `render_sprites.py:451`)와 라이트 그룹 메모리(타일당 패스 9개 × 2304² float ≈ 190 MB, 가능).
