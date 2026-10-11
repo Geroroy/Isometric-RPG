@@ -1,1 +1,3 @@
 start                        0.6990  front:0.710 right:0.643 left:0.604 back:0.839  
+r0 len_side +                0.6970  front:0.708 right:0.639 left:0.599 back:0.840  len_side=+0.100
+r0 len_side -                0.7010  front:0.710 right:0.646 left:0.608 back:0.838  len_side=-0.100
