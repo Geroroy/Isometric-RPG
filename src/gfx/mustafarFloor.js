@@ -13,21 +13,22 @@ export async function loadMustafarFloor() {
   return x.getImageData(0, 0, img.width, img.height);
 }
 
-// The film's wall consoles (tools/sprites/mustafar_console/bake.py): city-sheet sprites (renderer.js draws a
-// prop with `sheet` from assets.city: body, then the neon layer after the light map), one per wall direction
-// and screen colour
-export const MUSTAFAR_CONSOLES = ['mfConsole', 'mfConsole_r', 'mfConsoleRed', 'mfConsoleRed_r'];
+// The film's set pieces — wall consoles, the covered corridor, the table, chairs and window walls
+// (tools/sprites/mustafar_console, mustafar_corridor, mustafar_set):
+// city-sheet sprites (renderer.js draws a prop with `sheet` from assets.city: body, then the neon layer after
+// the light map), one per wall direction (and screen colour)
+export const MUSTAFAR_CONSOLES = ['mfConsole', 'mfConsole_r', 'mfConsoleRed', 'mfConsoleRed_r', 'mfCorridor', 'mfCorridor_r', 'mfTable', 'mfWindow', 'mfWindow_r', 'mfChair', 'mfChair_x', 'mfPassage', 'mfPassage_x'];
 export async function loadMustafarConsoles() {
   const base = import.meta.env.BASE_URL + 'sprites/mustafar/';
   const out = {};
   for (const name of MUSTAFAR_CONSOLES) {
     try {
       const meta = await cachedJSON(base + name + '.json');
-      const [body, neon] = await Promise.all([cachedImage(base + meta.layers.body), cachedImage(base + meta.layers.neon)]);
+      const [body, neon] = await Promise.all([cachedImage(base + meta.layers.body), meta.layers.neon ? cachedImage(base + meta.layers.neon) : null]);
       const frame = (page) => ({ page, sx: 0, sy: 0, w: page.width, h: page.height, ox: meta.anchor[0], oy: meta.anchor[1], k: meta.k });
-      out[name] = { meta, body: frame(body), neon: frame(neon), reflect: null };
+      out[name] = { meta, body: frame(body), neon: neon && frame(neon), reflect: null };
     } catch (e) {
-      console.warn('무스타파 콘솔: ' + e.message); // left out of the rooms (addSheetProp skips it)
+      console.warn('무스타파 세트: ' + e.message); // left out of the rooms (addSheetProp skips it)
     }
   }
   return out;

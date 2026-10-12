@@ -324,9 +324,10 @@ export class World {
   addSheetProp(name, x, y, opts = {}) {
     const def = SHEET_PROPS[name];
     if (!cityFootprint(name)) return null; // its sprite did not load: leave it out
-    const p = { type: 'sheet', sheet: name, x, y, flat: !!def.flat, phase: this.rng.next() * 10, neon: { until: 0, phase: this.rng.next() * 7 } };
+    const flat = !!(def.flat || opts.flat); // drawn with the ground, under everyone (a corridor's open inside)
+    const p = { type: 'sheet', sheet: name, x, y, flat, phase: this.rng.next() * 10, neon: { until: 0, phase: this.rng.next() * 7 } };
     const fp = cityFootprint(name);
-    if (fp && !opts.noBlock && !def.flat) {
+    if (fp && !opts.noBlock && !flat) {
       const xs = fp.map((q) => q[0]);
       const ys = fp.map((q) => q[1]);
       let any = false;
@@ -581,30 +582,47 @@ export class MustafarArena extends World {
     this.door(M.door1, 0);
 
     // --- entry corridor ---------------------------------------------------
-    this.walls(M.corridor, 'hazardWall', { west: false });
+    // its long wall windows on the lava, as in the film (tools/sprites/mustafar_set: three 5.5 m bays)
+    const windows = [-5.5, 0, 5.5].map((dx) => this.addSheetProp('mfWindow', M.corridor.x + dx, M.corridor.y - M.corridor.hh - 0.5, { noBlock: true }));
+    this.walls(M.corridor, 'hazardWall', { west: false, north: windows.includes(null) });
     this.door(M.door2, 0);
 
     // --- the conference room ---------------------------------------------
     const H = M.hall;
-    // the film's screen consoles (tools/sprites/mustafar_console): along the long wall between the two doors,
-    // a pair centred on the table; on the end wall a sealed door in the middle with one either side
-    this.walls(H, 'hazardWall', { west: false, gaps: [[M.junction.x - 2, M.junction.x + 2], [67.5, 70.5], [H.x - 3, H.x + 3]] });
+    // the film's screen consoles (tools/sprites/mustafar_console): along the long wall a pair centred on the
+    // table between the two doors and one past the passage north; on the end wall a sealed door in the middle
+    // with one either side
+    this.walls(H, 'hazardWall', { west: false, gaps: [[M.junction.x - 2, M.junction.x + 2], [67.5, 70.5], [H.x - 3, H.x + 3], [M.junction.x + 2, M.junction.x + 5]] });
     this.addProp('blastDoor', H.x - 5, H.y - H.hh - 0.9, { angleIdx: 0, noBlock: true });
-    for (const dx of [-1.5, 1.5]) this.console(H, 'north', dx);
+    for (const dx of [-1.5, 1.5, 8.5]) this.console(H, 'north', dx);
+    // the passage on to the control room (the film's sets, reference/color_rots): a covered corridor whose
+    // pillared portal stands in the north wall, the consoles either side meeting its pillars
+    this.addSheetProp('mfCorridor', M.junction.x, H.y - H.hh, { noBlock: true });
     for (const dy of [-4, 4]) this.console(H, 'west', dy);
     this.addProp('blastDoor', H.x - H.hw - 0.9, H.y, { angleIdx: 1, noBlock: true });
-    this.door({ x: M.junction.x, y: H.y - H.hh }, 1);
-    this.addProp('confTable', H.x, H.y);
-    for (const dx of [-1.6, 0, 1.6]) {
-      this.addProp('confChair', H.x + dx, H.y - 1.5, { angleIdx: 3 });
-      this.addProp('confChair', H.x + dx, H.y + 1.5, { angleIdx: 1 });
+    this.door({ x: M.junction.x, y: H.y - H.hh }, 1, false); // (the covered corridor's portal is its frame)
+    // the film's long table, its pointed end to the passage; the high-backed chairs along its far side and
+    // at its head (the near side left clear, as the near walls are); the model props if the sprites did not load
+    if (this.addSheetProp('mfTable', H.x, H.y)) {
+      for (const dx of [-3.2, -1.7, -0.2, 1.3, 2.8]) this.addSheetProp('mfChair', H.x + dx, H.y - 1.35);
+      this.addSheetProp('mfChair_x', H.x - 4.7, H.y);
+    } else {
+      this.addProp('confTable', H.x, H.y);
+      for (const dx of [-1.6, 0, 1.6]) {
+        this.addProp('confChair', H.x + dx, H.y - 1.5, { angleIdx: 3 });
+        this.addProp('confChair', H.x + dx, H.y + 1.5, { angleIdx: 1 });
+      }
+      this.addProp('confChair', H.x - 3.6, H.y, { angleIdx: 0 });
+      this.addProp('confChair', H.x + 3.6, H.y, { angleIdx: 2 });
     }
-    this.addProp('confChair', H.x - 3.6, H.y, { angleIdx: 0 });
-    this.addProp('confChair', H.x + 3.6, H.y, { angleIdx: 2 });
     for (const [dx, dy] of [[-4, -3.2], [3.2, -3.6], [-1.2, 3.4], [5.2, 2.4], [-6.2, 1.2], [6.5, -1.6]]) this.addProp('sepBody', H.x + dx, H.y + dy, { noBlock: true });
 
     // --- the junction corridor (north out of the hall) --------------------
-    this.walls({ ...M.junction, hh: M.junction.hh - 0.5 }, 'hazardWall', { north: false });
+    // its inside the film's corridor, open to the camera (tools/sprites/mustafar_set: the far wall with its light
+    // panels, a low near wall, a portal at either end), drawn with the ground so whoever walks it stays in view;
+    // its hall end under the covered corridor's shell (which clears while anyone is inside)
+    if (!this.addSheetProp('mfPassage', M.junction.x, M.junction.y, { noBlock: true, flat: true }))
+      this.walls({ x: M.junction.x, y: (M.junction.y - M.junction.hh + 106) / 2, hw: M.junction.hw, hh: (106 - (M.junction.y - M.junction.hh)) / 2 }, 'hazardWall', { north: false });
 
     // --- the control room --------------------------------------------------
     const C = M.control;
@@ -669,9 +687,9 @@ export class MustafarArena extends World {
     if (west) for (let y = -r.hh + 1; y <= r.hh - 1; y += 2) edge(r.x - r.hw - 0.9, r.y + y, 1);
   }
 
-  /** A doorway: hazard pillars either side of a two-tile opening (`ai` 0: passage along x, 1: along y). */
-  door(d, ai) {
-    this.addProp('doorFrame', d.x, d.y, { angleIdx: ai, noBlock: true });
+  /** A doorway: hazard pillars either side of a two-tile opening (`ai` 0: passage along x, 1: along y); `frame`: its door frame prop. */
+  door(d, ai, frame = true) {
+    if (frame) this.addProp('doorFrame', d.x, d.y, { angleIdx: ai, noBlock: true });
     for (const s of [-1.25, 1.25]) {
       const tx = Math.floor(ai ? d.x + s : d.x);
       const ty = Math.floor(ai ? d.y : d.y + s);

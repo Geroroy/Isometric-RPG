@@ -413,6 +413,21 @@ export class Renderer {
         const bob = pr.sheet && SHEET_PROPS[pr.sheet].bob ? Math.round(Math.sin(this.time * SHEET_PROPS[pr.sheet].bob + pr.phase) * 1.2) : 0;
         pr.bob = bob;
         pr.window = null;
+        // a covered passage (a sheet with `roof`): its shell clears while anyone stands inside it, showing the
+        // open inside drawn under it (worldgen.js: the Mustafar corridor)
+        if (pr.sheet && pr.layers.meta.roof) {
+          const [x0, y0, x1, y1] = pr.box;
+          const inside = g.activeUnits.some((u) => !u.dead && !u.hidden && u.x > x0 - 0.3 && u.x < x1 + 0.3 && u.y > y0 - 0.3 && u.y < y1 + 0.3);
+          const to = inside ? 0 : 1;
+          pr.fade = (pr.fade ?? 1) + (to - (pr.fade ?? 1)) * Math.min(1, dt * 6);
+          if (pr.fade < 0.99) {
+            if (pr.fade < 0.01) continue;
+            ctx.globalAlpha = pr.fade;
+            this.drawFrame(pr.frame, pr.sx, pr.sy);
+            ctx.globalAlpha = 1;
+            continue;
+          }
+        }
         if (pf && d.depth > pDepth && r[3] > 30 && pp.x + 8 > r[0] && pp.x - 8 < r[0] + r[2] && pp.y > r[1] + 8 && pp.y - pf.h < r[1] + r[3] && this.coversPlayer(pr, pp, pf)) {
           pr.window = { x: pp.x - cam.x, y: pp.y - pf.h * 0.5 - cam.y, r: Math.max(30, pf.h * 0.8) };
           this.drawWindowed(pr.frame, pr.sx, pr.sy + bob, pr.window);
@@ -749,7 +764,8 @@ export class Renderer {
       const r = pr.rect;
       if (r[0] + r[2] < cam.x || r[0] > cam.x + W || r[1] + r[3] < cam.y || r[1] > cam.y + H + 60) continue;
       const L = pr.layers;
-      const level = neonLevel(pr.neon, L.meta.neon, this.time, dt);
+      if (!L.meta.neon) continue; // nothing of it glows (a Mustafar table or chair)
+      const level = neonLevel(pr.neon, L.meta.neon, this.time, dt) * (pr.fade ?? 1);
       // (an empty layer is null: citySprites.js drops it at load)
       if (L.reflect) {
         ctx.globalAlpha = Math.min(1, level) * 0.85;
