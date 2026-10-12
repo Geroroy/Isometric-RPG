@@ -86,6 +86,26 @@ export class Effects {
     }
   }
 
+  /** Fire licking up from a point (burning cloth, a cut console). */
+  flame(x, y, z = 0.2, n = 3, size = 1) {
+    for (let i = 0; i < n; i++) {
+      this.parts.push({ kind: 'fire', x: x + rand(-0.25, 0.25) * size, y: y + rand(-0.25, 0.25) * size, z, vx: rand(-0.2, 0.2), vy: rand(-0.2, 0.2), vz: rand(1.2, 2.6), grav: -1.5, t: 0, life: rand(0.3, 0.7), add: true, size: rand(1.5, 3) * size });
+    }
+    if (Math.random() < 0.5) this.smoke(x, y, z + 0.6, 1, '40,30,26');
+  }
+
+  /** A gob of lava landing: a splash of embers and a glow. */
+  lavaSplash(x, y, size = 1) {
+    for (let i = 0; i < 10 * size; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = rand(0.5, 2.5) * size;
+      this.parts.push({ kind: 'fire', x, y, z: 0.1, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, vz: rand(1.5, 4), grav: 7, t: 0, life: rand(0.4, 0.9), add: true, size: rand(1.5, 2.5) });
+    }
+    this.sparks(x, y, 0.2, '#ffb040', 6, 3);
+    this.light(x, y, 0.2, [255, 120, 40], 60 * size, 0.6);
+    this.decals.push({ x, y, r: 0.5 * size, t: 0, life: 12 });
+  }
+
   afterimage(x, y, frame, alpha = 0.4) {
     this.parts.push({ kind: 'ghost', x, y, z: 0, vx: 0, vy: 0, vz: 0, grav: 0, t: 0, life: 0.25, frame, alpha });
   }

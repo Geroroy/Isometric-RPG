@@ -215,7 +215,7 @@ export class Renderer {
     for (const u of g.activeUnits) {
       if (u.dead || u.hidden) continue;
       const s = worldToScreen(u.x, u.y);
-      const r = u.kind === 'b2' ? 11 : u.kind === 'r2' ? 7 : u.kind === 'fighter' ? 30 : 9;
+      const r = u.shadowR || (u.kind === 'b2' ? 11 : u.kind === 'r2' ? 7 : u.kind === 'fighter' ? 30 : 9);
       shadow(s.x, s.y, r / (1 + u.z * 0.4));
     }
     for (const pk of g.pickups) {
@@ -224,7 +224,7 @@ export class Renderer {
     }
 
     // --- depth-sorted standing objects
-    for (const u of g.activeUnits) if (!u.dead && !u.hidden) standing.push({ depth: u.x + u.y, unit: u });
+    for (const u of g.activeUnits) if (!u.dead && !u.hidden) standing.push({ depth: u.x + u.y + (u.depthBias || 0), unit: u });
     for (const pk of g.pickups) standing.push({ depth: pk.x + pk.y, pickup: pk });
     standing.sort((a, b) => a.depth - b.depth);
     const pDepth = p.x + p.y;

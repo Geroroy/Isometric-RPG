@@ -26,6 +26,7 @@ const PAL = {
   [BIOME.CITY_UP]: [186, 180, 166],
   [BIOME.CITY_LOW]: [70, 66, 62],
   [BIOME.VOID]: [10, 12, 22],
+  [BIOME.GRATE]: [44, 42, 40],
 };
 const ROAD = [128, 108, 84];
 const EDGE = [62, 57, 54];
@@ -46,11 +47,12 @@ export class Terrain {
     this.L = new Float32Array(n); // lava weight
     this.V = new Float32Array(n); // the city's drop (dark, far lights)
     this.U = new Float32Array(n); // city upper level (inlaid stone)
+    this.Gt = new Float32Array(n); // catwalk grating
     for (let y = 0; y < world.h; y++) {
       for (let x = 0; x < world.w; x++) {
         const i = y * world.w + x;
         const b = world.biome[i];
-        let c = world.blocked[i] === 2 && b !== BIOME.LAVA && b !== BIOME.ASH && b !== BIOME.VOID ? EDGE : PAL[b];
+        let c = world.blocked[i] === 2 && b !== BIOME.LAVA && b !== BIOME.ASH && b !== BIOME.VOID && b !== BIOME.GRATE ? EDGE : PAL[b];
         const v = (valueNoise(x / 3.5, y / 3.5, 7) - 0.5) * 22 + (hash2(x, y, 3) - 0.5) * 8;
         this.R[i] = c[0] + v;
         this.G[i] = c[1] + v;
@@ -58,6 +60,7 @@ export class Terrain {
         this.P[i] = b === BIOME.RUIN || b === BIOME.BASE || b === BIOME.HANGAR || b === BIOME.MUSTAFAR || b === BIOME.CITY_UP || b === BIOME.CITY_LOW ? 1 : 0;
         this.V[i] = b === BIOME.VOID ? 1 : 0;
         this.U[i] = b === BIOME.CITY_UP ? 1 : 0;
+        this.Gt[i] = b === BIOME.GRATE ? 1 : 0;
         if (b === BIOME.VOID) {
           // no grain in the drop
           this.R[i] = c[0];
@@ -145,6 +148,7 @@ export class Terrain {
         const lava = this.sample(this.L, u, v);
         const drop = this.sample(this.V, u, v);
         const upper = this.sample(this.U, u, v);
+        const grate = this.sample(this.Gt, u, v);
         const grain = hd ? hash2(Math.floor(sx * S), Math.floor(sy * S), 99) : hash2(sx, sy, 99);
         const blot = valueNoise(fx * 1.7, fy * 1.7, 13) - 0.5;
         // blotchy mid-frequency variation
@@ -206,6 +210,20 @@ export class Terrain {
           r += (255 - r) * hot;
           g += (150 * hot + 60 * hot * hot - g) * hot;
           b += (30 - b) * hot;
+        }
+        // catwalk grating: a tight mesh of dark bars, lava glowing up through the gaps
+        if (grate > 0.5) {
+          const gx = (((fx * 3) % 1) + 1) % 1;
+          const gy = (((fy * 3) % 1) + 1) % 1;
+          if (gx < 0.3 || gy < 0.3) {
+            r += 18;
+            g += 16;
+            b += 14;
+          } else {
+            r += (120 - r) * 0.5;
+            g += (40 - g) * 0.5;
+            b += (10 - b) * 0.5;
+          }
         }
         // upper city: polished stone with brass inlay lines every 4 tiles
         if (upper > 0.5) {

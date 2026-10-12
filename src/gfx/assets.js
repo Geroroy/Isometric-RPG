@@ -3,7 +3,7 @@
 import { Baker } from './baker.js';
 import * as M from './models/characters.js';
 import * as A from './models/anims.js';
-import { PROPS, buildPropVariants, buildLaat, buildFighter } from './models/props.js';
+import { PROPS, buildPropVariants, buildLaat, buildFighter, buildCollectorDroid, buildRepulsorPlatform } from './models/props.js';
 import { RNG } from '../core/math.js';
 import { loadBundle, saveBundle } from './assetCache.js';
 
@@ -36,6 +36,11 @@ export const CHARACTERS = {
   fighter: () => ({ model: { root: buildFighter(), applyPose() {} }, dirs: 8, frame: [240, 170, 120, 120], anims: { idle: { frames: 1, fps: 1, loop: true, pose: () => ({}) } }, markers: [], ss: 2 }),
 };
 
+/** A rigid model baked as a unit with one still frame per direction. */
+function still(root, dirs, frame) {
+  return { model: { root, applyPose() {} }, dirs, frame, anims: { idle: { frames: 1, fps: 1, loop: true, pose: () => ({}) } }, markers: [], ss: 2 };
+}
+
 function citizen(kind, palette, anims) {
   return { model: M.buildCitizen({ kind, palette }), dirs: 8, frame: [120, 120, 60, 100], anims, markers: [] };
 }
@@ -53,6 +58,9 @@ export const DUELS = {
     obiwan3: () => ({ model: M.buildObiWan3(), dirs: 16, frame: [170, 160, 85, 120], anims: A.OBIWAN3_ANIMS, markers: SABER, ss: 2 }),
     obiwan3Robe: () => ({ model: M.buildObiWan3({ robe: true }), dirs: 8, frame: [170, 160, 85, 120], anims: A.OBIWAN3_ROBE_ANIMS, markers: [], ss: 2 }),
     padme: () => ({ model: M.buildPadme(), dirs: 8, frame: [140, 130, 70, 100], anims: A.PADME_ANIMS, markers: [], ss: 2 }),
+    // the river: Anakin's panning droid and Obi-Wan's repulsor platform (units, so they drift)
+    collector: () => still(buildCollectorDroid(), 8, [200, 140, 100, 100]),
+    platform: () => still(buildRepulsorPlatform(), 4, [180, 120, 90, 90]),
   },
 };
 export const DUEL_CHARACTERS = Object.assign({}, ...Object.values(DUELS));

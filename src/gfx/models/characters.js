@@ -267,6 +267,11 @@ function buildAnakinEp3(robe, o = {}) {
     j['an' + side].add(box(0.26, 0.03, 0.115, mat(0x141210), 0.055, -0.08, 0)); // sole
   }
 
+  // the high-ground ending hides the lower legs and the right forearm
+  rig.toggles.shinL = j.knL;
+  rig.toggles.shinR = j.knR;
+  rig.toggles.foreR = j.elR;
+
   // Waist: wide obi, belt with buckle, pouch (his right) and clip (his left).
   j.pelvis.add(cyl(0.15, 0.16, 0.18, tunic, 0, -0.03, 0, 8));
   j.pelvis.add(scl(cyl(0.172, 0.176, 0.14, cloth(K.obi), 0, 0.09, 0, 10), 0.85, 1, 1.05));

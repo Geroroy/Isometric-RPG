@@ -95,7 +95,7 @@ export class Game {
 
   /** The Christophsis world (camps, the droid war), wherever Anakin is. */
   get front() {
-    return this.places.christophsis ? this.places.christophsis.world : this.world;
+    return this.places && this.places.christophsis ? this.places.christophsis.world : this.world;
   }
 
   populateChristophsis() {
@@ -609,10 +609,10 @@ export class Game {
     const act = this.activeUnits;
     for (let i = 0; i < act.length; i++) {
       const a = act[i];
-      if (a.dead || a.z > 0.3) continue;
+      if (a.dead || a.z > 0.3 || a.noCollide) continue;
       for (let j = i + 1; j < act.length; j++) {
         const b = act[j];
-        if (b.dead || b.z > 0.3) continue;
+        if (b.dead || b.z > 0.3 || b.noCollide) continue;
         const dx = b.x - a.x;
         const dy = b.y - a.y;
         const min = a.radius + b.radius;

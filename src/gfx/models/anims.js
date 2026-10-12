@@ -737,7 +737,77 @@ const flip = (t) => {
     elL: [0, 0, 1.2],
   });
 };
-export const ANAKIN_MUSTAFAR_ANIMS = { ...ANAKIN_ANIMS, backflip: { frames: 14, fps: 18, loop: false, pose: flip } };
+// Talking with the blade lit and lowered (the exchange on the collector arm).
+const TALK_LIT = pose(STANCE, {
+  spine: [0, 0.15, -0.02],
+  chest: [0, 0.08, 0],
+  head: [0, -0.2, 0],
+  sab: [0.3, 0.95, 0.3, 0.5, -0.5],
+  two: 0,
+  shL: [0.2, 0, 0.5],
+  elL: [0, 0, 0.9],
+  haL: [0, 0, 0.2],
+});
+const talkLit = (base) => (t) => {
+  const s = sin(t * TAU);
+  return pose(base, { chest: [0, base.chest[1] + s * 0.05, -0.04], head: [0, base.head[1] + s * 0.08, -0.04], shL: [0.2, 0, 0.5 + s * 0.2], elL: [0, 0, 0.9 - s * 0.15] });
+};
+// Hanging from a cable by the left hand, blade in the right.
+const HANG = {
+  pelvisY: -0.1,
+  spine: [0, 0.1, 0.05],
+  chest: [0, 0.05, 0.05],
+  head: [0, -0.2, -0.15],
+  shL: [0.1, 0, 3.0],
+  elL: [0, 0, 0.1],
+  haL: [0, 0, 0.3],
+  hipL: [0.15, 0, 0.5],
+  knL: [0, 0, -0.9],
+  hipR: [-0.15, 0, 0.2],
+  knR: [0, 0, -1.1],
+  sab: [0.35, 1.1, 0.3, 0.3, 0.9],
+  two: 0,
+};
+const hang = (t) => {
+  const s = sin(t * TAU);
+  return pose(HANG, { hipL: [0.15, 0, 0.5 + s * 0.2], hipR: [-0.15, 0, 0.2 - s * 0.2], sab: [0.35 + s * 0.05, 1.1, 0.3, 0.3 + s * 0.4, 0.9 - s * 0.3] });
+};
+// Cut down on the slope: no lower legs, no right forearm — face down, the
+// left arm clawing up the sand, head lifted towards Obi-Wan.
+const MAIMED = {
+  fk: 1,
+  pelvisY: -0.86,
+  spine: [0, 0.1, -1.25],
+  chest: [0, 0.05, -0.2],
+  head: [0, 0, 0.75],
+  shR: [-0.6, 0, 1.6],
+  elR: [0, 0, 0.3],
+  shL: [0.3, 0, 2.6],
+  elL: [0, 0, 0.25],
+  haL: [0, 0, -0.4],
+  hipL: [0.25, 0, -0.2],
+  knL: [0, 0, -0.2],
+  hipR: [-0.25, 0, -0.15],
+  knR: [0, 0, -0.2],
+  hide: ['saber', 'shinL', 'shinR', 'foreR'],
+};
+const crawl = (t) => {
+  const s = sin(t * TAU);
+  return pose(MAIMED, { shL: [0.3, 0, 2.6 - Math.max(0, s) * 0.5], elL: [0, 0, 0.25 + Math.max(0, -s) * 0.6], chest: [0, 0.05, -0.2 + s * 0.06], head: [0, s * 0.15, 0.75 + s * 0.1], bodyX: Math.max(0, s) * 0.03 });
+};
+const burn = (t) => {
+  const s = sin(t * TAU * 1.5);
+  return pose(MAIMED, { spine: [0, 0.1, -1.15 + s * 0.08], chest: [0, s * 0.1, -0.1], head: [0, s * 0.3, 0.55 + Math.abs(s) * 0.2], shL: [0.3, 0, 2.3 + s * 0.3], elL: [0, 0, 0.6 + s * 0.3] });
+};
+export const ANAKIN_MUSTAFAR_ANIMS = {
+  ...ANAKIN_ANIMS,
+  backflip: { frames: 14, fps: 18, loop: false, pose: flip },
+  talk: { frames: 6, fps: 6, loop: true, pose: talkLit(TALK_LIT) },
+  hang: { frames: 8, fps: 8, loop: true, pose: hang },
+  fall: { frames: 8, fps: 10, loop: false, pose: keyframes([{ t: 0, p: LEAP_AIR }, { t: 0.4, p: pose(FALLING, { hide: ['saber', 'shinL', 'shinR', 'foreR'] }) }, { t: 1, p: pose(MAIMED, { spine: [0, 0.1, -0.9] }) }], easeInOut) },
+  crawl: { frames: 8, fps: 5, loop: true, pose: crawl },
+  burn: { frames: 8, fps: 8, loop: true, pose: burn },
+};
 
 // Obi-Wan's Soresu ready stance: blade drawn back over the right shoulder,
 // left hand extended open towards the opponent.
@@ -752,6 +822,22 @@ const SORESU = pose(STANCE, {
   haL: [0, 0, 0.9],
 });
 const OB_BLOCK = pose(BLOCK, { two: 0, shL: [-0.1, 0, 0.9], elL: [0, 0, 0.6], haL: [0, 0, 0.8] });
+// kneeling on the slope to pick up the fallen saber
+const OB_PICK = pose(OFF, {
+  pelvisY: -0.42,
+  spine: [0, 0.1, -0.9],
+  chest: [0, 0.05, -0.2],
+  head: [0, 0, 0.5],
+  hipL: [0.2, 0, 1.2],
+  knL: [0, 0, -1.9],
+  hipR: [-0.2, 0, -0.5],
+  knR: [0, 0, -1.3],
+  anR: [0, 0, 0.6],
+  shR: [-0.2, 0, 1.4],
+  elR: [0, 0, 0.1],
+  shL: [0.3, 0, 0.6],
+  elL: [0, 0, 1.0],
+});
 export const OBIWAN3_ANIMS = bake(SORESU, {
   attack1: { frames: 9, fps: 18, loop: false, hit: 5, pose: swing(SORESU, SLASH_A, SLASH_B, SLASH_C) },
   attack2: { frames: 9, fps: 18, loop: false, hit: 5, pose: swing(SORESU, BACK_A, BACK_B, BACK_C) },
@@ -763,6 +849,13 @@ export const OBIWAN3_ANIMS = bake(SORESU, {
   lock: { frames: 4, fps: 10, loop: true, pose: (t) => wobble(LOCK, t, 0.04) },
   leap: { frames: 8, fps: 12, loop: false, pose: keyframes([{ t: 0, p: LEAP_CROUCH }, { t: 0.3, p: LEAP_AIR }, { t: 0.7, p: LEAP_AIR }, { t: 1, p: SORESU }], easeInOut) },
   death: { frames: 7, fps: 8, loop: false, pose: keyframes([{ t: 0, p: SORESU }, { t: 1, p: pose(SORESU, { pelvisY: -0.3, spine: [0, 0.2, -0.3] }) }], easeInOut) },
+  talk: { frames: 6, fps: 6, loop: true, pose: talkLit(pose(TALK_LIT, { sab: [0.2, 0.9, 0.34, 0.9, -0.6] })) },
+  hang: { frames: 8, fps: 8, loop: true, pose: hang },
+  // the high ground: blade off, bending to pick up Anakin's saber, walking away
+  idleOff: { frames: 8, fps: 6, loop: true, pose: idleOff },
+  walkOff: { frames: 8, fps: 10, loop: true, pose: (t) => pose(OFF, legCycle(t, 0.42, 0.8), { spine: [0, 0, -0.05], head: [0, 0, 0.1] }) },
+  pick: { frames: 10, fps: 8, loop: false, pose: keyframes([{ t: 0, p: OFF }, { t: 0.5, p: OB_PICK }, { t: 0.7, p: OB_PICK }, { t: 1, p: pose(OFF, { shR: [-0.1, 0, 0.6], elR: [0, 0, 1.3] }) }], easeInOut) },
+  grieve: { frames: 6, fps: 4, loop: true, pose: (t) => pose(OFF, { spine: [0, 0, -0.08], head: [0, 0, 0.22 + sin(t * TAU) * 0.03], shR: [-0.1, 0, 0.6], elR: [0, 0, 1.3] }) },
 });
 // in the robe before the fight: blade off, then lit
 export const OBIWAN3_ROBE_ANIMS = {
