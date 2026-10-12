@@ -79,6 +79,10 @@ export class Cinema {
     if (c.fade !== undefined) g.emit('fade', c.fade, c.fadeDur ?? 0.8);
     if (c.cam) {
       const cam = typeof c.cam === 'function' ? c.cam() : c.cam; // a function: worked out when the cue fires
+      if (cam.follow) {
+        cam.x = cam.follow.x + (cam.ox || 0);
+        cam.y = cam.follow.y + (cam.oy || 0);
+      }
       const from = this.cam ? { ...this.curCam() } : { x: cam.x, y: cam.y };
       this.cam = { from, to: cam, t0: this.t, dur: cam.dur || 0 };
       if (cam.zoom && this.game.renderer) this.game.renderer.setZoom(this.game.renderer.shotZoom(cam.zoom), true);

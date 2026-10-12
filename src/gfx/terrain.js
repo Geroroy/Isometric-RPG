@@ -31,6 +31,7 @@ const PAL = {
   [BIOME.CITY_MUD]: [58, 50, 42],
   [BIOME.CITY_SWAMP]: [46, 54, 36],
   [BIOME.CITY_DIRT]: [92, 82, 66],
+  [BIOME.GRATE]: [44, 42, 40],
 };
 const NEON_VEIN = [[255, 79, 168], [79, 230, 255]]; // the plaza's veins: pink or blue by cell
 const ROAD = [128, 108, 84];
@@ -90,6 +91,7 @@ export class Terrain {
     this.Lw = new Float32Array(n); // city lower level (the floor texture)
     this.Mo = new Float32Array(n); // the undercity plaza's neon mosaic
     this.Mu = new Float32Array(n); // the undercity's mud alleys
+    this.Gt = new Float32Array(n); // Mustafar catwalk grating
     for (let y = 0; y < world.h; y++) {
       for (let x = 0; x < world.w; x++) {
         const i = y * world.w + x;
@@ -105,6 +107,7 @@ export class Terrain {
         this.U[i] = b === BIOME.CITY_UP ? 1 : 0;
         this.Mo[i] = b === BIOME.CITY_MOSAIC ? 1 : 0;
         this.Mu[i] = b === BIOME.CITY_MUD || b === BIOME.CITY_SWAMP || b === BIOME.CITY_DIRT ? 1 : 0;
+        this.Gt[i] = b === BIOME.GRATE ? 1 : 0;
         if (b === BIOME.VOID) {
           // no grain in the drop
           this.R[i] = c[0];
@@ -384,6 +387,7 @@ export class Terrain {
         const lava = this.sample(this.L, u, v);
         const drop = 0; // (the drop is drawn by facade() and the backdrop)
         const upper = this.sample(this.U, u, v);
+        const grate = this.sample(this.Gt, u, v);
         const mosaic = this.sample(this.Mo, u, v);
         const mud = this.sample(this.Mu, u, v);
         const grain = hd ? hash2(Math.floor(sx * S), Math.floor(sy * S), 99) : hash2(sx, sy, 99);

@@ -72,6 +72,7 @@ export class Unit {
   setAnim(name, speed = 1, restart = false) {
     const set = this.sprites;
     if (set && !set.anims[name]) name = 'idle'; // a sprite without that animation stands
+    this.animFreeze = false;
     if (this.anim !== name || restart) {
       this.anim = name;
       this.animT = 0;
@@ -195,7 +196,7 @@ export class Unit {
   }
 
   baseUpdate(dt) {
-    this.animT += dt;
+    if (!this.animFreeze) this.animT += dt; // (a scene may hold one frame as a pose)
     if (this.flash > 0) this.flash -= dt;
     if (this.stun > 0) this.stun -= dt;
     this.physics(dt);

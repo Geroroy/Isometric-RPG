@@ -305,6 +305,7 @@ export class Game {
 
   /** Optional ambient remark: rate-limited and random, never interrupts. */
   chatter(key, chance = 1) {
+    if (this.duel) return; // the campaign's barks (Ahsoka, the clones…) have no place in a Movie Duel
     if (this.time < (this.nextChatter || 0) || Math.random() > chance) return;
     this.say(key);
   }

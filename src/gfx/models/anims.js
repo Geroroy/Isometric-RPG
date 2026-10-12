@@ -770,6 +770,8 @@ const SORESU = pose(STANCE, {
   haL: [0, 0, 0.9],
 });
 const OB_BLOCK = pose(BLOCK, { two: 0, shL: [-0.1, 0, 0.9], elL: [0, 0, 0.6], haL: [0, 0, 0.8] });
+// blade off, at ease (the high ground)
+const idleOff = (t) => pose(OFF, { pelvisY: sin(t * TAU) * 0.006, chest: [0, 0.05, sin(t * TAU) * 0.015], hipL: [0.06, 0, 0.08], hipR: [-0.06, 0, -0.05], knL: [0, 0, -0.08] });
 // kneeling on the slope to pick up the fallen saber
 const OB_PICK = pose(OFF, {
   pelvisY: -0.42,

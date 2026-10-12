@@ -384,7 +384,7 @@ export class Renderer {
         ctx.globalAlpha = 1;
         continue;
       }
-      const r = u.kind === 'b2' ? 11 : u.kind === 'r2' ? 7 : u.kind === 'fighter' ? 30 : 9;
+      const r = u.shadowR || (u.kind === 'b2' ? 11 : u.kind === 'r2' ? 7 : u.kind === 'fighter' ? 30 : 9);
       shadow(s.x, s.y, r / (1 + u.z * 0.4));
     }
     for (const pk of g.pickups) {
@@ -502,7 +502,7 @@ export class Renderer {
 
   /** A unit's draw depth: its own (x + y), kept after every prop box it stands in front of and before every one it stands behind. */
   unitDepth(u, props) {
-    let d = u.x + u.y;
+    let d = u.x + u.y + (u.depthBias || 0); // (a river deck sorts under whoever stands on it)
     let lo = -Infinity;
     let hi = Infinity;
     const ub = [u.x - 0.25, u.y - 0.25, u.x + 0.25, u.y + 0.25];
