@@ -21,7 +21,8 @@ import { dist } from './math.js';
 
 const FADE = 1.6; // crossfade seconds
 const STINGS = new Set(['victory', 'death', 'dark']);
-const ONE_SHOT = new Set(['credits', 'mustafarIntro', 'mustafarEnd']); // play once, then silence
+// play once from the top, then silence (the Mustafar duel's score clips: docs/MUSTAFAR_SCORE.md)
+const ONE_SHOT = new Set(['credits', 'mustafarIntro', 'mustafarA', 'mustafarB', 'mustafarC', 'mustafarD', 'mustafarEnd']);
 const SAVE = 'cw.music';
 // situations whose music the player may replace, in jukebox order
 export const SITUATIONS = [
@@ -31,7 +32,6 @@ export const SITUATIONS = [
   ['combat', '전투'],
   ['boss', '정예 · 공장 보스'],
   ['duel', '두쿠와의 결투'],
-  ['mustafar', '오비완과의 결투'],
   ['credits', '결투 승리'],
   ['victory', '전투 종료'],
   ['death', '사망'],

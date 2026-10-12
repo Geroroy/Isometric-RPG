@@ -1,12 +1,12 @@
 // Movie Duel #2 — Anakin vs Obi-Wan, Mustafar (Episode III), told exactly
-// the way the film tells it. The whole duel runs on the film's own audio (a
-// fan edit of the sequence: dialogue, effects and Battle of the Heroes, see
-// tools/cut_music.py): the opening and the ending are cutscenes locked to the
-// voices, and the fight in between is a single continuous piece — the sets
-// change and the film's beats play when the music reaches them, not when a
-// health bar does. Between the beats the player fights; Obi-Wan's bar has a
-// mark for every set, and driving him down to it before the film moves on
-// is what the rating rewards.
+// the way the film tells it, scored scene by scene with the film's music
+// (no film dialogue: the lines are subtitles). The cue sheet — which span of
+// which track plays over which scene, and why — is docs/MUSTAFAR_SCORE.md;
+// the clips are cut by tools/cut_music.py. The opening and the ending are
+// cutscenes timed to their track; the fight in between runs on a film clock
+// (SCORE maps it onto four clips): the sets change and the film's beats play
+// when the clock reaches them, or as soon as the player drives Obi-Wan down
+// to the set's mark — then the clock and the music jump ahead to that scene.
 //
 //   intro     the landing platform: Anakin chokes Padmé, "You will try."
 //   0:00      the platform — Battle of the Heroes
@@ -26,7 +26,7 @@
 //             arm with it; Obi-Wan takes the repulsor platform, Anakin the
 //             panning droid
 //   6:15      the lava river, on the moving decks
-//   6:29      the bank: the high ground (the film's ending on its audio)
+//   6:29      the bank: the high ground (Padmé's Ruminations)
 import { Dooku, Duel, Extra } from './duel.js';
 import { Unit } from './units.js';
 import { Cinema } from './cinema.js';
@@ -49,7 +49,17 @@ const SETS = [
   { key: 'arm2', t: 326, floor: 0.3, place: '집하기 팔', exit: 'end' },
   { key: 'river', t: 375, floor: 0.22, place: '용암 강', exit: 'ending' },
 ];
-const FIGHT_LENGTH = 389; // the fight clip runs out at 391.5 s: the ending takes over just before
+const FIGHT_LENGTH = 389; // the ending takes over here
+// The fight's music (docs/MUSTAFAR_SCORE.md): film time [start, end) -> a clip (music
+// situation), played from its top at `start`. Each clip runs a little past its end so
+// the crossfade into the next has music under it.
+const SCORE = [
+  { sit: 'mustafarA', start: 0, end: 148 }, // Battle of the Heroes 0:30– : the platform to the control room
+  { sit: 'mustafarB', start: 148, end: 311 }, // Anakin vs. Obi-Wan 0:24– : shields down, the balcony, the arm
+  { sit: 'mustafarC', start: 311, end: 351 }, // Battle of the Heroes 3:04– : "I have failed you", the bind
+  { sit: 'mustafarD', start: 351, end: FIGHT_LENGTH + 2 }, // Anakin vs. Obi-Wan 3:07– : the tower, the river
+];
+const scoreAt = (t) => SCORE.find((c) => t < c.end) || SCORE[SCORE.length - 1];
 
 // ----------------------------------------------------------------------------
 
@@ -172,11 +182,11 @@ export class MustafarDuel extends Duel {
     g.units.push(ob, pd, this.droid, this.platform);
   }
 
-  /** Music: the cutscene's own sound track, else the fight's. */
+  /** Music: the cutscene's track, else the fight's clip for the film clock. */
   music() {
     if (this.game.cinema && this.game.cinema.track) return this.game.cinema.track;
     if (this.over) return 'silence';
-    return this.started ? 'mustafar' : 'title';
+    return this.started ? scoreAt(this.filmT).sit : 'title';
   }
 
   start() {
@@ -187,13 +197,30 @@ export class MustafarDuel extends Duel {
     });
   }
 
-  /** Where the film is: the fight audio's clock, or our own when it isn't playing. */
+  /**
+   * The film clock follows the fight's music while it plays (so the beats stay on
+   * the score), and runs on its own when it doesn't (no audio, a clip's tail). When
+   * the clock has jumped (a scene played early) or a clip has just started at the
+   * wrong place, the music is moved to the clock instead — with a short dip.
+   */
   clock(dt) {
+    const c = scoreAt(this.filmT);
     const m = this.game.music;
-    if (m && m.cur && m.cur.situation === 'mustafar' && m.cur.url) {
-      const el = m.track(m.cur.url).el;
+    if (m && m.cur && m.cur.situation === c.sit && m.cur.url) {
+      const tr = m.track(m.cur.url);
+      const el = tr.el;
       if (!el.paused && el.currentTime > 0.05) {
-        this.filmT = Math.max(this.filmT, el.currentTime);
+        const want = this.filmT - c.start;
+        if (Math.abs(el.currentTime - want) > 1.5) {
+          el.currentTime = Math.max(0, want);
+          const gg = tr.gain.gain;
+          const now = m.audio.ctx.currentTime;
+          gg.cancelScheduledValues(now);
+          gg.setValueAtTime(0.15, now);
+          gg.linearRampToValueAtTime(1, now + 0.6);
+          return;
+        }
+        this.filmT = Math.max(this.filmT, c.start + el.currentTime);
         return;
       }
     }
@@ -333,7 +360,7 @@ export class MustafarDuel extends Duel {
   }
 
   update(dt) {
-    if (this.started && !this.over && !(this.game.cinema && this.game.cinema.track !== 'mustafar')) this.clock(dt);
+    if (this.started && !this.over && !(this.game.cinema && !this.game.cinema.fight)) this.clock(dt);
     super.update(dt);
     if (this.over) return;
     if (this.rain && !this.game.cinema) this.updateRain(dt);
@@ -399,18 +426,9 @@ export class MustafarDuel extends Duel {
     this.seekFilm(this.beats[j].t);
   }
 
-  /** Move the fight's music (and the film clock) forward to `t`, with a short dip so the jump is soft. */
+  /** Move the film clock forward to `t`; the music follows it there (clock). */
   seekFilm(t) {
     this.filmT = Math.max(this.filmT, t);
-    const m = this.game.music;
-    if (!m || !m.cur || m.cur.situation !== 'mustafar' || !m.cur.url) return;
-    const tr = m.track(m.cur.url);
-    if (tr.el.currentTime >= t) return;
-    m.fade(tr, 0.1, 0.2);
-    setTimeout(() => {
-      tr.el.currentTime = t;
-      m.fade(tr, 1, 0.6);
-    }, 220);
   }
 
   /** Force push (Obi-Wan's "cast"): pushes Anakin back, can't be blocked. */
@@ -453,11 +471,16 @@ export class MustafarDuel extends Duel {
     }
   }
 
-  /** A scene inside the fight: its clock is the fight's music from `at`. */
+  /** A scene inside the fight, timed to the fight's music from film time `at`. */
   scene(at, length, cues) {
     this.hold();
     this.foe.set('circle', 99);
-    return new Cinema(this.game, { track: 'mustafar', at, length, cues }).play().then(() => this.fight());
+    // a scene that starts late (after a bind, say) starts where the music is, so its cues keep their spacing
+    at = Math.max(at, this.filmT);
+    const c = scoreAt(at);
+    const cin = new Cinema(this.game, { track: c.sit, at: at - c.start, length, cues });
+    cin.fight = true; // the film clock keeps running through it
+    return cin.play().then(() => this.fight());
   }
 
   /** Both duellists walk to new spots, trading blows on the way. */
