@@ -1,9 +1,9 @@
-// The Mustafar facility's floor texture (tools/sprites/mustafar_floor/bake.py: one seamless repeat of the
-// film's interior floor) and the lava (tools/sprites/mustafar_lava, 'lava.png'), as ImageData for the terrain
+// The Mustafar facility's floor tiles (tools/sprites/mustafar_floor/bake.py: field, edge, corner, trim, from the
+// set's texture sheets) and the lava (tools/sprites/mustafar_lava, 'lava.png'), as ImageData for the terrain
 // (terrain.js setFacilityFloor, setLavaTexture). Through the device's file cache (fileCache.js).
 import { cachedImage, cachedJSON } from './fileCache.js';
 
-export async function loadMustafarFloor(file = 'floor.png') {
+export async function loadMustafarTexture(file) {
   const img = await cachedImage(import.meta.env.BASE_URL + 'sprites/mustafar/' + file);
   const c = document.createElement('canvas');
   c.width = img.width;
@@ -11,6 +11,12 @@ export async function loadMustafarFloor(file = 'floor.png') {
   const x = c.getContext('2d', { willReadFrequently: true });
   x.drawImage(img, 0, 0);
   return x.getImageData(0, 0, img.width, img.height);
+}
+
+export async function loadMustafarFloor() {
+  const kinds = ['field', 'edge', 'corner', 'trim'];
+  const tex = await Promise.all(kinds.map((k) => loadMustafarTexture(`floor_${k}.png`)));
+  return Object.fromEntries(kinds.map((k, i) => [k, tex[i]]));
 }
 
 // The film's set pieces — wall consoles, the covered corridor, the table, chairs, window walls, the collector

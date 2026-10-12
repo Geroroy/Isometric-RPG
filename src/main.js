@@ -9,7 +9,7 @@ import { prune as pruneFiles, stats as fileStats } from './gfx/fileCache.js';
 import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
 import { setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture } from './gfx/terrain.js';
-import { loadMustafarFloor, loadMustafarConsoles, loadMustafarDroid } from './gfx/mustafarFloor.js';
+import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid } from './gfx/mustafarFloor.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
@@ -85,7 +85,7 @@ async function boot() {
   if (DUEL === 'mustafar') Object.assign(assets.sprites, await loadSheets(['anakin_vader', 'anakin_robe', 'anakin_tunic'], onProgress));
   // and the facility's floor, the film's (terrain.js lays it out per room)
   if (DUEL === 'mustafar') setFacilityFloor(await loadMustafarFloor().catch((e) => console.warn('무스타파 바닥: ' + e.message)));
-  if (DUEL === 'mustafar') setLavaTexture(await loadMustafarFloor('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
+  if (DUEL === 'mustafar') setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
   // and its wall consoles, placed as the city's sheet sprites are (worldgen.js addSheetProp)
   if (DUEL === 'mustafar') {
     assets.city = await loadMustafarConsoles();

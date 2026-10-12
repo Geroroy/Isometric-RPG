@@ -71,8 +71,8 @@ export function setFloorTexture(f) {
   if (!f) return;
   FLOOR = f;
 }
-// the Mustafar facility's floor (gfx/mustafarFloor.js, ImageData of one repeat), laid out per room by the
-// world's floorPlan (worldgen.js MustafarArena)
+// the Mustafar facility's floor tiles (gfx/mustafarFloor.js: { field, edge, corner, trim }, ImageData each, from the
+// set's texture sheets), laid out per room by the world's floorPlan (worldgen.js MustafarArena)
 let FACILITY = null;
 export function setFacilityFloor(t) {
   FACILITY = t || null;
@@ -85,13 +85,6 @@ export function setLavaTexture(t) {
 }
 const lavaA = [0, 0, 0];
 const lavaB = [0, 0, 0];
-const FAC_BAR = 0.15; // the seam bar's width in a repeat of the texture (the rim stretches it to its own width)
-// the film's floor (measured on the texture: bands, grey slabs, dark slabs) and the pale speckled stone of the
-// conference room's fields
-const FILM = { band: [153, 155, 153], mid: [91, 95, 91], dark: [54, 57, 54], pale: [168, 168, 160] };
-const SQ3 = Math.sqrt(3);
-const NORMALS = [[1, 0], [0.5, SQ3 / 2], [0.5, -SQ3 / 2]]; // a pointy hexagon's side normals in (along, across / stretch)
-
 /** Bilinear, wrapping texel of an ImageData at (u, v) in repeats; writes [r, g, b] to `o`. */
 function texel(T, u, v, o) {
   const W = T.width;
@@ -111,103 +104,78 @@ function texel(T, u, v, o) {
 }
 
 /**
- * The film's floor pattern in a room's own frame (photos of the sets, reference/color_rots): pale bands
- * outlining long hexagons whose long axis runs across the room, in rows along it (neighbours side by side,
- * the next rows staggered, cut into trapezoids by the walls), one hexagon on the room's centre. The fields
- * set out symmetrically from the middle: the centre a dark slab (the table / the holo-table stands on it),
- * ringed by pale speckled stone, then dark and grey slabs in turn outwards. `R.cell`: a hexagon's width along
- * the room (tiles), `R.elong`: its stretch across, `R.band`: the bands' width. Writes [r, g, b] to `o`.
- */
-function filmFloor(R, along, across, fx, fy, o) {
-  const S = R.cell;
-  const e = R.elong;
-  const Rad = S / SQ3; // centre to vertex (before the stretch)
-  const X = along;
-  const Y = across / e;
-  // axial coordinates of a pointy hexagon (vertices on ±Y), cube-rounded
-  const qf = ((SQ3 / 3) * X - Y / 3) / Rad;
-  const rf = ((2 / 3) * Y) / Rad;
-  let q = Math.round(qf);
-  let r = Math.round(rf);
-  const sf = -qf - rf;
-  const s = Math.round(sf);
-  const dq = Math.abs(q - qf);
-  const dr = Math.abs(r - rf);
-  if (dq > dr && dq > Math.abs(s - sf)) q = -r - s;
-  else if (dr > Math.abs(s - sf)) r = -q - s;
-  const cx = Rad * SQ3 * (q + r / 2);
-  const cy = Rad * 1.5 * r;
-  // distance to the hexagon's edge in world tiles (the stretch makes the slanted sides' gradient longer)
-  let edge = Infinity;
-  for (const [nx, ny] of NORMALS) {
-    const f = S / 2 - Math.abs(nx * (X - cx) + ny * (Y - cy));
-    edge = Math.min(edge, f / Math.hypot(nx, ny / e));
-  }
-  const half = R.band / 2;
-  const n = valueNoise(fx * 3.1, fy * 3.1, 83) - 0.5;
-  if (edge < half) {
-    // the band: smooth pale stone, a dark joint where it meets the fields
-    const k = (edge < 0.035 || edge > half - 0.035 ? 0.62 : 1) * (1 + n * 0.1);
-    for (let c = 0; c < 3; c++) o[c] = FILM.band[c] * k;
-    return;
-  }
-  const ring = (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
-  const off = Math.abs(cx); // the cell's distance along the room from the middle
-  // the centre dark, ringed by pale stone (round the table), then dark and grey slabs in turn outwards
-  let F;
-  if (ring === 0) F = FILM.dark;
-  else if (ring === 1) F = FILM.pale;
-  else F = (Math.round(off / S) + Math.abs(r)) % 2 ? FILM.mid : FILM.dark;
-  // each field its own tone (symmetric: by |along| and |row|), mottled; the pale stone speckled black
-  const tone = 1 + (hash2(Math.round(off * 2), Math.abs(r), 84) - 0.5) * 0.1;
-  const mott = 1 + (valueNoise(fx * 0.9, fy * 0.9, 85) - 0.5) * 0.16 + n * 0.06;
-  let k = tone * mott;
-  if (F === FILM.pale) {
-    const sp = hash2(Math.floor(fx * 22), Math.floor(fy * 22), 86);
-    if (sp > 0.97) k *= 0.6;
-    else if (sp > 0.94) k *= 0.84;
-  }
-  for (let c = 0; c < 3; c++) o[c] = F[c] * k;
-}
-
-/**
- * The facility floor at a world point inside room `R` (worldgen.js floorPlan): the film's pattern
- * (filmFloor), a raised rim of the texture's seam bar along the walls (its light slots once a hexagon), and in
- * a room with a `pit` its sunken centre behind a step — the step's face showing on the far sides (the camera
- * looks from +x+y), a dark line on the near ones. Writes [r, g, b] to `o`.
+ * The facility floor at a world point inside room `R` (worldgen.js floorPlan), laid out of the set's floor tiles as
+ * the film's rooms are: a border `R.edge` tiles wide along the walls of the edge tile (its trim strip to the wall),
+ * the corner tile where two walls meet (its stone in the corner), and inside it the chevron field in cells of about
+ * `R.cell` tiles, mirrored about the room's middle so the chevrons point inwards from both ends; a
+ * corridor (`R.runner`) one runner of the trim tile down its length. In a room with a `pit` its sunken centre behind
+ * a step — the step's face showing on the far sides (the camera looks from +x+y), a dark line on the near ones.
+ * Writes [r, g, b] to `o`.
  */
 function facilityFloor(R, fx, fy, o) {
-  const dx = fx - R.x;
-  const dy = fy - R.y;
+  const T = FACILITY;
+  const x0 = R.x - R.hw;
+  const y0 = R.y - R.hh;
+  const W = R.hw * 2;
+  const H = R.hh * 2;
   const alongX = R.axis === 'x';
-  const along = alongX ? dx : dy;
-  const across = alongX ? dy : dx;
-  const dA = (alongX ? R.hw : R.hh) - Math.abs(along); // to the end walls
-  const dC = (alongX ? R.hh : R.hw) - Math.abs(across); // to the side walls
-  const d = Math.min(dA, dC);
-  if (d < R.rim) {
-    // the rim: the seam bar running along its wall, a slot centred on each hexagon
-    const k = (d / R.rim - 0.5) * FAC_BAR;
-    if (dC <= dA) texel(FACILITY, k, along / R.cell + 0.5, o);
-    else texel(FACILITY, across / (R.cell * 1.15 * R.elong) + 0.5, k, o);
+  if (R.runner) {
+    // the strips run along the corridor: the tile's v along it, u across it
+    const across = alongX ? (fy - y0) / H : (fx - x0) / W;
+    const along = alongX ? (fx - x0) / H : (fy - y0) / W;
+    texel(T.trim, across, along, o);
     return;
   }
-  filmFloor(R, along, across, fx, fy, o);
-  // which wall is nearest: far (−x / −y, its edge faces the camera) or near
-  const far = dC <= dA ? across < 0 : along < 0;
-  let m = 1;
-  const e = d - R.rim; // inside the rim's edge
-  if (e < 0.14) m = far ? 1.32 : 0.62; // the raised rim's edge: its lit face, or the shadow under it
-  if (R.pit) {
-    const p = d - R.pit;
-    if (p >= 0) {
-      m *= 0.88; // the sunken centre, a little darker
-      if (far && p < 0.3) m *= p < 0.06 ? 1.6 : 0.8 + p; // the step's face, its lit lip at the top
-    } else if (!far && p > -0.07) m *= 0.55;
+  // the border: a band `R.edge` tiles wide along the walls (edge tiles, square, one after another), corner tiles
+  // where two meet; inside it the field in cells fitted to about `R.cell`
+  const E = R.edge;
+  const lx = fx - x0;
+  const ly = fy - y0;
+  const ex = lx < E ? -1 : lx > W - E ? 1 : 0;
+  const ey = ly < E ? -1 : ly > H - E ? 1 : 0;
+  if (ex && ey) {
+    // the corner tile: its walls are its −u and −v sides
+    const a = ex < 0 ? lx / E : (W - lx) / E;
+    const b = ey < 0 ? ly / E : (H - ly) / E;
+    texel(T.corner, a, b, o);
+  } else if (ex) {
+    // the edge tile: its wall is its +u side, the band running along v, a whole number of tiles along the wall
+    const n = Math.max(1, Math.round((H - 2 * E) / E));
+    texel(T.edge, ex > 0 ? 1 - (W - lx) / E : 1 - lx / E, ((ly - E) / (H - 2 * E)) * n, o);
+  } else if (ey) {
+    const n = Math.max(1, Math.round((W - 2 * E) / E));
+    texel(T.edge, ey > 0 ? 1 - (H - ly) / E : 1 - ly / E, ((lx - E) / (W - 2 * E)) * n, o);
+  } else {
+    const iw = W - 2 * E;
+    const ih = H - 2 * E;
+    const nx = Math.max(1, Math.round(iw / R.cell));
+    const ny = Math.max(1, Math.round(ih / R.cell));
+    const gx = ((lx - E) / iw) * nx;
+    const gy = ((ly - E) / ih) * ny;
+    const cx = Math.floor(gx);
+    const cy = Math.floor(gy);
+    const a = gx - cx;
+    const b = gy - cy;
+    // the chevrons point along the room, towards its middle from either end
+    const mid = alongX ? cx < nx / 2 : cy < ny / 2;
+    const u = alongX ? b : a;
+    const v = alongX ? a : b;
+    texel(T.field, u, mid ? v : 1 - v, o);
   }
-  o[0] *= m;
-  o[1] *= m;
-  o[2] *= m;
+  if (R.pit) {
+    const dA = (alongX ? R.hw : R.hh) - Math.abs(alongX ? fx - R.x : fy - R.y);
+    const dC = (alongX ? R.hh : R.hw) - Math.abs(alongX ? fy - R.y : fx - R.x);
+    const far = dC <= dA ? (alongX ? fy < R.y : fx < R.x) : alongX ? fx < R.x : fy < R.y;
+    const p = Math.min(dA, dC) - R.pit;
+    let m = 1;
+    if (p >= 0) {
+      m = 0.88; // the sunken centre, a little darker
+      if (far && p < 0.3) m *= p < 0.06 ? 1.6 : 0.8 + p; // the step's face, its lit lip at the top
+    } else if (!far && p > -0.07) m = 0.55;
+    o[0] *= m;
+    o[1] *= m;
+    o[2] *= m;
+  }
 }
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => v / 16 - 0.5);

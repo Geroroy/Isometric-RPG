@@ -537,18 +537,16 @@ export class MustafarArena extends World {
     const inRect = (x, y, r) => Math.abs(x - r.x) <= r.hw && Math.abs(y - r.y) <= r.hh;
     const inEll = (x, y, e) => ((x - e.x) / e.rx) ** 2 + ((y - e.y) / e.ry) ** 2 <= 1;
     const floors = [M.pad, M.walk, M.corridor, M.hall, M.junction, M.control, M.balconyEnd];
-    // the interior's floor as in the film (terrain.js filmFloor; photos of the sets in reference/color_rots):
-    // pale bands outlining big long hexagons, their long axis across the room, in rows along it, a hexagon on
-    // the room's centre (under the conference table, the control room's holo-table); fields of dark slab, grey
-    // slab and pale speckled stone set out symmetrically from the middle. A raised rim of the texture's seam
-    // bars along the walls (a light slot to each hexagon), the control room's centre sunk a step inside a
-    // walkway. `cell`: a hexagon's width along the room, `elong`: its stretch across, `band`: the bands' width
-    // (tiles; rects as above, first match wins)
+    // the interior's floor laid out of the set's floor tiles as in the film (terrain.js facilityFloor; the tiles:
+    // tools/sprites/mustafar_floor): a border `edge` tiles wide of the edge tile along the walls, the corner tile
+    // in the corners, the chevron field inside in cells of about `cell` tiles; the corridors one runner of the
+    // trim tile down their length; the control room's centre sunk a step inside a walkway (rects as above, first
+    // match wins)
     this.floorPlan = [
-      { ...M.hall, axis: 'x', rim: 1, cell: 3.2, elong: 1.6, band: 0.46 },
-      { ...M.control, axis: 'x', rim: 1, pit: 2.6, cell: 3, elong: 1.6, band: 0.44 },
-      { ...M.corridor, axis: 'x', rim: 0.4, cell: 2, elong: 1.4, band: 0.36 },
-      { ...M.junction, axis: 'y', rim: 0.4, cell: 2, elong: 1.4, band: 0.36 },
+      { ...M.hall, axis: 'x', edge: 2, cell: 4.5 },
+      { ...M.control, axis: 'x', edge: 2, cell: 4.5, pit: 2.6 },
+      { ...M.corridor, axis: 'x', runner: true },
+      { ...M.junction, axis: 'y', runner: true },
     ];
     const grates = [M.balcony, M.arm];
     for (let y = 0; y < MAP_H; y++) {
