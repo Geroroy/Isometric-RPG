@@ -5,6 +5,7 @@
 //   1-6          cast hotbar skill at the cursor
 //   WASD walk · X saber on/off · E talk · P Star Cards · Q bacta · K skill tree · C character · Tab automap · M mute · H help · F1 hide/show all UI
 import { SKILLS } from '../game/skills.js';
+import { toggleUI } from '../ui/uiHidden.js';
 import { dist } from '../core/math.js';
 import { screenVecToWorldAngle } from '../core/iso.js';
 
@@ -184,8 +185,7 @@ export class Input {
       // every bit of UI off (the HUD, panels' buttons, health bars and floating text, subtitles, the selection
       // ring) for a clean view of the game — in a cutscene too; again to bring it back
       e.preventDefault();
-      g.uiHidden = !g.uiHidden;
-      document.body.classList.toggle('ui-hidden', g.uiHidden);
+      toggleUI(g);
       return;
     }
     if (g.cinema) {

@@ -5,13 +5,14 @@
 //   top left     vitals plate — portrait, HP / Force bars, level, dark meter;
 //                in a duel the composure bar; below it the status chips
 //   top right    radar (campaign) and the menu keys (skills · info · cards ·
-//                map · settings · fullscreen)
+//                map · settings · hide the UI · fullscreen)
 //   bottom       the last few console lines, fading out (the message log)
 // The full-screen panels (skill tree, map, settings…) are the HUD's own and
 // are shared with the PC layout.
 import { iconURL } from './icons.js';
 import { dist } from '../core/math.js';
 import { setText } from './dom.js';
+import { toggleUI } from './uiHidden.js';
 
 const el = (tag, cls, html) => {
   const e = document.createElement(tag);
@@ -79,6 +80,7 @@ export class MobileHUD {
     const items = duel
       ? [
           ['settings', '설정', () => this.hud.toggle('settings')],
+          ['hide', '숨김', () => toggleUI(this.game)],
           ['fs', '전체', () => this.onFullscreen && this.onFullscreen()],
         ]
       : [
@@ -87,10 +89,11 @@ export class MobileHUD {
           ['cards', '카드', () => this.hud.toggle('cards')],
           ['map', '지도', () => this.hud.toggle('map')],
           ['settings', '설정', () => this.hud.toggle('settings')],
+          ['hide', '숨김', () => toggleUI(this.game)],
           ['fs', '전체', () => this.onFullscreen && this.onFullscreen()],
         ];
     this.menuBtns = {};
-    const GLYPH = { map: '⌖', settings: '⚙', fs: '⛶' };
+    const GLYPH = { map: '⌖', settings: '⚙', hide: '◌', fs: '⛶' };
     for (const [icon, label, fn] of items) {
       const b = el('button', 'm-key', GLYPH[icon] ? `<b>${GLYPH[icon]}</b><span>${label}</span>` : `<img src="${iconURL(icon)}" alt=""><span>${label}</span><i class="dot"></i>`);
       b.type = 'button';
