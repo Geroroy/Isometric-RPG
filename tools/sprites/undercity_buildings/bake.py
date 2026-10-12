@@ -24,8 +24,13 @@ Per building, from its outline at game scale:
 import json
 import os
 
+import sys
+
 import numpy as np
 from PIL import Image, ImageFilter
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+from palette import regrade  # noqa: E402
 
 SRC = 'assets/city/buildings/cut'
 OUT = 'public/sprites/undercity'
@@ -122,6 +127,11 @@ def lights_of(rgb, lit, anchor, a_t, b_t):
     return out
 
 
+# the signs in the art guide's accents per level (tools/sprites/palette.py); the buildings the upper plaza
+# also uses (tools/maps/undercity_v2.py: up_towers, up_shops) are baked a second time in its palette as '<id>@up'
+UP_USES = ['towers_01', 'towers_03', 'towers_06', 'towers_10', 'towers_14', 'shops_07', 'shops_04', 'shops_13']
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     for f in os.listdir(OUT):
@@ -152,19 +162,24 @@ def main():
         ha, hb = a_t / 2 - MARGIN, b_t / 2 - MARGIN
         foot = [[-ha, -hb], [ha, -hb], [ha, hb], [-ha, hb]]
         lit = emissive(g[..., :3], a)
-        neon = np.dstack([g[..., :3], a * lit]).clip(0, 255).astype(np.uint8)
-        body = g.clip(0, 255).astype(np.uint8)
-        meta = {
-            'name': bid, 'label': v['name'], 'kind': v['kind'], 'k': 1.0, 'anchor': anchor,
-            'tiles': [round(a_t, 2), round(b_t, 2)],
-            'footprint': [[round(p[0], 2), round(p[1], 2)] for p in foot], 'flat': False,
-            'heightM': round((fy - 0) / PX_UNIT, 1),
-            'neon': {'base': 0.62, 'hum': 0.02, 'speed': 4, 'flicker': {'rate': 0.015, 'dur': [0.04, 0.12], 'level': 0.5}},
-            'lights': lights_of(g[..., :3], lit, anchor, a_t, b_t),
-            'scale': k, 'source': f"assets/city/buildings/undercity_{v['sheet']}_sheet.png cell {v['cell']}",
-        }
-        sprites.append((bid, body, neon, meta))
-        rows.append((bid, w, h, a_t, b_t, meta['heightM']))
+        for level in ['low'] + (['up'] if bid in UP_USES else []):
+            name = bid if level == 'low' else bid + '@up'
+            rgb = regrade(g[..., :3], a, lit, level)
+            # the neon layer is added over the lit picture at `base`: a glow on the sign, not a second sign
+            neon = np.dstack([rgb, a * lit]).clip(0, 255).astype(np.uint8)
+            body = np.dstack([rgb, a]).clip(0, 255).astype(np.uint8)
+            meta = {
+                'name': name, 'label': v['name'], 'kind': v['kind'], 'k': 1.0, 'anchor': anchor,
+                'tiles': [round(a_t, 2), round(b_t, 2)],
+                'footprint': [[round(p[0], 2), round(p[1], 2)] for p in foot], 'flat': False,
+                'heightM': round((fy - 0) / PX_UNIT, 1),
+                'neon': {'base': 0.42, 'hum': 0.02, 'speed': 4, 'flicker': {'rate': 0.015, 'dur': [0.04, 0.12], 'level': 0.35}},
+                'lights': lights_of(rgb, lit, anchor, a_t, b_t),
+                'palette': level,
+                'scale': k, 'source': f"assets/city/buildings/undercity_{v['sheet']}_sheet.png cell {v['cell']}",
+            }
+            sprites.append((name, body, neon, meta))
+            rows.append((name, w, h, a_t, b_t, meta['heightM']))
     # shelf-pack onto 2048 px pages, tallest first; the neon pages share the body pages' rectangles
     PAGE = 2048
     pages = []

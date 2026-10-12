@@ -943,82 +943,82 @@
  "upper": {
   "props": [
    {
-    "p": "towers_01",
+    "p": "towers_01@up",
     "x": 66.12,
     "y": 44.64
    },
    {
-    "p": "towers_03",
+    "p": "towers_03@up",
     "x": 74.85,
     "y": 45.02
    },
    {
-    "p": "towers_06",
+    "p": "towers_06@up",
     "x": 83.53,
     "y": 44.94
    },
    {
-    "p": "towers_10",
+    "p": "towers_10@up",
     "x": 92.48,
     "y": 44.47
    },
    {
-    "p": "towers_14",
+    "p": "towers_14@up",
     "x": 101.45,
     "y": 45.04
    },
    {
-    "p": "shops_07",
+    "p": "shops_07@up",
     "x": 66.55,
     "y": 54.6
    },
    {
-    "p": "shops_04",
+    "p": "shops_04@up",
     "x": 66.28,
     "y": 65.03
    },
    {
-    "p": "shops_13",
+    "p": "shops_13@up",
     "x": 65.92,
     "y": 74.58
    },
    {
-    "p": "tradeTerminal",
+    "p": "tradeTerminal@up",
     "x": 88.0,
     "y": 62.6
    },
    {
-    "p": "tradeTerminal",
+    "p": "tradeTerminal@up",
     "x": 100.0,
     "y": 62.4
    },
    {
-    "p": "lightPost",
+    "p": "lightPost@up",
     "x": 88.5,
     "y": 70.2
    },
    {
-    "p": "lightPost",
+    "p": "lightPost@up",
     "x": 100.0,
     "y": 70.4
    },
    {
-    "p": "signPost",
+    "p": "signPost@up",
     "x": 94.0,
     "y": 60.8
    },
    {
-    "p": "tradeKiosk",
+    "p": "tradeKiosk@up",
     "x": 77.0,
     "y": 60.5
    },
    {
-    "p": "neonSignSet",
+    "p": "neonSignSet@up",
     "x": 84.0,
     "y": 55.5
    },
    {
-    "p": "marketStall",
+    "p": "marketStall@up",
     "x": 108.0,
     "y": 73.5
    },
@@ -1033,7 +1033,7 @@
     "y": 58.8
    },
    {
-    "p": "crateBarrels",
+    "p": "crateBarrels@up",
     "x": 120.0,
     "y": 69.6
    },
@@ -1043,37 +1043,37 @@
     "y": 74.6
    },
    {
-    "p": "lightPost",
+    "p": "lightPost@up",
     "x": 78.0,
     "y": 77.4
    },
    {
-    "p": "lightPost",
+    "p": "lightPost@up",
     "x": 90.0,
     "y": 77.4
    },
    {
-    "p": "lightPost",
+    "p": "lightPost@up",
     "x": 100.0,
     "y": 77.4
    },
    {
-    "p": "lightPost",
+    "p": "lightPost@up",
     "x": 110.0,
     "y": 77.4
    },
    {
-    "p": "signPost",
+    "p": "signPost@up",
     "x": 118.0,
     "y": 77.0
    },
    {
-    "p": "neonSignSet",
+    "p": "neonSignSet@up",
     "x": 121.0,
     "y": 76.2
    },
    {
-    "p": "steamVent",
+    "p": "steamVent@up",
     "x": 73.0,
     "y": 66.5,
     "steam": true

@@ -50,6 +50,9 @@ class Plan:
         return (x + x0, y + y0, x + x1, y + y1)
 
     def put(self, name, x, y, level, **extra):
+        # on the upper plaza a sprite's '@up' bake when there is one (its signs in that level's accents)
+        if level == 'up' and '@' not in name and (name + '@up' in B or name + '@up' in S):
+            name += '@up'
         r = self.rect(name, x, y)
         box = LOW if level == 'low' else UP
         if r[0] < box[0] + 0.9 or r[1] < box[1] + 0.9 or r[2] > box[2] - 0.4 or r[3] > box[3] - 0.4:
@@ -157,7 +160,8 @@ P.put('barSign', cantina['rect'][0] - 1.0, cantina['rect'][3] - 0.6, 'low')
 
 # ================================================================== the upper plaza
 end, up_towers = P.row(['towers_01', 'towers_03', 'towers_06', 'towers_10', 'towers_14'], 63.0, 49.5 - 0.01, 's', 'up', gap=2.0)
-# the west edge: a row of shops facing the terrace (shops reused here: a level away from their twins)
+# the west edge: a row of shops facing the terrace (shops reused here: a level away from their twins);
+# the upper plaza's buildings are their '@up' bakes, in its own accents (bake.py UP_USES)
 _, up_shops = P.col(['shops_07', 'shops_04', 'shops_13'], 50.5, 63.0, 'w', 'up', gap=2.0)
 for (n, x, y) in [('tradeTerminal', 88.0, 62.6), ('tradeTerminal', 100.0, 62.4), ('lightPost', 88.5, 70.2), ('lightPost', 100.0, 70.4),
                   ('signPost', 94.0, 60.8), ('tradeKiosk', 77.0, 60.5), ('neonSignSet', 84.0, 55.5), ('marketStall', 108.0, 73.5),
@@ -421,9 +425,9 @@ data = {
 if not PROBLEMS:
     json.dump(data, open(OUT, 'w'), ensure_ascii=False, indent=1)
 nb = sum(1 for it in P.items if it['p'] in B)
-used = sorted({it['p'] for it in P.items if it['p'] in B})
+used = sorted({it['p'].split('@')[0] for it in P.items if it['p'] in B})
 print(f'{OUT}: {nb} buildings ({len(used)} kinds of 48), {len(P.items) - nb} props; walkable low {len(low_reach)}/{free_low} tiles reachable, up {len(up_reach)}/{free_up}')
-print('unused:', sorted(set(B) - set(used)))
+print('unused:', sorted({n for n in B if '@' not in n} - set(used)))
 
 if '--preview' in sys.argv:
     from PIL import Image, ImageDraw

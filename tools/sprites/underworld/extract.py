@@ -9,6 +9,13 @@ import json, os, sys
 import numpy as np
 from PIL import Image, ImageDraw
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+from palette import emissive, regrade  # noqa: E402
+
+# the props the upper plaza uses (tools/maps/undercity_v2.py, the 'up' level): with painted signs they
+# get a second body in its palette
+UP_PROPS = ['lightPost', 'marketStall', 'neonSignSet', 'signPost', 'steamVent', 'tradeKiosk', 'tradeTerminal', 'crateBarrels']
+
 # sheet 'B' (six columns, CATEGORY 2 header) is the file ..._A.png; sheet 'A' (the panel layout) is ..._B.png
 B = Image.open('reference/unsorted/coruscant_underworld_tileset_A.png').convert('RGB')
 A = Image.open('reference/unsorted/coruscant_underworld_tileset_B.png').convert('RGB')
@@ -109,6 +116,12 @@ for name, (sh, x0, y0, x1, y1, k, fp) in CELLS.items():
   img, _ = trim(img)
   w, h = img.size
   body = f'{name}_body.png'
+  # the painted signs and lamps in the art guide's accents (tools/sprites/palette.py): the undercity's,
+  # and for the props the upper plaza also uses a second body in its own ('<name>@up')
+  arr4 = np.asarray(img).astype(float)
+  lit = emissive(arr4[..., :3], arr4[..., 3], soft=True)
+  graded = {lv: Image.fromarray(np.dstack([regrade(arr4[..., :3], arr4[..., 3], lit, lv), arr4[..., 3]]).clip(0, 255).astype(np.uint8), 'RGBA') for lv in (['low', 'up'] if name in UP_PROPS and lit.max() > 0.05 else ['low'])}
+  img = graded['low']
   img.save(f'{OUT}/{body}')
   blank = Image.new('RGBA', (w, h), (0, 0, 0, 0))
   blank.save(f'{OUT}/{name}_neon.png'); blank.save(f'{OUT}/{name}_reflect.png')
@@ -132,6 +145,11 @@ for name, (sh, x0, y0, x1, y1, k, fp) in CELLS.items():
   }
   json.dump(meta, open(f'{OUT}/{name}.json', 'w'), indent=1)
   index[name] = f'{name}.json'
+  if 'up' in graded:
+    up = name + '@up'
+    graded['up'].save(f'{OUT}/{up}_body.png')
+    json.dump({**meta, 'name': up, 'layers': {**meta['layers'], 'body': f'{up}_body.png'}, 'palette': 'up'}, open(f'{OUT}/{up}.json', 'w'), indent=1)
+    index[up] = f'{up}.json'
   contact.append((name, img, k))
 json.dump(index, open(f'{OUT}/index.json', 'w'), indent=1)
 
