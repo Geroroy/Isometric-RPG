@@ -55,8 +55,7 @@ export const DUELS = {
     master: () => ({ model: M.buildMaster(), dirs: 8, frame: [120, 110, 60, 90], anims: A.MASTER_ANIMS, markers: [], ss: 2 }),
   },
   mustafar: {
-    anakinHood: () => ({ model: M.buildAnakin({ outfit: 'hood' }), dirs: 8, frame: [170, 160, 85, 120], anims: A.ANAKIN_HOOD_ANIMS, markers: [], ss: 2 }),
-    anakinMustafar: () => ({ model: M.buildAnakin({ outfit: 'tunic' }), dirs: 16, frame: [200, 220, 100, 170], anims: A.ANAKIN_MUSTAFAR_ANIMS, markers: SABER, ss: 2 }),
+    // (Anakin himself is the campaign's Blender sprite: anakin_vader -> anakin_robe -> anakin_tunic, loaded by main.js)
     obiwan3: () => ({ model: M.buildObiWan3(), dirs: 16, frame: [170, 160, 85, 120], anims: A.OBIWAN3_ANIMS, markers: SABER, ss: 2 }),
     obiwan3Robe: () => ({ model: M.buildObiWan3({ robe: true }), dirs: 8, frame: [170, 160, 85, 120], anims: A.OBIWAN3_ROBE_ANIMS, markers: [], ss: 2 }),
     padme: () => ({ model: M.buildPadme(), dirs: 8, frame: [140, 130, 70, 100], anims: A.PADME_ANIMS, markers: [], ss: 2 }),

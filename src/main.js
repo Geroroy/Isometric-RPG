@@ -79,6 +79,8 @@ async function boot() {
     setGroundTextures(assets.city.ground);
   }
   if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, DUEL)).sprites);
+  // Mustafar: Anakin in the campaign's own Blender outfits — the cloak with the hood up, hood down, the tunic
+  if (DUEL === 'mustafar') Object.assign(assets.sprites, await loadSheets(['anakin_vader', 'anakin_robe', 'anakin_tunic'], onProgress));
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
   if (look && !assets.sprites[look.sprite]) assets.sprites[look.sprite] = await bakeSkin(look.sprite, (k) => onProgress(k, '외형 준비 중…'));

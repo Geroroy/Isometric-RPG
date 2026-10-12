@@ -95,6 +95,10 @@ const LINES = {
 };
 // a missing pose -> [the sheet frame that stands in for it, held at this frame (-1: the last)]
 const POSE_FALLBACK = {
+  choke: ['cast', 5], // the hand thrust out, held: the Force grip on Padmé
+  idleBare: ['idleOff'],
+  talkBare: ['idleOff'],
+  backflip: ['leap'],
   talk: ['idle'],
   hang: ['leap', 3], // mid-air, held: hanging from the cable
   fall: ['death'],
@@ -148,7 +152,7 @@ export class MustafarDuel extends Duel {
     const g = this.game;
     const p = g.player;
     const D = M.deck;
-    p.sprite = 'anakinHood';
+    p.sprite = 'anakin_vader'; // the film's arrival: the cloak, hood raised (the campaign's Blender Anakin)
     p.saberLit = false;
     p.x = D.x - 1.5;
     p.y = D.y - 0.8;
@@ -208,40 +212,40 @@ export class MustafarDuel extends Duel {
     const cues = [
       { t: 0, fade: 1, fadeDur: 0 },
       { t: 0.05, fade: 0, fadeDur: 2.5, cam: { ...mid(p, pd), zoom: 1.6 } },
-      { t: 3.6, do: anim(p, 'choke') },
+      { t: 3.6, do: () => this.pose(p, 'choke') },
       { t: 3.9, do: () => pd.setAnim('choked') },
       say(4.6, 'padme', '아나킨…!', 1.6),
       { t: 6.2, cam: { ...mid(p, ob), dur: 1.4 } },
       say(6.8, 'obiwan', '그녀를 놔줘, 아나킨.', 1.6),
       say(8.5, 'obiwan', '놔주라고!', 1.2),
       { t: 10.2, do: () => (p.setAnim('idle'), pd.setAnim('collapse', 1, true)) },
-      { t: 11.4, do: anim(p, 'hoodOff'), cam: { x: p.x + 0.4, y: p.y - 0.6, dur: 1.2 } },
-      { t: 12.6, do: () => p.setAnim('idleBare') },
+      { t: 11.4, do: () => this.hoodDown(), cam: { x: p.x + 0.4, y: p.y - 0.6, dur: 1.2 } },
+      { t: 12.6, do: () => this.pose(p, 'idleBare') },
       { t: 13.2, do: () => pd.setAnim('down') },
       say(14.0, 'anakin', '당신이 그녀를 내게서 돌아서게 만들었어!', 1.9),
-      { t: 14.0, do: () => (p.faceTo(ob.x, ob.y), p.setAnim('talkBare')) },
+      { t: 14.0, do: () => (p.faceTo(ob.x, ob.y), this.pose(p, 'talkBare')) },
       say(16.0, 'obiwan', '그건 네가 스스로 한 짓이다.', 1.6),
-      { t: 16.0, do: () => (p.setAnim('idleBare'), this.pose(ob, 'talk')) },
+      { t: 16.0, do: () => (this.pose(p, 'idleBare'), this.pose(ob, 'talk')) },
       say(17.8, 'anakin', '그녀를 데려가게 두진 않아!', 1.8),
-      { t: 17.8, do: () => (ob.setAnim('idle'), p.setAnim('talkBare')) },
-      { t: 19.8, do: () => p.setAnim('idleBare'), cam: { ...mid(p, ob), dur: 2.5 } },
+      { t: 17.8, do: () => (ob.setAnim('idle'), this.pose(p, 'talkBare')) },
+      { t: 19.8, do: () => this.pose(p, 'idleBare'), cam: { ...mid(p, ob), dur: 2.5 } },
       say(20.8, 'obiwan', '네 분노와 권력욕이 이미 그렇게 만들었다.', 3.6),
       { t: 20.8, do: () => this.pose(ob, 'talk') },
       say(25.2, 'obiwan', '넌 그 암흑 군주에게 마음을 내주었고… 네가 무찌르겠다고 맹세했던 바로 그 존재가 되어 버렸어.', 7.6),
       say(33.4, 'anakin', '설교하지 마요, 오비완. 제다이의 거짓말은 다 꿰뚫어 봤어.', 3.4),
-      { t: 33.4, do: () => (ob.setAnim('idle'), p.setAnim('talkBare')), cam: { x: p.x + 0.5, y: p.y - 0.8, dur: 1.0 } },
+      { t: 33.4, do: () => (ob.setAnim('idle'), this.pose(p, 'talkBare')), cam: { x: p.x + 0.5, y: p.y - 0.8, dur: 1.0 } },
       say(36.6, 'anakin', '난 당신처럼 어둠의 힘을 두려워하지 않아.', 2.4),
       say(39.2, 'anakin', '난 나의 새 제국에 평화와 자유, 정의, 그리고 안전을 가져다줬어!', 4.6),
       say(44.0, 'obiwan', '네 새 제국?', 1.8),
-      { t: 44.0, do: () => (p.setAnim('idleBare'), this.pose(ob, 'talk')), cam: { ...mid(p, ob), dur: 0 } },
+      { t: 44.0, do: () => (this.pose(p, 'idleBare'), this.pose(ob, 'talk')), cam: { ...mid(p, ob), dur: 0 } },
       say(46.3, 'anakin', '날, 당신을 죽이게 만들지 마요.', 2.0),
-      { t: 46.3, do: () => (ob.setAnim('idle'), p.setAnim('talkBare')) },
+      { t: 46.3, do: () => (ob.setAnim('idle'), this.pose(p, 'talkBare')) },
       say(48.8, 'obiwan', '아나킨, 내 충성은 공화국에… 민주주의에 있다!', 4.2),
-      { t: 48.8, do: () => (p.setAnim('idleBare'), this.pose(ob, 'talk')) },
+      { t: 48.8, do: () => (this.pose(p, 'idleBare'), this.pose(ob, 'talk')) },
       say(53.0, 'anakin', '나와 함께하지 않는다면, 당신은 내 적이야.', 2.9),
-      { t: 53.0, do: () => (ob.setAnim('idle'), p.setAnim('talkBare')), cam: { x: p.x + 0.3, y: p.y - 0.5, dur: 1.2 } },
+      { t: 53.0, do: () => (ob.setAnim('idle'), this.pose(p, 'talkBare')), cam: { x: p.x + 0.3, y: p.y - 0.5, dur: 1.2 } },
       say(56.3, 'obiwan', '극단을 따지는 건 시스뿐이다.', 2.2),
-      { t: 56.3, do: () => (p.setAnim('idleBare'), this.pose(ob, 'talk')), cam: { x: ob.x - 0.3, y: ob.y + 0.5, dur: 1.2 } },
+      { t: 56.3, do: () => (this.pose(p, 'idleBare'), this.pose(ob, 'talk')), cam: { x: ob.x - 0.3, y: ob.y + 0.5, dur: 1.2 } },
       say(58.7, 'obiwan', '난 해야 할 일을 하겠다.', 1.6),
       say(60.4, 'anakin', '어디 해 보시죠.', 1.8),
       { t: 60.4, do: () => ob.setAnim('idle'), cam: { x: p.x, y: p.y, dur: 0.6 } },
@@ -251,15 +255,24 @@ export class MustafarDuel extends Duel {
       // both ignite as the music rises; Anakin flips back into his guard
       { t: 68.6, do: () => this.ignite(ob) },
       { t: 69.2, do: () => this.ignite(p) },
-      { t: 69.9, do: (c) => (p.setAnim('backflip', 1, true), c.move(p, p.x - 1.6, p.y + 1.2, 0.8)) },
+      { t: 69.9, do: (c) => (this.pose(p, 'backflip'), c.move(p, p.x - 1.6, p.y + 1.2, 0.8)) },
       { t: 70.8, do: () => p.setAnim('idle'), cam: { x: p.x - 1.6, y: p.y + 1.2, dur: 0.6 } },
     ];
     return new Cinema(g, { track: 'mustafarIntro', length: 71.4, cues }).play();
   }
 
+  /** The hood comes down: the same cloak, hood on the back. */
+  hoodDown() {
+    const p = this.game.player;
+    const set = p.sprites.anims;
+    if (set.hoodOff) return p.setAnim('hoodOff', 1, true); // (a sheet with the pose)
+    p.sprite = 'anakin_robe';
+    this.pose(p, 'idleBare');
+  }
+
   throwRobe(u, pile) {
     const g = this.game;
-    u.sprite = u === g.player ? 'anakinMustafar' : 'obiwan3';
+    u.sprite = u === g.player ? 'anakin_tunic' : 'obiwan3';
     u.setAnim('idle', 1, true);
     u.saberLit = false;
     pile.x = u.x - Math.cos(u.facing) * 0.7;
@@ -362,7 +375,7 @@ export class MustafarDuel extends Duel {
   /**
    * A pose by name. The cast is drawn from Blender sprite sheets; a sheet that
    * has not rendered one of the duel's new poses yet (tools/sprites/README.md,
-   * `render_characters.py anakinMustafar obiwan3 --only-anims …`) holds the
+   * `render_anakin.py` / `render_characters.py obiwan3 --only-anims …`) holds the
    * frame of its own that reads closest instead, so the scene still plays.
    */
   pose(u, name, speed = 1) {
