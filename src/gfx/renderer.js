@@ -81,7 +81,8 @@ export class Renderer {
       const s = worldToScreen(p.x, p.y);
       p.sx = s.x;
       p.sy = s.y;
-      p.rect = [s.x - c.body.ox, s.y - c.body.oy, c.body.w, c.body.h];
+      const k = c.body.k || 1; // (a sheet drawn scaled: drawFrame)
+      p.rect = [s.x - c.body.ox * k, s.y - c.body.oy * k, c.body.w * k, c.body.h * k];
       p.sortDepth = p.x + p.y + (p.rect && c.meta.footprint ? Math.min(...extent(c.meta.footprint)) * 0.35 : 0);
       p.box = boxOf(p.x, p.y, c.meta.footprint);
       this.propOrder = null;
@@ -399,23 +400,26 @@ export class Renderer {
     standing.length = ns;
     standing.sort(byDepth);
     const pDepth = p.drawDepth ?? p.x + p.y;
-    const pf = !p.dead && !p.hidden ? p.frame() : null;
-    let seeThrough = false;
+    // what hides the player: on most maps (Diablo-style) a structure in front of him fades and his
+    // silhouette shows through; a map laid out so that nothing tall ever stands in front of him
+    // (world.occlusion 'none': the rebuilt Coruscant, tools/maps/undercity_v2.py) draws every layer
+    // solid — no fade, no ghost
+    const occlude = g.world.occlusion !== 'none';
     for (const d of standing) {
       if (d.prop) {
         const pr = d.prop;
-        // a structure drawn after the player that covers him: drawn with a soft see-through hole
-        // round him (the player stays clear; not a ghost blended into the building)
         let alpha = 1;
-        const r = pr.rect;
+        if (occlude && d.depth > pDepth && !p.dead) {
+          const r = pr.rect;
+          if (ps.x > r[0] + 4 && ps.x < r[0] + r[2] - 4 && ps.y - 30 > r[1] && ps.y - 20 < r[1] + r[3] && r[3] > 30) alpha = 0.45;
+        }
+        ctx.globalAlpha = alpha;
+        // parked speeders hover: a slow bob of a pixel or so
         const bob = pr.sheet && SHEET_PROPS[pr.sheet].bob ? Math.round(Math.sin(this.time * SHEET_PROPS[pr.sheet].bob + pr.phase) * 1.2) : 0;
-        if (pf && d.depth > pDepth && r[3] > 30 && ps.x + 8 > r[0] && ps.x - 8 < r[0] + r[2] && ps.y > r[1] + 8 && ps.y - pf.h < r[1] + r[3] && this.coversPlayer(pr, ps, pf)) {
-          this.drawCutout(pr, ps, pf, bob);
-          alpha = 0.5;
-          seeThrough = true;
-        } else this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
+        this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
         pr.alpha = alpha;
         pr.bob = bob;
+        ctx.globalAlpha = 1;
       } else if (d.unit) {
         this.drawUnit(d.unit);
       } else if (d.scorch) {
@@ -428,8 +432,8 @@ export class Renderer {
         this.drawFrame(this.assets.props[pk.type][0], s.x, s.y);
       }
     }
-    // Player silhouette through occluders (those without a see-through hole: units, small props).
-    if (!p.dead && !p.hidden && !seeThrough) {
+    // Player silhouette through occluders.
+    if (occlude && !p.dead && !p.hidden) {
       ctx.globalAlpha = 0.28;
       this.drawFrame(p.frame(), ps.x, ps.y);
       ctx.globalAlpha = 1;
@@ -524,45 +528,6 @@ export class Renderer {
     if (d <= lo) d = lo + 0.005;
     if (d >= hi) d = hi - 0.005;
     return d;
-  }
-
-  /** Whether a prop's opaque pixels cover the player's body (a few points down its middle). */
-  coversPlayer(pr, ps, pf) {
-    const f = pr.frame;
-    const data = (f.alphaData ||= alphaOf(f));
-    if (!data) return true;
-    let hit = 0;
-    for (const t of [0.2, 0.45, 0.7, 0.9]) {
-      const x = Math.round(ps.x - (pr.sx - f.ox));
-      const y = Math.round(ps.y - pf.h * t - (pr.sy - f.oy));
-      if (x >= 0 && y >= 0 && x < f.w && y < f.h && data[y * f.w + x] > 128) hit++;
-    }
-    return hit >= 2;
-  }
-
-  /** A prop drawn with a soft hole round the player (destination-out radial gradient on a scratch canvas). */
-  drawCutout(pr, ps, pf, bob) {
-    const f = pr.frame;
-    const c = (this.cutCanvas ||= document.createElement('canvas'));
-    if (c.width < f.w || c.height < f.h) {
-      c.width = Math.max(c.width, f.w);
-      c.height = Math.max(c.height, f.h);
-    }
-    const x = c.getContext('2d');
-    x.globalCompositeOperation = 'copy';
-    x.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, f.w, f.h);
-    x.globalCompositeOperation = 'destination-out';
-    const cx = ps.x - (pr.sx - f.ox);
-    const cy = ps.y - pf.h * 0.5 - (pr.sy + bob - f.oy);
-    const R = Math.max(26, pf.h * 0.75);
-    const g = x.createRadialGradient(cx, cy, R * 0.45, cx, cy, R);
-    g.addColorStop(0, 'rgba(0,0,0,0.88)');
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    x.fillStyle = g;
-    x.fillRect(cx - R, cy - R, R * 2, R * 2);
-    x.globalCompositeOperation = 'source-over';
-    this.smooth(false);
-    this.ctx.drawImage(c, 0, 0, f.w, f.h, Math.round(pr.sx - f.ox - this.cam.x), Math.round(pr.sy + bob - f.oy - this.cam.y), f.w, f.h);
   }
 
   drawFrame(f, x, y) {
@@ -953,35 +918,40 @@ export class Renderer {
   }
 
   /**
-   * The screen rectangle holding every pixel where the city's drop shows through the terrain (a void
-   * tile, or off the map), sampled on a 16 px grid and padded by a cell; null when none is in view.
+   * The screen rectangle holding every pixel where the city's drop shows through the terrain: the union
+   * of the diamonds of the void tiles in view (and of the off-map ones), exact — a sliver of drop
+   * between two plates is never missed, whatever the camera does; null when none is in view.
    */
   voidRect(world, cam, W, H) {
-    const STEP = 16;
     const bi = world.biome;
     const ww = world.w;
     const wh = world.h;
+    // the tiles under the screen's corners give the range to scan (a tile's diamond spans 40 x 20 px)
+    const at = (sx, sy) => [(sx / HALF_W + sy / HALF_H) / 2, (sy / HALF_H - sx / HALF_W) / 2];
+    const c = [at(cam.x, cam.y), at(cam.x + W, cam.y), at(cam.x, cam.y + H), at(cam.x + W, cam.y + H)];
+    const tx0 = Math.floor(Math.min(c[0][0], c[2][0])) - 1;
+    const tx1 = Math.ceil(Math.max(c[1][0], c[3][0])) + 1;
+    const ty0 = Math.floor(Math.min(c[0][1], c[1][1])) - 1;
+    const ty1 = Math.ceil(Math.max(c[2][1], c[3][1])) + 1;
     let x0 = Infinity;
     let y0 = Infinity;
     let x1 = -Infinity;
     let y1 = -Infinity;
-    for (let sy = 0; sy <= H + STEP; sy += STEP) {
-      const wy = (cam.y + sy) / HALF_H;
-      for (let sx = 0; sx <= W + STEP; sx += STEP) {
-        const wx = (cam.x + sx) / HALF_W;
-        const tx = Math.floor((wx + wy) / 2);
-        const ty = Math.floor((wy - wx) / 2);
+    for (let ty = ty0; ty <= ty1; ty++)
+      for (let tx = tx0; tx <= tx1; tx++) {
         if (tx >= 0 && ty >= 0 && tx < ww && ty < wh && bi[ty * ww + tx] !== BIOME.VOID) continue;
-        if (sx < x0) x0 = sx;
-        if (sx > x1) x1 = sx;
-        if (sy < y0) y0 = sy;
-        if (sy > y1) y1 = sy;
+        const left = (tx - ty - 1) * HALF_W - cam.x;
+        const top = (tx + ty) * HALF_H - cam.y;
+        if (left + 2 * HALF_W <= 0 || left >= W || top + 2 * HALF_H <= 0 || top >= H) continue;
+        if (left < x0) x0 = left;
+        if (top < y0) y0 = top;
+        if (left + 2 * HALF_W > x1) x1 = left + 2 * HALF_W;
+        if (top + 2 * HALF_H > y1) y1 = top + 2 * HALF_H;
       }
-    }
     if (x1 < x0) return null;
-    x0 = Math.max(0, x0 - STEP);
-    y0 = Math.max(0, y0 - STEP);
-    return [x0, y0, Math.min(W, x1 + STEP) - x0, Math.min(H, y1 + STEP) - y0];
+    x0 = Math.max(0, Math.floor(x0));
+    y0 = Math.max(0, Math.floor(y0));
+    return [x0, y0, Math.min(W, Math.ceil(x1)) - x0, Math.min(H, Math.ceil(y1)) - y0];
   }
 
   /**
@@ -1390,22 +1360,6 @@ function lightSprite(r, g, b) {
   return c;
 }
 
-/** A frame's alpha channel (once, for the occlusion test); null when its page cannot be read. */
-function alphaOf(f) {
-  try {
-    const c = document.createElement('canvas');
-    c.width = f.w;
-    c.height = f.h;
-    const x = c.getContext('2d');
-    x.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, f.w, f.h);
-    const d = x.getImageData(0, 0, f.w, f.h).data;
-    const a = new Uint8Array(f.w * f.h);
-    for (let i = 0; i < a.length; i++) a[i] = d[i * 4 + 3];
-    return a;
-  } catch {
-    return null;
-  }
-}
 
 /** A footprint's world box [x0, y0, x1, y1] at (x, y). */
 function boxOf(x, y, poly) {

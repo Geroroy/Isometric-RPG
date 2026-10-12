@@ -135,8 +135,12 @@ if (typeof window !== 'undefined') window.__skyTraffic = traffic; // (tools/qa)
  * where the drop shows (renderer.voidRect) — only that is drawn, nothing when null. */
 export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0, r = [0, 0, W, H]) {
   traffic.update(dt);
-  if (!r) return;
   const P = PAL[mode];
+  // the frame starts clean (the terrain covers the rest, but no pixel of an earlier frame may survive
+  // where it leaves a speck): one flat fill, then the backdrop only where the drop shows
+  ctx.fillStyle = P.sky[2];
+  ctx.fillRect(0, 0, W, H);
+  if (!r) return;
   if (skyKey !== mode + H) {
     sky = ctx.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0, P.sky[0]);

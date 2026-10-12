@@ -478,7 +478,6 @@ export class Arena extends World {
     this.addProp('sepCrate', cx + 7.2, cy - 5);
     this.spawn = { x: cx - 3, y: cy + 3 };
     this.roadSegs = [];
-    this.qaSpots = U.qa || null; // (tools/qa: the rebuilt map's own spots)
     this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
   }
 }
@@ -778,6 +777,9 @@ export class CityHub extends World {
     ];
     this.roadSegs = [];
     this.qaSpots = U.qa || null; // (tools/qa: the rebuilt map's own spots)
+    // the rebuilt map closes every tile where something would hide the player (tools/maps/undercity_v2.py):
+    // its structures are drawn solid, never faded over him
+    if (MAP_V2) this.occlusion = 'none';
     this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
   }
 }

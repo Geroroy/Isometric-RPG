@@ -56,7 +56,9 @@ class Plan:
             self.errors.append(f'{name} at {x:.1f},{y:.1f} leaves the {level} level ({[round(v, 1) for v in r]})')
         for it in self.items:
             q = it['rect']
-            if it['level'] == level and r[0] < q[2] - 0.15 and r[2] > q[0] + 0.15 and r[1] < q[3] - 0.15 and r[3] > q[1] + 0.15:
+            # buildings may overlap by their footprints' margins (walls meeting), nothing more
+            tol = 0.85 if name in B and it['p'] in B else 0.15
+            if it['level'] == level and r[0] < q[2] - tol and r[2] > q[0] + tol and r[1] < q[3] - tol and r[3] > q[1] + tol:
                 self.errors.append(f'{name} at {x:.1f},{y:.1f} overlaps {it["p"]} at {it["x"]:.1f},{it["y"]:.1f}')
         it = {'p': name, 'x': round(x, 2), 'y': round(y, 2), 'rect': r, 'kind': B[name]['kind'] if name in B else 'prop', 'level': level, **extra}
         self.items.append(it)
@@ -84,21 +86,30 @@ class Plan:
 
 
 P = Plan()
+# buildings in a row stand flush: one street wall, no slit between them that looks like an alley but
+# leads only behind them (where nothing can be seen and nothing is walkable)
+FLUSH = -0.8  # (the footprints are the outlines less 0.4 a side: the outlines overlap so the walls meet)
 
 # ================================================================== the undercity
 # --- the back (north) edge: tenement towers to the west of the lift square, the works to the east
-end, nw_towers = P.row(['towers_00', 'towers_04', 'towers_12', 'towers_08'], 41.5, 95.5, 'n', 'low', gap=1.4)
+end, nw_towers = P.row(['towers_00', 'towers_04', 'towers_12', 'towers_08'], 41.5, 95.5, 'n', 'low', gap=FLUSH)
 assert end <= 76.5, f'NW towers end at {end}'
-end, works = P.row(['plants_03', 'plants_12', 'plants_14', 'plants_11'], 90.5, 95.5, 'n', 'low', gap=1.6)
+end, works = P.row(['plants_03', 'plants_12', 'plants_14', 'plants_11'], 90.5, 95.5, 'n', 'low', gap=FLUSH)
 # --- the back (west) edge below the avenue: the residential stacks
-end_w, w_towers = P.col(['towers_09', 'towers_13', 'towers_15'], 116.5, 41.5, 'w', 'low', gap=3.2)
+end_w, w_towers = P.col(['towers_09', 'towers_13', 'towers_15'], 116.5, 41.5, 'w', 'low', gap=FLUSH)
 # --- shop blocks along the avenue's south side (row A) and the lane (row B), west and east of the plaza
-_, rowA_w = P.row(['shops_01', 'shops_06', 'shops_13', 'shops_09'], 57.0, 116.5, 'n', 'low', gap=1.6)
+# (from x 60: the stacks' lane west of it keeps 6+ tiles in view beside the towers — the shops hide a
+# wedge west of their back corner)
+_, rowA_w = P.row(['shops_01', 'shops_06', 'shops_13', 'shops_09'], 60.0, 116.5, 'n', 'low', gap=FLUSH)
 neon_club = P.put('shops_14', 98.0, 116.5 + B['shops_14']['tiles'][1] / 2, 'low')
 cantina = P.put('shops_00', 112.2 + B['shops_00']['tiles'][0] / 2, 116.5 + B['shops_00']['tiles'][1] / 2, 'low')
-_, rowA_e = P.row(['shops_03', 'shops_10', 'shops_11', 'shops_07'], 122.5, 116.5, 'n', 'low', gap=1.4)
-_, rowB_w = P.row(['shops_04', 'shops_15'], 57.0, 130.0, 'n', 'low', gap=2.6)
-_, rowB_e = P.row(['shops_08', 'shops_12'], 124.0, 130.0, 'n', 'low', gap=4.0)
+_, rowA_e = P.row(['shops_03', 'shops_10', 'shops_11', 'shops_07'], 122.5, 116.5, 'n', 'low', gap=FLUSH)
+# row B backs onto row A (one block, two faces): a lane between them would lie wholly behind row B —
+# out of sight, so out of reach — and show only as a sliver of floor one cannot walk into
+back_w = max(it['rect'][3] for it in rowA_w[:2])
+back_e = max(it['rect'][3] for it in rowA_e[:2])
+_, rowB_w = P.row(['shops_04', 'shops_15'], 60.0, back_w, 'n', 'low', gap=FLUSH)
+_, rowB_e = P.row(['shops_08', 'shops_12'], 122.5, back_e, 'n', 'low', gap=FLUSH)
 # --- two towers west of the plaza, behind it (they hide the lane behind them, not the plaza)
 P.put('towers_02', 73.5 + B['towers_02']['tiles'][0] / 2, 131.5 + B['towers_02']['tiles'][1] / 2, 'low')
 # --- the front edges: works framing the scene (they fade when they cover someone), a market tent by
@@ -123,10 +134,17 @@ P.put('tradeTerminal', 106.0, 124.4, 'low')
 P.put('neonSignSet', 92.5, 136.6, 'low')
 P.put('signPost', 103.4, 136.8, 'low')
 # light posts along the avenue (both kerbs) and the promenade, skipping crossings
+# (on the avenue's north kerb, against the towers and the works: what a post hides lies in their walls —
+# out in the street each post's sign would hide a diagonal strip of it)
+def kerb(x, half=1.2):
+    """The avenue's north kerb at x: just south of the towers and works there."""
+    return max([it['rect'][3] for it in nw_towers + works if it['rect'][0] < x + half and it['rect'][2] > x - half] or [103.0]) + 0.9
+
+
 for x in range(46, 154, 9):
     if 76 <= x <= 90:
         continue
-    P.put('lightPost', x + 0.5, 110.4, 'low')
+    P.put('lightPost', x + 0.5, kerb(x + 0.5), 'low')
 for x in range(60, 142, 11):
     if 86 <= x <= 110:
         continue
@@ -135,15 +153,15 @@ for x in range(60, 142, 11):
 for (n, x, y) in [('trashCompactor', 55.2, 126.0), ('crateStack', 55.0, 142.4), ('barrelPile', 70.0, 141.5), ('scrapHeap', 120.4, 141.6),
                   ('abandonedSpeeder', 85.0, 153.6), ('speederBike', 130.0, 153.2), ('compactorUnit', 152.6, 126.0)]:
     P.put(n, x, y, 'low')
-for (n, x, y) in [('steamVent', 107.0, 111.8), ('steamVent', 137.0, 111.8), ('ventStack', 152.4, 112.0), ('verticalPipes', 89.3, 96.5),
+for (n, x, y) in [('steamVent', 113.5, kerb(113.5, 1.6) + 0.2), ('steamVent', 140.5, kerb(140.5, 1.6) + 0.2), ('ventStack', 152.4, 112.0), ('verticalPipes', 89.3, 96.5),
                   ('conduitArray', 77.2, 96.6), ('crateStack', 88.4, 105.6), ('barrelPile', 77.0, 105.8)]:
     P.put(n, x, y, 'low', steam=(n == 'steamVent'))
 P.put('barSign', cantina['rect'][0] - 1.0, cantina['rect'][3] - 0.6, 'low')
 
 # ================================================================== the upper plaza
-end, up_towers = P.row(['towers_01', 'towers_03', 'towers_06', 'towers_10', 'towers_14'], 63.0, 49.5 - 0.01, 's', 'up', gap=2.0)
+end, up_towers = P.row(['towers_01', 'towers_03', 'towers_06', 'towers_10', 'towers_14'], 63.0, 49.5 - 0.01, 's', 'up', gap=FLUSH)
 # the west edge: a row of shops facing the terrace (shops reused here: a level away from their twins)
-_, up_shops = P.col(['shops_07', 'shops_04', 'shops_13'], 50.5, 63.0, 'w', 'up', gap=1.5)
+_, up_shops = P.col(['shops_07', 'shops_04', 'shops_13'], 50.5, 63.0, 'w', 'up', gap=FLUSH)
 for (n, x, y) in [('tradeTerminal', 88.0, 62.6), ('tradeTerminal', 100.0, 62.4), ('lightPost', 88.5, 70.2), ('lightPost', 100.0, 70.4),
                   ('signPost', 94.0, 60.8), ('tradeKiosk', 77.0, 60.5), ('neonSignSet', 84.0, 55.5), ('marketStall', 108.0, 73.5),
                   ('crateStack', 104.5, 57.0), ('barrelPile', 103.0, 58.8), ('crateBarrels', 120.0, 69.6), ('scrapHeap', 70.6, 74.6),
@@ -208,59 +226,120 @@ for it in P.items:
         blocked[math.floor(it['y'])][math.floor(it['x'])] = 1
 # the lifts and the pad (model props: turbolift blocks nothing, the pad is flat)
 
-# --- no walking where a building would hide the player: a tile behind a building (its box at smaller
-# x or y, docs/CORUSCANT_REBUILD.md) whose person-sized column (feet to head, 52 px) falls mostly on the
-# building's opaque pixels is closed — the level shows its people instead of hiding them
+# --- no walking where something would hide the player (docs/CORUSCANT_REBUILD.md): the game's own test
+# (renderer.coversPlayer: a standing sprite drawn after the player — his box behind its footprint box —
+# whose opaque pixels cover 2 of 4 points down his 56 px body) at the tile's centre and four points
+# inside it; buildings and the taller street props alike, on both levels. The level shows its people
+# instead of hiding them — nothing is drawn see-through or as a ghost.
 from PIL import Image as _Image
 _atlas = json.load(open(f'{UC}/atlas.json'))
 _pages = [_Image.open(f'{UC}/{f}').getchannel('A') for f in _atlas['pages']['body']]
-_alpha = {}
+_spr = {}
+BODY_H = 56
 
 
-def _alpha_of(name):
-    if name not in _alpha:
-        m = B[name]
-        x, y, w, h = m['rect']
-        _alpha[name] = _pages[m['page']].crop((x, y, x + w, y + h)).load()
-    return _alpha[name]
+def _sprite(name):
+    """(alpha pixels, w, h, anchor, k, footprint bounds) of a building or a street prop."""
+    if name not in _spr:
+        if name in B:
+            m = B[name]
+            x, y, w, h = m['rect']
+            fp = m['footprint']
+            _spr[name] = (_pages[m['page']].crop((x, y, x + w, y + h)).load(), w, h, m['anchor'], 1.0, (min(q[0] for q in fp), min(q[1] for q in fp), max(q[0] for q in fp), max(q[1] for q in fp)))
+        else:
+            m = json.load(open(f'{UW}/{name}.json'))
+            im = _Image.open(f'{UW}/{m["layers"]["body"]}').getchannel('A')
+            x0, y0, x1, y1, _ = S[name]
+            _spr[name] = (im.load(), im.width, im.height, m['anchor'], m.get('k', 1.0), (x0, y0, x1, y1))
+    return _spr[name]
 
 
-def _behind(tx, ty, r):
-    # the tile (a 1 x 1 box) is behind the building's box r
-    xb, yb = tx + 1 <= r[0] + 0.05, ty + 1 <= r[1] + 0.05
-    xf, yf = tx >= r[2] - 0.05, ty >= r[3] - 0.05
+def _box_behind(a, b):
+    """renderer.boxOrder(a, b) < 0: box a is behind box b."""
+    e = 0.05
+    xb, xf = a[2] <= b[0] + e, a[0] >= b[2] - e
+    yb, yf = a[3] <= b[1] + e, a[1] >= b[3] - e
     return (xb and not yf) or (yb and not xf)
 
 
-hidden = 0
-_fp = [row[:] for row in blocked]  # the footprints' own blocking (the game does that itself)
-bld = [it for it in P.items if it['p'] in B]
-for y in range(LOW[1], LOW[3]):
-    for x in range(LOW[0], LOW[2]):
-        if blocked[y][x]:
+def _covers(px, py, level):
+    """(the largest share of the player's body — 3 columns across his width by 4 rows from knee to head —
+    one sprite drawn after him covers, whether his feet are hidden). A thin pole cuts a sliver from him;
+    a wall swallows him."""
+    best, feet = 0.0, False
+    ub = (px - 0.25, py - 0.25, px + 0.25, py + 0.25)
+    for it in tall[level]:
+        a, w, h, anc, k, fb = _sprite(it['p'])
+        bx = (it['x'] + fb[0], it['y'] + fb[1], it['x'] + fb[2], it['y'] + fb[3])
+        if not _box_behind(ub, bx):
+            # boxes that overlap (the footprint's margin) have no order: the game then draws by depth —
+            # the player's x + y against the prop's sortDepth (renderer.placeProp / unitDepth)
+            if _box_behind(bx, ub) or px + py >= it['x'] + it['y'] + min(fb[2] - fb[0], fb[3] - fb[1]) * 0.35:
+                continue
+        # the feet in the sprite's own pixels (drawn at x - anchor·k, scaled by k)
+        fx = ((px - it['x']) - (py - it['y'])) * 20 / k + anc[0]
+        fy = ((px - it['x']) + (py - it['y'])) * 10 / k + anc[1]
+        if fx + 7 / k < 0 or fx - 7 / k >= w or fy - BODY_H / k >= h or fy < 0:
             continue
-        cx, cy = x + 0.5, y + 0.5
-        for it in bld:
-            r = it['rect']
-            if not _behind(x, y, r):
+        hit = 0
+        for dx in (-6, 0, 6):
+            xx = int(fx + dx / k)
+            if not 0 <= xx < w:
                 continue
-            m = B[it['p']]
-            # the tile's feet in the sprite's pixels
-            fx = (cx - it['x'] - (cy - it['y'])) * 20 + m['anchor'][0]
-            fy = (cx - it['x'] + cy - it['y']) * 10 + m['anchor'][1]
-            if fx < 0 or fx >= m['rect'][2] or fy - 52 >= m['rect'][3] or fy < 0:
+            for t in (0.2, 0.45, 0.7, 0.9):
+                yy = int(fy - BODY_H * t / k)
+                if 0 <= yy < h and a[xx, yy] > 128:
+                    hit += 1
+        if it['p'] in B:  # (a street prop in front of someone is ordinary: only the floor it hides counts)
+            best = max(best, hit / 12)
+        # the feet: two of three points across them, just above the floor
+        yy = int(fy - 3 / k)
+        if 0 <= yy < h and sum(1 for dx in (-6, 0, 6) if 0 <= int(fx + dx / k) < w and a[int(fx + dx / k), yy] > 128) >= 2:
+            feet = True
+    return best, feet
+
+
+tall = {'low': [], 'up': []}
+for it in P.items:
+    a, w, h, anc, k, fb = _sprite(it['p']) if (it['p'] in B or it['p'] in S) else (None, 0, 0, 0, 1, 0)
+    # the structures (a person's size and more across): a lamp post or a sign in front of someone only
+    # cuts a sliver from him, as anything does in this view
+    if a is not None and h * k > 30:
+        tall[it['level']].append(it)
+hidden = 0
+floor_seen = {}  # closed tile -> its floor is in view (closed, yet it looks like open ground)
+_fp = [row[:] for row in blocked]  # the footprints' own blocking (the game does that itself)
+for level, (X0, Y0, X1, Y1) in (('low', LOW), ('up', UP)):
+    for y in range(Y0, Y1):
+        for x in range(X0, X1):
+            if blocked[y][x]:
                 continue
-            a = _alpha_of(it['p'])
-            cov = 0
-            for t in (0.15, 0.4, 0.65, 0.9):
-                py = int(fy - 52 * t)
-                if 0 <= py < m['rect'][3] and a[int(fx), py] > 128:
-                    cov += 1
-            if cov >= 3:
+            # closed where one could not see where one stands (the feet hidden at the centre or at two of
+            # four points round it), or where a building would cover nearly all of the body (3 of 4 points):
+            # what is in view is walkable, what is not is not — no invisible walls on open floor
+            # the centre and two points across the tile (left and right on screen)
+            centre, feet_c = _covers(x + 0.5, y + 0.5, level)
+            feet_l = _covers(x + 0.2, y + 0.8, level)[1]
+            feet_r = _covers(x + 0.8, y + 0.2, level)[1]
+            feet_hidden = feet_c or (feet_l and feet_r)
+            if feet_hidden or centre >= 0.6:
                 blocked[y][x] = 1
                 hidden += 1
-                break
-print(f'closed {hidden} tiles hidden behind buildings')
+                floor_seen[(x, y)] = not feet_hidden
+if os.environ.get('DEBUG_MAP'):
+    _x0, _y0, _x1, _y1 = map(int, os.environ['DEBUG_MAP'].split(','))
+    for _y in range(_y0, _y1):
+        print(f'{_y:4d} ' + ''.join('#' if _fp[_y][_x] else ('x' if blocked[_y][_x] == 1 else ('~' if blocked[_y][_x] == 2 else '.')) for _x in range(_x0, _x1)))
+if os.environ.get('DEBUG_TILES'):
+    for _t in json.loads(os.environ['DEBUG_TILES']):
+        _lv = 'low' if _t[1] >= LOW[1] else 'up'
+        print('tile', _t, 'blocked', blocked[_t[1]][_t[0]], 'fp', _fp[_t[1]][_t[0]], 'covers', _covers(_t[0] + 0.5, _t[1] + 0.5, _lv))
+        for it in tall[_lv]:
+            a_, w_, h_, anc_, k_, fb_ = _sprite(it['p'])
+            bx = (it['x'] + fb_[0], it['y'] + fb_[1], it['x'] + fb_[2], it['y'] + fb_[3])
+            if abs(it['x'] - _t[0]) < 12 and abs(it['y'] - _t[1]) < 12:
+                print('   ', it['p'], it['x'], it['y'], [round(v, 2) for v in bx], _box_behind((_t[0] + 0.25, _t[1] + 0.25, _t[0] + 0.75, _t[1] + 0.75), bx))
+print(f'closed {hidden} tiles where something would hide the player ({sum(floor_seen.values())} of them with their floor in view)')
 
 
 def reach(start):
@@ -286,6 +365,58 @@ for (x0, y0, x1, y1) in (LOW, UP):
             if blocked[y][x] == 0 and (x, y) not in low_reach and (x, y) not in up_reach:
                 blocked[y][x] = 1
                 hidden += 1
+                floor_seen[(x, y)] = not _covers(x + 0.5, y + 0.5, 'low' if y >= LOW[1] else 'up')[1]
+seen_closed = sorted(t for t, v in floor_seen.items() if v)
+print(f'closed tiles that look open (floor in view): {len(seen_closed)}')
+_left = set(seen_closed)
+while _left:
+    _q = [_left.pop()]
+    _grp = list(_q)
+    while _q:
+        cx_, cy_ = _q.pop()
+        for d_ in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            n_ = (cx_ + d_[0], cy_ + d_[1])
+            if n_ in _left:
+                _left.remove(n_)
+                _q.append(n_)
+                _grp.append(n_)
+    print(f'  {len(_grp)} at x {min(t[0] for t in _grp)}-{max(t[0] for t in _grp)}, y {min(t[1] for t in _grp)}-{max(t[1] for t in _grp)}')
+# --- what is closed yet in view (a nook beside a building that the closing cut off) is dressed with junk —
+# crates, barrels, scrap — so it reads as blocked, not as open floor with an invisible wall
+FILL = ['crateStack', 'barrelPile', 'scrapHeap', 'crateBarrels', 'compactorUnit', 'trashCompactor']
+_k = 0
+for (tx, ty) in seen_closed:
+    if _fp[ty][tx] or not floor_seen.get((tx, ty)):
+        continue
+    level = 'low' if ty >= LOW[1] else 'up'
+    for _t in range(len(FILL) * 5):
+        n = FILL[(_k + _t) % len(FILL)]
+        x0_, y0_, x1_, y1_, _ = S[n]
+        sh = ((0, 0), (-0.5, 0), (0.5, 0), (0, -0.5), (0, 0.5))[_t // len(FILL)]
+        cx_, cy_ = tx + 0.5 + sh[0], ty + 0.5 + sh[1]
+        r = (cx_ + x0_, cy_ + y0_, cx_ + x1_, cy_ + y1_)
+        if any(it['level'] == level and r[0] < it['rect'][2] - 0.1 and r[2] > it['rect'][0] + 0.1 and r[1] < it['rect'][3] - 0.1 and r[3] > it['rect'][1] + 0.1 for it in P.items):
+            continue
+        # not onto a street: at most one walkable tile under it
+        under = [(xx, yy) for yy in range(math.floor(r[1]), math.floor(r[3] - 1e-6) + 1) for xx in range(math.floor(r[0]), math.floor(r[2] - 1e-6) + 1)]
+        if sum(1 for (xx, yy) in under if blocked[yy][xx] == 0) > 2 or any(blocked[yy][xx] == 2 for (xx, yy) in under):
+            continue
+        P.put(n, cx_, cy_, level, filler=True)
+        for (xx, yy) in under:  # (left in the closed runs: the game blocks only tiles whose centre is in a footprint)
+            blocked[yy][xx] = 1
+        _k += 1
+        break
+_dressed = set()
+for it in P.items:
+    if it.get('filler'):
+        r = it['rect']
+        for yy in range(math.floor(r[1] - 0.5), math.floor(r[3] + 0.5) + 1):
+            for xx in range(math.floor(r[0] - 0.5), math.floor(r[2] + 0.5) + 1):
+                _dressed.add((xx, yy))
+undressed = [t for t in seen_closed if t not in _dressed and not _fp[t[1]][t[0]]]
+print(f'dressed with {_k} junk props; still bare: {len(undressed)} {undressed[:8]}')
+low_reach = reach((int(LIFT_LOW[0] + 1.6), int(LIFT_LOW[1] + 3)))
+up_reach = reach((int(PAD[0] - 4), int(PAD[1] + 1.5)))
 # what the game must close besides the footprints: rows of [x0, x1, y] runs
 closed_runs = []
 for y in range(MAP):
@@ -307,6 +438,9 @@ def ok(pt, level):
     return (int(x), int(y)) in (low_reach if level == 'low' else up_reach)
 
 
+PROBLEMS = []
+
+
 def nearest_ok(pt, level, r=4):
     """The nearest reachable tile centre to a point (a door or a gate right at a wall)."""
     if ok(pt, level):
@@ -320,7 +454,8 @@ def nearest_ok(pt, level, r=4):
                 if best is None or d < best[0]:
                     best = (d, q)
     if best is None:
-        raise SystemExit(f'no reachable tile near {pt} ({level})')
+        PROBLEMS.append(f'no reachable tile near {pt} ({level})')
+        return [round(pt[0], 1), round(pt[1], 1)]
     return [best[1][0] + 0.5, best[1][1] + 0.5]
 
 
@@ -336,18 +471,20 @@ def front_of(it, side, off=0.9):
     r = it['rect']
     if side == 's':
         return ((r[0] + r[2]) / 2, r[3] + off)
+    if side == 'n':
+        return ((r[0] + r[2]) / 2, r[1] - off)
     return (r[2] + off, (r[1] + r[3]) / 2)
 
 
 homes = [nearest_ok(front_of(t, 's'), 'low') for t in nw_towers] + [nearest_ok(front_of(t, 'e'), 'low') for t in w_towers]
 homes += [nearest_ok(front_of(s, 's'), 'low') for s in rowB_w + rowB_e]
-homes += [nearest_ok((s['rect'][2] + 0.8, s['rect'][3] - 1.5), 'low') for s in rowA_w[:3]]
+homes += [nearest_ok(front_of(s, 'n', 1.4), 'low', 6) for s in rowA_w[:3]]  # (row B backs onto their south sides)
 gate = [nearest_ok(front_of(w, 's', 1.0), 'low') for w in works[:2]]
 factory_gate = [gate[0], [gate[0][0] + 2.2, gate[0][1] + 0.4], [gate[0][0] - 1.8, gate[0][1] - 0.4]]
 factory_gate = [nearest_ok(p, 'low') for p in factory_gate]
 market = [nearest_ok((PLAZA[0] + math.cos(a) * 5.2, PLAZA[1] + math.sin(a) * 4.4), 'low') for a in [i * math.pi / 4 for i in range(8)]]
 cantina_sq = [nearest_ok((bar_door[0] + dx, bar_door[1] + dy), 'low') for dx, dy in [(-3, 1.2), (-1, 2.4), (1.5, 2.0), (3.5, 1.0), (0.5, 3.4), (-4.5, -0.4)]]
-billboards = [nearest_ok(p, 'low') for p in [(98, neon_club['rect'][3] + 1.6), (rowA_w[2]['x'], 125.6), (rowA_e[1]['x'], 125.6), (rowB_e[0]['x'], 128.6)]]
+billboards = [nearest_ok(p, 'low') for p in [(98, neon_club['rect'][3] + 1.6), front_of(rowB_w[1], 's', 1.4), front_of(rowA_e[2], 's', 1.4), front_of(rowB_e[1], 's', 1.4)]]
 alleys = [nearest_ok(p, 'low') for p in [(56.8, 120.0), (56.8, 136.0), (74.5, 127.2), (82.0, 127.0), (120.5, 127.0), (140.0, 127.6), (88.0, 103.0), (112.0, 112.4)]]
 lift_low = nearest_ok((LIFT_LOW[0] + 1.6, LIFT_LOW[1] + 2.9), 'low')
 overlook = nearest_ok((98.0, 148.6), 'low')
@@ -379,10 +516,12 @@ for pl in places.values():
     pts = pl['at'] if isinstance(pl['at'][0], list) else [pl['at']]
     for p in pts:
         lv = 'up' if p[1] < 90 else 'low'
-        assert ok(p, lv), f'unreachable place point {p}'
+        if not ok(p, lv):
+            PROBLEMS.append(f'unreachable place point {p}')
 for pa in patrols:
     for p in pa['route']:
-        assert ok(p, pa['level']), f'unreachable patrol point {p}'
+        if not ok(p, pa['level']):
+            PROBLEMS.append(f'unreachable patrol point {p}')
 
 lights = [
     [shaft[0], shaft[1], 7, 200, 225, 255, 170, 0.01],  # the shaft of daylight
@@ -443,7 +582,8 @@ data = {
     'npcs': {'figrin': figrin},
     'qa': qa,
 }
-json.dump(data, open(OUT, 'w'), ensure_ascii=False, indent=1)
+if not PROBLEMS:
+    json.dump(data, open(OUT, 'w'), ensure_ascii=False, indent=1)
 nb = sum(1 for it in P.items if it['p'] in B)
 used = sorted({it['p'] for it in P.items if it['p'] in B})
 print(f'{OUT}: {nb} buildings ({len(used)} kinds of 48), {len(P.items) - nb} props; walkable low {len(low_reach)}/{free_low} tiles reachable, up {len(up_reach)}/{free_up}')
@@ -462,6 +602,8 @@ if '--preview' in sys.argv:
             c = (10, 10, 14) if v == 2 else (60, 64, 72) if v == 0 else (30, 30, 36)
             if v == 0 and (x, y) not in low_reach and (x, y) not in up_reach:
                 c = (120, 40, 40)  # walkable but cut off
+            if floor_seen.get((x, y)):
+                c = (230, 60, 160)  # closed, yet its floor is in view: looks open
             d.rectangle([(x - X0) * K, (y - Y0) * K, (x - X0 + 1) * K - 1, (y - Y0 + 1) * K - 1], fill=c)
     col = {'shop': (230, 120, 60), 'tower': (200, 170, 90), 'plant': (120, 150, 190), 'prop': (150, 150, 150)}
     for it in P.items:
@@ -480,3 +622,8 @@ if '--preview' in sys.argv:
         d.text(((p[0] - X0) * K + 4, (p[1] - Y0) * K - 4), nm, fill=(140, 255, 140))
     im.save(out)
     print('preview', out)
+if PROBLEMS:
+    print('PROBLEMS (nothing written):')
+    for e in PROBLEMS:
+        print('  ' + e)
+    sys.exit(1)
