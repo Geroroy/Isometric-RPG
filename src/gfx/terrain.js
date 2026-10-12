@@ -624,6 +624,7 @@ export class Terrain {
         // the underworld's ground textures (the concept sheets' tiles), by the tile's biome:
         // the variant by cell, the texel by world position, shaded by the same blotches
         let texd = false;
+        let painted = false; // a painted set texture (the Mustafar facility floor): drawn smooth like the set sprites on it
         if (GROUND) {
           const bi = this.world.biome[Math.floor(fy) * this.world.w + Math.floor(fx)];
           const gt = GROUND[bi];
@@ -657,6 +658,7 @@ export class Terrain {
           const k = this.room[Math.floor(fy) * this.world.w + Math.floor(fx)];
           if (k >= 0) {
             facilityFloor(this.world.floorPlan[k], fx, fy, fc);
+            painted = true;
             // wear: the blotches and slow soot stains, faint
             const stain = valueNoise(fx * 0.33, fy * 0.33, 75) - 0.5;
             const sh = (1 + blot * 0.12) * (1 + stain * 0.18);
@@ -725,7 +727,7 @@ export class Terrain {
           b = 255;
         }
         const i = (py * PW + px) * 4;
-        if (hd) {
+        if (hd || painted) {
           // full colour; a little fine grain in place of the dither
           const fine = (hash2(px + sx0 * S, py + sy0 * S, 7) - 0.5) * 6;
           d[i] = clamp(r + fine, 0, 255);
