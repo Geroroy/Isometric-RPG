@@ -567,8 +567,10 @@ const MIRROR_SHEET = {
   mfConsole_r: 'mfConsole',
   mfConsoleRed: 'mfConsoleRed_r',
   mfCorridor: 'mfCorridor_r',
+  mfCorridor_r: 'mfCorridor',
   mfWindow: 'mfWindow_r',
   mfPassage: 'mfPassage_x',
+  mfPassageS_x: 'mfPassageS',
   mfChair: 'mfChair_x',
   mfChair_x: 'mfChair',
   mfTable: 'mfTable_y',
@@ -747,7 +749,16 @@ export class MustafarArena extends World {
     // the holo-table in the middle of the sunken floor, as in the film (its blue map lighting the room from below)
     // (off the line from the shield generator to the balcony door, which the console scene runs along)
     if (!this.addSheetProp('mfHolo', C.x + 3.5, C.y - 1.5)) this.addProp('consoleDesk', C.x + 2, C.y + 2.5, { angleIdx: 0 });
-    this.door(M.door4, 0);
+    // the way out to the balcony (the film's sets, as the hall's to the junction): a covered corridor, its back on
+    // the room's east edge, its portal on the catwalk; its inside the open corridor cut to the shell's 6 m, drawn
+    // over the catwalk's first stretch (`over`), seen while the shell clears round whoever walks it. The old door
+    // frame if the sprites did not load
+    const vest = this.addSheetProp('mfPassageS_x', M.door4.x + 3, M.door4.y, { noBlock: true, flat: true });
+    if (vest) {
+      vest.over = true;
+      this.addSheetProp('mfCorridor_r', M.door4.x + 6, M.door4.y, { noBlock: true });
+    }
+    this.door(M.door4, 0, !vest);
     for (const [dx, dy] of [[-3, -2], [3, 2], [5, -3], [-4, 4]]) this.lights.push({ x: C.x + dx, y: C.y + dy, z: 3.2, r: 235, g: 240, b: 255, rad: 150, flicker: 0.02 }); // the white light bars
     for (const [dx, dy] of [[0, 0], [-5, 3]]) this.lights.push({ x: C.x + dx, y: C.y + dy, z: 0.1, r: 90, g: 210, b: 255, rad: 110, flicker: 0.05 }); // cyan floor glow
     this.alarm = { x: C.x, y: C.y, z: 2.5, r: 255, g: 40, b: 30, rad: 0, flicker: 0.5 }; // lit by the duel when the shields fail
@@ -769,7 +780,7 @@ export class MustafarArena extends World {
     // (tools/sprites/mustafar_set mfFall; the model falls if the sprite did not load)
     if (!this.addSheetProp('mfFall_x', 89, 89, { noBlock: true }) | !this.addSheetProp('mfFall_x', 97.5, 88.5, { noBlock: true }))
       for (const [x, y] of [[88, 87], [95, 86.5], [102, 87.5], [108, 92], [106, 100]]) this.addProp('lavaFall', x, y);
-    for (const [x, y] of [[86, 101], [97, 101.5]]) this.addProp('pylon', x, y);
+    this.addProp('pylon', 97, 101.5);
 
     // --- the collector arm ---------------------------------------------------
     const A = M.arm;
@@ -799,7 +810,8 @@ export class MustafarArena extends World {
     // Padmé's skiff on its apron, nose along it (the film's chrome skiff, tools/sprites/mustafar_set; the model if
     // the sprite did not load); placed in the world, after the transpose
     if (!this.addSheetProp('mfSkiff_y', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y - 0.5)) this.addProp('skiff', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y);
-    this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
+    // (a flat piece marked `over` is drawn after the other flats: the balcony's corridor over the catwalk)
+    this.props.sort((a, b) => (a.over ? 1 : 0) - (b.over ? 1 : 0) || a.x + a.y - (b.x + b.y));
   }
 
   /**
@@ -886,7 +898,6 @@ export class MustafarArena extends World {
     const M = MUSTAFAR;
     const D = M.deck;
     const H = M.hall;
-    const C = M.control;
     const put = (n, x, y) => this.addSheetProp(n, x, y);
     // beside the skiff's tail and on the near rim
     put('cgCrateL', D.x - 4.5, D.y + 6.2);
@@ -901,10 +912,7 @@ export class MustafarArena extends World {
     put('cgCage', H.x + H.hw - 1.4, H.y + H.hh - 1.6);
     put('cgCapsule', H.x + H.hw - 3.6, H.y + H.hh - 1.2);
     put('cgDrum', H.x + H.hw - 1.2, H.y + H.hh - 3.6);
-    // the control room's near corner, outside the sunken floor
-    put('cgTank', C.x + C.hw - 1.4, C.y + C.hh - 1.6);
-    put('cgCanister', C.x + C.hw - 3.4, C.y + C.hh - 1.1);
-    put('cgCube', C.x + C.hw - 1.1, C.y + C.hh - 3.6);
+    // (the control room's kept clear: the way out to the balcony is there)
   }
 
   /**

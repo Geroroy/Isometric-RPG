@@ -417,10 +417,11 @@ export class Renderer {
         pr.bob = bob;
         pr.window = null;
         // a covered passage (a sheet with `roof`): its shell clears while anyone stands inside it, showing the
-        // open inside drawn under it (worldgen.js: the Mustafar corridor)
+        // open inside drawn under it (worldgen.js: the Mustafar corridors), or just behind it, where its height
+        // would hide him (2 m on its far sides)
         if (pr.sheet && pr.layers.meta.roof) {
           const [x0, y0, x1, y1] = pr.box;
-          const inside = g.activeUnits.some((u) => !u.dead && !u.hidden && u.x > x0 - 0.3 && u.x < x1 + 0.3 && u.y > y0 - 0.3 && u.y < y1 + 0.3);
+          const inside = g.activeUnits.some((u) => !u.dead && !u.hidden && u.x > x0 - 2 && u.x < x1 + 0.3 && u.y > y0 - 2 && u.y < y1 + 0.3);
           const to = inside ? 0 : 1;
           pr.fade = (pr.fade ?? 1) + (to - (pr.fade ?? 1)) * Math.min(1, dt * 6);
           if (pr.fade < 0.99) {

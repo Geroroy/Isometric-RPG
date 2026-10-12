@@ -23,6 +23,8 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
 - `mfPassage`: a corridor's inside with no roof (the far wall tall with light panels, the near wall low, a portal at
   each end), along y, 15 m by 4 m (the far wall on −x); `mfPassage_x` along x as rendered. Fitted by least squares
   on five measured corners (the render's own proportions differ: the walkway is narrowed to the corridor's)
+- `mfPassageS`: the same inside cut to 6 m (`shorten`: its middle bays taken out, the far end moved up), the inside
+  of the covered corridor from the control room out to the balcony; `mfPassageS_x` along x
 - `mfArm`: the collector arm (reference image_14: the vane head at its outer end, the long grated arm, the mast and
   its stays), along x, the head to −x, 22 m of deck; seen nearly as the game sees it, so scaled evenly
 - `mfCatwalk`: the outside catwalk (image_15: a grated deck, a rail on its far side), along x, 17 m
@@ -144,6 +146,21 @@ PIECES = {
         ],
         footprint=[[-7.5, -2], [7.5, -2], [7.5, 2], [-7.5, 2]],
         mirror='mfPassage',
+        flat=True,
+    ),
+    'mfPassageS_x': dict(
+        src='image_9.png',  # the same corridor's inside, cut to 6 m (its middle bays taken out: `shorten`)
+        corners=[
+            ((290, 355), (-7.5, 2, 0)),
+            ((1200, 870), (7.5, 2, 0)),
+            ((1450, 775), (7.5, -2, 0)),
+            ((545, 15), (-7.5, -2, 3)),
+            ((1430, 495), (7.5, -2, 3)),
+        ],
+        shorten=(-4.5, 4.5),  # the stretch between taken out, the far end moved up to the near
+        near_wall=1.0,  # m: the near wall's height (the far wall and the portals are the corners' 3 m)
+        footprint=[[-3, -2], [3, -2], [3, 2], [-3, 2]],
+        mirror='mfPassageS',
         flat=True,
     ),
     'mfArm': dict(
@@ -348,6 +365,43 @@ def bake_fit(name, P, body, neon):
         big = im.transform((size[0] * 2, size[1] * 2), Image.AFFINE, tuple((Fi[:2] * [[0.5, 0.5, 1], [0.5, 0.5, 1]]).reshape(-1)), resample=Image.BICUBIC)
         layers[nm] = big.resize(size, Image.LANCZOS)
     ax, ay = -lo  # the world origin (the piece's ground centre)
+    if P.get('shorten'):
+        # a shorter piece along x: what lies between x = a and x = b taken out, the far part (x < a) moved up by
+        # b − a. Each pixel's x is that of the surface it shows, found by walking its line of sight down from the
+        # walls' top (a pixel shows (fx + 1.225 h, fy + 1.225 h, h) at each height h): the first solid it meets —
+        # the far wall, the low near wall, the portals' slabs at the ends — else the floor
+        a, b = P['shorten']
+        d = b - a
+        half = max(abs(v[1]) for _, v in P['corners'])
+        end = max(abs(v[0]) for _, v in P['corners'])
+        top = max(v[2] for _, v in P['corners'])
+        wd, ht = layers['body'].size
+        py, px = np.mgrid[0:ht, 0:wd].astype(np.float32)
+        sx = (px - ax) / OVER / 20
+        sy = (py - ay) / OVER / 10
+        fx, fy = (sx + sy) / 2, (sy - sx) / 2
+        wx = fx.copy()
+        hit = np.zeros(fx.shape, bool)
+        for h in np.arange(top, -0.001, -0.05):
+            x, y = fx + 1.225 * h, fy + 1.225 * h
+            solid = (np.abs(x) <= end) & (np.abs(y) <= half) & (
+                (y <= -half + 0.4) | ((y >= half - 0.4) & (h <= P['near_wall'])) | (np.abs(x) >= end - 0.6))
+            new = solid & ~hit
+            wx[new] = x[new]
+            hit |= new
+        far, near = wx < a, wx >= b
+        sh = (round(d * 20 * OVER), round(d * 10 * OVER))
+        for k in layers:
+            arr = np.asarray(layers[k]).copy()
+            fa, na = arr.copy(), arr.copy()
+            fa[~far] = 0
+            na[~near] = 0
+            out = Image.new('RGBA', (wd + sh[0], ht + sh[1]))
+            out.alpha_composite(Image.fromarray(fa, 'RGBA'), sh)
+            out.alpha_composite(Image.fromarray(na, 'RGBA'), (0, 0))
+            layers[k] = out
+        # the new middle: the piece now spans x −L/2 + d .. L/2, its centre d / 2 up from the old
+        ax, ay = ax + d / 2 * 20 * OVER, ay + d / 2 * 10 * OVER
     if P.get('ship') == 'mirror':
         # shipped as its mirrored twin (the orientation the map places): flipped before the shadow is cast, so
         # the shadow still falls away from the key light
