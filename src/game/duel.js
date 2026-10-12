@@ -80,7 +80,7 @@ export class Dooku extends Unit {
     this.stateT -= dt;
     const dd = dist(this.x, this.y, p.x, p.y);
     const face = () => this.faceTo(p.x, p.y);
-    const aggression = d.phase === 3 ? 1.5 : d.phase === 2 ? 1.25 : 1;
+    const aggression = (d.phase === 3 ? 1.5 : d.phase === 2 ? 1.25 : 1) * (this.tempo || 1); // tempo: a faster duellist (Obi-Wan)
 
     if (this.stun > 0) {
       this.setAnim('hurt', 0.35); // a Djem So strike's stun is real for him too
@@ -467,13 +467,13 @@ export class Duel {
           if (Math.random() < 0.35) this.line('dooku', 'parry');
         }
       } else {
-        p.composure -= dk.strikeN === 1 ? 26 : 17;
+        p.composure -= (dk.strikeN === 1 ? 26 : 17) * Math.sqrt(dk.power || 1); // a heavier blade wears the guard down faster
         p.composureT = g.time;
         if (p.composure <= 0) this.breakGuard(p);
       }
       return;
     }
-    const dmg = rand(13, 19) * (this.phase === 3 ? 1.25 : 1);
+    const dmg = rand(13, 19) * (this.phase === 3 ? 1.25 : 1) * (dk.power || 1);
     g.damage(dk, p, dmg, { type: 'duel', knock: { ang: Math.atan2(p.y - dk.y, p.x - dk.x), power: dk.strikeN === 1 ? 3 : 1.5 } });
     if (!p.dead) {
       p.stun = Math.max(p.stun, 0.35);

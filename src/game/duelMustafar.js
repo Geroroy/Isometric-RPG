@@ -26,7 +26,7 @@
 //             arm with it; Obi-Wan takes the repulsor platform, Anakin the
 //             panning droid
 //   6:15      the lava river, on the moving decks
-//   6:29      the bank: the high ground (Padmé's Ruminations)
+//   6:29      the bank: the high ground (A Path I Can't Follow, reprised)
 import { Dooku, Duel, Extra } from './duel.js';
 import { Unit } from './units.js';
 import { Cinema } from './cinema.js';
@@ -54,10 +54,10 @@ const FIGHT_LENGTH = 389; // the ending takes over here
 // situation), played from its top at `start`. Each clip runs a little past its end so
 // the crossfade into the next has music under it.
 const SCORE = [
-  { sit: 'mustafarA', start: 0, end: 148 }, // Battle of the Heroes 0:30– : the platform to the control room
-  { sit: 'mustafarB', start: 148, end: 311 }, // Anakin vs. Obi-Wan 0:24– : shields down, the balcony, the arm
+  { sit: 'mustafarA', start: 0, end: 231 }, // Anakin vs. Obi-Wan 0:00– : the duel begins, through the shield blast
+  { sit: 'mustafarB', start: 231, end: 311 }, // Battle of the Heroes 0:00– : the catwalk falls, the cables, the arm
   { sit: 'mustafarC', start: 311, end: 351 }, // Battle of the Heroes 3:04– : "I have failed you", the bind
-  { sit: 'mustafarD', start: 351, end: FIGHT_LENGTH + 2 }, // Anakin vs. Obi-Wan 3:07– : the tower, the river
+  { sit: 'mustafarD', start: 351, end: FIGHT_LENGTH + 2 }, // Battle of the Heroes 2:30– : the tower, the river
 ];
 const scoreAt = (t) => SCORE.find((c) => t < c.end) || SCORE[SCORE.length - 1];
 
@@ -67,10 +67,14 @@ class ObiWan extends Dooku {
   constructor(game, x, y) {
     super(game, x, y, 'obiwan3');
     this.name = '오비완 케노비';
-    this.maxHp = this.hp = 950;
+    // the Master: a long fight (each set's mark takes several exchanges), a guard that
+    // turns most blows (Soresu), cuts that hurt, and a faster tempo than Dooku's
+    this.maxHp = this.hp = 3000;
     this.saberColor = [60, 130, 255];
     this.saberCore = 'rgba(230,242,255,0.95)';
-    this.blockChance = [0, 0.55, 0.5, 0.45]; // Soresu: the hardest guard to get through (Dooku: 0.62 / 0.5 / 0.42)
+    this.blockChance = [0, 0.62, 0.56, 0.5]; // per phase (Dooku: 0.62 / 0.5 / 0.42)
+    this.power = 2; // strike damage and guard wear (duel.js resolveStrike)
+    this.tempo = 1.3; // attacks, follow-ups and ripostes (Dooku.update)
   }
 
   /** Instead of Dooku's lightning: a Force push to break Anakin's rhythm. */

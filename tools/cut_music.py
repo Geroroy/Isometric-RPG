@@ -2,7 +2,7 @@
 """Cut the game's background music.
 
     python3 tools/cut_music.py "Anakin Skywalker Theme Complete.m4a"
-    python3 tools/cut_music.py --mustafar PATH HEROES AVO PADME
+    python3 tools/cut_music.py --mustafar PATH HEROES AVO
     (both together: the compilation first, then --mustafar and its four files)
 
 The first source is the fan compilation "Anakin Skywalker Theme Complete"
@@ -14,8 +14,8 @@ else there. Needs ffmpeg.
 
 --mustafar takes the Movie Duel's scene-by-scene score, music only (no film
 dialogue): PATH = "A Path I Can't Follow" (The Ghost Critic), HEROES = John
-Williams "Battle of the Heroes", AVO = John Williams "Anakin vs. Obi-Wan",
-PADME = "Padmé's Ruminations" (The Ghost Critic). Which span plays over which
+Williams "Battle of the Heroes", AVO = John Williams "Anakin vs. Obi-Wan".
+Which span plays over which
 scene, and why, is the cue sheet in docs/MUSTAFAR_SCORE.md; the clip ends
 here carry a 1.5-2 s tail past their scene so the crossfade into the next one
 has music under it. The duel's clock (src/game/duelMustafar.js SCORE) maps
@@ -60,13 +60,13 @@ CLIPS = {
 # the Movie Duel's score (docs/MUSTAFAR_SCORE.md): situation -> [(file, source, start s, end s, title)]
 MUSTAFAR = {
     'mustafarIntro': [('mustafar_path', 'path', 0, 72.9, "A Path I Can't Follow — the landing platform")],
-    'mustafarA': [('mustafar_heroes_1', 'heroes', 30, 180, 'Battle of the Heroes — the facility')],
-    'mustafarB': [('mustafar_avo_1', 'avo', 24, 189, 'Anakin vs. Obi-Wan — shields down')],
-    'mustafarC': [('mustafar_heroes_2', 'heroes', 184, 224.6, 'Battle of the Heroes — "I have failed you"')],
-    'mustafarD': [('mustafar_avo_2', 'avo', 187, 227, 'Anakin vs. Obi-Wan — the lava river')],
-    'mustafarEnd': [('mustafar_padme', 'padme', 0, 86, "Padmé's Ruminations — the high ground")],
+    'mustafarA': [('mustafar_avo', 'avo', 0, 233, 'Anakin vs. Obi-Wan — the duel')],
+    'mustafarB': [('mustafar_heroes_arm', 'heroes', 0, 82, 'Battle of the Heroes — the collector arm')],
+    'mustafarC': [('mustafar_heroes_failed', 'heroes', 184, 224.6, 'Battle of the Heroes — "I have failed you"')],
+    'mustafarD': [('mustafar_heroes_river', 'heroes', 150, 190, 'Battle of the Heroes — the lava river')],
+    'mustafarEnd': [('mustafar_path_end', 'path', 40.5, 125, "A Path I Can't Follow — the high ground")],
 }
-MUSTAFAR_SOURCES = ['path', 'heroes', 'avo', 'padme']
+MUSTAFAR_SOURCES = ['path', 'heroes', 'avo']
 RETIRED = ['mustafar']  # the old voiced film edit's situation (its files are deleted)
 
 
@@ -77,11 +77,11 @@ def main():
     sources = []  # (table, {source name: file})
     if '--mustafar' in args:
         i = args.index('--mustafar')
-        files = args[i + 1:i + 5]
-        if len(files) != 4:
-            sys.exit('--mustafar needs four files: PATH HEROES AVO PADME')
+        files = args[i + 1:i + 4]
+        if len(files) != 3:
+            sys.exit('--mustafar needs three files: PATH HEROES AVO')
         sources.append((MUSTAFAR, dict(zip(MUSTAFAR_SOURCES, files))))
-        args = args[:i] + args[i + 5:]
+        args = args[:i] + args[i + 4:]
     if args:
         sources.insert(0, (CLIPS, None, args[0]))
     root = Path(__file__).resolve().parent.parent

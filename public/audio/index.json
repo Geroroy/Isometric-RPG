@@ -131,32 +131,32 @@
     ],
     "mustafarEnd": [
       {
-        "file": "music/mustafar_padme.webm",
-        "title": "Padmé's Ruminations — the high ground"
+        "file": "music/mustafar_path_end.webm",
+        "title": "A Path I Can't Follow — the high ground"
       }
     ],
     "mustafarA": [
       {
-        "file": "music/mustafar_heroes_1.webm",
-        "title": "Battle of the Heroes — the facility"
+        "file": "music/mustafar_avo.webm",
+        "title": "Anakin vs. Obi-Wan — the duel"
       }
     ],
     "mustafarB": [
       {
-        "file": "music/mustafar_avo_1.webm",
-        "title": "Anakin vs. Obi-Wan — shields down"
+        "file": "music/mustafar_heroes_arm.webm",
+        "title": "Battle of the Heroes — the collector arm"
       }
     ],
     "mustafarC": [
       {
-        "file": "music/mustafar_heroes_2.webm",
+        "file": "music/mustafar_heroes_failed.webm",
         "title": "Battle of the Heroes — \"I have failed you\""
       }
     ],
     "mustafarD": [
       {
-        "file": "music/mustafar_avo_2.webm",
-        "title": "Anakin vs. Obi-Wan — the lava river"
+        "file": "music/mustafar_heroes_river.webm",
+        "title": "Battle of the Heroes — the lava river"
       }
     ]
   }
