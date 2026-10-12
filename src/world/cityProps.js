@@ -138,12 +138,25 @@ let FOOTPRINTS = {};
 /** The sprites' collision outlines (tiles from the origin), once they are loaded. */
 export function setCityFootprints(city) {
   FOOTPRINTS = Object.fromEntries(Object.entries(city).filter(([, v]) => v && v.meta).map(([k, v]) => [k, v.meta.footprint]));
+  SIZES = Object.fromEntries(
+    Object.entries(city)
+      .filter(([, v]) => v && v.meta && v.body)
+      .map(([k, v]) => {
+        const f = v.body;
+        const kk = f.k || 1;
+        return [k, [f.w * kk, f.h * kk, f.ox * kk, f.oy * kk]];
+      }),
+  );
   // a sprite that carries its own lights (the 1:1 building set, tools/sprites/undercity_buildings/bake.py)
   // and has no entry here gets one from them
   for (const [k, v] of Object.entries(city)) if (v && v.meta && !SHEET_PROPS[k]) SHEET_PROPS[k] = { lights: v.meta.lights || [] };
 }
 
 export const cityFootprint = (name) => FOOTPRINTS[name] || null;
+
+let SIZES = {};
+/** A sprite's size on screen in game px: [w, h, ox, oy] (ox, oy: the anchor from its top left), once loaded. */
+export const citySize = (name) => SIZES[name] || null;
 
 export function inPoly(x, y, poly) {
   let inside = false;

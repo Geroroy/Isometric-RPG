@@ -3,8 +3,9 @@
 // dusty plains, crystal fields, rocky highlands, scorched battlefields and the
 // ruins of an old crystal city; a droid factory stronghold far to the north.
 import { RNG, fbm, dist, distToSegment, clamp } from '../core/math.js';
+import { HALF_W, HALF_H } from '../core/iso.js';
 import { PROPS } from '../gfx/models/props.js';
-import { SHEET_PROPS, cityFootprint, inPoly } from './cityProps.js';
+import { SHEET_PROPS, cityFootprint, citySize, inPoly } from './cityProps.js';
 import UNDERCITY_V1 from '../data/undercity.json';
 import UNDERCITY_V2 from '../data/undercity_v2.json';
 import { MAP_V2 } from './mapVersion.js';
@@ -594,10 +595,44 @@ export class MustafarArena extends World {
   addProp(type, x, y, opts = {}) {
     const cls = type === 'cliff' ? (this.rng.next() < 0.3 ? 'land' : 'wall') : type === 'boulder' ? 'crag' : type === 'lavaRock' ? 'pile' : null;
     if (cls && cityFootprint(ROCKS[cls][0])) {
-      const list = ROCKS[cls];
-      return this.addSheetProp(list[Math.floor(this.rng.next() * list.length)], x, y, { noBlock: true });
+      // the biggest that keeps clear of the sets: a smaller class when its picture would lie over a deck or room
+      const order = ['land', 'wall', 'crag', 'pile'];
+      for (const c of order.slice(order.indexOf(cls))) {
+        const list = ROCKS[c];
+        const name = list[Math.floor(this.rng.next() * list.length)];
+        if (this.rockClear(name, x, y)) return this.addSheetProp(name, x, y, { noBlock: true });
+      }
+      return null; // no room for any: the bare rock
     }
     return super.addProp(type, x, y, opts);
+  }
+
+  /**
+   * Whether a rock sprite at (x, y) keeps off the sets: no walkable tile (a deck, a room, a catwalk) under any
+   * part of its picture — the tiles behind it that its height covers and those beside it under its width — with
+   * a tile of margin.
+   */
+  rockClear(name, x, y) {
+    const sz = citySize(name);
+    if (!sz) return true;
+    const [w, h, ox, oy] = sz;
+    const sx = (x - y) * HALF_W;
+    const sy = (x + y) * HALF_H;
+    const x0 = sx - ox - HALF_W * 2;
+    const x1 = sx - ox + w + HALF_W * 2;
+    const y0 = sy - oy - HALF_H * 2;
+    const y1 = sy - oy + h + HALF_H * 2;
+    // tiles whose ground point falls in that screen box: u = x - y in [x0, x1] / HALF_W, v = x + y in [y0, y1] / HALF_H
+    for (let v = Math.floor(y0 / HALF_H); v <= Math.ceil(y1 / HALF_H); v++)
+      for (let u = Math.floor(x0 / HALF_W); u <= Math.ceil(x1 / HALF_W); u++) {
+        if ((u + v) & 1) continue;
+        const tx = (u + v) / 2;
+        const ty = (v - u) / 2;
+        if (!this.inBounds(tx, ty)) continue;
+        const b = this.biome[ty * MAP_W + tx];
+        if (b === BIOME.MUSTAFAR || b === BIOME.GRATE) return false;
+      }
+    return true;
   }
 
   generate() {
