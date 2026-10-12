@@ -1,0 +1,181 @@
+{
+ "model": "anakin_cw_s1.glb",
+ "step": 2,
+ "worst_mm": {
+  "follow": 0.0004951273791914989,
+  "gap_edge": 1.9920454360544682,
+  "clip_depth": 0.0
+ },
+ "anims": {
+  "attack1": {
+   "frames": 6,
+   "follow": 4.323423689432403e-07,
+   "gap_mean": 0.0019468692344768593,
+   "gap_edge_max": 0.0019920039921998978,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.00295760715380311
+  },
+  "attack2": {
+   "frames": 6,
+   "follow": 3.65230470263247e-07,
+   "gap_mean": 0.0019468713505311182,
+   "gap_edge_max": 0.001992038218304515,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.0029576318338513374
+  },
+  "attack3": {
+   "frames": 6,
+   "follow": 3.6227849611238765e-07,
+   "gap_mean": 0.0019468602821974066,
+   "gap_edge_max": 0.0019920244812965393,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.002957599237561226
+  },
+  "block": {
+   "frames": 3,
+   "follow": 2.9895309578983304e-07,
+   "gap_mean": 0.0019468688025054606,
+   "gap_edge_max": 0.001992001198232174,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.0029575605876743793
+  },
+  "cast": {
+   "frames": 5,
+   "follow": 3.8751105766789525e-07,
+   "gap_mean": 0.001946864493798013,
+   "gap_edge_max": 0.001992045436054468,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.002957602497190237
+  },
+  "death": {
+   "frames": 6,
+   "follow": 3.8800288934384395e-07,
+   "gap_mean": 0.0019468698463824448,
+   "gap_edge_max": 0.0019919967744499445,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.002957629505544901
+  },
+  "hurt": {
+   "frames": 4,
+   "follow": 4.175359144896606e-07,
+   "gap_mean": 0.0019468704205902407,
+   "gap_edge_max": 0.0019919967744499445,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.0029575808439403772
+  },
+  "idle": {
+   "frames": 6,
+   "follow": 4.3375242859324784e-07,
+   "gap_mean": 0.0019468662299816292,
+   "gap_edge_max": 0.0019920363556593657,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.0029576215893030167
+  },
+  "idleOff": {
+   "frames": 6,
+   "follow": 4.324065623168596e-07,
+   "gap_mean": 0.0019468660014822627,
+   "gap_edge_max": 0.001992038218304515,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.0029575983062386513
+  },
+  "leap": {
+   "frames": 5,
+   "follow": 4.034336991627702e-07,
+   "gap_mean": 0.0019468599254256023,
+   "gap_edge_max": 0.00199200795032084,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.002957609249278903
+  },
+  "lock": {
+   "frames": 3,
+   "follow": 3.473321312711093e-07,
+   "gap_mean": 0.0019468470269215204,
+   "gap_edge_max": 0.0019919772166758776,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.0029575901571661234
+  },
+  "parry": {
+   "frames": 4,
+   "follow": 3.892883800748924e-07,
+   "gap_mean": 0.001946869121971446,
+   "gap_edge_max": 0.001992001198232174,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.0029575941152870655
+  },
+  "run": {
+   "frames": 6,
+   "follow": 3.4280768246434155e-07,
+   "gap_mean": 0.0019468678478998219,
+   "gap_edge_max": 0.001992024714127183,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.0029575929511338472
+  },
+  "runOff": {
+   "frames": 6,
+   "follow": 3.182194455849738e-07,
+   "gap_mean": 0.0019468652183246432,
+   "gap_edge_max": 0.0019920330960303545,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.0029576264787465334
+  },
+  "sig": {
+   "frames": 9,
+   "follow": 4.951273791914989e-07,
+   "gap_mean": 0.0019468663157513688,
+   "gap_edge_max": 0.0019920403137803078,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.002957602497190237
+  },
+  "throw": {
+   "frames": 5,
+   "follow": 3.929121797820474e-07,
+   "gap_mean": 0.0019468707451832038,
+   "gap_edge_max": 0.0019920289050787687,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.002957619959488511
+  },
+  "walk": {
+   "frames": 6,
+   "follow": 4.040523428605869e-07,
+   "gap_mean": 0.0019468641093217138,
+   "gap_edge_max": 0.0019920107442885637,
+   "clip_verts": 0,
+   "clip_depth": 0.0,
+   "clip_with": {},
+   "gap_hang_max": 0.0029576108790934086
+  }
+ }
+}

@@ -1,0 +1,34 @@
+{
+ "label": "m2",
+ "mean_iou": 0.6765,
+ "views": {
+  "front": {
+   "iou": 0.712,
+   "ours_only": 8454,
+   "ref_only": 3694,
+   "lowest_ours": 1.613,
+   "lowest_ref": 1.622
+  },
+  "right": {
+   "iou": 0.59,
+   "ours_only": 11090,
+   "ref_only": 13623,
+   "lowest_ours": 1.609,
+   "lowest_ref": 1.65
+  },
+  "left": {
+   "iou": 0.568,
+   "ours_only": 13519,
+   "ref_only": 11603,
+   "lowest_ours": 1.609,
+   "lowest_ref": 1.651
+  },
+  "back": {
+   "iou": 0.836,
+   "ours_only": 5491,
+   "ref_only": 5015,
+   "lowest_ours": 1.609,
+   "lowest_ref": 1.603
+  }
+ }
+}

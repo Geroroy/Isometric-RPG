@@ -149,7 +149,7 @@ export class DebugUI {
     let t;
     if (where === 'hub') t = { x: CITY.pad.x - 4, y: CITY.pad.y + 1.5 };
     else if (where === 'base') t = { x: BASE_POS.x + 0.5, y: BASE_POS.y + 1.5 };
-    else if (where === 'cantina') t = { x: CITY.bar.x, y: CITY.bar.y - 0.5 };
+    else if (where === 'cantina') t = { x: CITY.barDoor.x, y: CITY.barDoor.y + 0.6 };
     else if (where === 'factory') t = { x: FACTORY_POS.x + 14, y: FACTORY_POS.y + 2 };
     else {
       const camps = g.world.camps.filter((c) => !c.cleared && !c.boss).sort((a, b) => dist(a.x, a.y, p.x, p.y) - dist(b.x, b.y, p.x, p.y));

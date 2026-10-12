@@ -2,3 +2,20 @@ node_modules
 dist
 .DS_Store
 *.log
+tools/sprites/out/
+__pycache__/
+.bvenv/
+reference/
+tools/qa/out/
+dist-perf
+dist-before
+dist-s2
+dist-notheme
+dist-before-saber
+dist-art
+# hair review renders: only the comparison sheets and parameter snapshots are kept
+renders/**/old_*.png
+renders/**/new_*.png
+renders/cw_s1_iter_*/cw_s1_*.png
+!renders/cw_s1_iter_*/cw_s1_sheet.png
+assets/city/buildings/x4/

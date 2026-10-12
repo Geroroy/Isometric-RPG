@@ -11,6 +11,9 @@ import { screenVecToWorldAngle } from '../core/iso.js';
 // WASD walks in screen directions (W = up the screen)
 const MOVE_KEYS = { w: [0, -1], a: [-1, 0], s: [0, 1], d: [1, 0] };
 
+// keys that still work while a panel or the title screen is open (they close or switch panels)
+const PANEL_KEYS = new Set(['escape', ' ', 'enter', 'f1', 'tab', 'k', 't', 'c', 'p', 'v', 'o', 'f', 'm']);
+
 export class Input {
   constructor(game, renderer, hud, audio, canvas) {
     this.game = game;
@@ -89,7 +92,7 @@ export class Input {
     this.audio.unlock();
     const g = this.game;
     const p = g.player;
-    if (p.dead || g.cinema) return;
+    if (p.dead || g.cinema || g.talkingTo) return; // mid-conversation the world isn't clickable
     this.updateMouse();
     const duel = g.duel;
     if (duel && e.button === 0 && duel.press()) return;
@@ -187,6 +190,12 @@ export class Input {
       e.preventDefault();
       return;
     }
+    // typing in a panel's control (jukebox select, volume slider): not a hotkey
+    const tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    // a panel or the title screen is open: only the keys that work the panels
+    const panelOpen = Object.values(hud.open).some(Boolean) || !document.getElementById('help').classList.contains('hidden');
+    if (panelOpen && !PANEL_KEYS.has(k) && e.code !== 'Backquote') return;
     if (k === ' ' && g.duel && g.duel.press()) {
       e.preventDefault();
       return;

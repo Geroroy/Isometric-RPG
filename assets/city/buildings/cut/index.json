@@ -1,0 +1,1106 @@
+{
+ "shops_00": {
+  "sheet": "shops",
+  "cell": 0,
+  "name": "cantinaRound",
+  "kind": "shop",
+  "rect": [
+   54,
+   12,
+   307,
+   272
+  ],
+  "w": 307,
+  "h": 272,
+  "foot": [
+   137,
+   271
+  ],
+  "base": [
+   153.5,
+   194.2
+  ],
+  "footW": 307
+ },
+ "shops_01": {
+  "sheet": "shops",
+  "cell": 1,
+  "name": "balconyDiner",
+  "kind": "shop",
+  "rect": [
+   440,
+   19,
+   299,
+   272
+  ],
+  "w": 299,
+  "h": 272,
+  "foot": [
+   129,
+   271
+  ],
+  "base": [
+   148.5,
+   196.8
+  ],
+  "footW": 297
+ },
+ "shops_02": {
+  "sheet": "shops",
+  "cell": 2,
+  "name": "garageWrench",
+  "kind": "shop",
+  "rect": [
+   803,
+   16,
+   311,
+   266
+  ],
+  "w": 311,
+  "h": 266,
+  "foot": [
+   112,
+   265
+  ],
+  "base": [
+   155.5,
+   187.2
+  ],
+  "footW": 311
+ },
+ "shops_03": {
+  "sheet": "shops",
+  "cell": 3,
+  "name": "cocktailBar",
+  "kind": "shop",
+  "rect": [
+   1189,
+   20,
+   270,
+   268
+  ],
+  "w": 270,
+  "h": 268,
+  "foot": [
+   113,
+   267
+  ],
+  "base": [
+   135.0,
+   199.5
+  ],
+  "footW": 270
+ },
+ "shops_04": {
+  "sheet": "shops",
+  "cell": 4,
+  "name": "noodleCounter",
+  "kind": "shop",
+  "rect": [
+   54,
+   295,
+   309,
+   247
+  ],
+  "w": 309,
+  "h": 247,
+  "foot": [
+   134,
+   246
+  ],
+  "base": [
+   156.0,
+   170.0
+  ],
+  "footW": 304
+ },
+ "shops_05": {
+  "sheet": "shops",
+  "cell": 5,
+  "name": "marketTent",
+  "kind": "shop",
+  "rect": [
+   436,
+   296,
+   269,
+   235
+  ],
+  "w": 269,
+  "h": 235,
+  "foot": [
+   104,
+   234
+  ],
+  "base": [
+   134.5,
+   166.8
+  ],
+  "footW": 269
+ },
+ "shops_06": {
+  "sheet": "shops",
+  "cell": 6,
+  "name": "tallDiner",
+  "kind": "shop",
+  "rect": [
+   812,
+   284,
+   291,
+   259
+  ],
+  "w": 291,
+  "h": 259,
+  "foot": [
+   134,
+   258
+  ],
+  "base": [
+   148.0,
+   186.5
+  ],
+  "footW": 286
+ },
+ "shops_07": {
+  "sheet": "shops",
+  "cell": 7,
+  "name": "cocktailTerrace",
+  "kind": "shop",
+  "rect": [
+   1178,
+   304,
+   307,
+   235
+  ],
+  "w": 307,
+  "h": 235,
+  "foot": [
+   142,
+   234
+  ],
+  "base": [
+   153.5,
+   157.2
+  ],
+  "footW": 307
+ },
+ "shops_08": {
+  "sheet": "shops",
+  "cell": 8,
+  "name": "mechanicHall",
+  "kind": "shop",
+  "rect": [
+   45,
+   550,
+   328,
+   239
+  ],
+  "w": 328,
+  "h": 239,
+  "foot": [
+   116,
+   238
+  ],
+  "base": [
+   166.5,
+   157.2
+  ],
+  "footW": 323
+ },
+ "shops_09": {
+  "sheet": "shops",
+  "cell": 9,
+  "name": "stripedDiner",
+  "kind": "shop",
+  "rect": [
+   453,
+   534,
+   266,
+   238
+  ],
+  "w": 266,
+  "h": 238,
+  "foot": [
+   123,
+   237
+  ],
+  "base": [
+   133.0,
+   170.5
+  ],
+  "footW": 266
+ },
+ "shops_10": {
+  "sheet": "shops",
+  "cell": 10,
+  "name": "soupKitchen",
+  "kind": "shop",
+  "rect": [
+   815,
+   548,
+   278,
+   227
+  ],
+  "w": 278,
+  "h": 227,
+  "foot": [
+   99,
+   226
+  ],
+  "base": [
+   139.0,
+   156.5
+  ],
+  "footW": 278
+ },
+ "shops_11": {
+  "sheet": "shops",
+  "cell": 11,
+  "name": "domeShop",
+  "kind": "shop",
+  "rect": [
+   1199,
+   551,
+   283,
+   243
+  ],
+  "w": 283,
+  "h": 243,
+  "foot": [
+   114,
+   242
+  ],
+  "base": [
+   138.5,
+   172.8
+  ],
+  "footW": 277
+ },
+ "shops_12": {
+  "sheet": "shops",
+  "cell": 12,
+  "name": "tarpMarket",
+  "kind": "shop",
+  "rect": [
+   52,
+   792,
+   316,
+   218
+  ],
+  "w": 316,
+  "h": 218,
+  "foot": [
+   129,
+   217
+  ],
+  "base": [
+   158.0,
+   138.0
+  ],
+  "footW": 316
+ },
+ "shops_13": {
+  "sheet": "shops",
+  "cell": 13,
+  "name": "redSignHouse",
+  "kind": "shop",
+  "rect": [
+   468,
+   782,
+   247,
+   227
+  ],
+  "w": 247,
+  "h": 227,
+  "foot": [
+   117,
+   226
+  ],
+  "base": [
+   123.5,
+   164.2
+  ],
+  "footW": 247
+ },
+ "shops_14": {
+  "sheet": "shops",
+  "cell": 14,
+  "name": "neonClub",
+  "kind": "shop",
+  "rect": [
+   809,
+   774,
+   308,
+   234
+  ],
+  "w": 308,
+  "h": 234,
+  "foot": [
+   200,
+   233
+  ],
+  "base": [
+   154.0,
+   156.0
+  ],
+  "footW": 308
+ },
+ "shops_15": {
+  "sheet": "shops",
+  "cell": 15,
+  "name": "wrenchGarage",
+  "kind": "shop",
+  "rect": [
+   1196,
+   800,
+   274,
+   212
+  ],
+  "w": 274,
+  "h": 212,
+  "foot": [
+   114,
+   211
+  ],
+  "base": [
+   137.0,
+   142.5
+  ],
+  "footW": 274
+ },
+ "towers_00": {
+  "sheet": "towers",
+  "cell": 0,
+  "name": "tower00",
+  "kind": "tower",
+  "rect": [
+   109,
+   3,
+   213,
+   268
+  ],
+  "w": 213,
+  "h": 268,
+  "foot": [
+   81,
+   267
+  ],
+  "base": [
+   106.5,
+   213.8
+  ],
+  "footW": 213
+ },
+ "towers_01": {
+  "sheet": "towers",
+  "cell": 1,
+  "name": "tower01",
+  "kind": "tower",
+  "rect": [
+   481,
+   6,
+   213,
+   262
+  ],
+  "w": 213,
+  "h": 262,
+  "foot": [
+   83,
+   261
+  ],
+  "base": [
+   106.5,
+   207.8
+  ],
+  "footW": 213
+ },
+ "towers_02": {
+  "sheet": "towers",
+  "cell": 2,
+  "name": "tower02",
+  "kind": "tower",
+  "rect": [
+   831,
+   4,
+   239,
+   271
+  ],
+  "w": 239,
+  "h": 271,
+  "foot": [
+   139,
+   270
+  ],
+  "base": [
+   119.5,
+   210.2
+  ],
+  "footW": 239
+ },
+ "towers_03": {
+  "sheet": "towers",
+  "cell": 3,
+  "name": "tower03",
+  "kind": "tower",
+  "rect": [
+   1225,
+   8,
+   220,
+   268
+  ],
+  "w": 220,
+  "h": 268,
+  "foot": [
+   100,
+   267
+  ],
+  "base": [
+   112.0,
+   213.0
+  ],
+  "footW": 216
+ },
+ "towers_04": {
+  "sheet": "towers",
+  "cell": 4,
+  "name": "tower04",
+  "kind": "tower",
+  "rect": [
+   121,
+   282,
+   202,
+   234
+  ],
+  "w": 202,
+  "h": 234,
+  "foot": [
+   82,
+   233
+  ],
+  "base": [
+   101.0,
+   182.5
+  ],
+  "footW": 202
+ },
+ "towers_05": {
+  "sheet": "towers",
+  "cell": 5,
+  "name": "tower05",
+  "kind": "tower",
+  "rect": [
+   488,
+   281,
+   224,
+   235
+  ],
+  "w": 224,
+  "h": 235,
+  "foot": [
+   96,
+   234
+  ],
+  "base": [
+   112.0,
+   178.0
+  ],
+  "footW": 224
+ },
+ "towers_06": {
+  "sheet": "towers",
+  "cell": 6,
+  "name": "tower06",
+  "kind": "tower",
+  "rect": [
+   867,
+   259,
+   204,
+   257
+  ],
+  "w": 204,
+  "h": 257,
+  "foot": [
+   82,
+   256
+  ],
+  "base": [
+   102.0,
+   205.0
+  ],
+  "footW": 204
+ },
+ "towers_07": {
+  "sheet": "towers",
+  "cell": 7,
+  "name": "tower07",
+  "kind": "tower",
+  "rect": [
+   1233,
+   283,
+   226,
+   233
+  ],
+  "w": 226,
+  "h": 233,
+  "foot": [
+   86,
+   232
+  ],
+  "base": [
+   113.0,
+   175.5
+  ],
+  "footW": 226
+ },
+ "towers_08": {
+  "sheet": "towers",
+  "cell": 8,
+  "name": "tower08",
+  "kind": "tower",
+  "rect": [
+   108,
+   521,
+   191,
+   234
+  ],
+  "w": 191,
+  "h": 234,
+  "foot": [
+   89,
+   233
+  ],
+  "base": [
+   96.0,
+   185.5
+  ],
+  "footW": 190
+ },
+ "towers_09": {
+  "sheet": "towers",
+  "cell": 9,
+  "name": "tower09",
+  "kind": "tower",
+  "rect": [
+   472,
+   522,
+   219,
+   227
+  ],
+  "w": 219,
+  "h": 227,
+  "foot": [
+   112,
+   226
+  ],
+  "base": [
+   109.5,
+   171.2
+  ],
+  "footW": 219
+ },
+ "towers_10": {
+  "sheet": "towers",
+  "cell": 10,
+  "name": "tower10",
+  "kind": "tower",
+  "rect": [
+   848,
+   524,
+   238,
+   233
+  ],
+  "w": 238,
+  "h": 233,
+  "foot": [
+   103,
+   232
+  ],
+  "base": [
+   119.0,
+   172.5
+  ],
+  "footW": 238
+ },
+ "towers_11": {
+  "sheet": "towers",
+  "cell": 11,
+  "name": "tower11",
+  "kind": "tower",
+  "rect": [
+   1237,
+   521,
+   211,
+   236
+  ],
+  "w": 211,
+  "h": 236,
+  "foot": [
+   77,
+   235
+  ],
+  "base": [
+   105.5,
+   182.2
+  ],
+  "footW": 211
+ },
+ "towers_12": {
+  "sheet": "towers",
+  "cell": 12,
+  "name": "tower12",
+  "kind": "tower",
+  "rect": [
+   122,
+   761,
+   195,
+   239
+  ],
+  "w": 195,
+  "h": 239,
+  "foot": [
+   66,
+   238
+  ],
+  "base": [
+   98.5,
+   189.8
+  ],
+  "footW": 193
+ },
+ "towers_13": {
+  "sheet": "towers",
+  "cell": 13,
+  "name": "tower13",
+  "kind": "tower",
+  "rect": [
+   490,
+   762,
+   189,
+   239
+  ],
+  "w": 189,
+  "h": 239,
+  "foot": [
+   86,
+   238
+  ],
+  "base": [
+   94.5,
+   190.8
+  ],
+  "footW": 189
+ },
+ "towers_14": {
+  "sheet": "towers",
+  "cell": 14,
+  "name": "tower14",
+  "kind": "tower",
+  "rect": [
+   846,
+   761,
+   224,
+   240
+  ],
+  "w": 224,
+  "h": 240,
+  "foot": [
+   104,
+   239
+  ],
+  "base": [
+   120.0,
+   189.5
+  ],
+  "footW": 198
+ },
+ "towers_15": {
+  "sheet": "towers",
+  "cell": 15,
+  "name": "tower15",
+  "kind": "tower",
+  "rect": [
+   1239,
+   764,
+   196,
+   245
+  ],
+  "w": 196,
+  "h": 245,
+  "foot": [
+   86,
+   244
+  ],
+  "base": [
+   99.5,
+   195.8
+  ],
+  "footW": 193
+ },
+ "plants_00": {
+  "sheet": "plants",
+  "cell": 0,
+  "name": "generatorHall",
+  "kind": "plant",
+  "rect": [
+   51,
+   5,
+   300,
+   296
+  ],
+  "w": 300,
+  "h": 296,
+  "foot": [
+   141,
+   295
+  ],
+  "base": [
+   150.0,
+   220.0
+  ],
+  "footW": 300
+ },
+ "plants_01": {
+  "sheet": "plants",
+  "cell": 1,
+  "name": "coolingTowers",
+  "kind": "plant",
+  "rect": [
+   422,
+   15,
+   300,
+   276
+  ],
+  "w": 300,
+  "h": 276,
+  "foot": [
+   94,
+   275
+  ],
+  "base": [
+   150.0,
+   200.0
+  ],
+  "footW": 300
+ },
+ "plants_02": {
+  "sheet": "plants",
+  "cell": 2,
+  "name": "boilerHouse",
+  "kind": "plant",
+  "rect": [
+   800,
+   14,
+   327,
+   293
+  ],
+  "w": 327,
+  "h": 293,
+  "foot": [
+   147,
+   292
+  ],
+  "base": [
+   163.5,
+   210.2
+  ],
+  "footW": 327
+ },
+ "plants_03": {
+  "sheet": "plants",
+  "cell": 3,
+  "name": "tankTower",
+  "kind": "plant",
+  "rect": [
+   1200,
+   11,
+   285,
+   286
+  ],
+  "w": 285,
+  "h": 286,
+  "foot": [
+   171,
+   285
+  ],
+  "base": [
+   142.5,
+   213.8
+  ],
+  "footW": 285
+ },
+ "plants_04": {
+  "sheet": "plants",
+  "cell": 4,
+  "name": "pipeRack",
+  "kind": "plant",
+  "rect": [
+   37,
+   336,
+   336,
+   201
+  ],
+  "w": 336,
+  "h": 201,
+  "foot": [
+   202,
+   200
+  ],
+  "base": [
+   169.0,
+   116.5
+  ],
+  "footW": 334
+ },
+ "plants_05": {
+  "sheet": "plants",
+  "cell": 5,
+  "name": "stackPlant",
+  "kind": "plant",
+  "rect": [
+   465,
+   306,
+   245,
+   242
+  ],
+  "w": 245,
+  "h": 242,
+  "foot": [
+   144,
+   241
+  ],
+  "base": [
+   122.5,
+   179.8
+  ],
+  "footW": 245
+ },
+ "plants_06": {
+  "sheet": "plants",
+  "cell": 6,
+  "name": "substation",
+  "kind": "plant",
+  "rect": [
+   796,
+   310,
+   311,
+   243
+  ],
+  "w": 311,
+  "h": 243,
+  "foot": [
+   160,
+   242
+  ],
+  "base": [
+   155.5,
+   164.2
+  ],
+  "footW": 311
+ },
+ "plants_07": {
+  "sheet": "plants",
+  "cell": 7,
+  "name": "turbineHall",
+  "kind": "plant",
+  "rect": [
+   1183,
+   314,
+   319,
+   232
+  ],
+  "w": 319,
+  "h": 232,
+  "foot": [
+   162,
+   231
+  ],
+  "base": [
+   159.5,
+   151.2
+  ],
+  "footW": 319
+ },
+ "plants_08": {
+  "sheet": "plants",
+  "cell": 8,
+  "name": "fanHall",
+  "kind": "plant",
+  "rect": [
+   46,
+   532,
+   324,
+   229
+  ],
+  "w": 324,
+  "h": 229,
+  "foot": [
+   144,
+   228
+  ],
+  "base": [
+   162.0,
+   147.0
+  ],
+  "footW": 324
+ },
+ "plants_09": {
+  "sheet": "plants",
+  "cell": 9,
+  "name": "silos",
+  "kind": "plant",
+  "rect": [
+   450,
+   552,
+   256,
+   221
+  ],
+  "w": 256,
+  "h": 221,
+  "foot": [
+   152,
+   220
+  ],
+  "base": [
+   128.0,
+   156.0
+  ],
+  "footW": 256
+ },
+ "plants_10": {
+  "sheet": "plants",
+  "cell": 10,
+  "name": "processWorks",
+  "kind": "plant",
+  "rect": [
+   795,
+   562,
+   322,
+   218
+  ],
+  "w": 322,
+  "h": 218,
+  "foot": [
+   133,
+   217
+  ],
+  "base": [
+   161.0,
+   136.5
+  ],
+  "footW": 322
+ },
+ "plants_11": {
+  "sheet": "plants",
+  "cell": 11,
+  "name": "pipeHall",
+  "kind": "plant",
+  "rect": [
+   1211,
+   546,
+   262,
+   226
+  ],
+  "w": 262,
+  "h": 226,
+  "foot": [
+   138,
+   225
+  ],
+  "base": [
+   131.0,
+   159.5
+  ],
+  "footW": 262
+ },
+ "plants_12": {
+  "sheet": "plants",
+  "cell": 12,
+  "name": "neonReactor",
+  "kind": "plant",
+  "rect": [
+   52,
+   766,
+   281,
+   243
+  ],
+  "w": 281,
+  "h": 243,
+  "foot": [
+   151,
+   242
+  ],
+  "base": [
+   140.5,
+   171.8
+  ],
+  "footW": 281
+ },
+ "plants_13": {
+  "sheet": "plants",
+  "cell": 13,
+  "name": "compressorWorks",
+  "kind": "plant",
+  "rect": [
+   412,
+   782,
+   325,
+   225
+  ],
+  "w": 325,
+  "h": 225,
+  "foot": [
+   159,
+   224
+  ],
+  "base": [
+   162.5,
+   142.8
+  ],
+  "footW": 325
+ },
+ "plants_14": {
+  "sheet": "plants",
+  "cell": 14,
+  "name": "coldWorks",
+  "kind": "plant",
+  "rect": [
+   810,
+   793,
+   289,
+   211
+  ],
+  "w": 289,
+  "h": 211,
+  "foot": [
+   146,
+   210
+  ],
+  "base": [
+   144.5,
+   137.8
+  ],
+  "footW": 289
+ },
+ "plants_15": {
+  "sheet": "plants",
+  "cell": 15,
+  "name": "stackBlock",
+  "kind": "plant",
+  "rect": [
+   1189,
+   770,
+   312,
+   238
+  ],
+  "w": 312,
+  "h": 238,
+  "foot": [
+   138,
+   237
+  ],
+  "base": [
+   156.0,
+   159.0
+  ],
+  "footW": 312
+ }
+}

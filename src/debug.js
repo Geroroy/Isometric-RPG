@@ -2,6 +2,7 @@
 import { Baker } from './gfx/baker.js';
 import { CHARACTERS, DUEL_CHARACTERS, SKINS } from './gfx/assets.js';
 import { PROPS, buildPropVariants } from './gfx/models/props.js';
+import { setDetail } from './gfx/models/parts.js';
 
 const params = new URLSearchParams(location.search);
 const which = params.get('m') || 'anakin';
@@ -37,7 +38,10 @@ if (params.has('p')) {
   window.__done = true;
   throw new Error('props only'); // stop here
 }
+setDetail(params.has('hd')); // ?hd=1: the remaster bake
 const spec = specs[which]();
+setDetail(false);
+spec.hd = params.has('hd');
 if (params.has('ss')) spec.ss = +params.get('ss');
 if (params.has('noblades')) spec.markers = [];
 const gen = baker.bakeAnimated(spec);
@@ -52,7 +56,8 @@ out.appendChild(info);
 const only = params.get('only')?.split(',');
 for (const [name, anim] of Object.entries(res.anims)) {
   if (only && !only.includes(name)) continue;
-  const cw = 90, ch = 90;
+  const K = spec.hd ? 2 : 1; // remaster frames are twice as fine
+  const cw = 90 * K, ch = 90 * K;
   const c = document.createElement('canvas');
   c.width = cw * anim.frames;
   c.height = ch * dirsShown.length;
@@ -63,7 +68,7 @@ for (const [name, anim] of Object.entries(res.anims)) {
   dirsShown.forEach((d, row) => {
     for (let f = 0; f < anim.frames; f++) {
       const fr = anim.data[d][f];
-      const ax = f * cw + cw / 2, ay = row * ch + ch - 12;
+      const ax = f * cw + cw / 2, ay = row * ch + ch - 12 * K;
       g.fillStyle = 'rgba(0,0,0,0.25)';
       g.beginPath(); g.ellipse(ax, ay, 10, 5, 0, 0, 7); g.fill();
       const ang = d * Math.PI * 2 / res.dirs;

@@ -1,0 +1,34 @@
+{
+ "label": "final",
+ "mean_iou": 0.71175,
+ "views": {
+  "front": {
+   "iou": 0.731,
+   "ours_only": 7465,
+   "ref_only": 3606,
+   "lowest_ours": 1.632,
+   "lowest_ref": 1.622
+  },
+  "right": {
+   "iou": 0.686,
+   "ours_only": 8307,
+   "ref_only": 9750,
+   "lowest_ours": 1.632,
+   "lowest_ref": 1.65
+  },
+  "left": {
+   "iou": 0.649,
+   "ours_only": 11064,
+   "ref_only": 8470,
+   "lowest_ours": 1.632,
+   "lowest_ref": 1.651
+  },
+  "back": {
+   "iou": 0.781,
+   "ours_only": 5605,
+   "ref_only": 8491,
+   "lowest_ours": 1.631,
+   "lowest_ref": 1.603
+  }
+ }
+}
