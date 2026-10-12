@@ -77,6 +77,14 @@ let FACILITY = null;
 export function setFacilityFloor(t) {
   FACILITY = t || null;
 }
+// Mustafar's lava (tools/sprites/mustafar_lava: an isometric lava tile unprojected to a seamless square), laid in
+// world space at two scales mixed by a slow noise so the repeat does not read
+let LAVA_TEX = null;
+export function setLavaTexture(t) {
+  LAVA_TEX = t || null;
+}
+const lavaA = [0, 0, 0];
+const lavaB = [0, 0, 0];
 const FAC_BAR = 0.15; // the seam bar's width in a repeat of the texture (the rim stretches it to its own width)
 // the film's floor (measured on the texture: bands, grey slabs, dark slabs) and the pale speckled stone of the
 // conference room's fields
@@ -583,8 +591,16 @@ export class Terrain {
           g -= 24;
           b -= 20;
         }
-        // lava: dark crust plates split by glowing molten veins
-        if (lava > 0.35) {
+        // lava: the texture where there is one (Mustafar), else dark crust plates split by glowing molten veins
+        if (LAVA_TEX && lava > 0.3) {
+          const k = Math.min(1, (lava - 0.3) * 2.5);
+          texel(LAVA_TEX, fx / 8, fy / 8, lavaA);
+          texel(LAVA_TEX, fx / 11.3 + 0.37, fy / 11.3 + 0.61, lavaB);
+          const m = clamp((valueNoise(fx * 0.07, fy * 0.07, 57) - 0.5) * 3 + 0.5, 0, 1);
+          r += (lavaA[0] + (lavaB[0] - lavaA[0]) * m - r) * k;
+          g += (lavaA[1] + (lavaB[1] - lavaA[1]) * m - g) * k;
+          b += (lavaA[2] + (lavaB[2] - lavaA[2]) * m - b) * k;
+        } else if (lava > 0.35) {
           const n1 = valueNoise(fx * 0.9, fy * 0.9, 51);
           const n2 = valueNoise(fx * 2.6, fy * 2.6, 52);
           const vein = 1 - Math.abs(n1 - 0.5) * 2; // ridges of the noise

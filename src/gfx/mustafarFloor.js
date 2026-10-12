@@ -1,10 +1,10 @@
 // The Mustafar facility's floor texture (tools/sprites/mustafar_floor/bake.py: one seamless repeat of the
-// film's interior floor), as ImageData for the terrain (terrain.js setFacilityFloor). Through the device's
-// file cache (fileCache.js).
+// film's interior floor) and the lava (tools/sprites/mustafar_lava, 'lava.png'), as ImageData for the terrain
+// (terrain.js setFacilityFloor, setLavaTexture). Through the device's file cache (fileCache.js).
 import { cachedImage, cachedJSON } from './fileCache.js';
 
-export async function loadMustafarFloor() {
-  const img = await cachedImage(import.meta.env.BASE_URL + 'sprites/mustafar/floor.png');
+export async function loadMustafarFloor(file = 'floor.png') {
+  const img = await cachedImage(import.meta.env.BASE_URL + 'sprites/mustafar/' + file);
   const c = document.createElement('canvas');
   c.width = img.width;
   c.height = img.height;
