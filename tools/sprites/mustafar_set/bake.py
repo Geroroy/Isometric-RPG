@@ -16,6 +16,9 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
 - `mfFall`: a lava fall (image_21: a rock cliff with three falls pouring into a cracked lava pool), the cliff along
   y, the pool in front of it to +x; 7 m of cliff, the pool 1.6 m deep, fitted on the pool's four corners (the cliff's
   height follows the render); the lava glowing; `mfFall_x` its twin (cliff along x, pool to +y)
+- `mfSkiff`: Padmé's chrome star skiff (image_22), on its landing gear; 9 m nose to tail, 8.8 m across the wings,
+  fitted on its three wheels, its nose and its wing tips; its shadow baked on the deck under it. Shipped as
+  `mfSkiff_y` (nose to +y: along the landing apron)
 - `mfChair`: faces +y (mirrored from the render, which faces +x: `mfChair_x`), 1.5 m tall
 - `mfPassage`: a corridor's inside with no roof (the far wall tall with light panels, the near wall low, a portal at
   each end), along y, 15 m by 4 m (the far wall on −x); `mfPassage_x` along x as rendered. Fitted by least squares
@@ -100,6 +103,22 @@ PIECES = {
         neon_base=0.6,
         lights=[[0.8, 0, 1.0, 200, 95, 30, 120, 0.12]],
         mirror='mfFall_x',
+    ),
+    'mfSkiff': dict(
+        src='image_22.png',
+        corners=[
+            ((1278, 795), (2.4, 0, 0)),  # the nose wheel on the deck
+            ((1012, 668), (-0.6, -0.4, 0)),  # the main wheels
+            ((668, 712), (-1.2, 2.3, 0)),
+            ((1532, 780), (4.6, 0, 1.0)),  # the nose cone's tip
+            ((150, 602), (-2.4, 4.4, 1.15)),  # the wing tips' trailing roots
+            ((1602, 214), (-2.4, -4.4, 1.15)),
+        ],
+        footprint=[[-4.4, -1.2], [4.6, -1.2], [4.6, 1.2], [-4.4, 1.2]],
+        shadow=1.0,
+        gain=0.92,
+        mirror='mfSkiff_y',
+        ship='mirror',  # (along the apron, y, in the world)
     ),
     'mfWindow': dict(
         src='image_7.png',

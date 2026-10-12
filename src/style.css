@@ -4614,3 +4614,14 @@ body.touch .dl-choice {
   padding: 4px 8px;
   font-size: 13px;
 }
+
+/* F1: every bit of UI off for a clean view (input.js); the cutscene's fade stays, it is part of the picture */
+body.ui-hidden #hud,
+body.ui-hidden #overlay,
+body.ui-hidden #fps,
+body.ui-hidden .cinema-ui .cn-bar,
+body.ui-hidden .cinema-ui .cn-sub,
+body.ui-hidden .cinema-ui .cn-place,
+body.ui-hidden .cinema-ui .cn-skip {
+  visibility: hidden !important;
+}

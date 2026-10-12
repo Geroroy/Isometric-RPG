@@ -3,7 +3,7 @@
 //   Shift + LMB  attack in place
 //   RMB          cast the right-button skill at the cursor (hold to repeat)
 //   1-6          cast hotbar skill at the cursor
-//   WASD walk · X saber on/off · E talk · P Star Cards · Q bacta · K skill tree · C character · Tab automap · M mute · F1 help
+//   WASD walk · X saber on/off · E talk · P Star Cards · Q bacta · K skill tree · C character · Tab automap · M mute · H help · F1 hide/show all UI
 import { SKILLS } from '../game/skills.js';
 import { dist } from '../core/math.js';
 import { screenVecToWorldAngle } from '../core/iso.js';
@@ -12,7 +12,7 @@ import { screenVecToWorldAngle } from '../core/iso.js';
 const MOVE_KEYS = { w: [0, -1], a: [-1, 0], s: [0, 1], d: [1, 0] };
 
 // keys that still work while a panel or the title screen is open (they close or switch panels)
-const PANEL_KEYS = new Set(['escape', ' ', 'enter', 'f1', 'tab', 'k', 't', 'c', 'p', 'v', 'o', 'f', 'm']);
+const PANEL_KEYS = new Set(['escape', ' ', 'enter', 'f1', 'h', 'tab', 'k', 't', 'c', 'p', 'v', 'o', 'f', 'm']);
 
 export class Input {
   constructor(game, renderer, hud, audio, canvas) {
@@ -180,6 +180,14 @@ export class Input {
     if (e.repeat && !/^[1-6]$/.test(e.key)) return;
     this.audio.unlock();
     const k = e.key.toLowerCase();
+    if (k === 'f1') {
+      // every bit of UI off (the HUD, panels' buttons, health bars and floating text, subtitles, the selection
+      // ring) for a clean view of the game — in a cutscene too; again to bring it back
+      e.preventDefault();
+      g.uiHidden = !g.uiHidden;
+      document.body.classList.toggle('ui-hidden', g.uiHidden);
+      return;
+    }
     if (g.cinema) {
       // cutscene: only skipping
       if (k === 'escape' || k === 'enter') g.cinema.skip();
@@ -276,7 +284,7 @@ export class Input {
       case ' ':
         hud.closeAll();
         break;
-      case 'f1':
+      case 'h':
         e.preventDefault();
         if (document.getElementById('help').classList.contains('hidden')) hud.showHelp();
         else document.getElementById('help').classList.add('hidden');

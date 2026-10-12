@@ -725,8 +725,9 @@ export class MustafarArena extends World {
     this.roadSegs = [];
     this.transpose();
     this.rockAndFall();
-    // Padmé's skiff on its apron (placed in the world: its model has one orientation)
-    this.addProp('skiff', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y);
+    // Padmé's skiff on its apron, nose along it (the film's chrome skiff, tools/sprites/mustafar_set; the model if
+    // the sprite did not load); placed in the world, after the transpose
+    if (!this.addSheetProp('mfSkiff_y', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y - 0.5)) this.addProp('skiff', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y);
     this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
   }
 

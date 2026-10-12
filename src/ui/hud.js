@@ -109,7 +109,7 @@ export class HUD {
         <button type="button" data-open="tree"><i></i>기술<small>K</small><b class="dot"></b></button>
         <button type="button" data-open="cards"><i></i>카드<small>P</small></button>
         <button type="button" data-open="settings"><i></i>설정<small>O</small></button>
-        <button type="button" data-open="help"><i></i>도움<small>F1</small></button>
+        <button type="button" data-open="help"><i></i>도움<small>H</small></button>
       </div>
       <div class="cn-radar monitor"><span class="aure" aria-hidden="true" data-aure="scan"></span><canvas id="radar" width="${RADAR_PX}" height="${RADAR_PX}"></canvas><div class="radar-region" id="regionText"></div></div>`;
     r.appendChild(cn);

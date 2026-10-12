@@ -854,6 +854,7 @@ export class Renderer {
 
   drawGroundMarkers(ctx, cam) {
     const g = this.game;
+    if (g.uiHidden) return; // (F1: all UI off)
     const ell = (x, y, rx, color, alpha = 1, dash = false) => {
       const s = worldToScreen(x, y, g.world.groundAt ? g.world.groundAt(x, y) : 0); // (on a table top, at its height)
       ctx.save();

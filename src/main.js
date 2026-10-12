@@ -223,7 +223,7 @@ async function boot() {
     e.stopPropagation();
     help.classList.add('hidden');
     controls.classList.add('hidden');
-    if (started) return; // reopened with F1 / HELP: just resume
+    if (started) return; // reopened with H / HELP: just resume
     started = true;
     startBtn.querySelector('span').textContent = '계속';
     audio.unlock();
