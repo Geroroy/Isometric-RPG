@@ -2,7 +2,7 @@
 import './style.css';
 import { applySkin } from './ui/skin.js';
 import { bakeAssets, bakeDuelAssets, bakeSkin, bakeHDProps } from './gfx/assets.js';
-import { isHD, setGfxMode, onGfxMode, GFX_LABEL } from './core/gfx.js';
+import { gfxMode, nextGfxMode, onGfxMode, GFX_LABEL, spriteStyle } from './core/gfx.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
@@ -58,10 +58,14 @@ async function boot() {
     bar.style.width = Math.round(k * 100) + '%';
     label.textContent = text;
   };
-  const assets = await bakeAssets(onProgress);
-  assets.propsSD = assets.props;
+  // one sprite style per launch: 'pixel' (original / remaster) or 'cmd' (Commandos)
+  const style = spriteStyle();
+  const base = await bakeAssets(onProgress, style);
+  const assets = { ...base, sets: { [style]: base } };
+  if (style === 'pixel') assets.propsSD = base.props;
+  else assets.propsCmd = base.props;
   // remaster frames over the original set (franchise vehicles keep theirs)
-  if (isHD()) assets.propsHD = { ...assets.propsSD, ...(await bakeHDProps(onProgress)) };
+  if (gfxMode() === 'remaster') assets.propsHD = { ...assets.propsSD, ...(await bakeHDProps(onProgress)) };
   if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, DUEL)).sprites);
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
@@ -103,22 +107,46 @@ async function boot() {
   const fullscreen = new Fullscreen();
   input.onFullscreen = () => fullscreen.toggle();
   const zoom = new ZoomControl(renderer, touch);
-  // Original / Remaster graphics (F5 or Settings), switched in place
+  // Commandos / Remaster / Original graphics (F5 or Settings), switched in
+  // place; a sprite set or prop set the mode needs is baked once (then cached).
   let gfxBusy = false;
-  onGfxMode(async (m) => {
-    if (m === 'remaster' && !assets.propsHD) {
-      if (gfxBusy) return;
-      gfxBusy = true;
-      hud.log('리마스터 그래픽 준비 중… (처음 한 번만)', 'sys');
+  const prepare = async (m) => {
+    const say = (what) => {
       let shown = 0;
-      const hd = await bakeHDProps((k) => {
-        if (k - shown >= 0.25 && k < 1) hud.log(`리마스터 그래픽 준비 중… ${Math.round(k * 100)}%`, 'sys');
+      return (k) => {
+        if (k - shown >= 0.25 && k < 1) hud.log(`${what} 준비 중… ${Math.round(k * 100)}%`, 'sys');
         if (k - shown >= 0.25) shown = k;
-      });
-      assets.propsHD = { ...assets.propsSD, ...hd };
-      gfxBusy = false;
-      if (!isHD()) return; // switched back meanwhile
+      };
+    };
+    const st = spriteStyle(m);
+    if (!assets.sets[st]) {
+      hud.log(`${GFX_LABEL[m]} 그래픽 준비 중… (처음 한 번만)`, 'sys');
+      const set = await bakeAssets(say(GFX_LABEL[m]), st);
+      if (MODE === 'duel') Object.assign(set.sprites, (await bakeDuelAssets(() => {}, DUEL, st)).sprites);
+      assets.sets[st] = set;
+      if (st === 'pixel') assets.propsSD = set.props;
+      else assets.propsCmd = set.props;
     }
+    if (m === 'remaster' && !assets.propsHD) {
+      hud.log('리마스터 그래픽 준비 중… (처음 한 번만)', 'sys');
+      assets.propsHD = { ...assets.propsSD, ...(await bakeHDProps(say('리마스터'))) };
+    }
+    // characters: this style's sprites; an appearance only baked in the other
+    // style is borrowed until it is baked again in this one
+    const set = assets.sets[st];
+    for (const [k, v] of Object.entries(assets.sprites)) if (!set.sprites[k]) set.sprites[k] = v;
+    assets.sprites = set.sprites;
+    assets.laatFly = set.laatFly;
+  };
+  onGfxMode(async (m) => {
+    if (gfxBusy) return;
+    gfxBusy = true;
+    try {
+      await prepare(m);
+    } finally {
+      gfxBusy = false;
+    }
+    if (gfxMode() !== m) return void prepare(gfxMode()).then(() => renderer.applyMode()); // switched again meanwhile
     renderer.applyMode();
     measure();
     hud.log(`그래픽: ${GFX_LABEL[m]}`, 'sys');
@@ -126,7 +154,7 @@ async function boot() {
   window.addEventListener('keydown', (e) => {
     if (e.key !== 'F5') return;
     e.preventDefault(); // F5 switches graphics like StarCraft: Remastered, never reloads
-    setGfxMode(isHD() ? 'original' : 'remaster');
+    nextGfxMode();
   });
   input.onZoom = (dir) => (dir === 0 ? zoom.reset() : zoom.step(dir));
   touch.onEnable = () => zoom.restore();

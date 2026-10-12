@@ -4,11 +4,15 @@
 // the canvas holds D device pixels per game pixel (all drawing stays in game
 // pixels under a D× transform), so 2×-density terrain and props, glow lines,
 // soft shadows and the light map come out at the screen's own resolution.
+// Commandos graphics paint the static props into the ground chunks (one
+// background picture, see terrain.js) and draw a prop again only as an
+// occlusion mask over the units it hides; the view is wider so soldiers read
+// small against the map, and the daylight is brighter and warmer.
 import { worldToScreen, screenToWorld } from '../core/iso.js';
 import { Terrain } from './terrain.js';
 import { PROPS } from './models/props.js';
 import { dist } from '../core/math.js';
-import { isHD } from '../core/gfx.js';
+import { isHD, isCommandos } from '../core/gfx.js';
 
 const AMBIENT = [150, 146, 178];
 export const ZOOM_MIN = 0.5;
@@ -33,6 +37,7 @@ export class Renderer {
     this.zoom = 1;
     this.touchMode = false;
     this.hd = false;
+    this.cmd = false;
     this.D = 1;
     this.shadow = softShadow();
     this.applyMode();
@@ -47,10 +52,13 @@ export class Renderer {
 
   /** Original / Remaster graphics (props must already be baked for the mode). */
   applyMode() {
-    this.hd = isHD() && !!this.assets.propsHD;
-    this.assets.props = this.hd ? this.assets.propsHD : this.assets.propsSD || this.assets.props;
+    const a = this.assets;
+    this.cmd = isCommandos() && !!a.propsCmd;
+    this.hd = this.cmd || (isHD() && !!a.propsHD);
+    a.props = this.cmd ? a.propsCmd : this.hd ? a.propsHD : a.propsSD || a.props;
     this.prepareProps();
-    this.terrain.setDensity(this.hd ? 2 : 1);
+    // commandos: static props become part of the painted ground
+    this.terrain.setStyle(this.hd ? 2 : 1, this.cmd, this.cmd ? this.game.world.props : null);
     this.canvas.style.imageRendering = this.hd ? 'auto' : '';
     this.resize();
   }
@@ -65,13 +73,16 @@ export class Renderer {
       const frames = this.assets.props[p.type];
       p.frame = frames[p.frameIdx % frames.length];
       const s = worldToScreen(p.x, p.y);
-      p.sx = s.x;
-      p.sy = s.y;
-      p.rect = [s.x - p.frame.ox, s.y - p.frame.oy, p.frame.w, p.frame.h];
+      const k = p.frame.k || 1;
+      // whole pixels in commandos, so the baked copy and the mask line up
+      p.sx = this.cmd ? Math.round(s.x) : s.x;
+      p.sy = this.cmd ? Math.round(s.y) : s.y;
+      p.rect = [p.sx - p.frame.ox * k, p.sy - p.frame.oy * k, p.frame.w * k, p.frame.h * k];
       // big structures sort by their front-most footprint corner minus a bit
       const def = PROPS[p.type];
       const rect = def.rectByAngle ? def.rectByAngle[p.angleIdx] : def.rect;
       p.sortDepth = p.x + p.y + (rect ? Math.min(rect[0], rect[1]) * 0.35 : 0);
+      if (this.cmd) this.terrain.invalidate(p);
     }
   }
 
@@ -84,7 +95,13 @@ export class Renderer {
   computeDevScale() {
     const H = window.innerHeight * (window.devicePixelRatio || 1);
     // touch: ~240 rows on a phone (S25 Ultra), up to the PC view on tablets
-    const baseH = this.touchMode ? Math.max(240, Math.min(450, window.innerHeight * 0.58)) : 450;
+    let baseH = this.touchMode ? Math.max(240, Math.min(450, window.innerHeight * 0.58)) : 450;
+    if (this.cmd) {
+      // Commandos: a wider view, small soldiers on a big map; everything is
+      // smoothly scaled there, so the scale needn't be a whole number
+      baseH *= 1.3;
+      return Math.max(1, Math.min(14, H / (baseH / this.zoom)));
+    }
     return Math.max(1, Math.min(14, Math.round(H / (baseH / this.zoom))));
   }
 
@@ -107,8 +124,8 @@ export class Renderer {
     this.h = Math.ceil((H * dpr) / devScale);
     // Remaster: up to 3 device pixels per game pixel (CSS scales the rest)
     this.D = this.hd ? Math.min(3, devScale) : 1;
-    this.canvas.width = this.w * this.D;
-    this.canvas.height = this.h * this.D;
+    this.canvas.width = Math.ceil(this.w * this.D);
+    this.canvas.height = Math.ceil(this.h * this.D);
     this.canvas.style.width = this.w * this.scale + 'px';
     this.canvas.style.height = this.h * this.scale + 'px';
     this.light.width = this.w;
@@ -180,11 +197,14 @@ export class Renderer {
 
     // --- flat layer: pads, debris, corpses
     const standing = [];
+    const masks = []; // commandos: props already in the background
     for (const pr of g.world.props) {
       if (pr.hidden) continue; // placed but not shown yet (scripted)
       const [rx, ry, rw, rh] = pr.rect;
       if (!inView(rx, ry, rw, rh)) continue;
-      if (pr.flat) this.drawFrame(pr.frame, pr.sx, pr.sy);
+      if (this.cmd) {
+        if (!pr.flat) masks.push(pr);
+      } else if (pr.flat) this.drawFrame(pr.frame, pr.sx, pr.sy);
       else standing.push({ depth: pr.sortDepth, prop: pr });
     }
     for (const u of g.activeUnits) {
@@ -204,7 +224,8 @@ export class Renderer {
     const shadow = (x, y, rx) => {
       if (this.hd) {
         this.smooth(true);
-        ctx.drawImage(this.shadow, x - cam.x - rx * 1.35, y - cam.y - rx * 0.68, rx * 2.7, rx * 1.36);
+        const o = this.cmd ? rx * 0.25 : 0; // commandos: nudged away from the sun
+        ctx.drawImage(this.shadow, x - cam.x - rx * 1.35 + o, y - cam.y - rx * 0.68 - o * 0.4, rx * 2.7, rx * 1.36);
         return;
       }
       ctx.beginPath();
@@ -226,6 +247,21 @@ export class Renderer {
     // --- depth-sorted standing objects
     for (const u of g.activeUnits) if (!u.dead && !u.hidden) standing.push({ depth: u.x + u.y, unit: u });
     for (const pk of g.pickups) standing.push({ depth: pk.x + pk.y, pickup: pk });
+    if (masks.length) {
+      // Commandos occlusion masks: a background prop is drawn again only
+      // when something standing behind it overlaps its picture
+      const boxes = [];
+      for (const d of standing) {
+        const o = d.unit || d.pickup;
+        const s = worldToScreen(o.x, o.y, o.z || 0);
+        const big = d.unit && d.unit.kind === 'fighter';
+        boxes.push([s.x - (big ? 60 : 22), s.y - (big ? 90 : 70), big ? 120 : 44, big ? 100 : 78, d.depth]);
+      }
+      for (const pr of masks) {
+        const [rx, ry, rw, rh] = pr.rect;
+        if (boxes.some(([x, y, w, h, dep]) => dep < pr.sortDepth && x < rx + rw && x + w > rx && y < ry + rh && y + h > ry)) standing.push({ depth: pr.sortDepth, prop: pr });
+      }
+    }
     standing.sort((a, b) => a.depth - b.depth);
     const pDepth = p.x + p.y;
     for (const d of standing) {
@@ -233,7 +269,7 @@ export class Renderer {
         const pr = d.prop;
         // Diablo-style: fade structures that hide the player.
         let alpha = 1;
-        if (d.depth > pDepth && !p.dead) {
+        if (d.depth > pDepth && !p.dead && !this.cmd) {
           const [rx, ry, rw, rh] = pr.rect;
           if (ps.x > rx + 4 && ps.x < rx + rw - 4 && ps.y - 30 > ry && ps.y - 20 < ry + rh && rh > 30) alpha = 0.45;
         }
@@ -248,9 +284,10 @@ export class Renderer {
         this.drawFrame(this.assets.props[pk.type][0], s.x, s.y);
       }
     }
-    // Player silhouette through occluders.
+    // Player silhouette through occluders (stronger in commandos, where
+    // buildings stay solid instead of fading).
     if (!p.dead && !p.hidden) {
-      ctx.globalAlpha = 0.28;
+      ctx.globalAlpha = this.cmd ? 0.4 : 0.28;
       this.drawFrame(p.frame(), ps.x, ps.y);
       ctx.globalAlpha = 1;
     }
@@ -371,7 +408,9 @@ export class Renderer {
     const W = this.w;
     const H = this.h;
     l.globalCompositeOperation = 'source-over';
-    const amb = g.world.ambient || AMBIENT;
+    let amb = g.world.ambient || AMBIENT;
+    // commandos: brighter, warmer daylight over the painted map
+    if (this.cmd) amb = [amb[0] + (250 - amb[0]) * 0.45, amb[1] + (240 - amb[1]) * 0.45, amb[2] + (222 - amb[2]) * 0.4].map(Math.round);
     l.fillStyle = `rgb(${amb[0]},${amb[1]},${amb[2]})`;
     l.fillRect(0, 0, W, H);
     l.globalCompositeOperation = 'lighter';

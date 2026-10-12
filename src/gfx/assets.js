@@ -6,6 +6,12 @@ import * as A from './models/anims.js';
 import { PROPS, buildPropVariants, buildLaat, buildFighter } from './models/props.js';
 import { RNG } from '../core/math.js';
 import { loadBundle, saveBundle } from './assetCache.js';
+import { spriteStyle } from '../core/gfx.js';
+
+// Commandos style: its own bundles, every character supersampled for soft
+// edges, every prop (vehicles and wrecks too) baked at 2× density.
+const tag = (key, style) => (style === 'cmd' ? key + '-cmd' : key);
+const styled = (spec, style) => (style === 'cmd' ? { ...spec, ss: 2 } : spec);
 
 const SABER = ['saberBase', 'saberTip'];
 const SABERS = ['saberBase', 'saberTip', 'saber2Base', 'saber2Tip'];
@@ -80,7 +86,8 @@ function progress(onProgress, total) {
 
 async function bakeCharacters(baker, specs, tick) {
   const sprites = {};
-  for (const [name, spec] of Object.entries(specs)) {
+  for (const [name, raw] of Object.entries(specs)) {
+    const spec = styled(raw, baker.style);
     const gen = baker.bakeAnimated(spec);
     let r;
     while (!(r = gen.next()).done) await tick(`스프라이트 렌더링: ${name}`, Math.max(1, spec.dirs / 4));
@@ -95,14 +102,19 @@ const frameCost = (specs) => {
   return total;
 };
 
-/** Everything the open world needs; cached on the device after the first run. */
-export async function bakeAssets(onProgress) {
-  const cached = await loadBundle('core');
+/**
+ * Everything the open world needs in one sprite style ('pixel' or 'cmd');
+ * cached on the device after the first run.
+ */
+export async function bakeAssets(onProgress, style = spriteStyle()) {
+  const key = tag('core', style);
+  const cmd = style === 'cmd';
+  const cached = await loadBundle(key);
   if (cached) {
     onProgress(1, '저장된 스프라이트 불러옴');
     return cached;
   }
-  const baker = new Baker();
+  const baker = new Baker({ style });
   const specs = Object.fromEntries(Object.entries(CHARACTERS).map(([k, f]) => [k, f()]));
   const propNames = Object.keys(PROPS);
   let total = frameCost(specs) + 8;
@@ -116,19 +128,19 @@ export async function bakeAssets(onProgress) {
     const models = buildPropVariants(name);
     const frames = [];
     for (const m of models) {
-      for (const f of baker.bakeStatic(m, { angles: def.angles || [0] })) {
+      for (const f of baker.bakeStatic(m, { angles: def.angles || [0], hd: cmd })) {
         frames.push(f);
-        await tick(`지형 오브젝트: ${name}`);
+        await tick(cmd ? `코만도스 오브젝트: ${name}` : `지형 오브젝트: ${name}`);
       }
     }
     props[name] = frames;
   }
 
   const laat = buildLaat(new RNG(3));
-  const laatFly = baker.bakeStatic(laat, { angles: [0, 1, 2, 3, 4, 5, 6, 7].map((i) => (-i * Math.PI) / 4) });
+  const laatFly = baker.bakeStatic(laat, { angles: [0, 1, 2, 3, 4, 5, 6, 7].map((i) => (-i * Math.PI) / 4), hd: cmd });
   onProgress(1, '완료');
   const assets = { sprites, props, laatFly };
-  saveBundle('core', assets); // in the background
+  saveBundle(key, assets); // in the background
   baker.dispose();
   return assets;
 }
@@ -166,11 +178,11 @@ export async function bakeHDProps(onProgress) {
 }
 
 /** Sprites for one Movie Duel, baked on demand. */
-export async function bakeDuelAssets(onProgress, duel = 'geonosis') {
-  const key = duel === 'geonosis' ? 'duel' : 'duel-' + duel;
+export async function bakeDuelAssets(onProgress, duel = 'geonosis', style = spriteStyle()) {
+  const key = tag(duel === 'geonosis' ? 'duel' : 'duel-' + duel, style);
   const cached = await loadBundle(key);
   if (cached) return cached;
-  const baker = new Baker();
+  const baker = new Baker({ style });
   const specs = Object.fromEntries(Object.entries(DUELS[duel]).map(([k, f]) => [k, f()]));
   const tick = progress(onProgress, frameCost(specs));
   const sprites = await bakeCharacters(baker, specs, tick);
@@ -181,13 +193,14 @@ export async function bakeDuelAssets(onProgress, duel = 'geonosis') {
 }
 
 /** Sprites for one of Anakin's appearances; cached on the device like the rest. */
-export async function bakeSkin(name, onProgress) {
-  const cached = await loadBundle(name);
+export async function bakeSkin(name, onProgress, style = spriteStyle()) {
+  const key = tag(name, style);
+  const cached = await loadBundle(key);
   if (cached) return cached.sprites[name];
-  const baker = new Baker();
+  const baker = new Baker({ style });
   const specs = { [name]: SKINS[name]() };
   const sprites = await bakeCharacters(baker, specs, progress(onProgress, frameCost(specs)));
-  saveBundle(name, { sprites });
+  saveBundle(key, { sprites });
   baker.dispose();
   return sprites[name];
 }

@@ -5,6 +5,9 @@
 // An `hd` bake (Remaster graphics) renders at 2× pixel density, keeps
 // anti-aliased alpha edges and full colour (no posterize / dither); its
 // frames carry `k: 0.5`, the game-pixel size of one of their pixels.
+// The Commandos style (`new Baker({ style: 'cmd' })`) renders smooth-shaded
+// models under a softer sun and packs them without outlines or dithering,
+// with anti-aliased edges and a muted, realistic colour grade.
 import * as THREE from 'three';
 import { PX_PER_UNIT, CAM_ELEVATION } from '../core/iso.js';
 import { detail } from './models/parts.js';
@@ -42,7 +45,9 @@ class AtlasPacker {
 }
 
 export class Baker {
-  constructor() {
+  constructor({ style = 'pixel' } = {}) {
+    this.style = style;
+    const cmd = style === 'cmd';
     this.renderer = new THREE.WebGLRenderer({
       antialias: false,
       alpha: true,
@@ -54,11 +59,11 @@ export class Baker {
     this.renderer.setClearColor(0x000000, 0);
 
     this.scene = new THREE.Scene();
-    this.scene.add(new THREE.HemisphereLight(0xdfe4ef, 0x3a2e24, 0.95));
-    const key = new THREE.DirectionalLight(0xffe6c8, 3.1);
+    this.scene.add(new THREE.HemisphereLight(cmd ? 0xe4e8ee : 0xdfe4ef, cmd ? 0x4a3c2c : 0x3a2e24, cmd ? 1.25 : 0.95));
+    const key = new THREE.DirectionalLight(cmd ? 0xfff0d8 : 0xffe6c8, cmd ? 2.5 : 3.1);
     key.position.set(-1.5, 5, 4.5);
     this.scene.add(key);
-    const rim = new THREE.DirectionalLight(0x8fb4ff, 0.9);
+    const rim = new THREE.DirectionalLight(0x8fb4ff, cmd ? 0.6 : 0.9);
     rim.position.set(-4, 2.5, -3);
     this.scene.add(rim);
 
@@ -83,6 +88,19 @@ export class Baker {
   dispose() {
     this.renderer.dispose();
     this.renderer.forceContextLoss();
+  }
+
+  /** Commandos: smooth-shaded surfaces (the pixel style keeps flat facets). */
+  shade(root) {
+    const flat = this.style !== 'cmd';
+    root.traverse((m) => {
+      if (!m.isMesh) return;
+      for (const mt of Array.isArray(m.material) ? m.material : [m.material]) {
+        if (!mt.isMeshLambertMaterial || mt.flatShading === flat) continue;
+        mt.flatShading = flat;
+        mt.needsUpdate = true;
+      }
+    });
   }
 
   get pages() {
@@ -138,7 +156,7 @@ export class Baker {
     const out = [];
     for (let i = 0; i < n; i++) {
       const src = ctx.getImageData((i % cols) * fw * ss, Math.floor(i / cols) * fh * ss, fw * ss, fh * ss);
-      out.push(ss > 1 ? downsample(src.data, fw, fh, ss, this.R > 1) : src.data);
+      out.push(ss > 1 ? downsample(src.data, fw, fh, ss, this.R > 1 || this.style === 'cmd') : src.data);
     }
     return out;
   }
@@ -187,7 +205,10 @@ export class Baker {
     }
 
     const hd = this.R > 1;
-    const pad = opts.outline === false ? 0 : 1;
+    const cmd = this.style === 'cmd';
+    const full = hd || cmd; // full colour, soft alpha edges
+    const pad = opts.outline === false || cmd ? 0 : 1;
+    const tone = cmd ? gradeCmd : grade;
     const w = x1 - x0 + 1 + pad * 2;
     const h = y1 - y0 + 1 + pad * 2;
     const out = new ImageData(w, h);
@@ -199,8 +220,8 @@ export class Baker {
         const si = (y * fw + x) * 4;
         if (d[si + 3] === 0) continue;
         const di = ((y - y0 + pad) * w + (x - x0 + pad)) * 4;
-        const rgb = isGlowPx(d, si) ? [d[si], d[si + 1], d[si + 2]] : grade(d[si], d[si + 1], d[si + 2]);
-        if (hd) {
+        const rgb = isGlowPx(d, si) ? [d[si], d[si + 1], d[si + 2]] : tone(d[si], d[si + 1], d[si + 2]);
+        if (full) {
           // full colour, soft edges
           o[di] = rgb[0];
           o[di + 1] = rgb[1];
@@ -292,6 +313,7 @@ export class Baker {
     const { model, dirs } = spec;
     const [fw, fh, ax, ay] = spec.frame;
     detail(model.root);
+    this.shade(model.root);
     this.holder.add(model.root);
     // all directions of one animation frame render into one canvas and are
     // read back together (one GPU sync per pose instead of one per sprite)
@@ -345,6 +367,7 @@ export class Baker {
   bakeStatic(object, { angles = [0], margin = 4, outline = true, posterize, hd = false } = {}) {
     const R = hd ? 2 : 1;
     detail(object);
+    this.shade(object);
     this.holder.add(object);
     const frames = [];
     for (const ang of angles) {
@@ -420,6 +443,17 @@ function isGlowPx(a, i) {
   const mx = Math.max(r, g, b);
   const mn = Math.min(r, g, b);
   return mn >= 185 && mx >= 250 && mx - mn <= 80;
+}
+
+/**
+ * Commandos 2-style grade: natural, gently desaturated colour with soft
+ * contrast and lifted shadows, like a painted pre-rendered scene.
+ */
+function gradeCmd(r, g, b) {
+  const l = r * 0.3 + g * 0.59 + b * 0.11;
+  const k = 0.84;
+  const c = (v) => Math.max(0, Math.min(255, 10 + 128 + (v - 128) * 0.96));
+  return [c((l + (r - l) * k) * 1.02), c(l + (g - l) * k), c((l + (b - l) * k) * 0.94)];
 }
 
 /**

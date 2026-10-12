@@ -3,6 +3,13 @@
 // paving patterns, roads and craters and finally ordered-dithered to a
 // reduced palette for an old-school look. Remaster graphics (density 2) build
 // chunks at twice the pixel density in full colour with a finer grain.
+//
+// Commandos graphics (`painted`) go further, after Commandos 2's hand-painted
+// maps: layered colour variation and brush-stroke texture, lit pebbles, and
+// the world's static props — buildings, rocks, crates, pads — baked straight
+// into the ground chunks together with their soft cast shadows and contact
+// darkening, so the map reads as one painted background. The renderer then
+// redraws a prop over a unit only where the prop hides it (occlusion masks).
 import { HALF_W, HALF_H } from '../core/iso.js';
 import { BIOME } from '../world/worldgen.js';
 import { valueNoise, hash2, clamp } from '../core/math.js';
@@ -32,6 +39,125 @@ const EDGE = [62, 57, 54];
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => v / 16 - 0.5);
 
+// Cast shadow shape (Commandos): x' = x - SHEAR·y, y' = SQUASH·y, y up < 0.
+const SHEAR = 0.8;
+const SQUASH = 0.36;
+
+/** Screen rectangle a baked prop paints: its sprite plus its cast shadow. */
+function paintRect(p) {
+  const f = p.frame;
+  const k = f.k || 1;
+  const x = p.sx - f.ox * k;
+  const y = p.sy - f.oy * k;
+  const w = f.w * k;
+  const h = f.h * k;
+  const up = Math.max(0, f.oy * k); // height above the foot
+  return [x - 8, y - 8, w + up * SHEAR + 16, h + 16];
+}
+
+const silhouettes = new WeakMap();
+const SIL_PAD = 4;
+/**
+ * A frame's shape in solid black, softened by a small box blur done once
+ * here (canvas filters are slow or missing on some phones). Cached per frame;
+ * the canvas is padded by SIL_PAD frame pixels on every side.
+ */
+function silhouette(f) {
+  let c = silhouettes.get(f);
+  if (c) return c;
+  const P = SIL_PAD;
+  const w = Math.max(1, f.w) + P * 2;
+  const h = Math.max(1, f.h) + P * 2;
+  c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.drawImage(f.page, f.sx, f.sy, f.w, f.h, P, P, f.w, f.h);
+  const img = x.getImageData(0, 0, w, h);
+  const d = img.data;
+  let a = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) a[i] = d[i * 4 + 3];
+  const R = f.k ? 3 : 2;
+  const tmp = new Float32Array(w * h);
+  for (let pass = 0; pass < 2; pass++) {
+    for (let y = 0; y < h; y++) {
+      for (let xx = 0; xx < w; xx++) {
+        let sum = 0;
+        let n = 0;
+        for (let k = -R; k <= R; k++) {
+          const q = xx + k;
+          if (q < 0 || q >= w) continue;
+          sum += a[y * w + q];
+          n++;
+        }
+        tmp[y * w + xx] = sum / n;
+      }
+    }
+    for (let y = 0; y < h; y++) {
+      for (let xx = 0; xx < w; xx++) {
+        let sum = 0;
+        let n = 0;
+        for (let k = -R; k <= R; k++) {
+          const q = y + k;
+          if (q < 0 || q >= h) continue;
+          sum += tmp[q * w + xx];
+          n++;
+        }
+        a[y * w + xx] = sum / n;
+      }
+    }
+  }
+  for (let i = 0; i < w * h; i++) {
+    d[i * 4] = 12;
+    d[i * 4 + 1] = 9;
+    d[i * 4 + 2] = 7;
+    d[i * 4 + 3] = a[i];
+  }
+  x.putImageData(img, 0, 0);
+  silhouettes.set(f, c);
+  return c;
+}
+
+/**
+ * Lit pebble at a screen point (game px): + on the sunlit upper left of a
+ * stone, − on its shaded side and in the small shadow it drops. 0 elsewhere.
+ */
+function pebble(sx, sy) {
+  const C = 7;
+  const cx = Math.floor(sx / C);
+  const cy = Math.floor(sy / C);
+  const h = hash2(cx, cy, 91);
+  if (h < 0.72) return 0;
+  const r = 0.8 + hash2(cx, cy, 92) * 1.6;
+  const ox = cx * C + 2 + hash2(cx, cy, 93) * (C - 4);
+  const oy = cy * C + 2 + hash2(cx, cy, 94) * (C - 4);
+  const dx = sx - ox;
+  const dy = (sy - oy) * 1.5;
+  const d = Math.hypot(dx, dy);
+  if (d < r) return 26 * (1 - d / r) * (-(dx + dy) / (r * 1.4)) + 4;
+  const sdx = dx - 0.9;
+  const sdy = dy - 0.7;
+  if (Math.hypot(sdx, sdy) < r) return -16;
+  return 0;
+}
+
+/**
+ * Grass tuft at a screen point: short upright blades, light at the tip and
+ * dark at the root, scattered in small cells. Brightness offset, 0 if none.
+ */
+function tuft(sx, sy) {
+  const cx = Math.floor(sx / 3);
+  const cy = Math.floor(sy / 4);
+  const h = hash2(cx, cy, 95);
+  if (h < 0.45) return -3;
+  const bx = cx * 3 + Math.floor(hash2(cx, cy, 96) * 3);
+  if (Math.floor(sx) !== bx) return 0;
+  const len = 1.5 + h * 2.5;
+  const y = sy - cy * 4;
+  if (y > len) return 0;
+  return y < len * 0.45 ? 18 : -12;
+}
+
 export class Terrain {
   constructor(world) {
     this.world = world;
@@ -46,6 +172,8 @@ export class Terrain {
     this.L = new Float32Array(n); // lava weight
     this.V = new Float32Array(n); // the city's drop (dark, far lights)
     this.U = new Float32Array(n); // city upper level (inlaid stone)
+    this.Gr = new Float32Array(n); // grass (painted tufts)
+    this.Rk = new Float32Array(n); // bare rock (painted cracks)
     for (let y = 0; y < world.h; y++) {
       for (let x = 0; x < world.w; x++) {
         const i = y * world.w + x;
@@ -67,6 +195,8 @@ export class Terrain {
         this.L[i] = b === BIOME.LAVA ? 1 : 0;
         this.Bs[i] = b === BIOME.BASE ? 1 : 0;
         this.K[i] = b === BIOME.CRYSTAL ? 1 : 0;
+        this.Gr[i] = b === BIOME.GRASS ? 1 : 0;
+        this.Rk[i] = b === BIOME.ROCK || b === BIOME.SCORCH || b === BIOME.MUSTAFAR ? 1 : 0;
         const rd = world.road[i];
         this.Rd[i] = b === BIOME.BASE ? 0 : clamp(1.7 - rd, 0, 1);
       }
@@ -75,13 +205,39 @@ export class Terrain {
     this.frame = 0;
     this.maxChunks = 64;
     this.S = 1; // pixels per game pixel
+    this.painted = false;
+    this.baked = null; // props painted into the chunks (commandos)
   }
 
   setDensity(S) {
-    if (S === this.S) return;
+    this.setStyle(S, false, null);
+  }
+
+  /**
+   * Pixel density, painted (Commandos) ground, and the props to bake into
+   * it: [{ frame, sx, sy, sortDepth, rect, flat }] in world-screen pixels.
+   */
+  setStyle(S, painted = false, baked = null) {
+    if (S === this.S && painted === this.painted && baked === this.baked) return;
     this.S = S;
+    this.painted = painted;
+    this.baked = painted ? baked : null;
+    if (this.baked) for (const p of this.baked) p.paintRect = paintRect(p);
     this.cache.clear();
     this.job = null;
+  }
+
+  /** A baked prop moved or appeared: rebuild the chunks under it. */
+  invalidate(p) {
+    if (!this.baked) return;
+    const rects = [p.paintRect, (p.paintRect = paintRect(p))].filter(Boolean);
+    for (const key of [...this.cache.keys()]) {
+      const [cx, cy] = key.split(',').map(Number);
+      const sx0 = (cx * CH - (cy * CH + CH)) * HALF_W;
+      const sy0 = (cx * CH + cy * CH) * HALF_H;
+      if (rects.some(([x, y, w, h]) => x < sx0 + CW && x + w > sx0 && y < sy0 + CHH && y + h > sy0)) this.cache.delete(key);
+    }
+    if (this.job) this.job = null;
   }
 
   sample(arr, u, v) {
@@ -126,13 +282,17 @@ export class Terrain {
     const sx0 = (x0 - (y0 + CH)) * HALF_W;
     const sy0 = (x0 + y0) * HALF_H;
     const q = 255 / 30;
+    const painted = this.painted;
+    const ov = painted ? 0.07 : 0;
     for (let py = 0; py < PH; py++) {
       const sy = sy0 + py / S;
       for (let px = 0; px < PW; px++) {
         const sx = sx0 + px / S;
         const fx = (sx / HALF_W + sy / HALF_H) / 2;
         const fy = (sy / HALF_H - sx / HALF_W) / 2;
-        if (fx < x0 || fx >= x0 + CH || fy < y0 || fy >= y0 + CH) continue;
+        // painted chunks overlap their neighbours by a pixel, so smooth
+        // (fractional) scaling never opens a seam between them
+        if (fx < x0 - ov || fx >= x0 + CH + ov || fy < y0 - ov || fy >= y0 + CH + ov) continue;
         const u = fx - 0.5;
         const v = fy - 0.5;
         let r = this.sample(this.R, u, v);
@@ -186,8 +346,53 @@ export class Terrain {
             b += (40 - b) * 0.55;
           }
         }
+        if (painted) {
+          // Commandos 2-style painting: broad warm/cool patches, then
+          // diagonal brush strokes, then lit pebbles with a contact shadow
+          const macro = valueNoise(fx * 0.23, fy * 0.23, 61) - 0.5;
+          const hue = valueNoise(fx * 0.5 + 9, fy * 0.5, 62) - 0.5;
+          r += macro * 22 + hue * 10;
+          g += macro * 20 + hue * 4;
+          b += macro * 14 - hue * 8;
+          const stroke = valueNoise((fx - fy) * 5.5, (fx + fy) * 1.3, 63) - 0.5;
+          const fine2 = valueNoise(sx * 0.9, sy * 1.8, 64) - 0.5;
+          const sk = (paved > 0.3 ? 5 : 11) * (1 - drop) * (1 - lava * 0.6);
+          r += stroke * sk + fine2 * sk * 0.6;
+          g += stroke * sk + fine2 * sk * 0.6;
+          b += stroke * sk * 0.85 + fine2 * sk * 0.5;
+          const grass = this.sample(this.Gr, u, v) * (1 - road) * (1 - paved);
+          if (grass > 0.15) {
+            const t = tuft(sx, sy) * grass;
+            r += t * 0.8;
+            g += t;
+            b += t * 0.5;
+          }
+          const rock = this.sample(this.Rk, u, v) * (1 - paved);
+          if (rock > 0.2) {
+            // ridged noise: hairline cracks with a lit lower lip
+            const n = valueNoise(fx * 2.2, fy * 2.2, 66);
+            const ridge = Math.abs(n - 0.5);
+            if (ridge < 0.025) {
+              r -= 30 * rock;
+              g -= 30 * rock;
+              b -= 26 * rock;
+            } else if (ridge < 0.045 && n > 0.5) {
+              r += 10 * rock;
+              g += 10 * rock;
+              b += 9 * rock;
+            }
+          }
+          if (paved < 0.5 && drop < 0.1 && lava < 0.3) {
+            const pb = pebble(sx, sy);
+            r += pb * (pb > 0 ? 0.9 : 1);
+            g += pb * (pb > 0 ? 0.85 : 1);
+            b += pb * (pb > 0 ? 0.75 : 0.9);
+          }
+        }
         // pebbles / grit
-        if (grain > 0.94) {
+        if (painted) {
+          /* replaced by the lit pebbles above */
+        } else if (grain > 0.94) {
           const k = cry > 0.5 ? 0.4 : 1;
           r += 22 * k;
           g += 20 * k;
@@ -249,6 +454,16 @@ export class Terrain {
           b = 255;
         }
         const i = (py * PW + px) * 4;
+        if (painted) {
+          // muted, slightly warm grade with lifted shadows
+          const l = r * 0.3 + g * 0.59 + b * 0.11;
+          const fine = (hash2(px + sx0 * S, py + sy0 * S, 7) - 0.5) * 4;
+          d[i] = clamp(6 + l + (r - l) * 0.86 + fine, 0, 255);
+          d[i + 1] = clamp(5 + l + (g - l) * 0.86 + fine, 0, 255);
+          d[i + 2] = clamp(4 + l + (b - l) * 0.82 + fine * 0.9, 0, 255);
+          d[i + 3] = 255;
+          continue;
+        }
         if (hd) {
           // full colour; a little fine grain in place of the dither
           const fine = (hash2(px + sx0 * S, py + sy0 * S, 7) - 0.5) * 6;
@@ -298,7 +513,78 @@ export class Terrain {
       ctx.restore();
     }
     ctx.restore();
+    if (this.baked) {
+      yield;
+      this.paintProps(ctx, sx0, sy0);
+    }
     return { canvas, sx: sx0, sy: sy0 };
+  }
+
+  /**
+   * Commandos: cast shadows, contact darkening and the props themselves,
+   * painted into this chunk in depth order. They are drawn on a scratch
+   * layer and laid over the ground with `source-atop`, so each chunk keeps
+   * exactly its own diamond of the picture and neighbours never double up.
+   */
+  paintProps(ctx, sx0, sy0) {
+    const S = this.S;
+    const PW = CW * S;
+    const PH = CHH * S;
+    const list = this.baked.filter((p) => {
+      if (p.hidden) return false;
+      const [x, y, w, h] = p.paintRect;
+      return x < sx0 + CW && x + w > sx0 && y < sy0 + CHH && y + h > sy0;
+    });
+    if (!list.length) return;
+    list.sort((a, b) => a.sortDepth - b.sortDepth);
+    const L = (this.layer ||= document.createElement('canvas'));
+    if (L.width !== PW || L.height !== PH) {
+      L.width = PW;
+      L.height = PH;
+    }
+    const l = L.getContext('2d');
+    l.setTransform(1, 0, 0, 1, 0, 0);
+    l.clearRect(0, 0, PW, PH);
+    l.imageSmoothingEnabled = true;
+    // 1. contact darkening (ambient occlusion) under standing props
+    for (const p of list) {
+      if (p.flat) continue;
+      const f = p.frame;
+      const k = f.k || 1;
+      const rx = Math.max(6, f.w * k * 0.46);
+      l.setTransform(S, 0, 0, S * 0.5, (p.sx - sx0) * S, (p.sy - sy0) * S);
+      const g = l.createRadialGradient(0, 0, 0, 0, 0, rx);
+      g.addColorStop(0, 'rgba(18,14,10,0.42)');
+      g.addColorStop(0.6, 'rgba(18,14,10,0.22)');
+      g.addColorStop(1, 'rgba(18,14,10,0)');
+      l.fillStyle = g;
+      l.fillRect(-rx, -rx, rx * 2, rx * 2);
+    }
+    // 2. soft cast shadows from the sun at the upper left: the silhouette
+    // folded back onto the ground, sheared to the right and squashed
+    l.globalAlpha = 0.42;
+    for (const p of list) {
+      if (p.flat) continue;
+      const f = p.frame;
+      const k = f.k || 1;
+      const P = SIL_PAD * k;
+      l.setTransform(S, 0, -SHEAR * S, SQUASH * S, (p.sx - sx0) * S, (p.sy - sy0) * S);
+      l.drawImage(silhouette(f), -f.ox * k - P, -f.oy * k - P, f.w * k + P * 2, f.h * k + P * 2);
+    }
+    l.globalAlpha = 1;
+    // 3. the props
+    l.setTransform(1, 0, 0, 1, 0, 0);
+    for (const p of list) {
+      const f = p.frame;
+      const k = f.k || 1;
+      l.imageSmoothingEnabled = k !== 1;
+      l.drawImage(f.page, f.sx, f.sy, f.w, f.h, Math.round((p.sx - f.ox * k - sx0) * S), Math.round((p.sy - f.oy * k - sy0) * S), f.w * k * S, f.h * k * S);
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.drawImage(L, 0, 0);
+    ctx.restore();
   }
 
   getChunk(cx, cy) {
