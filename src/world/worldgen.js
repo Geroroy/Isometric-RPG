@@ -536,6 +536,19 @@ export class MustafarArena extends World {
     const inRect = (x, y, r) => Math.abs(x - r.x) <= r.hw && Math.abs(y - r.y) <= r.hh;
     const inEll = (x, y, e) => ((x - e.x) / e.rx) ** 2 + ((y - e.y) / e.ry) ** 2 <= 1;
     const floors = [M.pad, M.walk, M.corridor, M.hall, M.junction, M.control, M.balconyEnd];
+    // the interior's floor as in the film (terrain.js filmFloor; photos of the sets in reference/color_rots):
+    // pale bands outlining big long hexagons, their long axis across the room, in rows along it, a hexagon on
+    // the room's centre (under the conference table, the control room's holo-table); fields of dark slab, grey
+    // slab and pale speckled stone set out symmetrically from the middle. A raised rim of the texture's seam
+    // bars along the walls (a light slot to each hexagon), the control room's centre sunk a step inside a
+    // walkway. `cell`: a hexagon's width along the room, `elong`: its stretch across, `band`: the bands' width
+    // (tiles; rects as above, first match wins)
+    this.floorPlan = [
+      { ...M.hall, axis: 'x', rim: 1, cell: 3.2, elong: 1.6, band: 0.46 },
+      { ...M.control, axis: 'x', rim: 1, pit: 2.6, cell: 3, elong: 1.6, band: 0.44 },
+      { ...M.corridor, axis: 'x', rim: 0.4, cell: 2, elong: 1.4, band: 0.36 },
+      { ...M.junction, axis: 'y', rim: 0.4, cell: 2, elong: 1.4, band: 0.36 },
+    ];
     const grates = [M.balcony, M.arm];
     for (let y = 0; y < MAP_H; y++) {
       for (let x = 0; x < MAP_W; x++) {
@@ -573,8 +586,13 @@ export class MustafarArena extends World {
 
     // --- the conference room ---------------------------------------------
     const H = M.hall;
-    this.walls(H, 'hazardWall', { gaps: [[M.junction.x - 2, M.junction.x + 2], [67.5, 70.5]] });
+    // the film's screen consoles (tools/sprites/mustafar_console): along the long wall between the two doors,
+    // a pair centred on the table; on the end wall a sealed door in the middle with one either side
+    this.walls(H, 'hazardWall', { west: false, gaps: [[M.junction.x - 2, M.junction.x + 2], [67.5, 70.5], [H.x - 3, H.x + 3]] });
     this.addProp('blastDoor', H.x - 5, H.y - H.hh - 0.9, { angleIdx: 0, noBlock: true });
+    for (const dx of [-1.5, 1.5]) this.console(H, 'north', dx);
+    for (const dy of [-4, 4]) this.console(H, 'west', dy);
+    this.addProp('blastDoor', H.x - H.hw - 0.9, H.y, { angleIdx: 1, noBlock: true });
     this.door({ x: M.junction.x, y: H.y - H.hh }, 1);
     this.addProp('confTable', H.x, H.y);
     for (const dx of [-1.6, 0, 1.6]) {
@@ -584,17 +602,16 @@ export class MustafarArena extends World {
     this.addProp('confChair', H.x - 3.6, H.y, { angleIdx: 0 });
     this.addProp('confChair', H.x + 3.6, H.y, { angleIdx: 2 });
     for (const [dx, dy] of [[-4, -3.2], [3.2, -3.6], [-1.2, 3.4], [5.2, 2.4], [-6.2, 1.2], [6.5, -1.6]]) this.addProp('sepBody', H.x + dx, H.y + dy, { noBlock: true });
-    this.addProp('mustafarConsole', H.x - H.hw + 1.2, H.y + 3.5, { angleIdx: 1 });
 
     // --- the junction corridor (north out of the hall) --------------------
     this.walls({ ...M.junction, hh: M.junction.hh - 0.5 }, 'hazardWall', { north: false });
 
     // --- the control room --------------------------------------------------
     const C = M.control;
-    this.walls(C, 'screenWall');
+    // the film's control room: its walls lined with screen consoles side by side, the back wall's middle one red
+    for (const dx of [-6, -3, 0, 3, 6]) this.console(C, 'north', dx, dx === 0);
+    for (const dy of [-4.5, -1.5, 1.5, 4.5]) this.console(C, 'west', dy);
     this.addProp('shieldCore', C.x - 3.5, C.y - 4);
-    for (const dx of [0.5, 3.5, 6]) this.addProp('consoleDesk', C.x + dx, C.y - C.hh + 1.2, { angleIdx: 0 });
-    for (const dy of [-0.5, 2.5]) this.addProp('consoleDesk', C.x - C.hw + 1.2, C.y + dy, { angleIdx: 1 });
     this.addProp('consoleDesk', C.x + 2, C.y + 2.5, { angleIdx: 0 });
     this.door(M.door4, 0);
     for (const [dx, dy] of [[-3, -2], [3, 2], [5, -3], [-4, 4]]) this.lights.push({ x: C.x + dx, y: C.y + dy, z: 3.2, r: 235, g: 240, b: 255, rad: 150, flicker: 0.02 }); // the white light bars
@@ -632,6 +649,17 @@ export class MustafarArena extends World {
     this.spawn = { x: D.x - 1.5, y: D.y + 1.5 };
     this.roadSegs = [];
     this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
+  }
+
+  /**
+   * A screen console of the film (gfx/mustafarFloor.js, a sheet sprite) against a room's far wall: `side`
+   * 'north' (facing +y) or 'west' (facing +x), `at` along the wall from the room's middle; its feet on the
+   * floor's edge. Left out when its sprite did not load.
+   */
+  console(r, side, at, red = false) {
+    const name = (red ? 'mfConsoleRed' : 'mfConsole') + (side === 'west' ? '_r' : '');
+    if (side === 'north') return this.addSheetProp(name, r.x + at, r.y - r.hh - 0.3, { noBlock: true });
+    return this.addSheetProp(name, r.x - r.hw - 0.3, r.y + at, { noBlock: true });
   }
 
   /** The far walls of a room (north and west); the near sides stay open so the fight is visible, as in Fallout. */

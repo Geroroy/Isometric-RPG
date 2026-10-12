@@ -71,6 +71,136 @@ export function setFloorTexture(f) {
   if (!f) return;
   FLOOR = f;
 }
+// the Mustafar facility's floor (gfx/mustafarFloor.js, ImageData of one repeat), laid out per room by the
+// world's floorPlan (worldgen.js MustafarArena)
+let FACILITY = null;
+export function setFacilityFloor(t) {
+  FACILITY = t || null;
+}
+const FAC_BAR = 0.15; // the seam bar's width in a repeat of the texture (the rim stretches it to its own width)
+// the film's floor (measured on the texture: bands, grey slabs, dark slabs) and the pale speckled stone of the
+// conference room's fields
+const FILM = { band: [153, 155, 153], mid: [91, 95, 91], dark: [54, 57, 54], pale: [168, 168, 160] };
+const SQ3 = Math.sqrt(3);
+const NORMALS = [[1, 0], [0.5, SQ3 / 2], [0.5, -SQ3 / 2]]; // a pointy hexagon's side normals in (along, across / stretch)
+
+/** Bilinear, wrapping texel of an ImageData at (u, v) in repeats; writes [r, g, b] to `o`. */
+function texel(T, u, v, o) {
+  const W = T.width;
+  const H = T.height;
+  const x = (((u % 1) + 1) % 1) * W - 0.5;
+  const y = (((v % 1) + 1) % 1) * H - 0.5;
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const ax = x - x0;
+  const ay = y - y0;
+  const i00 = (((y0 + H) % H) * W + ((x0 + W) % W)) * 4;
+  const i10 = (((y0 + H) % H) * W + ((x0 + 1) % W)) * 4;
+  const i01 = (((y0 + 1) % H) * W + ((x0 + W) % W)) * 4;
+  const i11 = (((y0 + 1) % H) * W + ((x0 + 1) % W)) * 4;
+  const d = T.data;
+  for (let c = 0; c < 3; c++) o[c] = (d[i00 + c] * (1 - ax) + d[i10 + c] * ax) * (1 - ay) + (d[i01 + c] * (1 - ax) + d[i11 + c] * ax) * ay;
+}
+
+/**
+ * The film's floor pattern in a room's own frame (photos of the sets, reference/color_rots): pale bands
+ * outlining long hexagons whose long axis runs across the room, in rows along it (neighbours side by side,
+ * the next rows staggered, cut into trapezoids by the walls), one hexagon on the room's centre. The fields
+ * set out symmetrically from the middle: the centre a dark slab (the table / the holo-table stands on it),
+ * ringed by pale speckled stone, then dark and grey slabs in turn outwards. `R.cell`: a hexagon's width along
+ * the room (tiles), `R.elong`: its stretch across, `R.band`: the bands' width. Writes [r, g, b] to `o`.
+ */
+function filmFloor(R, along, across, fx, fy, o) {
+  const S = R.cell;
+  const e = R.elong;
+  const Rad = S / SQ3; // centre to vertex (before the stretch)
+  const X = along;
+  const Y = across / e;
+  // axial coordinates of a pointy hexagon (vertices on ±Y), cube-rounded
+  const qf = ((SQ3 / 3) * X - Y / 3) / Rad;
+  const rf = ((2 / 3) * Y) / Rad;
+  let q = Math.round(qf);
+  let r = Math.round(rf);
+  const sf = -qf - rf;
+  const s = Math.round(sf);
+  const dq = Math.abs(q - qf);
+  const dr = Math.abs(r - rf);
+  if (dq > dr && dq > Math.abs(s - sf)) q = -r - s;
+  else if (dr > Math.abs(s - sf)) r = -q - s;
+  const cx = Rad * SQ3 * (q + r / 2);
+  const cy = Rad * 1.5 * r;
+  // distance to the hexagon's edge in world tiles (the stretch makes the slanted sides' gradient longer)
+  let edge = Infinity;
+  for (const [nx, ny] of NORMALS) {
+    const f = S / 2 - Math.abs(nx * (X - cx) + ny * (Y - cy));
+    edge = Math.min(edge, f / Math.hypot(nx, ny / e));
+  }
+  const half = R.band / 2;
+  const n = valueNoise(fx * 3.1, fy * 3.1, 83) - 0.5;
+  if (edge < half) {
+    // the band: smooth pale stone, a dark joint where it meets the fields
+    const k = (edge < 0.035 || edge > half - 0.035 ? 0.62 : 1) * (1 + n * 0.1);
+    for (let c = 0; c < 3; c++) o[c] = FILM.band[c] * k;
+    return;
+  }
+  const ring = (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
+  const off = Math.abs(cx); // the cell's distance along the room from the middle
+  // the centre dark, ringed by pale stone (round the table), then dark and grey slabs in turn outwards
+  let F;
+  if (ring === 0) F = FILM.dark;
+  else if (ring === 1) F = FILM.pale;
+  else F = (Math.round(off / S) + Math.abs(r)) % 2 ? FILM.mid : FILM.dark;
+  // each field its own tone (symmetric: by |along| and |row|), mottled; the pale stone speckled black
+  const tone = 1 + (hash2(Math.round(off * 2), Math.abs(r), 84) - 0.5) * 0.1;
+  const mott = 1 + (valueNoise(fx * 0.9, fy * 0.9, 85) - 0.5) * 0.16 + n * 0.06;
+  let k = tone * mott;
+  if (F === FILM.pale) {
+    const sp = hash2(Math.floor(fx * 22), Math.floor(fy * 22), 86);
+    if (sp > 0.97) k *= 0.6;
+    else if (sp > 0.94) k *= 0.84;
+  }
+  for (let c = 0; c < 3; c++) o[c] = F[c] * k;
+}
+
+/**
+ * The facility floor at a world point inside room `R` (worldgen.js floorPlan): the film's pattern
+ * (filmFloor), a raised rim of the texture's seam bar along the walls (its light slots once a hexagon), and in
+ * a room with a `pit` its sunken centre behind a step — the step's face showing on the far sides (the camera
+ * looks from +x+y), a dark line on the near ones. Writes [r, g, b] to `o`.
+ */
+function facilityFloor(R, fx, fy, o) {
+  const dx = fx - R.x;
+  const dy = fy - R.y;
+  const alongX = R.axis === 'x';
+  const along = alongX ? dx : dy;
+  const across = alongX ? dy : dx;
+  const dA = (alongX ? R.hw : R.hh) - Math.abs(along); // to the end walls
+  const dC = (alongX ? R.hh : R.hw) - Math.abs(across); // to the side walls
+  const d = Math.min(dA, dC);
+  if (d < R.rim) {
+    // the rim: the seam bar running along its wall, a slot centred on each hexagon
+    const k = (d / R.rim - 0.5) * FAC_BAR;
+    if (dC <= dA) texel(FACILITY, k, along / R.cell + 0.5, o);
+    else texel(FACILITY, across / (R.cell * 1.15 * R.elong) + 0.5, k, o);
+    return;
+  }
+  filmFloor(R, along, across, fx, fy, o);
+  // which wall is nearest: far (−x / −y, its edge faces the camera) or near
+  const far = dC <= dA ? across < 0 : along < 0;
+  let m = 1;
+  const e = d - R.rim; // inside the rim's edge
+  if (e < 0.14) m = far ? 1.32 : 0.62; // the raised rim's edge: its lit face, or the shadow under it
+  if (R.pit) {
+    const p = d - R.pit;
+    if (p >= 0) {
+      m *= 0.88; // the sunken centre, a little darker
+      if (far && p < 0.3) m *= p < 0.06 ? 1.6 : 0.8 + p; // the step's face, its lit lip at the top
+    } else if (!far && p > -0.07) m *= 0.55;
+  }
+  o[0] *= m;
+  o[1] *= m;
+  o[2] *= m;
+}
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => v / 16 - 0.5);
 
@@ -120,6 +250,17 @@ export class Terrain {
         const rd = world.road[i];
         this.Rd[i] = b === BIOME.BASE ? 0 : clamp(1.7 - rd, 0, 1);
       }
+    }
+    // the Mustafar interior's room per tile (index into world.floorPlan, −1 none)
+    this.room = null;
+    if (world.floorPlan) {
+      this.room = new Int8Array(n).fill(-1);
+      for (let y = 0; y < world.h; y++)
+        for (let x = 0; x < world.w; x++) {
+          if (world.biome[y * world.w + x] !== BIOME.MUSTAFAR) continue;
+          const k = world.floorPlan.findIndex((R) => Math.abs(x + 0.5 - R.x) <= R.hw && Math.abs(y + 0.5 - R.y) <= R.hh);
+          this.room[y * world.w + x] = k;
+        }
     }
     this.cache = new Map();
     this.frame = 0;
@@ -524,6 +665,20 @@ export class Terrain {
             r = T.data[j] * sh * (1 + stain * 0.25);
             g = T.data[j + 1] * sh;
             b = T.data[j + 2] * sh * (1 - stain * 0.2);
+            texd = true;
+          }
+        }
+        // the Mustafar facility's rooms: the film's floor, laid out per room (facilityFloor)
+        if (FACILITY && this.room) {
+          const k = this.room[Math.floor(fy) * this.world.w + Math.floor(fx)];
+          if (k >= 0) {
+            facilityFloor(this.world.floorPlan[k], fx, fy, fc);
+            // wear: the blotches and slow soot stains, faint
+            const stain = valueNoise(fx * 0.33, fy * 0.33, 75) - 0.5;
+            const sh = (1 + blot * 0.12) * (1 + stain * 0.18);
+            r = fc[0] * sh;
+            g = fc[1] * sh;
+            b = fc[2] * sh;
             texd = true;
           }
         }

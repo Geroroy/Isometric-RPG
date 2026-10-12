@@ -1,0 +1,1 @@
+{"anchor": [83.2, 150.7], "k": 0.5, "layers": {"body": "mfConsole_r_body.png", "neon": "mfConsole_r_neon.png"}, "footprint": [[-0.5, 1.5], [-0.5, -1.5], [0.1, -1.5], [0.1, 1.5]], "lights": [[1.0, 0, 1.5, 110, 235, 140, 120, 0.04]], "neon": {"base": 1, "hum": 0.06, "speed": 0.7, "flicker": {"rate": 0.02, "dur": [0.05, 0.15], "level": 0.55}}}

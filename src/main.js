@@ -8,7 +8,8 @@ import { loadSheets } from './gfx/sheet.js';
 import { prune as pruneFiles, stats as fileStats } from './gfx/fileCache.js';
 import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
-import { setFloorTexture, setGroundTextures } from './gfx/terrain.js';
+import { setFloorTexture, setGroundTextures, setFacilityFloor } from './gfx/terrain.js';
+import { loadMustafarFloor, loadMustafarConsoles } from './gfx/mustafarFloor.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
@@ -82,6 +83,13 @@ async function boot() {
   if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, DUEL)).sprites);
   // Mustafar: Anakin in the campaign's own Blender outfits — the cloak with the hood up, hood down, the tunic
   if (DUEL === 'mustafar') Object.assign(assets.sprites, await loadSheets(['anakin_vader', 'anakin_robe', 'anakin_tunic'], onProgress));
+  // and the facility's floor, the film's (terrain.js lays it out per room)
+  if (DUEL === 'mustafar') setFacilityFloor(await loadMustafarFloor().catch((e) => console.warn('무스타파 바닥: ' + e.message)));
+  // and its wall consoles, placed as the city's sheet sprites are (worldgen.js addSheetProp)
+  if (DUEL === 'mustafar') {
+    assets.city = await loadMustafarConsoles();
+    setCityFootprints(assets.city);
+  }
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
   if (look && !assets.sprites[look.sprite]) assets.sprites[look.sprite] = await bakeSkin(look.sprite, (k) => onProgress(k, '외형 준비 중…'));
