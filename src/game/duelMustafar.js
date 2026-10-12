@@ -782,7 +782,7 @@ export class MustafarDuel extends Duel {
       { t: 5.6, do: () => (p.setAnim('idle'), ob.setAnim('idle')) },
       // the collector tower at the arm's end groans and goes
       { t: 6.6, do: (c) => (g.fx.shake(6), g.audio.play('explode', p), (c.onFrame = () => (g.fx.shake(3), Math.random() < 0.5 && g.fx.sparks(T.x + rand(-1.5, 1.5), T.y + rand(-1.5, 1.5), rand(0.5, 6), '#ffb040', 3, 4)))), cam: { x: T.x, y: T.y - 3, zoom: 1.1, dur: 1.2 } },
-      { t: 8.8, do: () => (g.fx.explosion(T.x, T.y, 2.4), g.fx.explosion(T.x + 1, T.y - 1, 1.4), (w.tower.hidden = true), g.audio.play('explode', p), g.fx.text(T.x, T.y - 2, '집하기 탑이 무너진다!', '#ff9a50', 1.2, 2.6)) },
+      { t: 8.8, do: () => (g.fx.explosion(T.x, T.y, 2.4), g.fx.explosion(T.x + 1, T.y - 1, 1.4), w.tower && (w.tower.hidden = true), g.audio.play('explode', p), g.fx.text(T.x, T.y - 2, '집하기 탑이 무너진다!', '#ff9a50', 1.2, 2.6)) },
       { t: 9.4, do: (c) => (g.fx.shake(12), p.setAnim('hurt', 0.5, true), ob.setAnim('hurt', 0.5, true), c.move(p, A.x + 0.4, Math.min(A.y + A.hh - 1, p.y + 3), 2.2), c.move(ob, A.x - 0.3, Math.min(A.y + A.hh - 2, ob.y + 3), 2.2)), cam: { follow: p, dur: 1.0 } },
       { t: 11.6, do: () => (p.setAnim('leap', 1, true), ob.setAnim('leap', 1, true)) },
       { t: 12.2, fade: 1, fadeDur: 0.6 },

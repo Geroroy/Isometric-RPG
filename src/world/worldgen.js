@@ -515,8 +515,8 @@ export class Arena extends World {
 // travel through the film's sets in order, most of them joined up so the
 // duellists walk from one into the next:
 //
-//   deck        the landing platform: Padmé's skiff, girder pylons, crates
-//   walk        a railed walkway to the facility door
+//   deck        the landing platform: Padmé's skiff, crates
+//   walk        a walkway to the facility door
 //   corridor    the entry corridor, hazard-striped walls
 //   hall        the Separatist conference room (the council's bodies)
 //   junction    the corridor north out of the hall — where the pushes meet
@@ -682,38 +682,32 @@ export class MustafarArena extends World {
       }
     }
 
-    // --- the landing platform: pylons, crates, Padmé's skiff -----------------
+    // --- the landing platform: crates, Padmé's skiff --------------------------
     const D = M.deck;
-    for (const [dx, dy] of [[-8.5, -5.5], [8, -6], [-9.5, 4.5], [8.5, 5.5], [0, 7.5]]) this.addProp('pylon', D.x + dx, D.y + dy);
     // (the deck's stores: the cargo sprites, placed after the transpose — cargo(); these crates if they did not load)
     if (!cityFootprint('cgCrateL')) for (const [dx, dy] of [[6, -2], [6.8, -1.2], [-6.5, 3.5]]) this.addProp('crate', D.x + dx, D.y + dy);
     // the robes thrown off before the fight (shown by the opening scene)
     this.cloak = this.addProp('cloakPile', D.x - 2.2, D.y + 1.6);
     this.robe = this.addProp('robePile', D.x + 3.4, D.y - 1.8);
     this.cloak.hidden = this.robe.hidden = true;
-    // walkway rails and the facility door
-    for (let x = M.walk.x - 3; x <= M.walk.x + 3; x += 2) for (const y of [M.walk.y - 2.0, M.walk.y + 2.0]) this.addProp('catRail', x, y, { angleIdx: 0, noBlock: true });
-    this.door(M.door1, 0);
+    // (only the set sprites the film gives stand here: no model props — the walkway's rails, the door frames,
+    // the pylons, walls, bodies and towers are left out)
 
     // --- entry corridor ---------------------------------------------------
     // its long wall windows on the lava, as in the film (tools/sprites/mustafar_set: three 5.5 m bays)
     const windows = [-5.5, 0, 5.5].map((dx) => this.addSheetProp('mfWindow', M.corridor.x + dx, M.corridor.y - M.corridor.hh - 0.5, { noBlock: true }));
     this.walls(M.corridor, 'hazardWall', { west: false, north: windows.includes(null) });
-    this.door(M.door2, 0);
 
     // --- the conference room ---------------------------------------------
     const H = M.hall;
     // the film's screen consoles (tools/sprites/mustafar_console): along the long wall a pair centred on the
     // table between the two doors and one past the passage north; on the end wall a sealed door in the middle
     // with one either side
-    this.walls(H, 'hazardWall', { west: false, gaps: [[M.junction.x - 2, M.junction.x + 2], [67.5, 70.5], [H.x - 3, H.x + 3], [M.junction.x + 2, M.junction.x + 5]] });
-    this.addProp('blastDoor', H.x - 5, H.y - H.hh - 0.9, { angleIdx: 0, noBlock: true });
     for (const dx of [-1.5, 1.5, 8.5]) this.console(H, 'north', dx);
     // the passage on to the control room (the film's sets, reference/color_rots): a covered corridor whose
     // pillared portal stands in the north wall, the consoles either side meeting its pillars
     this.addSheetProp('mfCorridor', M.junction.x, H.y - H.hh, { noBlock: true });
     for (const dy of [-4, 4]) this.console(H, 'west', dy);
-    this.addProp('blastDoor', H.x - H.hw - 0.9, H.y, { angleIdx: 1, noBlock: true });
     this.door({ x: M.junction.x, y: H.y - H.hh }, 1, false); // (the covered corridor's portal is its frame)
     // the film's long table, its pointed end to the passage; the high-backed chairs along its far side and
     // at its head (the near side left clear, as the near walls are); the model props if the sprites did not load.
@@ -731,7 +725,6 @@ export class MustafarArena extends World {
       this.addProp('confChair', H.x - 3.6, H.y, { angleIdx: 0 });
       this.addProp('confChair', H.x + 3.6, H.y, { angleIdx: 2 });
     }
-    for (const [dx, dy] of [[-4, -3.2], [3.2, -3.6], [-1.2, 3.4], [5.2, 2.4], [-6.2, 1.2], [6.5, -1.6]]) this.addProp('sepBody', H.x + dx, H.y + dy, { noBlock: true });
 
     // --- the junction corridor (north out of the hall) --------------------
     // its inside the film's corridor, open to the camera (tools/sprites/mustafar_set: the far wall with its light
@@ -745,7 +738,6 @@ export class MustafarArena extends World {
     // the film's control room: its walls lined with screen consoles side by side, the back wall's middle one red
     for (const dx of [-6, -3, 0, 3, 6]) this.console(C, 'north', dx, dx === 0);
     for (const dy of [-4.5, -1.5, 1.5, 4.5]) this.console(C, 'west', dy);
-    this.addProp('shieldCore', C.x - 3.5, C.y - 4);
     // the holo-table in the middle of the sunken floor, as in the film (its blue map lighting the room from below)
     // (off the line from the shield generator to the balcony door, which the console scene runs along)
     if (!this.addSheetProp('mfHolo', C.x + 3.5, C.y - 1.5)) this.addProp('consoleDesk', C.x + 2, C.y + 2.5, { angleIdx: 0 });
@@ -773,22 +765,16 @@ export class MustafarArena extends World {
         this.addProp('catRail', x, B.y - 1.4, { angleIdx: 0, noBlock: true });
         this.addProp('catRail', x, B.y + 1.4, { angleIdx: 0, noBlock: true });
       }
-    for (const y of [M.balconyEnd.y - 2, M.balconyEnd.y + 2]) this.addProp('catRail', M.balconyEnd.x + 0.5, y, { angleIdx: 0, noBlock: true });
-    this.addProp('catRail', M.balconyEnd.x + 2.0, M.balconyEnd.y - 1, { angleIdx: 1, noBlock: true });
-    this.addProp('catRail', M.balconyEnd.x + 2.0, M.balconyEnd.y + 1, { angleIdx: 1, noBlock: true });
     // the lava falls beyond the balcony (the film's): rock cliffs pouring into pools at the catwalk's side
     // (tools/sprites/mustafar_set mfFall; the model falls if the sprite did not load)
     if (!this.addSheetProp('mfFall_x', 89, 89, { noBlock: true }) | !this.addSheetProp('mfFall_x', 97.5, 88.5, { noBlock: true }))
       for (const [x, y] of [[88, 87], [95, 86.5], [102, 87.5], [108, 92], [106, 100]]) this.addProp('lavaFall', x, y);
-    this.addProp('pylon', 97, 101.5);
 
     // --- the collector arm ---------------------------------------------------
     const A = M.arm;
     // the film's collector arm (tools/sprites/mustafar_set: the vane head at its outer, west end, the grated arm,
     // the mast and its stays), drawn with the ground as it is walked on; the tower it hangs from stays (it falls)
     const arm = this.addSheetProp('mfArm', A.x, A.y, { noBlock: true, flat: true });
-    this.tower = this.addProp('armTower', M.armTower.x, M.armTower.y);
-    for (let x = A.x - 8; x <= A.x + 8; x += 4) this.addProp('cable', x, A.y - 1.1, { noBlock: true });
     // the falls behind the arm (they light the hanging scene); the model falls if the sprite did not load
     if (!this.addSheetProp('mfFall_x', 36, 98, { noBlock: true }) | !this.addSheetProp('mfFall_x', 46, 98.5, { noBlock: true }))
       for (const [x, y] of [[33, 97.5], [42, 97], [50, 97.5], ...(arm ? [] : [[27, 104]])]) this.addProp('lavaFall', x, y); // (the head stands where the last fall was)
@@ -857,13 +843,9 @@ export class MustafarArena extends World {
     // the fall's head: the film's lava fall out of the cleft (a cliff pouring into a pool), a pump house over it
     if (!this.addSheetProp('mfFall', fall[0][0] - 2, fall[0][1] + 1, { noBlock: true }))
       for (const [dx, dy] of [[-1.6, 1.6], [0, 0], [1.6, -1.6]]) this.addProp('lavaFall', fall[0][0] + dx, fall[0][1] + dy, { noBlock: true });
-    this.addProp('mustafarConsole', fall[0][0] - 3, fall[0][1] - 1, { noBlock: true });
     for (const [x, y] of fall) this.lights.push({ x, y, z: 0.4, r: 255, g: 130, b: 40, rad: 190, flicker: 0.15 });
-    // the right block's finned spire and its second collector arm (the first is the duel's, M.arm)
-    this.addProp('mustafarTower', M.hall.x + 8, M.hall.y - 6);
+    // the right block's second collector arm (the first is the duel's, M.arm)
     this.addSheetProp('mfArm_y', M.hall.x + 8, M.hall.y - 21, { noBlock: true, flat: true });
-    // the lattice tower in front of the left block
-    this.addProp('pylon', M.corridor.x - 4, M.corridor.y + 10);
     // the mountain's height: crags over the rock (tall ones deeper in, low ones at its edge and round the
     // facility), loose rock between
     const ash = (x, y) => this.biome[Math.floor(y) * W + Math.floor(x)] === BIOME.ASH;
