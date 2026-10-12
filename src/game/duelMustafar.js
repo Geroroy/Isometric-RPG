@@ -821,7 +821,7 @@ export class MustafarDuel extends Duel {
     this.droid.y = R.y;
     w.floats = [this.platform, this.droid];
     this.floatLights = [
-      { x: this.platform.x, y: this.platform.y, z: 0.2, r: 120, g: 220, b: 255, rad: 90, flicker: 0.05 },
+      { x: this.platform.x, y: this.platform.y, z: 0.2, r: 255, g: 140, b: 70, rad: 90, flicker: 0.08 }, // (its lamps glow orange)
       { x: this.droid.x, y: this.droid.y, z: 0.2, r: 255, g: 150, b: 60, rad: 90, flicker: 0.1 },
     ];
     w.lights.push(...this.floatLights);

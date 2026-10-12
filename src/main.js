@@ -90,9 +90,11 @@ async function boot() {
   if (DUEL === 'mustafar') {
     assets.city = await loadMustafarConsoles();
     setCityFootprints(assets.city);
-    // the river droid: the film's, in place of the model baked with the duel
+    // the river droid and Obi-Wan's platform: the film's, in place of the models baked with the duel
     const droid = await loadMustafarDroid().catch((e) => console.warn('무스타파 드로이드: ' + e.message));
     if (droid) assets.sprites.collector = droid;
+    const platform = await loadMustafarDroid('mfPlatform').catch((e) => console.warn('무스타파 플랫폼: ' + e.message));
+    if (platform) assets.sprites.platform = platform;
   }
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;

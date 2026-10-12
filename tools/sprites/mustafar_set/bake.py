@@ -22,6 +22,8 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
 - `mfDroid`: the droid Anakin rides down the lava river (image_16: a round deck on legs and arms), a unit's
   single frame: the anchor on the deck's top (he stands there), the legs hanging below it; the render's soft white
   halo dropped (only its opaque pixels kept)
+- `mfPlatform`: the hover platform Obi-Wan rides (image_18: a railed deck on rollers, a lamp on a pipe), the same way:
+  the deck about 2.4 m by 1.6 m, the anchor on the deck's top centre
 """
 import json
 from pathlib import Path
@@ -105,6 +107,18 @@ PIECES = {
         ground=(885, 72),  # the deck's top centre
         back=0,
         footprint=[[-0.8, -0.8], [0.8, -0.8], [0.8, 0.8], [-0.8, 0.8]],
+        mirror=None,
+        gain=0.9,
+    ),
+    'mfPlatform': dict(
+        src='image_18.png',
+        opaque=True,
+        axis=None,
+        span=(1075, 4.0),  # the deck's screen width <-> (2.4 + 1.6) m of a box seen corner-on
+        uniform=True,
+        ground=(900, 428),  # the deck's top centre
+        back=0,
+        footprint=[[-1.2, -0.8], [1.2, -0.8], [1.2, 0.8], [-1.2, 0.8]],
         mirror=None,
         gain=0.9,
     ),

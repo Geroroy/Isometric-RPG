@@ -42,11 +42,12 @@ export async function loadMustafarConsoles() {
   return out;
 }
 
-// The droid Anakin rides down the lava river (tools/sprites/mustafar_set: mfDroid), as a unit's sprite set: one
-// direction, one frame, the anchor on its deck's top (the river scene stands him there)
-export async function loadMustafarDroid() {
+// The droid Anakin rides down the lava river and Obi-Wan's hover platform (tools/sprites/mustafar_set: mfDroid,
+// mfPlatform), as a unit's sprite set: one direction, one frame, the anchor on the deck's top (the river scene
+// stands them there)
+export async function loadMustafarDroid(name = 'mfDroid') {
   const base = import.meta.env.BASE_URL + 'sprites/mustafar/';
-  const meta = await cachedJSON(base + 'mfDroid.json');
+  const meta = await cachedJSON(base + name + '.json');
   const page = await cachedImage(base + meta.layers.body);
   const f = { page, sx: 0, sy: 0, w: page.width, h: page.height, ox: meta.anchor[0], oy: meta.anchor[1], k: meta.k };
   return { dirs: 1, anims: { idle: { frames: 1, fps: 1, loop: true, data: [[f]] } }, markers: [] };
