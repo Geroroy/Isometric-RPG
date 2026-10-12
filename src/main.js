@@ -9,7 +9,7 @@ import { prune as pruneFiles, stats as fileStats } from './gfx/fileCache.js';
 import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
 import { setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture } from './gfx/terrain.js';
-import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid } from './gfx/mustafarFloor.js';
+import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid, loadCargo } from './gfx/mustafarFloor.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
@@ -96,6 +96,9 @@ async function boot() {
     const platform = await loadMustafarDroid('mfPlatform').catch((e) => console.warn('무스타파 플랫폼: ' + e.message));
     if (platform) assets.sprites.platform = platform;
   }
+  // the cargo containers, in every mode (they stand in for the old model crates: worldgen.js CARGO_SWAP)
+  assets.city = { ...(assets.city || {}), ...(await loadCargo()) };
+  setCityFootprints(assets.city);
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
   if (look && !assets.sprites[look.sprite]) assets.sprites[look.sprite] = await bakeSkin(look.sprite, (k) => onProgress(k, '외형 준비 중…'));

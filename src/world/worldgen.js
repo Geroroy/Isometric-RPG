@@ -68,6 +68,20 @@ const RUIN_CENTERS = [
   { x: 118, y: 62, r: 15, name: '수정 성채 폐허' },
 ];
 
+// The cargo sprites (tools/sprites/mustafar_cargo) in place of the old model crates, one picked per crate: the
+// Republic's supplies grey and strapped, the droid army's rust-red capsules, cages and tanks
+const CARGO_SWAP = {
+  crate: ['cgCrateS', 'cgCube', 'cgCrateL', 'cgDrum'],
+  sepCrate: ['cgCage', 'cgTank', 'cgCageCap', 'cgCanister', 'cgCapsule'],
+};
+// …and the undercity's pile sprites, each a small stack of them within the pile's own footprint (offsets in tiles)
+const CARGO_CLUSTERS = {
+  crateStack: [['cgCrateS', -0.1, -0.2], ['cgCube', 0.45, 0.55]],
+  barrelPile: [['cgDrum', -0.35, -0.25], ['cgCanister', 0.35, -0.2], ['cgDrum', 0.1, 0.45]],
+  crateBarrels: [['cgCrateS', -0.25, -0.15], ['cgDrum', 0.55, 0.45]],
+  'crateBarrels@up': [['cgCrateS', -0.25, -0.15], ['cgDrum', 0.55, 0.45]],
+};
+
 export class World {
   constructor(seed = 501) {
     this.seed = seed;
@@ -294,6 +308,8 @@ export class World {
   }
 
   addProp(type, x, y, opts = {}) {
+    const swap = CARGO_SWAP[type];
+    if (swap && cityFootprint(swap[0])) return this.addSheetProp(swap[Math.floor(this.rng.next() * swap.length)], x, y, { noBlock: opts.noBlock });
     const def = PROPS[type];
     const angles = def.angles || [0];
     const variant = opts.variant ?? Math.floor(this.rng.next() * def.variants);
@@ -375,7 +391,7 @@ export class World {
     this.addProp('sensorTower', bx + 11, by - 11);
     this.addProp('sensorTower', bx - 11, by + 11);
     for (const [dx, dy] of [[-4, -3], [3, 2], [-4, 3], [3, -11], [-11, -9], [12, 5.5]]) this.addProp('lamp', bx + dx, by + dy);
-    for (const [dx, dy] of [[-4, -10], [-3, -10], [-5, 9.5], [-6, 9.5], [8, -11], [9, -11], [2, 11]]) this.addProp('crate', bx + dx + 0.5, by + dy + 0.5);
+    for (const [dx, dy] of [[-4, -10.9], [-2.6, -10.9], [-5, 9.5], [-6.3, 9.5], [8, -11], [9.3, -11], [2, 11]]) this.addProp('crate', bx + dx + 0.5, by + dy + 0.5); // (behind the command post, clear of its box: the cargo sprites are bigger than the old crates)
     // Perimeter barricades with gates on each side.
     for (let i = -12; i <= 12; i += 2) {
       if (Math.abs(i) <= 2) continue;
@@ -964,7 +980,9 @@ export class CityHub extends World {
   /** The data's props (data/undercity.json): p = a sprite of the underworld set, m = a model prop. */
   placeProps(list) {
     for (const q of list) {
-      if (q.p) this.addSheetProp(q.p, q.x, q.y, { noBlock: !!q.noBlock });
+      const cl = q.p && CARGO_CLUSTERS[q.p];
+      if (cl && cityFootprint(cl[0][0])) for (const [n, dx, dy] of cl) this.addSheetProp(n, q.x + dx, q.y + dy, { noBlock: !!q.noBlock });
+      else if (q.p) this.addSheetProp(q.p, q.x, q.y, { noBlock: !!q.noBlock });
       else this.addProp(q.m, q.x, q.y, { angleIdx: q.a, noBlock: !!q.noBlock });
       if (q.steam) (this.steam ||= []).push({ x: q.x, y: q.y, z: 1.8, t: this.rng.next() * 3 });
     }

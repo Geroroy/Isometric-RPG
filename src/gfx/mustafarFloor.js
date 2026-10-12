@@ -66,17 +66,6 @@ export async function loadMustafarConsoles() {
       console.warn('무스타파 세트: ' + e.message); // left out of the rooms (addSheetProp skips it)
     }
   }
-  // the cargo containers, one atlas (tools/sprites/mustafar_cargo)
-  try {
-    const atlas = await cachedJSON(base + 'cargo.json');
-    const page = await cachedImage(base + atlas.page);
-    for (const [name, m] of Object.entries(atlas.sprites)) {
-      const [sx, sy, w, h] = m.rect;
-      out[name] = { meta: m, body: { page, sx, sy, w, h, ox: m.anchor[0], oy: m.anchor[1], k: m.k }, neon: null, reflect: null };
-    }
-  } catch (e) {
-    console.warn('무스타파 화물: ' + e.message);
-  }
   // every name the map uses (worldgen.js MIRROR_SHEET, both ways): the shipped one, else its twin flipped
   for (const [a, b] of Object.entries(MUSTAFAR_SHEETS.mirror)) for (const [n, t] of [[a, b], [b, a]]) if (!out[n] && out[t]) out[n] = flipSheet(out[t]);
   return out;
@@ -91,4 +80,25 @@ export async function loadMustafarDroid(name = 'mfDroid') {
   const page = await cachedImage(base + meta.layers.body);
   const f = { page, sx: 0, sy: 0, w: page.width, h: page.height, ox: meta.anchor[0], oy: meta.anchor[1], k: meta.k };
   return { dirs: 1, anims: { idle: { frames: 1, fps: 1, loop: true, data: [[f]] } }, markers: [] };
+}
+
+/**
+ * The cargo containers (tools/sprites/mustafar_cargo: one atlas), as city-sheet sprites for every mode: the
+ * stores on Mustafar and, in place of the old model crates, the campaign's supply crates, the droid army's cargo and
+ * the undercity's piles (worldgen.js CARGO_SWAP / CARGO_CLUSTERS).
+ */
+export async function loadCargo() {
+  const base = import.meta.env.BASE_URL + 'sprites/mustafar/';
+  const out = {};
+  try {
+    const atlas = await cachedJSON(base + 'cargo.json');
+    const page = await cachedImage(base + atlas.page);
+    for (const [name, m] of Object.entries(atlas.sprites)) {
+      const [sx, sy, w, h] = m.rect;
+      out[name] = { meta: m, body: { page, sx, sy, w, h, ox: m.anchor[0], oy: m.anchor[1], k: m.k }, neon: null, reflect: null };
+    }
+  } catch (e) {
+    console.warn('화물 스프라이트: ' + e.message); // the model crates stay
+  }
+  return out;
 }
