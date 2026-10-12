@@ -1,0 +1,56 @@
+{
+ "_doc": "Landmarks of the Season 7 reference shots (pixels in the original files) for hair_match.py: eye line and chin bottom; the front's face centre and its width at the eye line (temple to temple under the hair); the sides' nose tip. 'cut': rows from here down are clothing, not hair. our_face_width: our head's width at the eye line (m). Sides: eye, nose tip and chin as (x, y) points \u2014 fitted to ours with a similarity (scale, rotation, shift), so a head pitched in the shot is turned back level.",
+ "our_face_width": 0.166,
+ "views": {
+  "front": {
+   "file": "reference/anakin_hair/sketchfab_s7_front.png",
+   "eye_y": 721,
+   "chin_y": 990,
+   "centre_x": 735,
+   "face_w": 326,
+   "cut": 1015
+  },
+  "right": {
+   "file": "reference/anakin_hair/sketchfab_s7_side_right.png",
+   "eye_y": 908,
+   "chin_y": 1113,
+   "nose_x": 1047,
+   "cut": 1110,
+   "eye": [
+    1004,
+    908
+   ],
+   "nose": [
+    1047,
+    989
+   ],
+   "chin": [
+    979,
+    1111
+   ]
+  },
+  "left": {
+   "file": "reference/anakin_hair/sketchfab_s7_side_left.png",
+   "eye_y": 927,
+   "chin_y": 1120,
+   "nose_x": 476,
+   "cut": 1110,
+   "eye": [
+    533,
+    927
+   ],
+   "nose": [
+    476,
+    1000
+   ],
+   "chin": [
+    571,
+    1120
+   ]
+  },
+  "back": {
+   "file": "reference/anakin_hair/sketchfab_s7_back.png",
+   "cut": 1140
+  }
+ }
+}

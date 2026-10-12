@@ -1,0 +1,9 @@
+{
+  "name": "undercity-esrgan",
+  "private": true,
+  "description": "ESRGAN upscaling of the undercity building sheets (tools/sprites/undercity_buildings/upscale.py): npm install here, once",
+  "dependencies": {
+    "@tensorflow/tfjs-node": "4.22.0",
+    "@upscalerjs/esrgan-legacy": "1.0.0"
+  }
+}

@@ -1,0 +1,465 @@
+{
+ "_doc": "The S7 hair for the Jedi robe (hood down): the Jedi Knight's resculpted hair (hair_v2_params.json) at the reference's length (resculpt A) \u2014 at shoulder length the back would sink into the cloak's collar and the lowered hood. Anakin's Season 7 hair for the Episode III outfits (tunic, robe) (tools/sprites/hair/hair_v2.py). Units: metres, Blender space (+X forward, +Y his left, +Z up). Angles in radians: theta from the crown (0) down, phi round the head (0 = the front, + = his left). A clump runs from its root (theta, phi) on the scalp to its end; an end theta beyond 'hang_theta' means it hangs straight down that far (as arc length / Rz). Each group spreads n clumps between its root and end ranges.",
+ "head": {
+  "centre": [
+   0.008,
+   0.0,
+   1.748
+  ],
+  "radii": [
+   0.104,
+   0.092,
+   0.122
+  ]
+ },
+ "hang_theta": 1.62,
+ "hang_taper": 0.25,
+ "part_phi": 0.42,
+ "segments": 18,
+ "sides": 6,
+ "palette": {
+  "shadow": "#15100c",
+  "base": "#2a2019",
+  "mid": "#3f3128",
+  "highlight": "#6c5241",
+  "root": "#110c09"
+ },
+ "shell": {
+  "lift": 0.0,
+  "nu": 32,
+  "nv": 14,
+  "hang": 0.1,
+  "front_hairline": 1.18
+ },
+ "groups": [
+  {
+   "name": "backUnder",
+   "n": 0,
+   "root_theta": [
+    1.05,
+    1.3
+   ],
+   "root_phi": [
+    1.75,
+    4.53
+   ],
+   "end_theta": [
+    2.42,
+    2.56
+   ],
+   "sweep": 0.0,
+   "width": 0.078,
+   "thick": 0.022,
+   "lift": 0.002,
+   "wave_amp": 0.004,
+   "wave_freq": 1.0,
+   "flick": 0.0,
+   "flick_len": 0.2,
+   "volume": 0.002,
+   "hang_taper": -0.35
+  },
+  {
+   "name": "sideUnderR",
+   "n": 0,
+   "root_theta": [
+    1.15,
+    1.3
+   ],
+   "root_phi": [
+    -2.23,
+    -1.68
+   ],
+   "end_theta": [
+    2.09,
+    2.24
+   ],
+   "sweep": -0.6,
+   "width": 0.07,
+   "thick": 0.021,
+   "lift": 0.002,
+   "wave_amp": 0.004,
+   "wave_freq": 1.0,
+   "flick": 0.0,
+   "flick_len": 0.25,
+   "volume": 0.002
+  },
+  {
+   "name": "sideUnderL",
+   "n": 0,
+   "root_theta": [
+    1.15,
+    1.3
+   ],
+   "root_phi": [
+    1.68,
+    2.23
+   ],
+   "end_theta": [
+    2.09,
+    2.24
+   ],
+   "sweep": 0.6,
+   "width": 0.07,
+   "thick": 0.021,
+   "lift": 0.002,
+   "wave_amp": 0.004,
+   "wave_freq": 1.0,
+   "flick": 0.0,
+   "flick_len": 0.25,
+   "volume": 0.002
+  },
+  {
+   "name": "backCentre",
+   "n": 5,
+   "root_theta": [
+    0.9,
+    1.2
+   ],
+   "root_phi": [
+    2.45,
+    3.83
+   ],
+   "end_theta": [
+    2.42,
+    2.56
+   ],
+   "sweep": 0.0,
+   "width": 0.08,
+   "thick": 0.018,
+   "lift": 0.008,
+   "wave_amp": 0.004,
+   "wave_freq": 1.0,
+   "flick": 0.012,
+   "flick_len": 0.32,
+   "volume": 0.008,
+   "hang_taper": -0.35
+  },
+  {
+   "name": "backSideL",
+   "n": 2,
+   "root_theta": [
+    0.9,
+    1.2
+   ],
+   "root_phi": [
+    1.9,
+    2.35
+   ],
+   "end_theta": [
+    2.38,
+    2.52
+   ],
+   "sweep": 0.0,
+   "width": 0.08,
+   "thick": 0.018,
+   "lift": 0.008,
+   "wave_amp": 0.004,
+   "wave_freq": 1.0,
+   "flick": 0.012,
+   "flick_len": 0.32,
+   "volume": 0.008,
+   "hang_taper": -0.35
+  },
+  {
+   "name": "backSideR",
+   "n": 2,
+   "root_theta": [
+    0.9,
+    1.2
+   ],
+   "root_phi": [
+    3.93,
+    4.38
+   ],
+   "end_theta": [
+    2.38,
+    2.52
+   ],
+   "sweep": 0.0,
+   "width": 0.08,
+   "thick": 0.018,
+   "lift": 0.008,
+   "wave_amp": 0.004,
+   "wave_freq": 1.0,
+   "flick": 0.012,
+   "flick_len": 0.32,
+   "volume": 0.008,
+   "hang_taper": -0.35
+  },
+  {
+   "name": "sideOuterR",
+   "n": 4,
+   "root_theta": [
+    0.7,
+    1.0
+   ],
+   "root_phi": [
+    -2.38,
+    -1.63
+   ],
+   "end_theta": [
+    2.19,
+    2.39
+   ],
+   "sweep": -0.6,
+   "width": 0.075,
+   "thick": 0.018,
+   "lift": 0.016,
+   "wave_amp": 0.007,
+   "wave_freq": 1.0,
+   "flick": 0.03,
+   "flick_len": 0.32,
+   "volume": 0.012,
+   "hang_taper": 0.45
+  },
+  {
+   "name": "sideOuterL",
+   "n": 4,
+   "root_theta": [
+    0.7,
+    1.0
+   ],
+   "root_phi": [
+    1.63,
+    2.38
+   ],
+   "end_theta": [
+    2.19,
+    2.39
+   ],
+   "sweep": 0.6,
+   "width": 0.075,
+   "thick": 0.018,
+   "lift": 0.016,
+   "wave_amp": 0.007,
+   "wave_freq": 1.0,
+   "flick": 0.03,
+   "flick_len": 0.32,
+   "volume": 0.012,
+   "hang_taper": 0.45
+  },
+  {
+   "name": "crownSideL",
+   "n": 4,
+   "root_theta": [
+    0.08,
+    0.42
+   ],
+   "root_phi": [
+    1.4,
+    2.25
+   ],
+   "end_theta": [
+    2.0,
+    2.25
+   ],
+   "sweep": 0.0,
+   "width": 0.095,
+   "thick": 0.02,
+   "lift": 0.026,
+   "wave_amp": 0.006,
+   "wave_freq": 1.1,
+   "flick": 0.018,
+   "flick_len": 0.3,
+   "volume": 0.02
+  },
+  {
+   "name": "crownBack",
+   "n": 8,
+   "root_theta": [
+    0.08,
+    0.42
+   ],
+   "root_phi": [
+    2.25,
+    4.03
+   ],
+   "end_theta": [
+    2.36,
+    2.5
+   ],
+   "sweep": 0.0,
+   "width": 0.095,
+   "thick": 0.02,
+   "lift": 0.026,
+   "wave_amp": 0.006,
+   "wave_freq": 1.1,
+   "flick": 0.018,
+   "flick_len": 0.3,
+   "volume": 0.02
+  },
+  {
+   "name": "crownSideR",
+   "n": 4,
+   "root_theta": [
+    0.08,
+    0.42
+   ],
+   "root_phi": [
+    4.03,
+    4.88
+   ],
+   "end_theta": [
+    2.0,
+    2.25
+   ],
+   "sweep": 0.0,
+   "width": 0.095,
+   "thick": 0.02,
+   "lift": 0.026,
+   "wave_amp": 0.006,
+   "wave_freq": 1.1,
+   "flick": 0.018,
+   "flick_len": 0.3,
+   "volume": 0.02
+  },
+  {
+   "name": "bangsAcross",
+   "n": 3,
+   "root_theta": [
+    0.3,
+    0.55
+   ],
+   "root_phi": [
+    0.32,
+    0.52
+   ],
+   "end_theta": [
+    1.05,
+    1.2
+   ],
+   "end_phi": [
+    -0.75,
+    -0.35
+   ],
+   "width": 0.08,
+   "thick": 0.014,
+   "lift": 0.006,
+   "wave_amp": 0.004,
+   "wave_freq": 0.9,
+   "flick": 0.016,
+   "flick_len": 0.25,
+   "volume": 0.008
+  },
+  {
+   "name": "bangsRightFall",
+   "n": 3,
+   "root_theta": [
+    0.35,
+    0.6
+   ],
+   "root_phi": [
+    0.2,
+    0.4
+   ],
+   "end_theta": [
+    2.05,
+    2.25
+   ],
+   "end_phi": [
+    -1.78,
+    -1.58
+   ],
+   "width": 0.065,
+   "thick": 0.022,
+   "lift": 0.008,
+   "wave_amp": 0.008,
+   "wave_freq": 1.0,
+   "flick": 0.03,
+   "flick_len": 0.3,
+   "volume": 0.01
+  },
+  {
+   "name": "leftSweep",
+   "n": 4,
+   "root_theta": [
+    0.35,
+    0.6
+   ],
+   "root_phi": [
+    0.45,
+    0.7
+   ],
+   "end_theta": [
+    2.0,
+    2.25
+   ],
+   "end_phi": [
+    1.53,
+    1.73
+   ],
+   "width": 0.066,
+   "thick": 0.022,
+   "lift": 0.02,
+   "wave_amp": 0.008,
+   "wave_freq": 1.0,
+   "flick": 0.034,
+   "flick_len": 0.3,
+   "volume": 0.016
+  },
+  {
+   "name": "forelock",
+   "n": 2,
+   "root_theta": [
+    0.5,
+    0.62
+   ],
+   "root_phi": [
+    0.12,
+    0.28
+   ],
+   "end_theta": [
+    1.18,
+    1.28
+   ],
+   "end_phi": [
+    -0.32,
+    -0.18
+   ],
+   "width": 0.03,
+   "thick": 0.013,
+   "lift": 0.02,
+   "wave_amp": 0.008,
+   "wave_freq": 1.6,
+   "flick": 0.012,
+   "flick_len": 0.35,
+   "volume": 0.01
+  }
+ ],
+ "tip_width": 0.4,
+ "root_width": 0.8,
+ "root_rise": 0.15,
+ "flick_up": 0.15,
+ "tip_close": 0.6,
+ "layer_step": 0.005,
+ "fit_scalp": true,
+ "scalp_offset": 0.002,
+ "drape": {
+  "_doc": "the hanging part pushed off these rest-pose meshes (name prefixes) to clearance + half the clump thickness",
+  "meshes": [
+   "collar",
+   "neck",
+   "tabardShoulder",
+   "tabardBack",
+   "tabardL",
+   "tabardR",
+   "tunicTorso",
+   "tunicBell",
+   "lapel",
+   "cloak",
+   "hood"
+  ],
+  "clearance": 0.006
+ },
+ "body_follow": {
+  "_doc": "rest-pose heights (m): head weight 1 above head_from, blending onto 'neck' down to neck_from, onto 'chest' down to chest_from",
+  "head_from": 1.64,
+  "neck_from": 1.6,
+  "chest_from": 1.54
+ },
+ "lift_shape": {
+  "back": 0.015,
+  "side": -0.006,
+  "top": 0.008
+ }
+}

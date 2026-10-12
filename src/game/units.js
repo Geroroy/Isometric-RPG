@@ -1,8 +1,13 @@
+import { BIOME } from '../world/worldgen.js';
 // Units: the player (Anakin), Separatist droids and Republic allies.
 import { dist, angleDiff, rand, clamp } from '../core/math.js';
 import { dirIndex } from '../core/iso.js';
 import { SKILLS, isActive } from './skills.js';
 import { StarCards } from './perks.js';
+
+// Signature Move timing (frames of gfx/models/anakinAnims.js 'sig'): bolts are turned through
+// the spin until the hit; swing sounds on the wind-up and the pass behind the back
+export const SIG = { spin: [8, 13], hit: 11, sounds: [[4, 'light'], [8, 'heavy']] };
 
 export const UNIT_DEFS = {
   player: { name: '아나킨 스카이워커', sprite: 'anakin', team: 'rep', radius: 0.35 },
@@ -63,6 +68,8 @@ export class Unit {
   }
 
   setAnim(name, speed = 1, restart = false) {
+    const set = this.sprites;
+    if (set && !set.anims[name]) name = 'idle'; // a sprite without that animation stands
     if (this.anim !== name || restart) {
       this.anim = name;
       this.animT = 0;
@@ -176,7 +183,7 @@ export class Unit {
       c.acc += c.dps * dt;
       this.z += (0.9 - this.z) * Math.min(1, dt * 4);
       if (c.acc >= 4 || c.t <= 0) {
-        this.game.damage(c.src, this, c.acc, { type: 'force', noKnock: true, quiet: c.t > 0 });
+        this.game.damage(c.src, this, c.acc, { type: 'force', feel: 'choke', noKnock: true, quiet: c.t > 0 });
         c.acc = 0;
       }
       if (c.t <= 0 || this.dead) this.choke = null;
@@ -275,12 +282,12 @@ export class Soldier extends Unit {
     this.thinkT -= dt;
     if (this.thinkT <= 0) {
       this.thinkT = 0.3;
-      if (!this.target || this.target.dead || dist(this.x, this.y, this.target.x, this.target.y) > 18) this.target = this.pickTarget();
+      if (!this.target || this.target.dead || this.target.remove || dist(this.x, this.y, this.target.x, this.target.y) > 18) this.target = this.pickTarget(); // a companion that expired or flew off is gone too
       if (this.elite && !this.announced && this.target && this.target.kind === 'player') {
         this.announced = true;
         g.chatter('elite', 0.9);
       }
-      if (this.lastAttacker && !this.lastAttacker.dead && this.lastAttacker.team !== this.team && !this.target) this.target = this.lastAttacker;
+      if (this.lastAttacker && !this.lastAttacker.dead && !this.lastAttacker.remove && this.lastAttacker.team !== this.team && !this.target) this.target = this.lastAttacker;
     }
     // Owner leash for summons.
     if (this.owner) {
@@ -418,7 +425,7 @@ export class R2Unit extends Unit {
       let best = null;
       let bd = 4.5;
       for (const u of g.activeUnits) {
-        if (u.dead || u.team === this.team) continue;
+        if (u.dead || u.team === this.team || u.untargetable) continue; // not the city's people
         const d = dist(this.x, this.y, u.x, u.y);
         if (d < bd) {
           bd = d;
@@ -492,6 +499,7 @@ export class Player extends Unit {
     if (on === this.saberLit || this.dead || this.saberOut) return;
     if (!on && this.game.duel) return; // the duel is all blade
     this.saberLit = on;
+    if (on) this.saberIgnite = true; // the renderer plays the ignition (spark, growth, bloom)
     this.game.audio.play(on ? 'ignite' : 'retract');
     this.setAnim(this.anim.replace(/Off$/, ''), this.animSpeed);
   }
@@ -556,6 +564,9 @@ export class Player extends Unit {
   moveSpeed() {
     let s = 4.6 * (1 + (this.buffs.speed ? this.buffs.speed.move : 0));
     if (this.buffs.barrier) s *= 0.75;
+    const bio = this.game.world.biomeAt(this.x, this.y);
+    if (bio === BIOME.CITY_MUD) s *= 0.72; // the undercity's mud
+    else if (bio === BIOME.CITY_SWAMP) s *= 0.6; // its standing water
     return s;
   }
   deflectChance() {
@@ -613,7 +624,7 @@ export class Player extends Unit {
   // --- actions -----------------------------------------------------------------
   /** Walking (click-to-move or joystick steering) can be interrupted freely. */
   get moving() {
-    return !!this.action && (this.action.type === 'move' || this.action.type === 'steer');
+    return !!this.action && (this.action.type === 'move' || this.action.type === 'steer' || this.action.type === 'talk'); // walking to an NPC can be called off too
   }
 
   get busy() {
@@ -717,9 +728,11 @@ export class Player extends Unit {
       return false;
     }
     if (s.target === 'enemy' && !target) return false;
+    const prev = this.action;
     this.setSaber(true);
     this.action = null;
     const ok = s.cast(this.game, this, l, tx, ty, target);
+    if (!ok && !this.action) this.action = prev; // nothing happened: carry on with what he was doing
     if (ok) {
       if (!free) this.force -= cost;
       const cd = (s.cd ? s.cd(l) : 0) * (1 - this.cards.value('focus') / 100);
@@ -730,6 +743,7 @@ export class Player extends Unit {
 
   update(dt) {
     this.baseUpdate(dt);
+    this.sigEvents();
     if (this.scripted) return; // a cutscene is moving him
     if (this.dead) {
       this.deathT += dt;
@@ -834,8 +848,16 @@ export class Player extends Unit {
           if (info.hit && !act.fired) {
             act.fired = true;
             const reach = this.radius + (t ? t.radius : 0) + 1.5;
-            if (t && !t.dead && dist(this.x, this.y, t.x, t.y) <= reach) {
-              g.damage(this, t, this.weaponDamage() * hit.mult, { type: 'saber', stun: hit.stun, pressure: hit.pressure });
+            if (hit.sweep) {
+              // a flat cut: everyone in the half circle in front, within the blade's reach
+              for (const u of g.hostilesInRadius(this, this.x, this.y, hit.sweep)) {
+                const a = Math.atan2(u.y - this.y, u.x - this.x);
+                if (Math.abs(angleDiff(a, this.facing)) > Math.PI / 2) continue;
+                g.damage(this, u, this.weaponDamage() * hit.mult, { type: 'saber', feel: hit.feel, stun: hit.stun, pressure: hit.pressure });
+                if (hit.onHit) hit.onHit(u);
+              }
+            } else if (t && !t.dead && dist(this.x, this.y, t.x, t.y) <= reach) {
+              g.damage(this, t, this.weaponDamage() * hit.mult, { type: 'saber', heavy: hit.anim === 'attack3', stun: hit.stun, pressure: hit.pressure });
               if (hit.onHit) hit.onHit(t);
             }
           }
@@ -929,6 +951,33 @@ export class Player extends Unit {
   canDeflect() {
     if (this.dead || this.saberOut || !this.saberLit || this.stun > 0 || this.choke) return false;
     return true;
+  }
+
+  /** In the signature's spin, before its cut lands: the turning blade walls off bolts. */
+  spinning() {
+    const f = this.sigFrame();
+    return f >= SIG.spin[0] && f < SIG.hit;
+  }
+
+  /** The Signature Move's current frame (-1 when not in it). */
+  sigFrame() {
+    if (this.anim !== 'sig' || !this.sprites.anims.sig) return -1;
+    return Math.floor(this.animInfo().raw);
+  }
+
+  /** The Signature Move's timed effects: the wind-up and the whoosh behind the back. */
+  sigEvents() {
+    const f = this.sigFrame();
+    if (f < 0) {
+      this.sigDone = -1;
+      return;
+    }
+    for (const [at, sound] of SIG.sounds) {
+      if (f >= at && this.sigDone < at) {
+        this.sigDone = at;
+        this.game.audio.play('swing', this, { heavy: sound === 'heavy', rate: sound === 'heavy' ? 0.9 : 1.3 });
+      }
+    }
   }
 }
 

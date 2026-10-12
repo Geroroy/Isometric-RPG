@@ -1,0 +1,55 @@
+start                        0.6120  front:0.639 right:0.505 left:0.477 back:0.826  
+r0 len_side +                0.6110  front:0.640 right:0.504 left:0.475 back:0.825  len_side=+0.100
+r0 len_side -                0.6130  front:0.640 right:0.507 left:0.478 back:0.828  len_side=-0.100
+r0 len_back +                0.6080  front:0.639 right:0.504 left:0.475 back:0.812  len_back=+0.100
+r0 len_back -                0.6150  front:0.639 right:0.507 left:0.478 back:0.836  len_back=-0.100
+r0 len_back -                0.6160  front:0.639 right:0.508 left:0.479 back:0.839  len_back=-0.200
+r0 len_corner +              0.6140  front:0.635 right:0.505 left:0.478 back:0.837  len_back=-0.100 len_corner=+0.100
+r0 len_corner -              0.6150  front:0.639 right:0.507 left:0.478 back:0.836  len_back=-0.100 len_corner=-0.100
+r0 len_crown +               0.6020  front:0.625 right:0.498 left:0.465 back:0.818  len_back=-0.100 len_crown=+0.100
+r0 len_crown -               0.6350  front:0.663 right:0.526 left:0.497 back:0.856  len_back=-0.100 len_crown=-0.100
+r0 len_crown -               0.6410  front:0.671 right:0.533 left:0.502 back:0.859  len_back=-0.100 len_crown=-0.200
+r0 len_crown -               0.6490  front:0.679 right:0.541 left:0.511 back:0.863  len_back=-0.100 len_crown=-0.300
+r0 len_crown -               0.6540  front:0.687 right:0.545 left:0.517 back:0.866  len_back=-0.100 len_crown=-0.400
+r0 len_crown -               0.6580  front:0.694 right:0.548 left:0.520 back:0.869  len_back=-0.100 len_crown=-0.500
+r0 len_crown -               0.6600  front:0.698 right:0.550 left:0.522 back:0.869  len_back=-0.100 len_crown=-0.600
+r0 vol_top +                 0.6540  front:0.656 right:0.592 left:0.550 back:0.818  len_back=-0.100 len_crown=-0.500 vol_top=+0.300
+r0 vol_top -                 0.6240  front:0.643 right:0.503 left:0.478 back:0.873  len_back=-0.100 len_crown=-0.500 vol_top=-0.300
+r0 vol_back +                0.6580  front:0.694 right:0.548 left:0.521 back:0.869  len_back=-0.100 len_crown=-0.500 vol_back=+0.300
+r0 vol_back -                0.6580  front:0.694 right:0.548 left:0.521 back:0.869  len_back=-0.100 len_crown=-0.500 vol_back=-0.300
+r0 vol_bangs +               0.6560  front:0.691 right:0.547 left:0.519 back:0.867  len_back=-0.100 len_crown=-0.500 vol_bangs=+0.300
+r0 vol_bangs -               0.6590  front:0.696 right:0.548 left:0.522 back:0.870  len_back=-0.100 len_crown=-0.500 vol_bangs=-0.300
+r0 bangs_low +               0.6560  front:0.687 right:0.545 left:0.522 back:0.869  len_back=-0.100 len_crown=-0.500 bangs_low=+0.080
+r0 bangs_low -               0.6580  front:0.698 right:0.547 left:0.518 back:0.869  len_back=-0.100 len_crown=-0.500 bangs_low=-0.080
+r0 side_back +               0.6630  front:0.697 right:0.558 left:0.528 back:0.870  len_back=-0.100 len_crown=-0.500 side_back=+0.120
+r0 side_back +               0.6660  front:0.701 right:0.565 left:0.530 back:0.868  len_back=-0.100 len_crown=-0.500 side_back=+0.240
+r0 side_back +               0.6660  front:0.699 right:0.569 left:0.533 back:0.865  len_back=-0.100 len_crown=-0.500 side_back=+0.360
+r0 wid_side +                0.6660  front:0.700 right:0.564 left:0.530 back:0.869  len_back=-0.100 len_crown=-0.500 side_back=+0.240 wid_side=+0.150
+r0 wid_side -                0.6670  front:0.702 right:0.567 left:0.531 back:0.868  len_back=-0.100 len_crown=-0.500 side_back=+0.240 wid_side=-0.150
+r0 flick +                   0.6630  front:0.694 right:0.565 left:0.530 back:0.863  len_back=-0.100 len_crown=-0.500 side_back=+0.240 flick=+0.400
+r0 flick -                   0.6680  front:0.706 right:0.565 left:0.529 back:0.871  len_back=-0.100 len_crown=-0.500 side_back=+0.240 flick=-0.400
+ROUND 0 best 0.6660
+r1 len_side +                0.6640  front:0.698 right:0.563 left:0.526 back:0.869  len_side=+0.050 len_back=-0.100 len_crown=-0.500 side_back=+0.240
+r1 len_side -                0.6680  front:0.704 right:0.567 left:0.533 back:0.867  len_side=-0.050 len_back=-0.100 len_crown=-0.500 side_back=+0.240
+r1 len_back +                0.6650  front:0.701 right:0.565 left:0.530 back:0.864  len_back=-0.050 len_crown=-0.500 side_back=+0.240
+r1 len_back -                0.6660  front:0.701 right:0.566 left:0.530 back:0.868  len_back=-0.150 len_crown=-0.500 side_back=+0.240
+r1 len_corner +              0.6660  front:0.700 right:0.565 left:0.529 back:0.869  len_back=-0.100 len_corner=+0.050 len_crown=-0.500 side_back=+0.240
+r1 len_corner -              0.6670  front:0.702 right:0.566 left:0.531 back:0.868  len_back=-0.100 len_corner=-0.050 len_crown=-0.500 side_back=+0.240
+r1 len_crown +               0.6630  front:0.697 right:0.562 left:0.527 back:0.867  len_back=-0.100 len_crown=-0.450 side_back=+0.240
+r1 len_crown -               0.6680  front:0.704 right:0.568 left:0.532 back:0.869  len_back=-0.100 len_crown=-0.550 side_back=+0.240
+r1 vol_top +                 0.6670  front:0.688 right:0.589 left:0.545 back:0.846  len_back=-0.100 len_crown=-0.500 vol_top=+0.150 side_back=+0.240
+r1 vol_top -                 0.6570  front:0.693 right:0.543 left:0.511 back:0.881  len_back=-0.100 len_crown=-0.500 vol_top=-0.150 side_back=+0.240
+r1 vol_back +                0.6660  front:0.701 right:0.565 left:0.530 back:0.869  len_back=-0.100 len_crown=-0.500 vol_back=+0.150 side_back=+0.240
+r1 vol_back -                0.6660  front:0.701 right:0.565 left:0.530 back:0.868  len_back=-0.100 len_crown=-0.500 vol_back=-0.150 side_back=+0.240
+r1 vol_bangs +               0.6660  front:0.702 right:0.565 left:0.530 back:0.866  len_back=-0.100 len_crown=-0.500 vol_bangs=+0.150 side_back=+0.240
+r1 vol_bangs -               0.6660  front:0.701 right:0.565 left:0.530 back:0.870  len_back=-0.100 len_crown=-0.500 vol_bangs=-0.150 side_back=+0.240
+r1 bangs_low +               0.6650  front:0.697 right:0.565 left:0.531 back:0.868  len_back=-0.100 len_crown=-0.500 bangs_low=+0.040 side_back=+0.240
+r1 bangs_low -               0.6660  front:0.704 right:0.565 left:0.528 back:0.868  len_back=-0.100 len_crown=-0.500 bangs_low=-0.040 side_back=+0.240
+r1 side_back +               0.6660  front:0.700 right:0.568 left:0.531 back:0.867  len_back=-0.100 len_crown=-0.500 side_back=+0.300
+r1 side_back -               0.6650  front:0.699 right:0.562 left:0.529 back:0.870  len_back=-0.100 len_crown=-0.500 side_back=+0.180
+r1 wid_side +                0.6660  front:0.701 right:0.565 left:0.530 back:0.869  len_back=-0.100 len_crown=-0.500 side_back=+0.240 wid_side=+0.075
+r1 wid_side -                0.6660  front:0.701 right:0.566 left:0.530 back:0.868  len_back=-0.100 len_crown=-0.500 side_back=+0.240 wid_side=-0.075
+r1 flick +                   0.6650  front:0.698 right:0.565 left:0.530 back:0.866  len_back=-0.100 len_crown=-0.500 side_back=+0.240 flick=+0.200
+r1 flick -                   0.6670  front:0.703 right:0.565 left:0.529 back:0.870  len_back=-0.100 len_crown=-0.500 side_back=+0.240 flick=-0.200
+ROUND 1 best 0.6660
+BEST 0.666 {'len_back': -0.1, 'len_crown': -0.5, 'side_back': 0.24}

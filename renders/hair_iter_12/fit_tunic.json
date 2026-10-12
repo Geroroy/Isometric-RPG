@@ -1,0 +1,225 @@
+{
+ "model": "anakin_tunic_hairv2.glb",
+ "step": 2,
+ "worst_mm": {
+  "follow": 0.0004806057638785284,
+  "gap_edge": 1.992277568206191,
+  "clip_depth": 5.888933781534433
+ },
+ "anims": {
+  "attack1": {
+   "frames": 6,
+   "follow": 4.6205615203719297e-07,
+   "gap_mean": 0.0019468529948334426,
+   "gap_edge_max": 0.001992195611819625,
+   "clip_verts": 6,
+   "clip_depth": 0.0023433370515704155,
+   "clip_with": {
+    "tabardShoulderR": 0.0023,
+    "tabardShoulderL": 0.0003
+   },
+   "gap_hang_max": 0.0029969513416290283
+  },
+  "attack2": {
+   "frames": 6,
+   "follow": 3.7699127966019037e-07,
+   "gap_mean": 0.0019468537463198231,
+   "gap_edge_max": 0.001992198871448636,
+   "clip_verts": 5,
+   "clip_depth": 0.0049238610081374645,
+   "clip_with": {
+    "tabardShoulderR": 0.0049,
+    "tabardShoulderL": 0.0013
+   },
+   "gap_hang_max": 0.0029969513416290283
+  },
+  "attack3": {
+   "frames": 6,
+   "follow": 4.0819136427363614e-07,
+   "gap_mean": 0.0019468429031929233,
+   "gap_edge_max": 0.001992207020521164,
+   "clip_verts": 13,
+   "clip_depth": 0.005499198101460934,
+   "clip_with": {
+    "tabardShoulderR": 0.0055,
+    "tabardShoulderL": 0.0049
+   },
+   "gap_hang_max": 0.0029969518072903156
+  },
+  "block": {
+   "frames": 3,
+   "follow": 3.129465586322154e-07,
+   "gap_mean": 0.0019468516103142517,
+   "gap_edge_max": 0.001992166042327881,
+   "clip_verts": 1,
+   "clip_depth": 0.00013219004904385656,
+   "clip_with": {
+    "tabardShoulderR": 0.0001
+   },
+   "gap_hang_max": 0.0029969336465001106
+  },
+  "cast": {
+   "frames": 5,
+   "follow": 3.580217661004206e-07,
+   "gap_mean": 0.0019468489638529718,
+   "gap_edge_max": 0.0019922128412872553,
+   "clip_verts": 4,
+   "clip_depth": 0.001565661863423884,
+   "clip_with": {
+    "tabardShoulderR": 0.0016,
+    "tabardShoulderL": 0.0002
+   },
+   "gap_hang_max": 0.0029969587922096252
+  },
+  "death": {
+   "frames": 6,
+   "follow": 4.0283361875678266e-07,
+   "gap_mean": 0.001946853271760799,
+   "gap_edge_max": 0.001992277568206191,
+   "clip_verts": 21,
+   "clip_depth": 0.005796703044325113,
+   "clip_with": {
+    "tabardShoulderR": 0.0041,
+    "tabardShoulderL": 0.0058
+   },
+   "gap_hang_max": 0.0029970500618219376
+  },
+  "hurt": {
+   "frames": 4,
+   "follow": 4.026072050960748e-07,
+   "gap_mean": 0.0019468526479393018,
+   "gap_edge_max": 0.001992160454392433,
+   "clip_verts": 4,
+   "clip_depth": 0.0018575222929939628,
+   "clip_with": {
+    "tabardShoulderR": 0.0002,
+    "tabardShoulderL": 0.0019
+   },
+   "gap_hang_max": 0.0029969520401209593
+  },
+  "idle": {
+   "frames": 6,
+   "follow": 4.3277548943333643e-07,
+   "gap_mean": 0.001946849967192338,
+   "gap_edge_max": 0.0019921890925616026,
+   "clip_verts": 3,
+   "clip_depth": 0.0003270574379712343,
+   "clip_with": {
+    "tabardShoulderR": 0.0003
+   },
+   "gap_hang_max": 0.0029969492461532354
+  },
+  "idleOff": {
+   "frames": 6,
+   "follow": 4.4711243929415256e-07,
+   "gap_mean": 0.0019468496498527938,
+   "gap_edge_max": 0.0019921939820051193,
+   "clip_verts": 1,
+   "clip_depth": 0.00010244450095342472,
+   "clip_with": {
+    "tabardShoulderR": 0.0001
+   },
+   "gap_hang_max": 0.0029969587922096252
+  },
+  "leap": {
+   "frames": 5,
+   "follow": 4.3906698792473864e-07,
+   "gap_mean": 0.0019468432233076204,
+   "gap_edge_max": 0.0019921862985938787,
+   "clip_verts": 19,
+   "clip_depth": 0.005888933781534433,
+   "clip_with": {
+    "tabardShoulderL": 0.0059,
+    "tabardShoulderR": 0.0059
+   },
+   "gap_hang_max": 0.002996959490701556
+  },
+  "lock": {
+   "frames": 3,
+   "follow": 3.4556962263231904e-07,
+   "gap_mean": 0.001946831977399386,
+   "gap_edge_max": 0.001992153702303767,
+   "clip_verts": 9,
+   "clip_depth": 0.0038786190561950207,
+   "clip_with": {
+    "tabardShoulderL": 0.0039,
+    "tabardShoulderR": 0.0005
+   },
+   "gap_hang_max": 0.0029969150200486183
+  },
+  "parry": {
+   "frames": 4,
+   "follow": 4.0116118564283907e-07,
+   "gap_mean": 0.0019468529727262906,
+   "gap_edge_max": 0.0019921890925616026,
+   "clip_verts": 1,
+   "clip_depth": 0.00015813237405382097,
+   "clip_with": {
+    "tabardShoulderR": 0.0002
+   },
+   "gap_hang_max": 0.0029969506431370974
+  },
+  "run": {
+   "frames": 6,
+   "follow": 3.579381748874281e-07,
+   "gap_mean": 0.0019468509770854553,
+   "gap_edge_max": 0.0019921986386179924,
+   "clip_verts": 13,
+   "clip_depth": 0.005187125410884619,
+   "clip_with": {
+    "tabardShoulderL": 0.0052,
+    "tabardShoulderR": 0.0052
+   },
+   "gap_hang_max": 0.0029969150200486183
+  },
+  "runOff": {
+   "frames": 6,
+   "follow": 3.2860777065158437e-07,
+   "gap_mean": 0.0019468506076529947,
+   "gap_edge_max": 0.0019921755883842707,
+   "clip_verts": 11,
+   "clip_depth": 0.004226104822009802,
+   "clip_with": {
+    "tabardShoulderL": 0.0042
+   },
+   "gap_hang_max": 0.0029969587922096252
+  },
+  "sig": {
+   "frames": 9,
+   "follow": 4.806057638785284e-07,
+   "gap_mean": 0.001946848702897118,
+   "gap_edge_max": 0.0019922165665775537,
+   "clip_verts": 14,
+   "clip_depth": 0.005756774451583624,
+   "clip_with": {
+    "tabardShoulderL": 0.0058,
+    "tabardShoulderR": 0.0046
+   },
+   "gap_hang_max": 0.0029969862662255764
+  },
+  "throw": {
+   "frames": 5,
+   "follow": 3.6616022177633587e-07,
+   "gap_mean": 0.0019468513164537574,
+   "gap_edge_max": 0.001992221223190427,
+   "clip_verts": 4,
+   "clip_depth": 0.0009161919006146491,
+   "clip_with": {
+    "tabardShoulderR": 0.0009
+   },
+   "gap_hang_max": 0.002996949478983879
+  },
+  "walk": {
+   "frames": 6,
+   "follow": 4.052355649864267e-07,
+   "gap_mean": 0.0019468474497404012,
+   "gap_edge_max": 0.0019921681378036737,
+   "clip_verts": 1,
+   "clip_depth": 0.00015782230184413493,
+   "clip_with": {
+    "tabardShoulderR": 0.0002
+   },
+   "gap_hang_max": 0.002996954368427396
+  }
+ }
+}
