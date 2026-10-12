@@ -77,6 +77,47 @@ let FACILITY = null;
 export function setFacilityFloor(t) {
   FACILITY = t || null;
 }
+// The landing platform and the outside decks (the facility's floor outside its rooms): big irregular plates cut by
+// long straight joints, as the platform in the film and the set photos (reference/color_rots) — four families of
+// lines at their own angles, each line nudged off an even spacing; a plate is the cell between them, light worn
+// stone or dark slab by its own hash; the joints dark with a lit lip on the side towards the key light
+const PLATE_FAMILIES = [
+  [0.0, 4.6, 1],
+  [Math.PI / 2, 5.4, 2],
+  [0.62, 6.8, 3],
+  [2.2, 7.6, 4],
+].map(([a, sp, seed]) => ({ c: Math.cos(a), s: Math.sin(a), sp, seed }));
+const PLATE_LIGHT = [92, 86, 78];
+const PLATE_DARK = [46, 42, 39];
+function plateFloor(fx, fy, o) {
+  let key = 0;
+  let joint = Infinity;
+  let lip = false;
+  for (const f of PLATE_FAMILIES) {
+    const t = fx * f.c + fy * f.s;
+    const k0 = Math.floor(t / f.sp);
+    // the lines near t: k·sp nudged by up to ±0.3 sp
+    let k = k0 - 1;
+    let pos = (k + (hash2(k, f.seed, 91) - 0.5) * 0.6) * f.sp;
+    for (let j = k0; j <= k0 + 2; j++) {
+      const pj = (j + (hash2(j, f.seed, 91) - 0.5) * 0.6) * f.sp;
+      if (pj <= t) [k, pos] = [j, pj];
+      const d = Math.abs(t - pj);
+      if (d < joint) [joint, lip] = [d, t > pj];
+    }
+    key = key * 131 + k;
+  }
+  const dark = hash2(key, 7, 92) < 0.42;
+  const base = dark ? PLATE_DARK : PLATE_LIGHT;
+  const tone = 0.9 + 0.2 * hash2(key, 11, 93);
+  const mott = 1 + (valueNoise(fx * 1.3, fy * 1.3, 94) - 0.5) * 0.22 + (valueNoise(fx * 4.5, fy * 4.5, 95) - 0.5) * 0.1;
+  const sp = hash2(Math.floor(fx * 24), Math.floor(fy * 24), 96);
+  let k = tone * mott * (sp > 0.97 ? 0.62 : sp < 0.03 ? 1.18 : 1);
+  if (joint < 0.045) k *= 0.32;
+  else if (joint < 0.085 && lip) k *= 1.14;
+  for (let c = 0; c < 3; c++) o[c] = base[c] * k;
+}
+
 // Mustafar's lava (tools/sprites/mustafar_lava: an isometric lava tile unprojected to a seamless square), laid in
 // world space at two scales mixed by a slow noise so the repeat does not read
 let LAVA_TEX = null;
@@ -666,6 +707,14 @@ export class Terrain {
             g = fc[1] * sh;
             b = fc[2] * sh;
             texd = true;
+          } else if (this.world.biome[Math.floor(fy) * this.world.w + Math.floor(fx)] === BIOME.MUSTAFAR) {
+            plateFloor(fx, fy, fc);
+            const sh = 1 + blot * 0.1;
+            r = fc[0] * sh;
+            g = fc[1] * sh;
+            b = fc[2] * sh;
+            texd = true;
+            painted = true;
           }
         }
         // the undercity plaza: cracked mosaic slabs, the cracks glowing neon (pink or blue by

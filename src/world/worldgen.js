@@ -509,7 +509,11 @@ export class Arena extends World {
 //   river       the lava river: the collector droid and the repulsor platform
 //   bank        the black sand slope south of it — the high ground
 
-export const MUSTAFAR = {
+// The facility in design coordinates: the sets in the film's order along −x (deck → corridor → hall), north
+// (junction → control room), east (the balcony), the arm far west, the river south. The map is built here and then
+// transposed (x ↔ y: MustafarArena.transpose) so that on screen it reads as the film's wide shot and the concept
+// art (reference/color_rots): the landing platform on the left, the collector arms on the right
+const MUSTAFAR_D = {
   deck: { x: 118, y: 118, rx: 9.5, ry: 6.5 },
   pad: { x: 117, y: 109.5, hw: 4.5, hh: 2.5 }, // the skiff's parking apron
   walk: { x: 104.5, y: 118, hw: 4.5, hh: 1.5 },
@@ -527,11 +531,42 @@ export const MUSTAFAR = {
   river: { x: 106, y: 142, hw: 24, hh: 4 },
   bank: { x: 112, y: 150 },
 };
+const distToPolyline = (x, y, pts) => {
+  let d = Infinity;
+  for (let i = 1; i < pts.length; i++) d = Math.min(d, distToSegment(x, y, pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]));
+  return d;
+};
+const tpRect = (r) => {
+  const o = { ...r, x: r.y, y: r.x };
+  if ('hw' in r) [o.hw, o.hh] = [r.hh, r.hw];
+  if ('rx' in r) [o.rx, o.ry] = [r.ry, r.rx];
+  return o;
+};
+/** The facility as it lies in the world (design coordinates transposed): what the duel works in. */
+export const MUSTAFAR = Object.fromEntries(Object.entries(MUSTAFAR_D).map(([k, v]) => [k, Array.isArray(v) ? v.map(([x, y]) => [y, x]) : tpRect(v)]));
+// the set sprites' mirrored twins (a sprite flipped left-right is its transpose): design name -> world name
+const MIRROR_SHEET = {
+  mfConsole: 'mfConsole_r',
+  mfConsole_r: 'mfConsole',
+  mfConsoleRed: 'mfConsoleRed_r',
+  mfCorridor: 'mfCorridor_r',
+  mfWindow: 'mfWindow_r',
+  mfPassage: 'mfPassage_x',
+  mfChair: 'mfChair_x',
+  mfChair_x: 'mfChair',
+  mfTable: 'mfTable_y',
+  mfArm: 'mfArm_y',
+  mfArm_y: 'mfArm',
+  mfCatwalk: 'mfCatwalk_y',
+  mfHolo: 'mfHolo_y',
+};
+// what the loader fetches (the world's sprites) and the design names it stands in for (gfx/mustafarFloor.js)
+export const MUSTAFAR_SHEETS = { world: [...new Set(Object.values(MIRROR_SHEET))], mirror: MIRROR_SHEET };
 
 export class MustafarArena extends World {
   generate() {
     this.rng = new RNG(this.seed);
-    const M = MUSTAFAR;
+    const M = MUSTAFAR_D; // (built in design coordinates, transposed at the end)
     this.ambient = [150, 86, 70];
     this.grade = 'mustafar'; // post.js colour grade
     this.floats = []; // moving decks on the lava river: { x, y, r }
@@ -576,7 +611,6 @@ export class MustafarArena extends World {
 
     // --- the landing platform: pylons, crates, Padmé's skiff -----------------
     const D = M.deck;
-    this.addProp('skiff', M.pad.x, M.pad.y);
     for (const [dx, dy] of [[-8.5, -5.5], [8, -6], [-9.5, 4.5], [8.5, 5.5], [0, 7.5]]) this.addProp('pylon', D.x + dx, D.y + dy);
     for (const [dx, dy] of [[6, -2], [6.8, -1.2], [-6.5, 3.5]]) this.addProp('crate', D.x + dx, D.y + dy);
     // the robes thrown off before the fight (shown by the opening scene)
@@ -638,7 +672,9 @@ export class MustafarArena extends World {
     for (const dx of [-6, -3, 0, 3, 6]) this.console(C, 'north', dx, dx === 0);
     for (const dy of [-4.5, -1.5, 1.5, 4.5]) this.console(C, 'west', dy);
     this.addProp('shieldCore', C.x - 3.5, C.y - 4);
-    this.addProp('consoleDesk', C.x + 2, C.y + 2.5, { angleIdx: 0 });
+    // the holo-table in the middle of the sunken floor, as in the film (its blue map lighting the room from below)
+    // (off the line from the shield generator to the balcony door, which the console scene runs along)
+    if (!this.addSheetProp('mfHolo', C.x + 3.5, C.y - 1.5)) this.addProp('consoleDesk', C.x + 2, C.y + 2.5, { angleIdx: 0 });
     this.door(M.door4, 0);
     for (const [dx, dy] of [[-3, -2], [3, 2], [5, -3], [-4, 4]]) this.lights.push({ x: C.x + dx, y: C.y + dy, z: 3.2, r: 235, g: 240, b: 255, rad: 150, flicker: 0.02 }); // the white light bars
     for (const [dx, dy] of [[0, 0], [-5, 3]]) this.lights.push({ x: C.x + dx, y: C.y + dy, z: 0.1, r: 90, g: 210, b: 255, rad: 110, flicker: 0.05 }); // cyan floor glow
@@ -680,7 +716,132 @@ export class MustafarArena extends World {
     for (let x = -22; x <= 22; x += 6) this.lights.push({ x: M.river.x + x, y: M.river.y, z: 0.2, r: 255, g: 110, b: 30, rad: 150, flicker: 0.12 });
     this.spawn = { x: D.x - 1.5, y: D.y + 1.5 };
     this.roadSegs = [];
+    this.transpose();
+    this.rockAndFall();
+    // Padmé's skiff on its apron (placed in the world: its model has one orientation)
+    this.addProp('skiff', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y);
     this.props.sort((a, b) => a.x + a.y - (b.x + b.y));
+  }
+
+  /**
+   * The rock and the lava fall, laid in the world as the concept art and the film's wide shot show them
+   * (reference/color_rots): the mountain behind the facility (up the screen), its blocks set into it, a rock
+   * ledge under the landing platform; the lava fall pouring from a cleft in the mountain straight down the screen
+   * between the left block (the landing side) and the right one (the arms' side), under the junction and the entry
+   * corridor (they bridge it) into the river; lava streaks down the mountain's face; the second collector arm off
+   * the right block, the tall finned spire over it and a lattice tower in front of the left one.
+   */
+  rockAndFall() {
+    const W = MAP_W;
+    const M = MUSTAFAR;
+    const fall = [[80, 52], [86, 58], [92, 64], [100, 72], [108, 80], [118, 90], [128, 100], [140, 112]];
+    const streaks = [
+      [[70, 70], [76, 82], [80, 92]],
+      [[112, 44], [120, 52], [126, 58]],
+      [[96, 46], [100, 56]],
+    ];
+    const deck = M.deck;
+    for (let y = 0; y < W; y++)
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        if (this.biome[i] !== BIOME.LAVA) continue;
+        const cx = x + 0.5;
+        const cy = y + 0.5;
+        const n = (fbm(cx / 9, cy / 9, 17) - 0.5) * 14 + (fbm(cx / 3, cy / 3, 23) - 0.5) * 4; // the rock's ragged edge
+        const s = cx + cy;
+        const d = cx - cy;
+        const df = distToPolyline(cx, cy, fall);
+        if (df < 1.8 + n * 0.05) continue; // the fall
+        // the mountain behind and the rock the facility stands on, down to the walkway (the deck has its ledge)
+        let rock = s > 118 + n && s < 214 + n && d > -34 + n && d < 66 + n;
+        // a ledge under the landing platform, on its back side
+        if (((cx - deck.x) / (deck.rx + 3)) ** 2 + ((cy - deck.y) / (deck.ry + 3)) ** 2 <= 1 && s < deck.x + deck.y + 4) rock = true;
+        // the balcony stands out over open lava, and the fall keeps a gorge round it
+        if (Math.abs(cx - M.balcony.x) < 6 + n * 0.15 && cy > M.balcony.y - M.balcony.hh - 4) rock = false;
+        if (df < 3.4 + n * 0.08) rock = false;
+        if (!rock) continue;
+        this.biome[i] = streaks.some((l) => distToPolyline(cx, cy, l) < 0.65 + n * 0.05) ? BIOME.LAVA : BIOME.ASH;
+        this.blocked[i] = 2;
+      }
+    // the fall's head: three chutes out of the cleft, a pump house over them
+    for (const [dx, dy] of [[-1.6, 1.6], [0, 0], [1.6, -1.6]]) this.addProp('lavaFall', fall[0][0] + dx, fall[0][1] + dy, { noBlock: true });
+    this.addProp('mustafarConsole', fall[0][0] - 3, fall[0][1] - 1, { noBlock: true });
+    for (const [x, y] of fall) this.lights.push({ x, y, z: 0.4, r: 255, g: 130, b: 40, rad: 190, flicker: 0.15 });
+    // the right block's finned spire and its second collector arm (the first is the duel's, M.arm)
+    this.addProp('mustafarTower', M.hall.x + 8, M.hall.y - 6);
+    this.addSheetProp('mfArm_y', M.hall.x + 8, M.hall.y - 21, { noBlock: true, flat: true });
+    // the lattice tower in front of the left block
+    this.addProp('pylon', M.corridor.x - 4, M.corridor.y + 10);
+    // the mountain's height: crags over the rock (tall ones deeper in, low ones at its edge and round the
+    // facility), loose rock between
+    const ash = (x, y) => this.biome[Math.floor(y) * W + Math.floor(x)] === BIOME.ASH;
+    const edgeDist = (x, y) => {
+      for (let r = 1; r <= 6; r++) for (const [dx, dy] of [[r, 0], [-r, 0], [0, r], [0, -r]]) if (!ash(x + dx, y + dy)) return r;
+      return 7;
+    };
+    for (let gy = 10; gy < 150; gy += 3.2)
+      for (let gx = 40; gx < 160; gx += 3.2) {
+        const x = gx + this.rng.range(-1.2, 1.2);
+        const y = gy + this.rng.range(-1.2, 1.2);
+        if (!ash(x, y) || x > 134) continue; // (not on the river bank: the ending is played there)
+        const e = edgeDist(x, y);
+        if (x + y > 178) {
+          // the rock under the facility: low, loose (the blocks stand on it)
+          if (e >= 2 && this.rng.chance(0.5)) this.addProp('lavaRock', x, y, { noBlock: true });
+          continue;
+        }
+        if (e >= 3) this.addProp('cliff', x, y, { noBlock: true });
+        else if (e === 2) this.addProp('boulder', x, y, { noBlock: true });
+        else this.addProp('lavaRock', x, y, { noBlock: true });
+      }
+  }
+
+  /**
+   * The design layout into the world: x ↔ y for every tile, prop, light and mark (a mirror across the screen's
+   * vertical: the far walls stay the far walls). Props turn with it (a two-way prop swaps its angle, a four-way
+   * one turns to π/2 − a); set sprites become their mirrored twins (MIRROR_SHEET).
+   */
+  transpose() {
+    const W = MAP_W;
+    const flip = (a) => {
+      const b = new a.constructor(a.length);
+      for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) b[x * W + y] = a[y * W + x];
+      return b;
+    };
+    this.biome = flip(this.biome);
+    this.blocked = flip(this.blocked);
+    this.explored = flip(this.explored);
+    this.road = flip(this.road);
+    const sw = (o) => ([o.x, o.y] = [o.y, o.x]);
+    for (const p of this.props) {
+      sw(p);
+      if (p.rect) p.rect = [p.rect[1], p.rect[0]];
+      if (p.sheet) {
+        p.sheet = MIRROR_SHEET[p.sheet] || p.sheet;
+        continue;
+      }
+      const angles = PROPS[p.type].angles || [0];
+      if (angles.length > 1) {
+        const want = Math.PI / 2 - angles[p.angleIdx];
+        let best = p.angleIdx;
+        let bd = Infinity;
+        angles.forEach((a, i) => {
+          const d = Math.abs(Math.atan2(Math.sin(a - want), Math.cos(a - want)));
+          if (d < bd) [bd, best] = [d, i];
+        });
+        p.angleIdx = best;
+        p.frameIdx = p.variant * angles.length + best;
+        const def = PROPS[p.type];
+        if (def.rectByAngle && p.rect) p.rect = def.rectByAngle[best];
+      }
+    }
+    for (const l of this.lights) sw(l);
+    for (const q of this.pois) sw(q);
+    for (const q of this.steam || []) sw(q);
+    for (const c of this.craters) sw(c);
+    sw(this.spawn);
+    this.surfaces = this.surfaces.map((t) => ({ x0: t.y0, y0: t.x0, x1: t.y1, y1: t.x1, z: t.z }));
+    this.floorPlan = this.floorPlan.map((r) => ({ ...tpRect(r), axis: r.axis === 'x' ? 'y' : 'x' }));
   }
 
   /**

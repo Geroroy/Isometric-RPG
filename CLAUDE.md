@@ -29,6 +29,13 @@
 - 캐릭터는 최종 크기의 `render_scale`배(128px 스프라이트면 256px)로 렌더한 뒤 축소한다. 좌우 반전은
   스프라이트별로 켠다(`character.mirror_sprites`) — 광선검 든 손이 바뀌기 때문.
 
+## 세트 스프라이트 추가 (무스타파 등 영화 세트)
+
+- **사용자가 준 스프라이트(컷아웃 렌더)를 넣을 때는 항상 영화 속 인테리어 배치대로 놓고, 게임의 2:1 시점에 맞게 각도를 맞춘다.**
+  렌더에서 잰 꼭짓점·발 위치를 게임 투영 좌표에 최소제곱으로 맞춘다(`tools/sprites/mustafar_set/bake.py`의 `corners`; 축을 따라
+  1 m = 20 px, 위로 Z_PX 24.5 px). 발광부(화면·등·홀로)는 네온 레이어, 바닥에 닿는 큰 것은 주광(왼쪽 위) 반대로 그림자를 굽는다.
+  배치는 `src/world/worldgen.js` `MustafarArena`(설계 좌표, 끝에 x↔y 전치 — 반전 짝 스프라이트 `MIRROR_SHEET`)에서 한다.
+
 ## 로딩 (브라우저에서 굽는 소품)
 
 - 소품·LAAT처럼 브라우저에서 three.js로 굽는 것(`gfx/assets.js`의 `core` 묶음)은 **미리 구워 `public/sprites/baked/`에 같이 배포**한다.

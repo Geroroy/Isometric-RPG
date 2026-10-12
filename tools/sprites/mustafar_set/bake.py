@@ -11,6 +11,8 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
 
 - `mfTable`: along x, 8 m long (the film's long table, its pointed end to +x), 0.78 m tall
 - `mfWindow`: against a north wall (faces +y), 5.5 m long, 2.8 m tall; `mfWindow_r` mirrored for a west wall
+- `mfHolo`: the control room's holo-table (image_20: an elongated hexagon, its top a glowing blue map, red indicator
+  lights round the rim), along x, 4.4 m by 1.8 m, 1 m tall, fitted on eight points; `mfHolo_y` its twin along y
 - `mfChair`: faces +y (mirrored from the render, which faces +x: `mfChair_x`), 1.5 m tall
 - `mfPassage`: a corridor's inside with no roof (the far wall tall with light panels, the near wall low, a portal at
   each end), along y, 15 m by 4 m (the far wall on −x); `mfPassage_x` along x as rendered. Fitted by least squares
@@ -39,14 +41,45 @@ BODY_GAIN = 0.78
 
 PIECES = {
     'mfTable': dict(
-        src='image_6.png',
-        axis=((102, 150), (1250, 690)),  # the near long edge: along +x
-        span=(1553, 8.0),  # px across the screen <-> metres along the axis (near end to the pointed tip)
-        height=(155, 0.78),  # px <-> metres (top to the feet)
-        ground=(712, 595),  # the ground under the table's middle (between the outer legs' feet)
-        back=0,
+        src='image_19.png',  # the film's table, dark top with its light strip and red indicator lights
+        # render px -> (x, y, z) m, along x, the pointed end to +x, 8 m by 1.6 m, the top 0.78 m up; the render is
+        # seen in a little perspective, so the game's angle comes from a least-squares fit over all eight
+        corners=[
+            ((38, 128), (-4, 0.8, 0.78)),  # the top's near-left corner
+            ((330, 36), (-4, -0.8, 0.78)),  # far-left
+            ((1630, 520), (3.2, -0.8, 0.78)),  # where the far edge turns to the point
+            ((1338, 742), (3.2, 0.8, 0.78)),  # where the near edge turns
+            ((1750, 688), (4, 0, 0.78)),  # the point
+            ((245, 402), (-3, 0.35, 0)),  # the feet's fronts on the floor
+            ((668, 622), (0, 0.35, 0)),
+            ((1150, 846), (3, 0.35, 0)),
+        ],
         footprint=[[-4, -0.85], [4, -0.85], [4, 0.85], [-4, 0.85]],
-        mirror=None,
+        emit='table',
+        shadow=0.78,  # the top's height: its shadow cast onto the floor, baked under it
+        gain=0.9,
+        lights=[[0, 0, 1.2, 235, 240, 255, 70, 0.02]],  # the strip's light on the top and round it
+        mirror='mfTable_y',
+        flat=True,
+    ),
+    'mfHolo': dict(
+        src='image_20.png',
+        corners=[
+            ((145, 190), (-2.2, 0, 1.0)),  # the top's points and corners
+            ((455, 115), (-1.4, -0.9, 1.0)),
+            ((1255, 270), (1.4, -0.9, 1.0)),
+            ((1635, 445), (2.2, 0, 1.0)),
+            ((1350, 550), (1.4, 0.9, 1.0)),
+            ((445, 395), (-1.4, 0.9, 1.0)),
+            ((515, 632), (-1.3, 1.0, 0)),  # the plinth's near corners on the floor
+            ((1305, 818), (1.3, 1.0, 0)),
+        ],
+        footprint=[[-2.2, -0.9], [2.2, -0.9], [2.2, 0.9], [-2.2, 0.9]],
+        emit='holo',
+        shadow=1.0,
+        gain=0.9,
+        lights=[[0, 0, 1.4, 90, 170, 255, 120, 0.04]],  # the map's blue light
+        mirror='mfHolo_y',
     ),
     'mfWindow': dict(
         src='image_7.png',
@@ -82,7 +115,7 @@ PIECES = {
         ground=(1002, 597),  # the deck's middle
         back=0,
         footprint=[[-11, -1.5], [11, -1.5], [11, 1.5], [-11, 1.5]],
-        mirror=None,
+        mirror='mfArm_y',
         flat=True,
         gain=1.0,
     ),
@@ -94,7 +127,7 @@ PIECES = {
         ground=(900, 432),  # the deck's middle
         back=0,
         footprint=[[-8.5, -1], [8.5, -1], [8.5, 1], [-8.5, 1]],
-        mirror=None,
+        mirror='mfCatwalk_y',
         flat=True,
         gain=1.0,
     ),
@@ -154,6 +187,27 @@ def cut_checker(a):
     return np.asarray(fg.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(0.7))) / 255.0
 
 
+def emissive_holo(a):
+    """The holo-table's glowing map (saturated blue) and its red indicator lights."""
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    blue = (b > 0.45) & (b > r * 1.8) & (b > g * 1.1)
+    leds = (r > 0.55) & (r > g * 2.0) & (r > b * 2.0)
+    m = (blue | leds) & (a[..., 3] > 0.5)
+    m = Image.fromarray((m * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.GaussianBlur(1.2))
+    return np.asarray(m) / 255.0
+
+
+def emissive_table(a):
+    """The table's light strip (near white) and its red indicator lights."""
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    lum = a[..., :3] @ np.array([0.299, 0.587, 0.114], np.float32)
+    strip = (lum > 0.82) & (np.abs(r - b) < 0.12)
+    leds = (r > 0.55) & (r > g * 2.0) & (r > b * 2.0)
+    m = (strip | leds) & (a[..., 3] > 0.5)
+    m = Image.fromarray((m * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.GaussianBlur(1.2))
+    return np.asarray(m) / 255.0
+
+
 def emissive(a):
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
     m = (r > 0.5) & (r > g * 1.3) & (b < 0.4) & (a[..., 3] > 0.5)
@@ -171,7 +225,8 @@ def bake(name, P):
         a = a.copy()
         al = Image.fromarray(((a[..., 3] >= 240 / 255) * 255).astype(np.uint8), 'L')
         a[..., 3] = np.asarray(al.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(0.8))) / 255.0
-    m = emissive(a) if P.get('emit') else np.zeros(a.shape[:2], np.float32)
+    em = {'table': emissive_table, 'holo': emissive_holo}.get(P.get('emit'), emissive)
+    m = em(a) if P.get('emit') else np.zeros(a.shape[:2], np.float32)
     body = a.copy()
     body[..., :3] *= np.where(m[..., None] > 0.5, 1, P.get('gain', BODY_GAIN))
     neon = a.copy()
@@ -235,7 +290,7 @@ def bake_fit(name, P, body, neon):
     h, w = body.shape[:2]
     corners = np.array([[x, y, 1] for x in (0, w) for y in (0, h)], float) @ M.T
     lo = np.floor(corners.min(0)) - 2
-    size = tuple(int(v) for v in np.ceil(corners.max(0)) + 2 - lo)
+    size = tuple(int(v) for v in np.ceil(corners.max(0)) + 2 + (60 if P.get('shadow') else 0) - lo)  # (room for the shadow)
     F = np.vstack([M, [0, 0, 1]])
     F[:2, 2] -= lo
     Fi = np.linalg.inv(F)
@@ -245,17 +300,38 @@ def bake_fit(name, P, body, neon):
         big = im.transform((size[0] * 2, size[1] * 2), Image.AFFINE, tuple((Fi[:2] * [[0.5, 0.5, 1], [0.5, 0.5, 1]]).reshape(-1)), resample=Image.BICUBIC)
         layers[nm] = big.resize(size, Image.LANCZOS)
     ax, ay = -lo  # the world origin (the piece's ground centre)
+    if P.get('shadow'):
+        # the shadow on the floor: the piece's silhouette dropped by its height and pushed away from the key light
+        # (upper left: ART_GUIDE.md §3) — down by the height on screen, right by two thirds of it — soft, under it
+        h = P['shadow'] * 24.5 * OVER
+        al = layers['body'].getchannel('A')
+        sh = Image.new('L', al.size, 0)
+        sh.paste(al, (round(h * 0.66), round(h)))
+        sh = sh.filter(ImageFilter.GaussianBlur(2.5 * OVER)).point(lambda v: int(v * 0.6))
+        shadow = Image.new('RGBA', al.size, (8, 6, 5, 0))
+        shadow.putalpha(sh)
+        shadow.alpha_composite(layers['body'])
+        layers['body'] = shadow
     bb = layers['body'].getbbox()
+    has_neon = bool(P.get('emit'))
     for nm, mirrored in ((name, False), (P['mirror'], True)):
-        b2 = layers['body'].crop(bb)
+        if not nm:
+            continue
+        b2, n2 = layers['body'].crop(bb), layers['neon'].crop(bb)
         ox, oy = ax - bb[0], ay - bb[1]
         fp = P['footprint']
+        lights = P.get('lights', [])
         if mirrored:
-            b2 = b2.transpose(Image.FLIP_LEFT_RIGHT)
+            b2, n2 = b2.transpose(Image.FLIP_LEFT_RIGHT), n2.transpose(Image.FLIP_LEFT_RIGHT)
             ox = b2.width - ox
             fp = [[y, x] for x, y in fp]
+            lights = [[l[1], l[0], *l[2:]] for l in lights]
         b2.save(OUT / f'{nm}_body.png', optimize=True)
-        meta = {'anchor': [round(float(ox), 1), round(float(oy), 1)], 'k': 1 / OVER, 'layers': {'body': f'{nm}_body.png'}, 'footprint': fp, 'lights': [], 'flat': bool(P.get('flat'))}
+        meta = {'anchor': [round(float(ox), 1), round(float(oy), 1)], 'k': 1 / OVER, 'layers': {'body': f'{nm}_body.png'}, 'footprint': fp, 'lights': lights, 'flat': bool(P.get('flat'))}
+        if has_neon:
+            n2.save(OUT / f'{nm}_neon.png', optimize=True)
+            meta['layers']['neon'] = f'{nm}_neon.png'
+            meta['neon'] = {'base': 1, 'hum': 0.04, 'speed': 0.5, 'flicker': {'rate': 0.01, 'dur': [0.05, 0.12], 'level': 0.7}}
         (OUT / f'{nm}.json').write_text(json.dumps(meta))
         print(f'{nm}: {b2.width}x{b2.height} (x{OVER}), anchor {meta["anchor"]}, fit residual {res:.1f} game px')
 

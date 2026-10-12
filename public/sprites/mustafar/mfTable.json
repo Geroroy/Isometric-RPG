@@ -1,1 +1,1 @@
-{"anchor": [127.7, 128.5], "k": 0.5, "layers": {"body": "mfTable_body.png"}, "footprint": [[-4, -0.85], [4, -0.85], [4, 0.85], [-4, 0.85]], "lights": [], "flat": false}
+{"anchor": [188.0, 130.0], "k": 0.5, "layers": {"body": "mfTable_body.png", "neon": "mfTable_neon.png"}, "footprint": [[-4, -0.85], [4, -0.85], [4, 0.85], [-4, 0.85]], "lights": [[0, 0, 1.2, 235, 240, 255, 70, 0.02]], "flat": true, "neon": {"base": 1, "hum": 0.04, "speed": 0.5, "flicker": {"rate": 0.01, "dur": [0.05, 0.12], "level": 0.7}}}

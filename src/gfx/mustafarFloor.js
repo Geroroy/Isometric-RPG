@@ -2,6 +2,7 @@
 // set's texture sheets) and the lava (tools/sprites/mustafar_lava, 'lava.png'), as ImageData for the terrain
 // (terrain.js setFacilityFloor, setLavaTexture). Through the device's file cache (fileCache.js).
 import { cachedImage, cachedJSON } from './fileCache.js';
+import { MUSTAFAR_SHEETS } from '../world/worldgen.js';
 
 export async function loadMustafarTexture(file) {
   const img = await cachedImage(import.meta.env.BASE_URL + 'sprites/mustafar/' + file);
@@ -24,12 +25,10 @@ export async function loadMustafarFloor() {
 // (tools/sprites/mustafar_console, mustafar_corridor, mustafar_set):
 // city-sheet sprites (renderer.js draws a prop with `sheet` from assets.city: body, then the neon layer after
 // the light map), one per wall direction (and screen colour)
-// (the baked turns not placed anywhere yet — mfConsoleRed_r, mfCorridor_r, mfWindow_r, mfPassage_x — are left unloaded)
-export const MUSTAFAR_CONSOLES = ['mfConsole', 'mfConsole_r', 'mfConsoleRed', 'mfCorridor', 'mfTable', 'mfWindow', 'mfChair', 'mfChair_x', 'mfPassage', 'mfArm', 'mfCatwalk'];
 export async function loadMustafarConsoles() {
   const base = import.meta.env.BASE_URL + 'sprites/mustafar/';
   const out = {};
-  for (const name of MUSTAFAR_CONSOLES) {
+  for (const name of MUSTAFAR_SHEETS.world) {
     try {
       const meta = await cachedJSON(base + name + '.json');
       const [body, neon] = await Promise.all([cachedImage(base + meta.layers.body), meta.layers.neon ? cachedImage(base + meta.layers.neon) : null]);
@@ -38,6 +37,14 @@ export async function loadMustafarConsoles() {
     } catch (e) {
       console.warn('무스타파 세트: ' + e.message); // left out of the rooms (addSheetProp skips it)
     }
+  }
+  // the design names the map is built with (worldgen.js MustafarArena, transposed after): each its world twin's
+  // footprint and lights turned back (x ↔ y), so the design pass blocks and lights the right tiles
+  const tp = (q) => [q[1], q[0], ...q.slice(2)];
+  for (const [design, world] of Object.entries(MUSTAFAR_SHEETS.mirror)) {
+    if (out[design] || !out[world]) continue;
+    const w = out[world];
+    out[design] = { ...w, meta: { ...w.meta, footprint: w.meta.footprint.map(tp), lights: (w.meta.lights || []).map(tp) } };
   }
   return out;
 }

@@ -172,17 +172,17 @@ export class MustafarDuel extends Duel {
     const D = M.deck;
     p.sprite = 'anakin_vader'; // the film's arrival: the cloak, hood raised (the campaign's Blender Anakin)
     p.saberLit = false;
-    p.x = D.x - 1.5;
-    p.y = D.y - 0.8;
-    const ob = (this.foe = new ObiWan(g, D.x + 2.6, D.y - 5.2));
+    p.x = D.x - 0.8;
+    p.y = D.y - 1.5;
+    const ob = (this.foe = new ObiWan(g, D.x - 5.2, D.y + 2.6));
     ob.sprite = 'obiwan3Robe';
-    const pd = (this.padme = new Extra(g, 'padme', D.x + 0.4, D.y - 4.2));
+    const pd = (this.padme = new Extra(g, 'padme', D.x - 4.2, D.y + 0.4));
     p.faceTo(pd.x, pd.y);
     pd.faceTo(p.x, p.y);
     ob.faceTo(p.x, p.y);
     // the river's decks, hidden until the arm falls
-    this.droid = new Float(g, 'collector', M.river.x - 2, M.river.y, 1.15);
-    this.platform = new Float(g, 'platform', M.river.x + 1, M.river.y + 1.4, 0.9);
+    this.droid = new Float(g, 'collector', M.river.x, M.river.y - 2, 1.15);
+    this.platform = new Float(g, 'platform', M.river.x + 1.4, M.river.y + 1, 0.9);
     g.units.push(ob, pd, this.droid, this.platform);
   }
 
@@ -254,7 +254,7 @@ export class MustafarDuel extends Duel {
       say(6.8, 'obiwan', '그녀를 놔줘, 아나킨.', 1.6),
       say(8.5, 'obiwan', '놔주라고!', 1.2),
       { t: 10.2, do: () => (p.setAnim('idle'), pd.setAnim('collapse', 1, true)) },
-      { t: 11.4, do: () => this.hoodDown(), cam: { x: p.x + 0.4, y: p.y - 0.6, dur: 1.2 } },
+      { t: 11.4, do: () => this.hoodDown(), cam: { x: p.x - 0.6, y: p.y + 0.4, dur: 1.2 } },
       { t: 12.6, do: () => this.pose(p, 'idleBare') },
       { t: 13.2, do: () => pd.setAnim('down') },
       say(14.0, 'anakin', '당신이 그녀를 내게서 돌아서게 만들었어!', 1.9),
@@ -268,7 +268,7 @@ export class MustafarDuel extends Duel {
       { t: 20.8, do: () => this.pose(ob, 'talk') },
       say(25.2, 'obiwan', '넌 그 암흑 군주에게 마음을 내주었고… 네가 무찌르겠다고 맹세했던 바로 그 존재가 되어 버렸어.', 7.6),
       say(33.4, 'anakin', '설교하지 마요, 오비완. 제다이의 거짓말은 다 꿰뚫어 봤어.', 3.4),
-      { t: 33.4, do: () => (ob.setAnim('idle'), this.pose(p, 'talkBare')), cam: { x: p.x + 0.5, y: p.y - 0.8, dur: 1.0 } },
+      { t: 33.4, do: () => (ob.setAnim('idle'), this.pose(p, 'talkBare')), cam: { x: p.x - 0.8, y: p.y + 0.5, dur: 1.0 } },
       say(36.6, 'anakin', '난 당신처럼 어둠의 힘을 두려워하지 않아.', 2.4),
       say(39.2, 'anakin', '난 나의 새 제국에 평화와 자유, 정의, 그리고 안전을 가져다줬어!', 4.6),
       say(44.0, 'obiwan', '네 새 제국?', 1.8),
@@ -278,9 +278,9 @@ export class MustafarDuel extends Duel {
       say(48.8, 'obiwan', '아나킨, 내 충성은 공화국에… 민주주의에 있다!', 4.2),
       { t: 48.8, do: () => (this.pose(p, 'idleBare'), this.pose(ob, 'talk')) },
       say(53.0, 'anakin', '나와 함께하지 않는다면, 당신은 내 적이야.', 2.9),
-      { t: 53.0, do: () => (ob.setAnim('idle'), this.pose(p, 'talkBare')), cam: { x: p.x + 0.3, y: p.y - 0.5, dur: 1.2 } },
+      { t: 53.0, do: () => (ob.setAnim('idle'), this.pose(p, 'talkBare')), cam: { x: p.x - 0.5, y: p.y + 0.3, dur: 1.2 } },
       say(56.3, 'obiwan', '극단을 따지는 건 시스뿐이다.', 2.2),
-      { t: 56.3, do: () => (this.pose(p, 'idleBare'), this.pose(ob, 'talk')), cam: { x: ob.x - 0.3, y: ob.y + 0.5, dur: 1.2 } },
+      { t: 56.3, do: () => (this.pose(p, 'idleBare'), this.pose(ob, 'talk')), cam: { x: ob.x + 0.5, y: ob.y - 0.3, dur: 1.2 } },
       say(58.7, 'obiwan', '난 해야 할 일을 하겠다.', 1.6),
       say(60.4, 'anakin', '어디 해 보시죠.', 1.8),
       { t: 60.4, do: () => ob.setAnim('idle'), cam: { x: p.x, y: p.y, dur: 0.6 } },
@@ -290,8 +290,8 @@ export class MustafarDuel extends Duel {
       // both ignite as the music rises; Anakin flips back into his guard
       { t: 68.6, do: () => this.ignite(ob) },
       { t: 69.2, do: () => this.ignite(p) },
-      { t: 69.9, do: (c) => (this.pose(p, 'backflip'), c.move(p, p.x - 1.6, p.y + 1.2, 0.8)) },
-      { t: 70.8, do: () => p.setAnim('idle'), cam: { x: p.x - 1.6, y: p.y + 1.2, dur: 0.6 } },
+      { t: 69.9, do: (c) => (this.pose(p, 'backflip'), c.move(p, p.x + 1.2, p.y - 1.6, 0.8)) },
+      { t: 70.8, do: () => p.setAnim('idle'), cam: { x: p.x + 1.2, y: p.y - 1.6, dur: 0.6 } },
     ];
     return new Cinema(g, { track: 'mustafarIntro', length: 71.4, cues }).play();
   }
@@ -517,13 +517,13 @@ export class MustafarDuel extends Duel {
     const g = this.game;
     const p = g.player;
     const ob = this.foe;
-    const y = M.walk.y;
+    const x = M.walk.x;
     const cues = [
-      { t: 0, do: (c) => this.travel(c, { x: 108.5, y: y + 0.3 }, { x: 106, y: y - 0.3 }, 2.2), cam: { follow: p, zoom: 1.3, dur: 0.8 } },
+      { t: 0, do: (c) => this.travel(c, { x: x + 0.3, y: 108.5 }, { x: x - 0.3, y: 106 }, 2.2), cam: { follow: p, zoom: 1.3, dur: 0.8 } },
       { t: 1.0, do: (c) => this.clash(c) },
-      { t: 2.2, do: (c) => (this.clash(c, p), this.travel(c, { x: 102.5, y }, { x: 100.5, y }, 2.0)) },
+      { t: 2.2, do: (c) => (this.clash(c, p), this.travel(c, { x, y: 102.5 }, { x, y: 100.5 }, 2.0)) },
       { t: 3.6, do: (c) => this.clash(c) },
-      { t: 4.2, do: (c) => (this.travel(c, { x: 99.2, y }, { x: 96.8, y }, 1.4), this.card('입구 복도')) },
+      { t: 4.2, do: (c) => (this.travel(c, { x, y: 99.2 }, { x, y: 96.8 }, 1.4), this.card('입구 복도')) },
       { t: 5.6, do: () => (p.setAnim('idle'), ob.setAnim('idle')) },
     ];
     this.scene(34, 5.8, cues).then(() => this.enterSet(1));
@@ -534,11 +534,11 @@ export class MustafarDuel extends Duel {
     const g = this.game;
     const p = g.player;
     const ob = this.foe;
-    const y = M.hall.y;
+    const x = M.hall.x;
     const cues = [
-      { t: 0, do: (c) => this.travel(c, { x: 85.5, y }, { x: 83.5, y }, 1.4), cam: { follow: p, zoom: 1.3, dur: 0.8 } },
+      { t: 0, do: (c) => this.travel(c, { x, y: 85.5 }, { x, y: 83.5 }, 1.4), cam: { follow: p, zoom: 1.3, dur: 0.8 } },
       { t: 1.0, do: (c) => this.clash(c) },
-      { t: 1.5, do: (c) => (this.travel(c, { x: 81.5, y: y + 0.4 }, { x: 78.5, y: y - 1.2 }, 1.8), this.card('분리주의 회의실')) },
+      { t: 1.5, do: (c) => (this.travel(c, { x: x + 0.4, y: 81.5 }, { x: x - 1.2, y: 78.5 }, 1.8), this.card('분리주의 회의실')) },
       { t: 3.3, do: (c) => (this.clash(c, p), p.setAnim('idle'), ob.setAnim('idle')) },
     ];
     this.scene(62, 3.8, cues).then(() => this.enterSet(2));
@@ -551,10 +551,10 @@ export class MustafarDuel extends Duel {
     const ob = this.foe;
     const J = M.junction;
     const cues = [
-      { t: 0, do: (c) => this.travel(c, { x: J.x, y: J.y + 7 }, { x: J.x, y: J.y + 4 }, 1.8), cam: { follow: p, zoom: 1.35, dur: 0.8 } },
+      { t: 0, do: (c) => this.travel(c, { x: J.x + 7, y: J.y }, { x: J.x + 4, y: J.y }, 1.8), cam: { follow: p, zoom: 1.35, dur: 0.8 } },
       { t: 1.2, do: (c) => this.clash(c) },
-      { t: 1.8, do: (c) => this.travel(c, { x: J.x, y: J.y + 2.4 }, { x: J.x, y: J.y - 0.6 }, 1.2) },
-      { t: 3.1, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)), cam: { x: J.x, y: J.y + 1, dur: 0.6 } },
+      { t: 1.8, do: (c) => this.travel(c, { x: J.x + 2.4, y: J.y }, { x: J.x - 0.6, y: J.y }, 1.2) },
+      { t: 3.1, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)), cam: { x: J.x + 1, y: J.y, dur: 0.6 } },
       { t: 3.4, do: () => (p.setAnim('cast', 1, true), ob.setAnim('cast', 1, true)) },
       {
         t: 3.85,
@@ -568,15 +568,15 @@ export class MustafarDuel extends Duel {
           g.audio.play('push', ob);
           p.setAnim('hurt', 0.5, true);
           ob.setAnim('hurt', 0.5, true);
-          c.move(p, J.x, J.y + 7.2, 0.55);
-          c.move(ob, J.x, J.y - 5.6, 0.55);
+          c.move(p, J.x + 7.2, J.y, 0.55);
+          c.move(ob, J.x - 5.6, J.y, 0.55);
         },
       },
       { t: 4.4, do: () => (g.fx.dust(p.x, p.y, 8), g.fx.dust(ob.x, ob.y, 8), g.audio.play('slam', p)) },
       { t: 4.5, do: () => (p.setAnim('death', 0.9, true), ob.setAnim('death', 0.9, true)) },
       { t: 6.6, do: () => (p.setAnim('idle', 1, true), ob.setAnim('idle', 1, true)) },
-      { t: 7.4, do: (c) => (ob.setAnim('walk'), ob.faceTo(J.x, J.y - 9), c.move(ob, M.control.x + 2, M.control.y + 3.5, 2.6), this.card('제어실')) },
-      { t: 8.2, do: (c) => (p.setAnim('run'), p.faceTo(J.x, J.y - 9), c.move(p, J.x, M.control.y + 6, 2.2)), cam: { follow: p, dur: 0.5 } },
+      { t: 7.4, do: (c) => (ob.setAnim('walk'), ob.faceTo(J.x - 9, J.y), c.move(ob, M.control.x + 3.5, M.control.y + 2, 2.6), this.card('제어실')) },
+      { t: 8.2, do: (c) => (p.setAnim('run'), p.faceTo(J.x - 9, J.y), c.move(p, M.control.x + 6, J.y, 2.2)), cam: { follow: p, dur: 0.5 } },
       { t: 10.4, do: () => (p.setAnim('idle'), ob.setAnim('idle'), ob.faceTo(p.x, p.y), p.faceTo(ob.x, ob.y)) },
     ];
     this.scene(82, 10.8, cues).then(() => this.enterSet(3));
@@ -587,34 +587,34 @@ export class MustafarDuel extends Duel {
     const g = this.game;
     const p = g.player;
     const ob = this.foe;
-    const core = { x: M.control.x - 3.5, y: M.control.y - 4 };
+    const core = { x: M.control.x - 4, y: M.control.y - 3.5 };
     const w = g.world;
     const cues = [
-      { t: 0, do: (c) => this.travel(c, { x: core.x + 0.8, y: core.y + 2.9 }, { x: core.x + 1.6, y: core.y + 1.6 }, 1.6), cam: { x: core.x + 1, y: core.y + 2, zoom: 1.35, dur: 0.8 } },
+      { t: 0, do: (c) => this.travel(c, { x: core.x + 2.9, y: core.y + 0.8 }, { x: core.x + 1.6, y: core.y + 1.6 }, 1.6), cam: { x: core.x + 2, y: core.y + 1, zoom: 1.35, dur: 0.8 } },
       { t: 1.2, do: (c) => this.clash(c) },
       { t: 1.9, do: () => (p.faceTo(core.x, core.y), p.setAnim('attack3', 1, true)) },
-      { t: 2.1, do: (c) => (ob.setAnim('leap', 1, true), c.move(ob, core.x + 3.6, core.y + 3.4, 0.5)) },
+      { t: 2.1, do: (c) => (ob.setAnim('leap', 1, true), c.move(ob, core.x + 3.4, core.y + 3.6, 0.5)) },
       {
         t: 2.3,
         do: (c) => {
-          g.fx.sparks(core.x + 0.4, core.y + 0.6, 1.4, '#9fd8ff', 26, 5);
-          g.fx.explosion(core.x + 0.3, core.y + 0.5, 0.7);
+          g.fx.sparks(core.x + 0.6, core.y + 0.4, 1.4, '#9fd8ff', 26, 5);
+          g.fx.explosion(core.x + 0.5, core.y + 0.3, 0.7);
           g.audio.play('zap');
           g.audio.play('explode', p);
           g.fx.shake(7);
           w.alarm.rad = 260; // the alarm light: the shields are failing
           c.onFrame = () => {
             if (Math.random() < 0.5) g.fx.sparks(core.x + rand(-0.6, 0.6), core.y + rand(-0.6, 0.6), 1.2 + Math.random(), Math.random() < 0.5 ? '#9fd8ff' : '#ffb040', 2, 3);
-            if (Math.random() < 0.3) g.fx.flame(core.x + 0.3, core.y + 0.4, 1.2, 2, 1.2);
+            if (Math.random() < 0.3) g.fx.flame(core.x + 0.4, core.y + 0.3, 1.2, 2, 1.2);
           };
         },
       },
       { t: 2.9, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
       { t: 3.4, do: (c) => this.clash(c) },
       // out through the east door onto the balcony
-      { t: 4.2, do: (c) => this.travel(c, { x: M.door4.x - 2.2, y: M.door4.y }, { x: M.door4.x + 0.6, y: M.door4.y }, 2.2), cam: { follow: p, dur: 0.6 } },
+      { t: 4.2, do: (c) => this.travel(c, { x: M.door4.x, y: M.door4.y - 2.2 }, { x: M.door4.x, y: M.door4.y + 0.6 }, 2.2), cam: { follow: p, dur: 0.6 } },
       { t: 5.6, do: (c) => this.clash(c, p) },
-      { t: 6.4, do: (c) => (this.travel(c, { x: M.door4.x + 1.6, y: M.door4.y }, { x: M.door4.x + 4.8, y: M.door4.y }, 2.0), this.card('외부 발코니')) },
+      { t: 6.4, do: (c) => (this.travel(c, { x: M.door4.x, y: M.door4.y + 1.6 }, { x: M.door4.x, y: M.door4.y + 4.8 }, 2.0), this.card('외부 발코니')) },
       { t: 8.4, do: (c) => (c.onFrame = null, p.setAnim('idle'), ob.setAnim('idle')) },
     ];
     this.scene(148, 8.8, cues).then(() => this.enterSet(4));
@@ -627,7 +627,7 @@ export class MustafarDuel extends Duel {
     const ob = this.foe;
     const B = M.balcony;
     const cues = [
-      { t: 0, do: () => (p.setAnim('idle'), ob.setAnim('idle')), cam: { x: B.x + 2, y: B.y - 4, zoom: 1.1, dur: 1.0 } },
+      { t: 0, do: () => (p.setAnim('idle'), ob.setAnim('idle')), cam: { x: B.x - 4, y: B.y + 2, zoom: 1.1, dur: 1.0 } },
       {
         t: 0.8,
         do: (c) => {
@@ -635,9 +635,9 @@ export class MustafarDuel extends Duel {
           g.fx.explosion(102, 89, 1.6);
           g.audio.play('explode', p);
           g.fx.shake(14);
-          g.world.lights.push({ x: 97, y: 88, z: 2, r: 255, g: 150, b: 60, rad: 320, flicker: 0.25 });
+          g.world.lights.push({ x: 88, y: 97, z: 2, r: 255, g: 150, b: 60, rad: 320, flicker: 0.25 });
           c.onFrame = () => {
-            if (Math.random() < 0.8) g.fx.lavaSplash(B.x + rand(-B.hw, B.hw), B.y + rand(-2.5, 2.5), 0.6);
+            if (Math.random() < 0.8) g.fx.lavaSplash(B.x + rand(-2.5, 2.5), B.y + rand(-B.hh, B.hh), 0.6);
           };
         },
       },
@@ -656,11 +656,11 @@ export class MustafarDuel extends Duel {
     this.rainT = (this.rainT || 0) - dt;
     if (this.rainT <= 0) {
       this.rainT = rand(0.35, 0.7);
-      const d = { x: B.x + rand(-B.hw, B.hw + 2), y: B.y + rand(-0.8, 0.8), t: 0 };
+      const d = { x: B.x + rand(-0.8, 0.8), y: B.y + rand(-B.hh, B.hh + 2), t: 0 };
       this.drops.push(d);
       g.fx.ring(d.x, d.y, 0.55, '#ff8a30', 0.65);
     }
-    if (Math.random() < 0.5) g.fx.sparks(B.x + rand(-B.hw - 2, B.hw + 3), B.y + rand(-3, 3), 2.4 + Math.random() * 1.5, '#ff7a30', 1, 1.5);
+    if (Math.random() < 0.5) g.fx.sparks(B.x + rand(-3, 3), B.y + rand(-B.hh - 2, B.hh + 3), 2.4 + Math.random() * 1.5, '#ff7a30', 1, 1.5);
     for (const d of this.drops) {
       d.t += dt;
       if (d.t < 0.65) continue;
@@ -686,26 +686,27 @@ export class MustafarDuel extends Duel {
     const p = g.player;
     const ob = this.foe;
     const A = M.arm;
-    const cy = A.y - 0.95;
+    const cx = A.x - 0.95; // the cables' line, along the arm
     const cab = { p: 44, ob: 36 };
     const cues = [
       { t: 0, do: () => (g.fx.shake(10), g.audio.play('explode', p), p.setAnim('hurt', 0.6, true), ob.setAnim('hurt', 0.6, true)), cam: { follow: p, zoom: 1.2, dur: 0.4 } },
-      { t: 0.6, do: (c) => (c.onFrame = () => (g.fx.shake(4), Math.random() < 0.6 && g.fx.sparks(p.x + rand(-3, 3), p.y + rand(-2, 2), 0.3, '#ffb040', 3, 4)), g.fx.text(p.x, p.y, '발코니가 무너진다!', '#ff9a50', 1.2, 2.6)) },
+      { t: 0.6, do: (c) => (c.onFrame = () => (g.fx.shake(4), Math.random() < 0.6 && g.fx.sparks(p.x + rand(-2, 2), p.y + rand(-3, 3), 0.3, '#ffb040', 3, 4)), g.fx.text(p.x, p.y, '발코니가 무너진다!', '#ff9a50', 1.2, 2.6)) },
       { t: 1.2, do: () => (p.setAnim('idle'), ob.setAnim('idle')) },
-      { t: 2.4, do: (c) => (ob.setAnim('leap', 1, true), c.move(ob, ob.x - 2, ob.y, 0.6)) },
-      { t: 3.0, do: (c) => (p.setAnim('leap', 1, true), c.move(p, p.x - 2, p.y, 0.6)) },
+      { t: 2.4, do: (c) => (ob.setAnim('leap', 1, true), c.move(ob, ob.x, ob.y - 2, 0.6)) },
+      { t: 3.0, do: (c) => (p.setAnim('leap', 1, true), c.move(p, p.x, p.y - 2, 0.6)) },
       { t: 3.6, fade: 1, fadeDur: 0.7 },
       // hanging from the collector arm's cables over the lava
       {
         t: 4.6,
         do: (c) => {
           c.onFrame = null;
+          c.tweens = c.tweens.filter((w) => w.u !== p && w.u !== ob); // (the leap's tween, if a frame was slow)
           this.rain = false;
           this.drops = [];
-          p.x = cab.p;
-          p.y = cy + 0.25;
-          ob.x = cab.ob;
-          ob.y = cy + 0.25;
+          p.y = cab.p;
+          p.x = cx + 0.25;
+          ob.y = cab.ob;
+          ob.x = cx + 0.25;
           p.z = ob.z = 1.35;
           p.airborne = ob.airborne = true;
           p.faceTo(ob.x, ob.y);
@@ -717,21 +718,21 @@ export class MustafarDuel extends Duel {
           c.onFrame = () => {
             const k = c.t - 4.6;
             // the cables swing them towards each other and apart
-            p.x = cab.p - 1.2 * Math.max(0, Math.sin(k * 1.4)) - Math.min(1.6, k * 0.12);
-            ob.x = cab.ob + 1.2 * Math.max(0, Math.sin(k * 1.4 + 0.3)) + Math.min(1.6, k * 0.12);
+            p.y = cab.p - 1.2 * Math.max(0, Math.sin(k * 1.4)) - Math.min(1.6, k * 0.12);
+            ob.y = cab.ob + 1.2 * Math.max(0, Math.sin(k * 1.4 + 0.3)) + Math.min(1.6, k * 0.12);
             p.z = 1.35 + Math.sin(k * 2.8) * 0.08;
             ob.z = 1.35 + Math.cos(k * 2.8) * 0.08;
           };
         },
-        cam: { x: (cab.p + cab.ob) / 2, y: cy, zoom: 1.35 },
+        cam: { x: cx, y: (cab.p + cab.ob) / 2, zoom: 1.35 },
       },
       { t: 4.7, fade: 0, fadeDur: 1.0 },
-      ...[6.8, 9.0, 11.3, 13.6].map((t) => ({ t, do: () => (g.clash((p.x + ob.x) / 2, cy, 1.9, 12), g.audio.play('clash', ob), (p.clashFlash = ob.clashFlash = 0.15)) })),
+      ...[6.8, 9.0, 11.3, 13.6].map((t) => ({ t, do: () => (g.clash(cx, (p.y + ob.y) / 2, 1.9, 12), g.audio.play('clash', ob), (p.clashFlash = ob.clashFlash = 0.15)) })),
       { t: 15.6, do: (c) => (c.onFrame = null) },
       // they drop onto the arm, Obi-Wan first
-      { t: 16.0, do: (c) => (ob.setAnim('leap', 1, true), c.move(ob, ob.x - 1.2, A.y + 0.2, 0.6), (ob.z = 0), (ob.airborne = false)) },
+      { t: 16.0, do: (c) => (ob.setAnim('leap', 1, true), c.move(ob, A.x + 0.2, ob.y - 1.2, 0.6), (ob.z = 0), (ob.airborne = false)) },
       { t: 16.6, do: () => (ob.setAnim('idle', 1, true), g.fx.dust(ob.x, ob.y, 5)) },
-      { t: 17.4, do: (c) => (p.setAnim('leap', 1, true), c.move(p, p.x + 1.2, A.y + 0.2, 0.6), (p.z = 0), (p.airborne = false)), cam: { follow: p, dur: 1.0 } },
+      { t: 17.4, do: (c) => (p.setAnim('leap', 1, true), c.move(p, A.x + 0.2, p.y + 1.2, 0.6), (p.z = 0), (p.airborne = false)), cam: { follow: p, dur: 1.0 } },
       { t: 18.0, do: () => (p.setAnim('idle', 1, true), g.fx.dust(p.x, p.y, 5), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
     ];
     this.scene(234, 18.4, cues).then(() => {
@@ -780,9 +781,9 @@ export class MustafarDuel extends Duel {
       { t: 4.8, do: (c) => this.clash(c) },
       { t: 5.6, do: () => (p.setAnim('idle'), ob.setAnim('idle')) },
       // the collector tower at the arm's end groans and goes
-      { t: 6.6, do: (c) => (g.fx.shake(6), g.audio.play('explode', p), (c.onFrame = () => (g.fx.shake(3), Math.random() < 0.5 && g.fx.sparks(T.x + rand(-1.5, 1.5), T.y + rand(-1.5, 1.5), rand(0.5, 6), '#ffb040', 3, 4)))), cam: { x: T.x - 3, y: T.y, zoom: 1.1, dur: 1.2 } },
-      { t: 8.8, do: () => (g.fx.explosion(T.x, T.y, 2.4), g.fx.explosion(T.x - 1, T.y + 1, 1.4), (w.tower.hidden = true), g.audio.play('explode', p), g.fx.text(T.x - 2, T.y, '집하기 탑이 무너진다!', '#ff9a50', 1.2, 2.6)) },
-      { t: 9.4, do: (c) => (g.fx.shake(12), p.setAnim('hurt', 0.5, true), ob.setAnim('hurt', 0.5, true), c.move(p, Math.min(A.x + A.hw - 1, p.x + 3), A.y + 0.4, 2.2), c.move(ob, Math.min(A.x + A.hw - 2, ob.x + 3), A.y - 0.3, 2.2)), cam: { follow: p, dur: 1.0 } },
+      { t: 6.6, do: (c) => (g.fx.shake(6), g.audio.play('explode', p), (c.onFrame = () => (g.fx.shake(3), Math.random() < 0.5 && g.fx.sparks(T.x + rand(-1.5, 1.5), T.y + rand(-1.5, 1.5), rand(0.5, 6), '#ffb040', 3, 4)))), cam: { x: T.x, y: T.y - 3, zoom: 1.1, dur: 1.2 } },
+      { t: 8.8, do: () => (g.fx.explosion(T.x, T.y, 2.4), g.fx.explosion(T.x + 1, T.y - 1, 1.4), (w.tower.hidden = true), g.audio.play('explode', p), g.fx.text(T.x, T.y - 2, '집하기 탑이 무너진다!', '#ff9a50', 1.2, 2.6)) },
+      { t: 9.4, do: (c) => (g.fx.shake(12), p.setAnim('hurt', 0.5, true), ob.setAnim('hurt', 0.5, true), c.move(p, A.x + 0.4, Math.min(A.y + A.hh - 1, p.y + 3), 2.2), c.move(ob, A.x - 0.3, Math.min(A.y + A.hh - 2, ob.y + 3), 2.2)), cam: { follow: p, dur: 1.0 } },
       { t: 11.6, do: () => (p.setAnim('leap', 1, true), ob.setAnim('leap', 1, true)) },
       { t: 12.2, fade: 1, fadeDur: 0.6 },
       // the arm comes down into the lava; the two decks
@@ -794,7 +795,7 @@ export class MustafarDuel extends Duel {
           this.onRiver = true;
           this.card('용암 강');
         },
-        cam: { x: M.river.x + 4, y: M.river.y + 1, zoom: 1.35 },
+        cam: { x: M.river.x + 1, y: M.river.y + 4, zoom: 1.35 },
       },
       { t: 13.5, fade: 0, fadeDur: 1.0 },
       { t: 14.2, do: () => (ob.setAnim('leap', 1, true), p.setAnim('leap', 1, true)) },
@@ -815,10 +816,10 @@ export class MustafarDuel extends Duel {
     const R = M.river;
     this.riverT = 0;
     this.platform.hidden = this.droid.hidden = false;
-    this.platform.x = R.x + 1.5;
-    this.platform.y = R.y + 1.4;
-    this.droid.x = R.x - 1.4;
-    this.droid.y = R.y;
+    this.platform.x = R.x + 1.4;
+    this.platform.y = R.y + 1.5;
+    this.droid.x = R.x;
+    this.droid.y = R.y - 1.4;
     w.floats = [this.platform, this.droid];
     this.floatLights = [
       { x: this.platform.x, y: this.platform.y, z: 0.2, r: 255, g: 140, b: 70, rad: 90, flicker: 0.08 }, // (its lamps glow orange)
@@ -848,10 +849,11 @@ export class MustafarDuel extends Duel {
     const py = this.platform.y;
     const dx0 = this.droid.x;
     const dy0 = this.droid.y;
-    this.platform.x = Math.min(R.x + 7, R.x + 1.5 + k * 0.22);
-    this.platform.y = R.y + 1.4 + Math.sin(k * 0.7) * 0.2;
-    this.droid.x = this.platform.x - 2.7 - Math.max(0, Math.sin(k * 0.9)) * 0.5;
-    this.droid.y = R.y + Math.cos(k * 0.8) * 0.3;
+    // (downstream is +y: the river runs along y)
+    this.platform.y = Math.min(R.y + 7, R.y + 1.5 + k * 0.22);
+    this.platform.x = R.x + 1.4 + Math.sin(k * 0.7) * 0.2;
+    this.droid.y = this.platform.y - 2.7 - Math.max(0, Math.sin(k * 0.9)) * 0.5;
+    this.droid.x = R.x + Math.cos(k * 0.8) * 0.3;
     const carry = (u, f, ox, oy) => {
       u.x += f.x - ox;
       u.y += f.y - oy;
@@ -885,8 +887,8 @@ export class MustafarDuel extends Duel {
     g.emit('lock', false);
     this.hold();
     this.onRiver = false;
-    const bank = { x: this.platform.x + 1.6, y: M.bank.y - 2.2 }; // where Obi-Wan lands: the slope above the river
-    const foot = { x: bank.x - 2.0, y: bank.y - 1.1 }; // where Anakin falls, at the lava's edge below him
+    const bank = { x: M.bank.x - 2.2, y: this.platform.y + 1.6 }; // where Obi-Wan lands: the slope above the river
+    const foot = { x: bank.x - 1.1, y: bank.y - 2.0 }; // where Anakin falls, at the lava's edge below him
     const cues = [
       { t: 0, fade: 1, fadeDur: 0 },
       {
@@ -897,8 +899,8 @@ export class MustafarDuel extends Duel {
           p.kx = p.ky = ob.kx = ob.ky = 0;
           p.faceTo(ob.x, ob.y);
           ob.faceTo(p.x, p.y);
-          g.world.lights.push({ x: foot.x - 0.4, y: foot.y + 0.6, z: 0.5, r: 255, g: 150, b: 70, rad: 230, flicker: 0.12 }); // the river's glow on the slope
-          g.world.lights.push({ x: foot.x + 1.2, y: foot.y - 0.8, z: 0.3, r: 255, g: 120, b: 50, rad: 150, flicker: 0.2 });
+          g.world.lights.push({ x: foot.x + 0.6, y: foot.y - 0.4, z: 0.5, r: 255, g: 150, b: 70, rad: 230, flicker: 0.12 }); // the river's glow on the slope
+          g.world.lights.push({ x: foot.x - 0.8, y: foot.y + 1.2, z: 0.3, r: 255, g: 120, b: 50, rad: 150, flicker: 0.2 });
         },
         cam: { x: (p.x + bank.x) / 2, y: (p.y + bank.y) / 2, zoom: 1.3 },
       },
@@ -913,7 +915,7 @@ export class MustafarDuel extends Duel {
       say(19.0, 'obiwan', '그러지 마라.', 2.0),
       { t: 19.0, do: () => p.setAnim('idle', 1, true) },
       // the leap and the cut
-      { t: 21.4, do: (c) => (p.setAnim('leap', 1, true), g.audio.play('leap', p), (p.airborne = true), c.move(p, bank.x - 0.6, bank.y + 0.2, 0.9), (c.onFrame = () => (p.z = Math.sin(Math.min(1, (c.t - 21.4) / 0.9) * Math.PI) * 1.6))) },
+      { t: 21.4, do: (c) => (p.setAnim('leap', 1, true), g.audio.play('leap', p), (p.airborne = true), c.move(p, bank.x + 0.2, bank.y - 0.6, 0.9), (c.onFrame = () => (p.z = Math.sin(Math.min(1, (c.t - 21.4) / 0.9) * Math.PI) * 1.6))) },
       { t: 22.0, do: () => ob.setAnim('attack2', 1.3, true) },
       {
         t: 22.3,
@@ -931,15 +933,15 @@ export class MustafarDuel extends Duel {
         },
       },
       { t: 22.5, fade: 0.85, fadeDur: 0.05 },
-      { t: 22.7, fade: 0, fadeDur: 1.2, cam: { x: foot.x + 0.6, y: foot.y - 0.4, zoom: 1.6, dur: 3 } },
+      { t: 22.7, fade: 0, fadeDur: 1.2, cam: { x: foot.x - 0.4, y: foot.y + 0.6, zoom: 1.6, dur: 3 } },
       { t: 23.6, do: () => (p.z = 0, this.pose(p, 'crawl'), p.faceTo(ob.x, ob.y)) },
       { t: 25.5, do: () => (ob.setAnim('idle'), ob.faceTo(p.x, p.y)) },
       // Obi-Wan switches off, picks up his fallen student's saber
       { t: 30.0, do: () => ((ob.saberLit = false), g.audio.play('retract', ob), this.pose(ob, 'idleOff', 1)) },
-      { t: 34.0, do: (c) => (this.pose(ob, 'walkOff'), ob.faceTo(foot.x + 0.9, foot.y + 0.4), c.move(ob, foot.x + 0.9, foot.y + 0.5, 2.2)) },
+      { t: 34.0, do: (c) => (this.pose(ob, 'walkOff'), ob.faceTo(foot.x + 0.4, foot.y + 0.9), c.move(ob, foot.x + 0.5, foot.y + 0.9, 2.2)) },
       { t: 36.3, do: () => (this.pose(ob, 'idleOff', 1), ob.faceTo(p.x, p.y)) },
       { t: 38.2, do: () => this.pose(ob, 'pick', 1) },
-      { t: 39.6, do: () => g.fx.sparks(ob.x + 0.3, ob.y + 0.2, 0.3, '#c8d8ff', 4, 1.5) },
+      { t: 39.6, do: () => g.fx.sparks(ob.x + 0.2, ob.y + 0.3, 0.3, '#c8d8ff', 4, 1.5) },
       { t: 40.0, do: () => this.pose(ob, 'grieve', 1) },
       say(43.0, 'obiwan', '넌 선택받은 자였다!', 2.8),
       { t: 43.0, cam: { x: (foot.x + ob.x) / 2, y: (foot.y + ob.y) / 2, dur: 2 } },
@@ -947,7 +949,7 @@ export class MustafarDuel extends Duel {
       say(52.4, 'obiwan', '포스에 균형을 가져오는 것이지… 어둠 속에 버려두는 게 아니라!', 4.6),
       { t: 60.0, do: () => this.pose(p, 'crawl', 1.3) },
       say(69.5, 'anakin', '당신이 미워!!', 2.6),
-      { t: 69.5, do: () => this.pose(p, 'burn', 0.7), cam: { x: foot.x, y: foot.y - 0.3, dur: 0.4 } },
+      { t: 69.5, do: () => this.pose(p, 'burn', 0.7), cam: { x: foot.x - 0.3, y: foot.y, dur: 0.4 } },
       say(73.4, 'obiwan', '넌 내 형제였다, 아나킨.', 2.8),
       { t: 73.4, cam: { x: ob.x, y: ob.y, dur: 1.5 } },
       say(76.3, 'obiwan', '널 사랑했다.', 2.4),
@@ -957,7 +959,7 @@ export class MustafarDuel extends Duel {
         do: (c) => {
           this.pose(p, 'burn', 1);
           c.onFrame = () => {
-            if (Math.random() < 0.8) g.fx.flame(p.x + rand(-0.35, 0.35), p.y + rand(-0.3, 0.3), 0.15, 2, 1);
+            if (Math.random() < 0.8) g.fx.flame(p.x + rand(-0.3, 0.3), p.y + rand(-0.35, 0.35), 0.15, 2, 1);
             if (Math.random() < 0.3) g.fx.sparks(p.x, p.y, 0.4, '#ff8a30', 2, 2);
           };
           g.world.lights.push({ x: p.x, y: p.y, z: 0.5, r: 255, g: 120, b: 40, rad: 170, flicker: 0.3 });
@@ -965,7 +967,7 @@ export class MustafarDuel extends Duel {
         },
         cam: { x: foot.x, y: foot.y, dur: 2 },
       },
-      { t: 80.6, do: (c) => (this.pose(ob, 'walkOff'), ob.faceTo(ob.x + 6, ob.y + 2.5), c.move(ob, ob.x + 6, ob.y + 2.5, 3.2)) },
+      { t: 80.6, do: (c) => (this.pose(ob, 'walkOff'), ob.faceTo(ob.x + 2.5, ob.y + 6), c.move(ob, ob.x + 2.5, ob.y + 6, 3.2)) },
       { t: 82.6, fade: 1, fadeDur: 1.6 },
     ];
     new Cinema(g, { track: 'mustafarEnd', length: 84.5, cues }).play().then(() => {
