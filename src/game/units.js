@@ -646,6 +646,7 @@ export class Player extends Unit {
       return;
     }
     if (this.action && this.action.type === 'move') {
+      if (dist(x, y, this.action.x, this.action.y) > 0.5) this.action.best = this.action.stall = undefined; // (a held button re-sends the same goal)
       this.action.x = x;
       this.action.y = y;
       return;
@@ -795,8 +796,15 @@ export class Player extends Unit {
     switch (act.type) {
       case 'move': {
         const sp = this.moveSpeed();
-        const arrived = this.navigate(act.x, act.y, sp, dt, 0.15);
+        let arrived = this.navigate(act.x, act.y, sp, dt, 0.15);
         this.setAnim('run', sp / 4.6);
+        // a goal someone stands on (a stall's customer is anchored): the separation pushes back every
+        // step, so stop once a short while near it brings no progress instead of jittering in place
+        const d = dist(this.x, this.y, act.x, act.y);
+        if (d < (act.best ?? Infinity) - 0.05) {
+          act.best = d;
+          act.stall = 0;
+        } else if (d < 1.2 && (act.stall = (act.stall || 0) + dt) > 0.3) arrived = true;
         if (arrived) {
           this.action = null;
           this.setAnim('idle');
