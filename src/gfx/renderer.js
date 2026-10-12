@@ -7,6 +7,7 @@ import { Terrain } from './terrain.js';
 import { PROPS } from './models/props.js';
 import { dist } from '../core/math.js';
 import { SHEET_PROPS } from '../world/cityProps.js';
+import { BIOME } from '../world/worldgen.js';
 import { neonLevel } from './citySprites.js';
 import { glowSprite } from './fx.js';
 import { transientLights, relightUnits } from './relight.js';
@@ -211,6 +212,30 @@ export class Renderer {
     this.overlay.style.width = W + 'px';
     this.overlay.style.height = H + 'px';
     this.ctx.imageSmoothingEnabled = false;
+    // the view one zoom step out (game px), its terrain made ahead (warmTerrain); none at the widest
+    const s2 = devScale - 1;
+    this.wideView = !this.shot && this.scaleAllowed(s2) ? [Math.ceil((W * dpr) / s2), Math.ceil((H * dpr) / s2)] : null;
+  }
+
+  /**
+   * The terrain to make ahead, a few ms a frame (Terrain.warm): the view one zoom step out, and a
+   * near turbolift's far end — a zoom step or a lift ride then finds its ground made instead of
+   * stalling a frame on it (faster while the lift's doors close).
+   */
+  warmTerrain(g, cam, W, H) {
+    const rects = [];
+    const p = g.player;
+    for (const L of g.world.lifts || []) {
+      if (Math.abs(L.x - p.x) + Math.abs(L.y - p.y) > 14) continue;
+      const d = worldToScreen(L.to.x, L.to.y, 0);
+      rects.push([d.x - W / 2 - 80, d.y - H * 0.6 - 80, W + 160, H + 160]);
+    }
+    if (this.wideView) {
+      const [w2, h2] = this.wideView;
+      rects.push([cam.x + W / 2 - w2 / 2, cam.y + H / 2 - h2 / 2, w2, h2]);
+    }
+    this.terrain.warm = rects.length ? rects : null;
+    this.terrain.warmHurry = !!(g.lift && !g.lift.moved);
   }
 
   /** CSS pixel → world coordinates. */
@@ -277,7 +302,9 @@ export class Renderer {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.smooth(false);
     const mode = p.y > 90 ? 'low' : 'up';
-    if (g.world.city) drawCityBackdrop(ctx, cam, W, H, mode, dt); // the city beyond the rims, its sky traffic
+    // the city beyond the rims, its sky traffic: only over the part of the screen where the drop shows
+    // (the terrain paints every other pixel over it)
+    if (g.world.city) drawCityBackdrop(ctx, cam, W, H, mode, dt, this.voidRect(g.world, cam, W, H));
     else {
       ctx.fillStyle = '#07070a';
       ctx.fillRect(0, 0, W, H);
@@ -289,6 +316,7 @@ export class Renderer {
       this.lanes.update(dt);
     } else this.lanes = null;
     for (const u of g.activeUnits) this.igniteOf(u); // the blades' ignition clocks, before any light is drawn
+    this.warmTerrain(g, cam, W, H);
     this.terrain.draw(ctx, cam.x, cam.y, W, H);
     g.fx.drawDecals(ctx, cam);
     if (g.world.puddles) this.drawPuddles(ctx, cam, dt);
@@ -718,10 +746,15 @@ export class Renderer {
       if (r[0] + r[2] < cam.x || r[0] > cam.x + W || r[1] + r[3] < cam.y || r[1] > cam.y + H + 60) continue;
       const L = pr.layers;
       const level = neonLevel(pr.neon, L.meta.neon, this.time, dt);
-      ctx.globalAlpha = Math.min(1, level) * 0.85;
-      this.drawFrame(L.reflect, pr.sx, pr.sy);
-      ctx.globalAlpha = Math.min(1, level) * (pr.alpha ?? 1);
-      this.drawFrame(L.neon, pr.sx, pr.sy + (pr.bob || 0));
+      // (an empty layer is null: citySprites.js drops it at load)
+      if (L.reflect) {
+        ctx.globalAlpha = Math.min(1, level) * 0.85;
+        this.drawFrame(L.reflect, pr.sx, pr.sy);
+      }
+      if (L.neon) {
+        ctx.globalAlpha = Math.min(1, level) * (pr.alpha ?? 1);
+        this.drawFrame(L.neon, pr.sx, pr.sy + (pr.bob || 0));
+      }
       ctx.globalAlpha = 1;
       const holo = SHEET_PROPS[pr.sheet].holo;
       if (holo) this.drawHologram(ctx, cam, pr, holo, level);
@@ -854,16 +887,16 @@ export class Renderer {
     l.fillStyle = `rgb(${amb[0]},${amb[1]},${amb[2]})`;
     l.fillRect(0, 0, W, H);
     l.globalCompositeOperation = 'lighter';
+    // a light: its colour's pre-drawn radial sprite (lightSprite), scaled to its radius — no gradient
+    // object or colour string made per light per frame
     const spot = (x, y, z, r, gg, b, rad, a = 1) => {
       const s = worldToScreen(x, y, z);
       const sx = s.x - cam.x;
       const sy = s.y - cam.y;
       if (sx < -rad || sy < -rad || sx > W + rad || sy > H + rad) return;
-      const grd = l.createRadialGradient(sx, sy, 0, sx, sy, rad);
-      grd.addColorStop(0, `rgba(${r},${gg},${b},${a})`);
-      grd.addColorStop(1, `rgba(${r},${gg},${b},0)`);
-      l.fillStyle = grd;
-      l.fillRect(sx - rad, sy - rad, rad * 2, rad * 2);
+      l.globalAlpha = Math.min(1, a);
+      l.drawImage(lightSprite(r | 0, gg | 0, b | 0), sx - rad, sy - rad, rad * 2, rad * 2);
+      l.globalAlpha = 1;
     };
     const p = g.player;
     spot(p.x, p.y, 0.5, 255, 236, 210, 190, 0.42);
@@ -917,6 +950,38 @@ export class Renderer {
     this.smooth(false);
     ctx.drawImage(this.light, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
+  }
+
+  /**
+   * The screen rectangle holding every pixel where the city's drop shows through the terrain (a void
+   * tile, or off the map), sampled on a 16 px grid and padded by a cell; null when none is in view.
+   */
+  voidRect(world, cam, W, H) {
+    const STEP = 16;
+    const bi = world.biome;
+    const ww = world.w;
+    const wh = world.h;
+    let x0 = Infinity;
+    let y0 = Infinity;
+    let x1 = -Infinity;
+    let y1 = -Infinity;
+    for (let sy = 0; sy <= H + STEP; sy += STEP) {
+      const wy = (cam.y + sy) / HALF_H;
+      for (let sx = 0; sx <= W + STEP; sx += STEP) {
+        const wx = (cam.x + sx) / HALF_W;
+        const tx = Math.floor((wx + wy) / 2);
+        const ty = Math.floor((wy - wx) / 2);
+        if (tx >= 0 && ty >= 0 && tx < ww && ty < wh && bi[ty * ww + tx] !== BIOME.VOID) continue;
+        if (sx < x0) x0 = sx;
+        if (sx > x1) x1 = sx;
+        if (sy < y0) y0 = sy;
+        if (sy > y1) y1 = sy;
+      }
+    }
+    if (x1 < x0) return null;
+    x0 = Math.max(0, x0 - STEP);
+    y0 = Math.max(0, y0 - STEP);
+    return [x0, y0, Math.min(W, x1 + STEP) - x0, Math.min(H, y1 + STEP) - y0];
   }
 
   /**
@@ -1305,7 +1370,26 @@ function wrap(o, text, max) {
   return out;
 }
 
-/** Width and depth of a footprint polygon. */
+const LIGHTS = new Map();
+/** A light's radial falloff in its colour at full strength (64 px, drawn once per colour, then scaled;
+ *  the strength is the draw's globalAlpha). */
+function lightSprite(r, g, b) {
+  const key = ((r << 16) | (g << 8) | b) >>> 0;
+  let c = LIGHTS.get(key);
+  if (c) return c;
+  c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x = c.getContext('2d');
+  const grd = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, `rgba(${r},${g},${b},1)`);
+  grd.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  x.fillStyle = grd;
+  x.fillRect(0, 0, 64, 64);
+  if (LIGHTS.size > 256) LIGHTS.clear(); // (saber tints make new colours; keep it bounded)
+  LIGHTS.set(key, c);
+  return c;
+}
+
 /** A frame's alpha channel (once, for the occlusion test); null when its page cannot be read. */
 function alphaOf(f) {
   try {

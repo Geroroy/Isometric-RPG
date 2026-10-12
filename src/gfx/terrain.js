@@ -120,7 +120,9 @@ export class Terrain {
     }
     this.cache = new Map();
     this.frame = 0;
-    this.maxChunks = 64;
+    this.maxChunks = 96; // (0.8 MB each: the view, its edges, the next zoom step out and a lift's far end)
+    this.warm = null; // view rectangles (world-screen px) to make ready ahead (renderer.warmTerrain)
+    this.warmHurry = false; // a bigger budget a frame (a lift's doors are closing)
     this.S = 1; // pixels per game pixel
   }
 
@@ -685,24 +687,39 @@ export class Terrain {
         ctx.drawImage(c.canvas, Math.round(c.sx - vx), Math.round(c.sy - vy), CW, CHH);
       }
     }
-    // Prefetch chunks just outside the view a few rows per frame (~4 ms) so
-    // walking never stalls on building one.
+    // Prefetch a chunk a few ms per frame so walking never stalls on building one: those just outside
+    // the view, then those of the views asked for ahead (warm: a lift's far end, the next zoom step out)
     if (!built) {
+      const fresh = (cx, cy) => this.cache.has(cx + ',' + cy);
+      const start = (cx, cy) => (this.job = { key: cx + ',' + cy, gen: this.buildGen(cx, cy) });
       if (!this.job) {
         for (let cy = Math.max(0, minY - 1); cy <= Math.min(nC - 1, maxY + 1) && !this.job; cy++) {
           for (let cx = Math.max(0, minX - 1); cx <= Math.min(nC - 1, maxX + 1); cx++) {
-            if (this.cache.has(cx + ',' + cy) || visible(cx, cy)) continue;
+            if (fresh(cx, cy) || visible(cx, cy)) continue;
             const pad = 160;
             const sx0 = (cx * CH - (cy * CH + CH)) * HALF_W;
             const sy0 = (cx * CH + cy * CH) * HALF_H;
             if (sx0 > vx + vw + pad || sx0 + CW < vx - pad || sy0 > vy + vh + pad || sy0 + CHH < vy - pad) continue;
-            this.job = { key: cx + ',' + cy, gen: this.buildGen(cx, cy) };
+            start(cx, cy);
             break;
           }
         }
       }
+      if (this.warm) {
+        // (the chunks already made there are kept as if in view: the cache does not drop and remake them)
+        for (const [wx, wy, ww, wh] of this.warm)
+          for (let cy = 0; cy < nC; cy++)
+            for (let cx = 0; cx < nC; cx++) {
+              const sx0 = (cx * CH - (cy * CH + CH)) * HALF_W;
+              const sy0 = (cx * CH + cy * CH) * HALF_H;
+              if (sx0 > wx + ww || sx0 + CW < wx || sy0 > wy + wh || sy0 + CHH < wy) continue;
+              const c = this.cache.get(cx + ',' + cy);
+              if (c) c.used = this.frame;
+              else if (!this.job) start(cx, cy);
+            }
+      }
       if (this.job) {
-        const end = performance.now() + 4;
+        const end = performance.now() + (this.warmHurry ? 8 : 4);
         let r;
         do r = this.job.gen.next();
         while (!r.done && performance.now() < end);

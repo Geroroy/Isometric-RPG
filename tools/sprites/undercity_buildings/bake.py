@@ -7,7 +7,8 @@ the same rectangles on both; a few files instead of three per building).
 Scale (measured on the sheets against that metre): the shops are drawn at about the game's own
 metre already (a bar stool ~18 px = 0.75 m, a storey 70-90 px), the tenement towers at ~13 px a
 metre (a balcony floor ~40 px = 3 m) and the plants at ~12.5 px (a roller door ~45 px = 3.5 m):
-SCALE per sheet. Enlarged sprites are resampled once here (premultiplied Lanczos, a light unsharp
+SCALE per sheet — for those two a little under their metre (1.5, 1.4), the size kept readable and the
+enlargement small enough to stay sharp (docs/CORUSCANT_REBUILD.md). Enlarged sprites are resampled once here (premultiplied Lanczos, a light unsharp
 mask), never at run time.
 
 Per building, from its outline at game scale:
@@ -28,7 +29,9 @@ from PIL import Image, ImageFilter
 
 SRC = 'assets/city/buildings/cut'
 OUT = 'public/sprites/undercity'
-SCALE = {'shops': 1.0, 'towers': 1.85, 'plants': 1.9}
+# towers and plants: not quite their measured metre (1.85, 1.9) — a compromise between size and
+# sharpness (an enlarged sheet softens): a storey still a person high, a roller door above one
+SCALE = {'shops': 1.0, 'towers': 1.5, 'plants': 1.4}
 MARGIN = 0.4
 PX_UNIT = 24.49  # px a metre, upward (core/iso.js Z_PX)
 
@@ -180,6 +183,13 @@ def main():
         pages[page][1][y:y + h, x:x + w] = neon
         meta['page'] = page
         meta['rect'] = [x, y, w, h]
+        # the neon's lit part on the page: the game draws (additively, every frame) only that
+        na = neon[..., 3] > 3
+        if na.any():
+            ys, xs = np.nonzero(na)
+            meta['neonRect'] = [x + int(xs.min()), y + int(ys.min()), int(xs.max() - xs.min()) + 1, int(ys.max() - ys.min()) + 1]
+        else:
+            meta['neonRect'] = None
         x += w + 2
         rowh = max(rowh, h)
     files = {'body': [], 'neon': []}

@@ -48,7 +48,7 @@ if (BUILDING_PROTO) load();
 
 const tiles = new Map();
 /** One layer's tileable canvas for a mode (built on first use). */
-function layerTile(mode, name) {
+export function layerTile(mode, name) {
   const key = mode + name;
   if (tiles.has(key)) return tiles.get(key);
   if (!meta) return null;
@@ -105,17 +105,4 @@ function layerTile(mode, name) {
   }
   tiles.set(key, c);
   return c;
-}
-
-/** Draw one building layer for the view (game px); false while the atlases load. */
-export function drawBuildingLayer(ctx, name, cam, W, H, mode) {
-  const c = layerTile(mode, name);
-  if (!c) return false;
-  const f = BLAYERS[name].f;
-  const TW = c.width;
-  const TH = c.height;
-  const ox = -((((cam.x * f) % TW) + TW) % TW);
-  const oy = -((((cam.y * f) % TH) + TH) % TH);
-  for (let y = oy; y < H; y += TH) for (let x = ox; x < W; x += TW) ctx.drawImage(c, Math.round(x), Math.round(y));
-  return true;
 }

@@ -138,6 +138,7 @@ export class SkylineTraffic {
     this.seed = seed;
     this.time = 0;
     this.craftCache = {};
+    this.lanes = new Map();
   }
 
   update(dt) {
@@ -145,8 +146,19 @@ export class SkylineTraffic {
     this.time += Math.min(dt, 0.1);
   }
 
-  /** A lane's settings, from its tier, skyway and lane index (seeded). */
+  /** A lane's settings, from its tier, skyway and lane index (seeded; made once, kept). */
   lane(ti, j, i, ramp) {
+    const key = ((ti * 2 + (ramp ? 1 : 0)) * 64 + i) * 100000 + j;
+    let L = this.lanes.get(key);
+    if (!L) {
+      if (this.lanes.size > 4000) this.lanes.clear();
+      L = this.makeLane(ti, j, i, ramp);
+      this.lanes.set(key, L);
+    }
+    return L;
+  }
+
+  makeLane(ti, j, i, ramp) {
     const T = TIERS[ti];
     const h = (n) => hash(this.seed, ti, j, i, ramp ? 7 : 3, n);
     const dir = ramp ? (h(1) < 0.5 ? 1 : -1) : (i + j) % 2 ? 1 : -1; // neighbours flow opposite ways
@@ -205,6 +217,10 @@ export class SkylineTraffic {
         }
     }
     items.sort((a, b) => a[0] - b[0] || a[1] - b[1]); // higher lanes behind lower ones
+    // the bodies first, then every headlight in one additive pass and their cores (two composite
+    // switches a tier, not two a craft)
+    const lights = [];
+    ctx.fillStyle = 'rgba(14,14,22,0.85)';
     for (const [, X, Y, L, k, id] of items) {
       // whole pixels on the line: x first, y from it (no shimmer)
       const sx = Math.round(X - vx);
@@ -213,14 +229,8 @@ export class SkylineTraffic {
       if (this.log) this.log.push([id, sx, sy, view, L.dir, T.k]); // (tools/qa/skytraffic.mjs)
       if (T.k === 0) {
         // a far craft: a dark dash along its heading and its headlight
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.fillStyle = 'rgba(14,14,22,0.85)';
         ctx.fillRect(sx - 2, sy, 4, 1);
-        ctx.globalCompositeOperation = 'lighter';
-        ctx.drawImage(glowImg, 0, 0, 9, 9, sx + L.dir * 2 - 3, sy - 3, 7, 7);
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.fillStyle = '#e4f0ff';
-        ctx.fillRect(sx + L.dir * 2, sy, 1, 1);
+        lights.push(sx + L.dir * 2 - 3, sy - 3, 7, sx + L.dir * 2, sy);
         continue;
       }
       const craft = this.craftOf(L, k);
@@ -230,13 +240,14 @@ export class SkylineTraffic {
       const fx = sx - Math.ceil(v.w * T.k) / 2 + v.front[0] * T.k;
       const fy = sy - Math.ceil(v.h * T.k) / 2 + v.front[1] * T.k;
       const gs = T.k >= 1 ? 13 : T.k >= 0.5 ? 9 : 7;
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.drawImage(glowImg, 0, 0, 9, 9, Math.round(fx - gs / 2), Math.round(fy - gs / 2), gs, gs);
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.fillStyle = '#eef6ff'; // its bright core
-      ctx.fillRect(Math.round(fx), Math.round(fy), 1, 1);
+      lights.push(Math.round(fx - gs / 2), Math.round(fy - gs / 2), gs, Math.round(fx), Math.round(fy));
     }
+    if (!lights.length) return;
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < lights.length; i += 5) ctx.drawImage(glowImg, 0, 0, 9, 9, lights[i], lights[i + 1], lights[i + 2], lights[i + 2]);
     ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = T.k === 0 ? '#e4f0ff' : '#eef6ff'; // the bright cores
+    for (let i = 0; i < lights.length; i += 5) ctx.fillRect(lights[i + 3], lights[i + 4], 1, 1);
   }
 
   /** The craft of a lane's k-th place (seeded, by the classes' weights). */

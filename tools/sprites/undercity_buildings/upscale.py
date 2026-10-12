@@ -3,7 +3,7 @@ assets/city/buildings/hr/<id>.png at the bake's final size — so the bake resam
 
 Per building: the cut sprite's colour with its transparent surround filled by the nearest edge colour
 (no dark halo at the outline), through ESRGAN 4x (esrgan/up.cjs), then Lanczos down to the final size
-(4x → ~1.9x: a downscale keeps every edge crisp); the alpha is the cut's own, Lanczos to the same size.
+(4x → ~1.5x, blurred first at the source blocks' period, sharpened after); the alpha is the cut's own, Lanczos to the same size.
    (cd tools/sprites/undercity_buildings/esrgan && npm install)   # once
    python3 tools/sprites/undercity_buildings/upscale.py [ids...]
 """
@@ -19,8 +19,14 @@ from PIL import Image, ImageFilter
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = 'assets/city/buildings/cut'
 OUT = 'assets/city/buildings/hr'
+X4 = 'assets/city/buildings/x4'  # the ESRGAN 4x results, kept (not in git): a new SCALE only re-resamples
 sys.path.insert(0, HERE)
-SCALE = {'shops': 1.0, 'towers': 1.85, 'plants': 1.9}  # (bake.py's)
+SCALE = {'shops': 1.0, 'towers': 1.5, 'plants': 1.4}  # (bake.py's)
+# the sheets are blocky (AI pixel art, ~1 px blocks): ESRGAN draws each block's edge as a line, a
+# 4 px mesh in its 4x that the downscale to ~1.5x aliases into a visible grid. A blur at that period
+# before the downscale removes it; an unsharp after brings the edges back
+PREBLUR = 1.6  # Gaussian radius on the 4x
+SHARPEN = 90  # unsharp after the downscale (percent; 0 = none)
 
 
 def bleed(rgb, a):
@@ -53,10 +59,15 @@ def main():
         img = np.asarray(Image.open(f'{SRC}/{bid}.png').convert('RGBA')).astype(float)
         h, w = img.shape[:2]
         W, H = round(w * k), round(h * k)
-        with tempfile.TemporaryDirectory() as td:
-            Image.fromarray(bleed(img[..., :3], img[..., 3]).astype(np.uint8)).save(f'{td}/in.png')
-            subprocess.run(['node', os.path.join(HERE, 'esrgan', 'up.cjs'), f'{td}/in.png', f'{td}/out.png', '4'], check=True, capture_output=True)
-            up = Image.open(f'{td}/out.png').convert('RGB').resize((W, H), Image.LANCZOS)
+        x4 = f'{X4}/{bid}.png'
+        if not os.path.exists(x4) or os.path.getmtime(x4) < os.path.getmtime(f'{SRC}/{bid}.png'):
+            os.makedirs(X4, exist_ok=True)
+            with tempfile.TemporaryDirectory() as td:
+                Image.fromarray(bleed(img[..., :3], img[..., 3]).astype(np.uint8)).save(f'{td}/in.png')
+                subprocess.run(['node', os.path.join(HERE, 'esrgan', 'up.cjs'), f'{td}/in.png', x4, '4'], check=True, capture_output=True)
+        up = Image.open(x4).convert('RGB').filter(ImageFilter.GaussianBlur(PREBLUR)).resize((W, H), Image.LANCZOS)
+        if SHARPEN:
+            up = up.filter(ImageFilter.UnsharpMask(radius=0.8, percent=SHARPEN, threshold=1))
         a = Image.fromarray(img[..., 3].astype(np.uint8)).resize((W, H), Image.LANCZOS)
         out = np.dstack([np.asarray(up), np.asarray(a)])
         out[out[..., 3] < 12] = 0

@@ -8,7 +8,7 @@
 // traffic far off (gfx/skylineTraffic.js) flies between the layers.
 import { RNG } from '../core/math.js';
 import { SkylineTraffic, TIERS } from './skylineTraffic.js';
-import { BUILDING_PROTO, drawBuildingLayer } from './buildingBackdrop.js';
+import { BUILDING_PROTO, BLAYERS, layerTile as buildingLayer } from './buildingBackdrop.js';
 
 const SIZE = 384;
 const PAL = {
@@ -131,8 +131,11 @@ let sky = null;
 const traffic = new SkylineTraffic();
 if (typeof window !== 'undefined') window.__skyTraffic = traffic; // (tools/qa)
 /** The backdrop for the visible screen: `mode` 'up' (the plaza's dusk) or 'low' (the undercity's
- * smog); `dt` advances its traffic (0: frozen, as for a still). */
-export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0) {
+ * smog); `dt` advances its traffic (0: frozen, as for a still); `r` [x, y, w, h] the part of the screen
+ * where the drop shows (renderer.voidRect) — only that is drawn, nothing when null. */
+export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0, r = [0, 0, W, H]) {
+  traffic.update(dt);
+  if (!r) return;
   const P = PAL[mode];
   if (skyKey !== mode + H) {
     sky = ctx.createLinearGradient(0, 0, 0, H);
@@ -141,35 +144,41 @@ export function drawCityBackdrop(ctx, cam, W, H, mode, dt = 0) {
     sky.addColorStop(1, P.sky[2]);
     skyKey = mode + H;
   }
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(r[0], r[1], r[2], r[3]);
+  ctx.clip();
   ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, W, H);
-  traffic.update(dt);
+  ctx.fillRect(r[0], r[1], r[2], r[3]);
+  // a tileable layer over the rectangle only
+  const tiles = (c, f) => {
+    const TW = c.width;
+    const TH = c.height;
+    const ox = -((((cam.x * f) % TW) + TW) % TW);
+    const oy = -((((cam.y * f) % TH) + TH) % TH);
+    for (let y = oy; y < r[1] + r[3]; y += TH) {
+      if (y + TH <= r[1]) continue;
+      for (let x = ox; x < r[0] + r[2]; x += TW) if (x + TW > r[0]) ctx.drawImage(c, Math.round(x), Math.round(y));
+    }
+  };
   // PROTOTYPE (?proto=bg): the deepest dotted layer stays (the far city's lights), then the
   // building sheets' layers — landmarks, city blocks, the sky traffic between them and the near plant
-  if (BUILDING_PROTO) {
-    const c = layerCanvas(mode, 0);
-    const f = LAYERS[0].f;
-    const ox = -((((cam.x * f) % SIZE) + SIZE) % SIZE);
-    const oy = -((((cam.y * f) % SIZE) + SIZE) % SIZE);
-    for (let y = oy; y < H; y += SIZE) for (let x = ox; x < W; x += SIZE) ctx.drawImage(c, Math.round(x), Math.round(y));
+  if (BUILDING_PROTO && buildingLayer(mode, 'far')) {
+    tiles(layerCanvas(mode, 0), LAYERS[0].f);
     // the sky traffic's tiers between them (gfx/skylineTraffic.js): the dots and the quarter-size
     // craft past the far landmarks, the half-size ones past the city blocks, the big ones in front
-    if (drawBuildingLayer(ctx, 'far', cam, W, H, mode)) {
-      traffic.draw(ctx, 0, cam, W, H, mode);
-      traffic.draw(ctx, 1, cam, W, H, mode);
-      drawBuildingLayer(ctx, 'mid', cam, W, H, mode);
-      traffic.draw(ctx, 2, cam, W, H, mode);
-      drawBuildingLayer(ctx, 'near', cam, W, H, mode);
-      traffic.draw(ctx, 3, cam, W, H, mode);
-      return;
+    tiles(buildingLayer(mode, 'far'), BLAYERS.far.f);
+    traffic.draw(ctx, 0, cam, W, H, mode);
+    traffic.draw(ctx, 1, cam, W, H, mode);
+    tiles(buildingLayer(mode, 'mid'), BLAYERS.mid.f);
+    traffic.draw(ctx, 2, cam, W, H, mode);
+    tiles(buildingLayer(mode, 'near'), BLAYERS.near.f);
+    traffic.draw(ctx, 3, cam, W, H, mode);
+  } else {
+    for (let li = 0; li < LAYERS.length; li++) {
+      tiles(layerCanvas(mode, li), LAYERS[li].f);
+      for (let ti = 0; ti < TIERS.length; ti++) if (TIERS[ti].after === li) traffic.draw(ctx, ti, cam, W, H, mode);
     }
   }
-  for (let li = 0; li < LAYERS.length; li++) {
-    const c = layerCanvas(mode, li);
-    const f = LAYERS[li].f;
-    const ox = -((((cam.x * f) % SIZE) + SIZE) % SIZE);
-    const oy = -((((cam.y * f) % SIZE) + SIZE) % SIZE);
-    for (let y = oy; y < H; y += SIZE) for (let x = ox; x < W; x += SIZE) ctx.drawImage(c, Math.round(x), Math.round(y));
-    for (let ti = 0; ti < TIERS.length; ti++) if (TIERS[ti].after === li) traffic.draw(ctx, ti, cam, W, H, mode);
-  }
+  ctx.restore();
 }

@@ -68,7 +68,20 @@ async function loadOne(base, file) {
   const k = meta.k !== 1 ? meta.k : undefined;
   // frames in the shape the renderer draws: the anchor is the model's ground centre
   const frame = (page) => ({ page, sx: 0, sy: 0, w: page.width, h: page.height, ox: meta.anchor[0], oy: meta.anchor[1], k });
-  return { meta, body: frame(body), neon: frame(neon), reflect: frame(reflect) };
+  // a glow layer is drawn additively at its full size every frame: an empty one is dropped (null)
+  return { meta, body: frame(body), neon: lit(neon) && frame(neon), reflect: lit(reflect) && frame(reflect) };
+}
+
+/** Whether an image has any visible pixel (once, at load). */
+function lit(img) {
+  const c = document.createElement('canvas');
+  c.width = img.width;
+  c.height = img.height;
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.drawImage(img, 0, 0);
+  const d = x.getImageData(0, 0, img.width, img.height).data;
+  for (let i = 3; i < d.length; i += 4) if (d[i] > 3) return true;
+  return false;
 }
 
 // The Coruscant underworld set (tools/sprites/underworld/extract.py, cut from the concept sheets
@@ -126,12 +139,13 @@ export async function loadCitySprites(onProgress) {
     try {
       const atlas = await (await fetch(cb + 'atlas.json')).json();
       const [body, neon] = await Promise.all(['body', 'neon'].map((k) => Promise.all(atlas.pages[k].map((f) => loadImg(cb + f)))));
-      const blank = document.createElement('canvas');
-      blank.width = blank.height = 1;
       for (const [name, meta] of Object.entries(atlas.sprites)) {
         const [sx, sy, w, h] = meta.rect;
         const frame = (page) => ({ page, sx, sy, w, h, ox: meta.anchor[0], oy: meta.anchor[1] });
-        out[name] = { meta, body: frame(body[meta.page]), neon: frame(neon[meta.page]), reflect: { page: blank, sx: 0, sy: 0, w: 1, h: 1, ox: 0, oy: 0 } };
+        // the neon only over its lit part (bake.py's neonRect, on the same page), none without one
+        const nr = meta.neonRect;
+        const neonF = nr && { page: neon[meta.page], sx: nr[0], sy: nr[1], w: nr[2], h: nr[3], ox: meta.anchor[0] - (nr[0] - sx), oy: meta.anchor[1] - (nr[1] - sy) };
+        out[name] = { meta, body: frame(body[meta.page]), neon: nr === undefined ? frame(neon[meta.page]) : neonF, reflect: null };
       }
       onProgress(1, '코러산트 언더시티: 건물');
     } catch (e) {

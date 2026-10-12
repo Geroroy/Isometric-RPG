@@ -143,10 +143,17 @@ export class Game {
         this.emit('fade', 0, 0.45);
         this.emit('place', this.lift.label);
         this.lift.t = 1.2; // a moment before the doors work again
+        this.liftStepOff = true;
       } else if (this.lift.t <= 0) this.lift = null;
       return;
     }
     if (!lifts || this.cinema || p.dead) return;
+    // one steps off at the other end beside its doors: they work again only once one has walked away
+    // (standing still there must not ride straight back)
+    if (this.liftStepOff) {
+      if (lifts.every((L) => dist(p.x, p.y, L.x, L.y) > 1.2)) this.liftStepOff = false;
+      else return;
+    }
     for (const L of lifts) {
       if (dist(p.x, p.y, L.x, L.y) > 0.75) continue;
       this.lift = { to: L.to, label: L.label.includes('언더') ? '코러산트 · 언더시티' : '코러산트 · 상층 플라자', t: 0.35 };
