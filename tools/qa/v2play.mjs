@@ -113,10 +113,10 @@ for (const [name, r] of Object.entries(ROUTES)) {
   const L = await page.evaluate(() => __log);
   console.log(`walk ${name}: ${res.join(', ')} tiles from the click; ${L.frames} frames, camera jumps ${L.jumps}, pop-ins ${L.pops}${L.bad.length ? ' (' + L.bad.join('; ') + ')' : ''}`);
 }
-// --- cover: behind the tower west of the plaza (towers_02) — does it fade over the player?
+// --- cover: behind an undercity tower — the window round the player
 const cover = await page.evaluate(() => {
   const g = __game;
-  const t = g.world.props.find((p) => p.sheet === 'towers_02');
+  const t = g.world.props.find((p) => /^towers_/.test(p.sheet || '') && p.y > 90);
   g.player.x = t.x - 2;
   g.player.y = t.y - 7.5; // just behind its back wall
   g.player.path = null;
@@ -124,10 +124,10 @@ const cover = await page.evaluate(() => {
     g.update(1 / 60);
     __renderer.render(1 / 60);
   }
-  return { tower: [t.x, t.y], alpha: t.alpha ?? 1, player: [g.player.x, g.player.y] };
+  return { sheet: t.sheet, tower: [t.x, t.y], window: !!t.window, player: [g.player.x, g.player.y] };
 });
 await page.screenshot({ path: `${out}/cover.png` });
-console.log(`cover: behind towers_02 at ${cover.tower} the tower's alpha is ${cover.alpha}`);
+console.log(`cover: behind ${cover.sheet} at ${cover.tower}: window ${cover.window ? 'cut' : 'none'}`);
 // --- wide: the widest zoom over each district
 for (let i = 0; i < 10; i++) await page.click('#zoomOut');
 for (const [name, p] of Object.entries(spots)) {

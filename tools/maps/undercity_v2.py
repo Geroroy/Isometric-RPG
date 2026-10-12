@@ -89,11 +89,11 @@ class Plan:
 P = Plan()
 # buildings in a row stand an alley apart (ALLEY tiles between their footprints, plus the 0.4 margin each
 # side): one walks between them and round the back; the renderer cuts a window in a building that covers him
-ALLEY = 3.0
+ALLEY = 6.0  # a street's width: the walls ~7 tiles apart, room to walk two abreast and to see down the gap
 
 # ================================================================== the undercity
 # --- the back (north) edge: tenement towers to the west of the lift square, the works to the east
-end, nw_towers = P.row(['towers_00', 'towers_04', 'towers_12', 'towers_08'], 42.5, 97.0, 'n', 'low', gap=ALLEY)
+end, nw_towers = P.row(['towers_00', 'towers_04', 'towers_08'], 42.5, 97.0, 'n', 'low', gap=ALLEY)
 assert end <= 78.5, f'NW towers end at {end}'
 end, works = P.row(['plants_03', 'plants_12', 'plants_14', 'plants_11'], 90.5, 97.0, 'n', 'low', gap=ALLEY)
 # --- the back (west) edge below the avenue: the residential stacks
@@ -101,17 +101,17 @@ end_w, w_towers = P.col(['towers_09', 'towers_13', 'towers_15'], 116.5, 43.0, 'w
 # --- shop blocks along the avenue's south side (row A) and the lane (row B), west and east of the plaza
 # (from x 60: the stacks' lane west of it keeps 6+ tiles in view beside the towers — the shops hide a
 # wedge west of their back corner)
-_, rowA_w = P.row(['shops_01', 'shops_06', 'shops_13'], 60.0, 116.5, 'n', 'low', gap=ALLEY)
+_, rowA_w = P.row(['shops_01', 'shops_06'], 60.0, 116.5, 'n', 'low', gap=ALLEY)
 neon_club = P.put('shops_14', 98.0, 116.5 + B['shops_14']['tiles'][1] / 2, 'low')
 cantina = P.put('shops_00', 112.2 + B['shops_00']['tiles'][0] / 2, 116.5 + B['shops_00']['tiles'][1] / 2, 'low')
-_, rowA_e = P.row(['shops_03', 'shops_10', 'shops_11', 'shops_07'], 122.5, 116.5, 'n', 'low', gap=ALLEY)
+_, rowA_e = P.row(['shops_03', 'shops_10', 'shops_11'], 125.0, 116.5, 'n', 'low', gap=ALLEY)
 # row B a lane behind row A
 back_w = max(it['rect'][3] for it in rowA_w[:2]) + ALLEY
 back_e = max(it['rect'][3] for it in rowA_e[:2]) + ALLEY
 _, rowB_w = P.row(['shops_04', 'shops_15'], 60.0, back_w, 'n', 'low', gap=ALLEY)
-_, rowB_e = P.row(['shops_08', 'shops_12'], 122.5, back_e, 'n', 'low', gap=ALLEY)
-# --- two towers west of the plaza, behind it (they hide the lane behind them, not the plaza)
-P.put('towers_02', 76.5 + B['towers_02']['tiles'][0] / 2, 134.5 + B['towers_02']['tiles'][1] / 2, 'low')
+_, rowB_e = P.row(['shops_08', 'shops_12'], 125.0, back_e, 'n', 'low', gap=ALLEY)
+# (the tower that stood west of the plaza is left out: with street-wide gaps there is no room for it
+# between row B, the plaza and the south edge)
 # --- the front edges: works framing the scene (they fade when they cover someone), a market tent by
 # the overlook; the long cooling plant down the east edge
 P.put('plants_09', 59.0 + B['plants_09']['tiles'][0] / 2, 155.4 - B['plants_09']['tiles'][1] / 2, 'low')
