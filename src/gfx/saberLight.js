@@ -24,14 +24,18 @@ export const LIGHT = {
 };
 export const preset = () => LIGHT;
 
-// the reflected tints: the colour a surface takes near the blade and further out. Blue and red
-// as specified from the footage; green and purple on the same pattern (bright and saturated near,
-// deeper out). Purple sits at 280°, blue at 190–215°, so the two never read alike on a floor.
+// the reflected tints: the colour a surface takes near the blade and further out, measured in the films
+// (tools/sprites/saber/measure_spill.py on reference/motion — Revenge of the Sith's Mustafar, the Kenobi
+// series): the colour a blue blade adds to what is near it is 214-216° (inter-quartile 208-250), and the
+// lit surfaces themselves read 228-240° close to it and 209-213° further out — never cyan (the old near
+// tint was 191°). As a light the tints are more saturated than the lit pixels (those are light plus the
+// surface's own grey): near 224° at 0.75, far 214° at 0.85. Red, green and purple on the same pattern
+// from their blades' rim hues (near +7°, far -3°).
 const TINTS = {
-  blue: ['#00d2ff', '#1a75ff'],
-  red: ['#ff5500', '#ff2a00'],
-  green: ['#8cff5a', '#22c93a'],
-  purple: ['#e070ff', '#8f3cff'],
+  blue: ['#4073ff', '#247ef2'],
+  red: ['#ff4043', '#f2244a'],
+  green: ['#40ff79', '#24f240'],
+  purple: ['#c940ff', '#9624f2'],
 };
 const tints = new Map();
 /** The light's tints for a saber colour ([r, g, b]). */
