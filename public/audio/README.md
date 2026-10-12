@@ -8,8 +8,6 @@
 
 `tools/saber_from_recording.py`가 배틀프론트 2 모드 'Improved Lightsaber Sounds V1.5' 시연 녹음에서 잘라 재구성한 소리입니다. 키: `hum`(루프) `ignite` `retract` `swing` `swingHeavy` `deflect` `clash` `hit` `lock`(칼날 겨루기 루프). 게임은 상황에 따라 이들을 고르고 겹치고 음높이를 바꿉니다(`src/core/audio.js`의 `saberSound`).
 
-명중음 `hit_1~3.wav`만은 `tools/saber_hit_synth.py`가 numpy로 **직접 합성한 오리지널 소리**입니다(영화 음원·샘플 사용 없음). 영화의 명중음 느낌을 흉내 냈습니다: 짧은 크랙, 지글거리며 타는 쉿 소리와 그 속의 전기 크래클, 타격에 휘었다 처지는 과구동 험("즈즈짓"), 낮은 충격음. 다시 만들기: `python3 tools/saber_hit_synth.py`.
-
 ### 이전: 순수 합성 버전
 
 `tools/saber_sfx.py`가 numpy · scipy로 **직접 합성한 오리지널 소리**입니다(영화 음원·샘플 사용 없음).
