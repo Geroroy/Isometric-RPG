@@ -190,8 +190,11 @@ export class Unit {
         c.acc = 0;
       }
       if (c.t <= 0 || this.dead) this.choke = null;
-    } else if (this.z > 0 && !this.airborne) {
-      this.z = Math.max(0, this.z - dt * 6);
+    } else if (!this.airborne) {
+      // settle onto the ground under him: down to it, or up onto a raised top (worldgen.js surfaces) in a step
+      const ground = this.game.world.groundAt ? this.game.world.groundAt(this.x, this.y) : 0;
+      if (this.z > ground) this.z = Math.max(ground, this.z - dt * 6);
+      else if (this.z < ground) this.z = Math.min(ground, this.z + dt * 8);
     }
   }
 
@@ -913,7 +916,7 @@ export class Player extends Unit {
         this.animT = (k * (a.frames - 0.01)) / a.fps;
         this.animSpeed = 1;
         if (k >= 1) {
-          this.z = 0;
+          this.z = this.game.world.groundAt ? this.game.world.groundAt(this.x, this.y) : 0; // (onto a table top)
           this.airborne = false;
           this.action = null;
           act.onLand && act.onLand();

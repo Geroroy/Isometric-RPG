@@ -84,6 +84,7 @@ export class World {
     this.lights = [];
     this.guards = [];
     this.pois = [];
+    this.surfaces = []; // raised walkable tops (a table): { x0, y0, x1, y1, z } — whoever stands there stands at z
     this.generate();
   }
 
@@ -93,6 +94,13 @@ export class World {
   inBounds(x, y) {
     return x >= 0 && y >= 0 && x < MAP_W && y < MAP_H;
   }
+  /** The ground's height at a point: a raised surface's top, else 0. */
+  groundAt(x, y) {
+    let z = 0;
+    for (const t of this.surfaces) if (x >= t.x0 && x <= t.x1 && y >= t.y0 && y <= t.y1 && t.z > z) z = t.z;
+    return z;
+  }
+
   isBlocked(x, y) {
     const tx = Math.floor(x);
     const ty = Math.floor(y);
@@ -600,8 +608,10 @@ export class MustafarArena extends World {
     this.addProp('blastDoor', H.x - H.hw - 0.9, H.y, { angleIdx: 1, noBlock: true });
     this.door({ x: M.junction.x, y: H.y - H.hh }, 1, false); // (the covered corridor's portal is its frame)
     // the film's long table, its pointed end to the passage; the high-backed chairs along its far side and
-    // at its head (the near side left clear, as the near walls are); the model props if the sprites did not load
-    if (this.addSheetProp('mfTable', H.x, H.y)) {
+    // at its head (the near side left clear, as the near walls are); the model props if the sprites did not load.
+    // The fight goes up onto it, as in the film: drawn with the floor, its top a surface 0.78 m up
+    if (this.addSheetProp('mfTable', H.x, H.y, { noBlock: true, flat: true })) {
+      this.surfaces.push({ x0: H.x - 4, y0: H.y - 0.8, x1: H.x + 4, y1: H.y + 0.8, z: 0.78 });
       for (const dx of [-3.2, -1.7, -0.2, 1.3, 2.8]) this.addSheetProp('mfChair', H.x + dx, H.y - 1.35);
       this.addSheetProp('mfChair_x', H.x - 4.7, H.y);
     } else {

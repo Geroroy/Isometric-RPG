@@ -645,10 +645,10 @@ export class Game {
     const act = this.activeUnits;
     for (let i = 0; i < act.length; i++) {
       const a = act[i];
-      if (a.dead || a.z > 0.3 || a.noCollide) continue;
+      if (a.dead || a.noCollide) continue;
       for (let j = i + 1; j < act.length; j++) {
         const b = act[j];
-        if (b.dead || b.z > 0.3 || b.noCollide) continue;
+        if (b.dead || b.noCollide || Math.abs(a.z - b.z) > 0.3) continue; // (one in the air passes over the other; two on a table top still meet)
         const dx = b.x - a.x;
         const dy = b.y - a.y;
         const min = a.radius + b.radius;

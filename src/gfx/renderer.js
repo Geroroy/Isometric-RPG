@@ -375,17 +375,20 @@ export class Renderer {
     ctx.fillStyle = 'rgba(0,0,0,0.32)';
     for (const u of g.activeUnits) {
       if (u.dead || u.hidden) continue;
-      const s = worldToScreen(u.x, u.y);
+      // on the ground under him (a table top's, when he stands over one)
+      const gz = g.world.groundAt ? g.world.groundAt(u.x, u.y) : 0;
+      const hz = Math.max(0, u.z - gz);
+      const s = worldToScreen(u.x, u.y, Math.min(gz, u.z));
       const sf = u.frame().shadow;
       if (sf) {
         // fainter as the unit leaves the ground
-        ctx.globalAlpha = SHADOW_ALPHA / (1 + u.z * 0.6);
+        ctx.globalAlpha = SHADOW_ALPHA / (1 + hz * 0.6);
         this.drawFrame(sf, s.x, s.y);
         ctx.globalAlpha = 1;
         continue;
       }
       const r = u.shadowR || (u.kind === 'b2' ? 11 : u.kind === 'r2' ? 7 : u.kind === 'fighter' ? 30 : 9);
-      shadow(s.x, s.y, r / (1 + u.z * 0.4));
+      shadow(s.x, s.y, r / (1 + hz * 0.4));
     }
     for (const pk of g.pickups) {
       const s = worldToScreen(pk.x, pk.y);
@@ -852,7 +855,7 @@ export class Renderer {
   drawGroundMarkers(ctx, cam) {
     const g = this.game;
     const ell = (x, y, rx, color, alpha = 1, dash = false) => {
-      const s = worldToScreen(x, y);
+      const s = worldToScreen(x, y, g.world.groundAt ? g.world.groundAt(x, y) : 0); // (on a table top, at its height)
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = color;
