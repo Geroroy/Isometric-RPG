@@ -581,7 +581,25 @@ const MIRROR_SHEET = {
 // the pairs, for the loader (gfx/mustafarFloor.js: one of each is shipped, the other flipped from it)
 export const MUSTAFAR_SHEETS = { mirror: MIRROR_SHEET };
 
+// Mustafar's rock sprites (tools/sprites/mustafar_rocks) in place of the model rocks: by size class
+const ROCKS = {
+  land: [...Array(9).keys()].map((i) => 'rk1_' + i), // landforms 12-15 m across: deep in the mountain
+  wall: [...Array(6).keys()].map((i) => 'rk4_' + i), // cliff walls
+  crag: [...Array(8).keys()].map((i) => 'rk2_' + i), // crags and slabs
+  pile: [...Array(6).keys()].map((i) => 'rk3_' + i), // boulder piles: the rock's rim, under the blocks, the bank
+};
+
 export class MustafarArena extends World {
+  /** The model rocks become the rock sprites when they loaded: a cliff a wall (now and then a landform), a boulder a crag, a lava rock a pile. */
+  addProp(type, x, y, opts = {}) {
+    const cls = type === 'cliff' ? (this.rng.next() < 0.3 ? 'land' : 'wall') : type === 'boulder' ? 'crag' : type === 'lavaRock' ? 'pile' : null;
+    if (cls && cityFootprint(ROCKS[cls][0])) {
+      const list = ROCKS[cls];
+      return this.addSheetProp(list[Math.floor(this.rng.next() * list.length)], x, y, { noBlock: true });
+    }
+    return super.addProp(type, x, y, opts);
+  }
+
   generate() {
     this.rng = new RNG(this.seed);
     const M = MUSTAFAR_D; // (built in design coordinates, transposed at the end)

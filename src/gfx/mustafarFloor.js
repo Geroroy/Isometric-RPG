@@ -102,3 +102,21 @@ export async function loadCargo() {
   }
   return out;
 }
+
+/** Mustafar's rock (tools/sprites/mustafar_rocks: one atlas, its lava veins on a second, glowing page). */
+export async function loadRocks() {
+  const base = import.meta.env.BASE_URL + 'sprites/mustafar/';
+  const out = {};
+  try {
+    const atlas = await cachedJSON(base + 'rocks.json');
+    const [page, npage] = await Promise.all([cachedImage(base + atlas.page), cachedImage(base + atlas.neon)]);
+    for (const [name, m] of Object.entries(atlas.sprites)) {
+      const [sx, sy, w, h] = m.rect;
+      const f = (pg) => ({ page: pg, sx, sy, w, h, ox: m.anchor[0], oy: m.anchor[1], k: m.k });
+      out[name] = { meta: m, body: f(page), neon: f(npage), reflect: null };
+    }
+  } catch (e) {
+    console.warn('무스타파 바위: ' + e.message); // the model rocks stay
+  }
+  return out;
+}

@@ -9,7 +9,7 @@ import { prune as pruneFiles, stats as fileStats } from './gfx/fileCache.js';
 import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
 import { setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture } from './gfx/terrain.js';
-import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid, loadCargo } from './gfx/mustafarFloor.js';
+import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid, loadCargo, loadRocks } from './gfx/mustafarFloor.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
@@ -88,7 +88,7 @@ async function boot() {
   if (DUEL === 'mustafar') setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
   // and its wall consoles, placed as the city's sheet sprites are (worldgen.js addSheetProp)
   if (DUEL === 'mustafar') {
-    assets.city = await loadMustafarConsoles();
+    assets.city = { ...(await loadMustafarConsoles()), ...(await loadRocks()) };
     setCityFootprints(assets.city);
     // the river droid and Obi-Wan's platform: the film's, in place of the models baked with the duel
     const droid = await loadMustafarDroid().catch((e) => console.warn('무스타파 드로이드: ' + e.message));
