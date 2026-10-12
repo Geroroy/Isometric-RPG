@@ -113,9 +113,60 @@ function plateFloor(fx, fy, o) {
   const mott = 1 + (valueNoise(fx * 1.3, fy * 1.3, 94) - 0.5) * 0.22 + (valueNoise(fx * 4.5, fy * 4.5, 95) - 0.5) * 0.1;
   const sp = hash2(Math.floor(fx * 24), Math.floor(fy * 24), 96);
   let k = tone * mott * (sp > 0.97 ? 0.62 : sp < 0.03 ? 1.18 : 1);
+  // weathered as the facility's tiles are (tools/sprites/mustafar_floor: grit, soot, rust, worn joints):
+  // the grit, a fine grain over the plate
+  k *= 1 + (valueNoise(fx * 13, fy * 13, 97) - 0.5) * 0.2;
+  // grime packed along the joints, fading out over a third of a metre
+  if (joint < 0.33) k *= 0.74 + 0.26 * (joint / 0.33) ** 0.7;
+  // scuffs: fine scratches across each plate at its own angle, in worn bands (boots, crates dragged)
+  const sa = hash2(key, 13, 98) * Math.PI;
+  const st = (fx * Math.cos(sa) + fy * Math.sin(sa)) * 7 + hash2(key, 17, 99) * 7;
+  const scr = Math.abs(st - Math.round(st));
+  const worn = valueNoise(fx * 0.9 + key * 0.37, fy * 0.9, 100);
+  if (scr < 0.07 && worn > 0.55 && valueNoise(fx * 3, fy * 3 + key, 101) > 0.45) k *= dark ? 1.3 : 1.12;
+  // a hairline crack in some plates: a short jagged line from a point near the plate's middle, dark
+  if (hash2(key, 19, 102) < 0.45) {
+    const ca = hash2(key, 41, 103) * Math.PI;
+    const tx = Math.cos(ca);
+    const ty = Math.sin(ca);
+    const ccx = Math.round(fx / 4) * 4 + (hash2(key, 43, 104) - 0.5) * 2;
+    const ccy = Math.round(fy / 4) * 4 + (hash2(key, 47, 104) - 0.5) * 2;
+    const along = (fx - ccx) * tx + (fy - ccy) * ty;
+    const across = -(fx - ccx) * ty + (fy - ccy) * tx + (valueNoise(along * 2.5, key & 63, 105) - 0.5) * 0.5;
+    const len = 0.8 + hash2(key, 53, 104) * 1.4;
+    if (Math.abs(along) < len && Math.abs(across) < 0.022 * (1 - Math.abs(along) / len) + 0.006) k *= 0.5;
+  }
+  // soot: broad soft patches of ash blown off the lava
+  const soot = valueNoise(fx * 0.16, fy * 0.16, 115) * 0.65 + valueNoise(fx * 0.7, fy * 0.7, 106) * 0.35;
+  if (soot > 0.5) k *= 1 - Math.min(0.42, (soot - 0.5) * 1.6);
+  // oil: now and then a dark round spot on a plate
+  if (hash2(key, 23, 107) < 0.3) {
+    const ox = (hash2(key, 29, 108) - 0.5) * 3;
+    const oy = (hash2(key, 31, 109) - 0.5) * 3;
+    const cx = Math.round(fx / 4) * 4 + ox;
+    const cy = Math.round(fy / 4) * 4 + oy;
+    const r = Math.hypot(fx - cx, (fy - cy) * 1.2) / (0.35 + hash2(key, 37, 110) * 0.5) + (valueNoise(fx * 6, fy * 6, 111) - 0.5) * 0.5;
+    if (r < 1) k *= 0.62 + 0.38 * r * r;
+  }
   if (joint < 0.045) k *= 0.32;
   else if (joint < 0.085 && lip) k *= 1.14;
+  // bolts along the joints: a dark head with a lit rim, every 0.8 m beside the line
+  else if (joint > 0.12 && joint < 0.2) {
+    const bx = fx * 1.25;
+    const by = fy * 1.25;
+    const d = Math.hypot(bx - Math.round(bx), by - Math.round(by));
+    if (d < 0.07) k *= d < 0.045 ? 0.55 : 1.25;
+  }
   for (let c = 0; c < 3; c++) o[c] = base[c] * k;
+  // rust: warm stains where the damp sat, bleeding from the joints
+  const rust = valueNoise(fx * 0.45, fy * 0.45, 112) * valueNoise(fx * 2.1, fy * 2.1, 113) * (joint < 0.5 ? 1.25 : 1);
+  if (rust > 0.32) {
+    const m = Math.min(0.55, (rust - 0.32) * 2.2);
+    const l = (o[0] + o[1] + o[2]) / 3;
+    o[0] += (l * 1.45 - o[0]) * m;
+    o[1] += (l * 0.92 - o[1]) * m;
+    o[2] += (l * 0.6 - o[2]) * m;
+  }
 }
 
 // Mustafar's lava (tools/sprites/mustafar_lava: an isometric lava tile unprojected to a seamless square), laid in
