@@ -18,7 +18,8 @@ export async function loadMustafarFloor(file = 'floor.png') {
 // (tools/sprites/mustafar_console, mustafar_corridor, mustafar_set):
 // city-sheet sprites (renderer.js draws a prop with `sheet` from assets.city: body, then the neon layer after
 // the light map), one per wall direction (and screen colour)
-export const MUSTAFAR_CONSOLES = ['mfConsole', 'mfConsole_r', 'mfConsoleRed', 'mfConsoleRed_r', 'mfCorridor', 'mfCorridor_r', 'mfTable', 'mfWindow', 'mfWindow_r', 'mfChair', 'mfChair_x', 'mfPassage', 'mfPassage_x', 'mfArm', 'mfCatwalk'];
+// (the baked turns not placed anywhere yet — mfConsoleRed_r, mfCorridor_r, mfWindow_r, mfPassage_x — are left unloaded)
+export const MUSTAFAR_CONSOLES = ['mfConsole', 'mfConsole_r', 'mfConsoleRed', 'mfCorridor', 'mfTable', 'mfWindow', 'mfChair', 'mfChair_x', 'mfPassage', 'mfArm', 'mfCatwalk'];
 export async function loadMustafarConsoles() {
   const base = import.meta.env.BASE_URL + 'sprites/mustafar/';
   const out = {};
