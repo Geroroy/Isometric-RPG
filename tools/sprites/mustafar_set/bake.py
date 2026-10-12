@@ -56,6 +56,7 @@ PIECES = {
         ],
         footprint=[[-4, -0.85], [4, -0.85], [4, 0.85], [-4, 0.85]],
         emit='table',
+        ship='mirror',  # (placed along y in the world)
         shadow=0.78,  # the top's height: its shadow cast onto the floor, baked under it
         gain=0.9,
         lights=[[0, 0, 1.2, 235, 240, 255, 70, 0.02]],  # the strip's light on the top and round it
@@ -76,6 +77,7 @@ PIECES = {
         ],
         footprint=[[-2.2, -0.9], [2.2, -0.9], [2.2, 0.9], [-2.2, 0.9]],
         emit='holo',
+        ship='mirror',  # (placed along y in the world)
         shadow=1.0,
         gain=0.9,
         lights=[[0, 0, 1.4, 90, 170, 255, 120, 0.04]],  # the map's blue light
@@ -255,7 +257,7 @@ def bake(name, P):
     ay = gy * sy + k * gx * sx + off - 10 * OVER * P['back']
     bb = layers['body'].getbbox()
     has_neon = P.get('emit', False)
-    for nm, mirrored in ((name, False), (P['mirror'], True)):
+    for nm, mirrored in ((name, False),):  # (the `mirror` twin is flipped by the loader: gfx/mustafarFloor.js)
         if not nm:
             continue
         b2, n2 = layers['body'].crop(bb), layers['neon'].crop(bb)
@@ -300,6 +302,14 @@ def bake_fit(name, P, body, neon):
         big = im.transform((size[0] * 2, size[1] * 2), Image.AFFINE, tuple((Fi[:2] * [[0.5, 0.5, 1], [0.5, 0.5, 1]]).reshape(-1)), resample=Image.BICUBIC)
         layers[nm] = big.resize(size, Image.LANCZOS)
     ax, ay = -lo  # the world origin (the piece's ground centre)
+    if P.get('ship') == 'mirror':
+        # shipped as its mirrored twin (the orientation the map places): flipped before the shadow is cast, so
+        # the shadow still falls away from the key light
+        for k in layers:
+            layers[k] = layers[k].transpose(Image.FLIP_LEFT_RIGHT)
+        ax = layers['body'].width - ax
+        P = {**P, 'footprint': [[y, x] for x, y in P['footprint']], 'lights': [[l[1], l[0], *l[2:]] for l in P.get('lights', [])]}
+        name = P['mirror']
     if P.get('shadow'):
         # the shadow on the floor: the piece's silhouette dropped by its height and pushed away from the key light
         # (upper left: ART_GUIDE.md §3) — down by the height on screen, right by two thirds of it — soft, under it
@@ -314,7 +324,7 @@ def bake_fit(name, P, body, neon):
         layers['body'] = shadow
     bb = layers['body'].getbbox()
     has_neon = bool(P.get('emit'))
-    for nm, mirrored in ((name, False), (P['mirror'], True)):
+    for nm, mirrored in ((name, False),):  # (the `mirror` twin is flipped by the loader: gfx/mustafarFloor.js)
         if not nm:
             continue
         b2, n2 = layers['body'].crop(bb), layers['neon'].crop(bb)

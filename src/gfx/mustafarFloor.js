@@ -25,10 +25,31 @@ export async function loadMustafarFloor() {
 // (tools/sprites/mustafar_console, mustafar_corridor, mustafar_set):
 // city-sheet sprites (renderer.js draws a prop with `sheet` from assets.city: body, then the neon layer after
 // the light map), one per wall direction (and screen colour)
+// the set sprites as baked (one of each mirrored pair); the other of a pair is this one flipped (flipSheet)
+const SHIPPED = ['mfConsole', 'mfConsoleRed', 'mfCorridor_r', 'mfWindow', 'mfPassage_x', 'mfChair_x', 'mfTable_y', 'mfArm', 'mfCatwalk', 'mfHolo_y'];
+
+/** A set sprite mirrored left-right: its transpose in the world (x ↔ y), as the bakers' mirrors were. */
+function flipSheet(src) {
+  const flip = (f) => {
+    if (!f) return null;
+    const c = document.createElement('canvas');
+    c.width = f.w;
+    c.height = f.h;
+    const x = c.getContext('2d');
+    x.translate(f.w, 0);
+    x.scale(-1, 1);
+    x.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, f.w, f.h);
+    return { ...f, page: c, sx: 0, sy: 0, ox: f.w - f.ox };
+  };
+  const tp = (q) => [q[1], q[0], ...q.slice(2)];
+  const m = src.meta;
+  return { meta: { ...m, anchor: [src.body.w - m.anchor[0], m.anchor[1]], footprint: m.footprint.map(tp), lights: (m.lights || []).map(tp) }, body: flip(src.body), neon: flip(src.neon), reflect: null };
+}
+
 export async function loadMustafarConsoles() {
   const base = import.meta.env.BASE_URL + 'sprites/mustafar/';
   const out = {};
-  for (const name of MUSTAFAR_SHEETS.world) {
+  for (const name of SHIPPED) {
     try {
       const meta = await cachedJSON(base + name + '.json');
       const [body, neon] = await Promise.all([cachedImage(base + meta.layers.body), meta.layers.neon ? cachedImage(base + meta.layers.neon) : null]);
@@ -38,14 +59,8 @@ export async function loadMustafarConsoles() {
       console.warn('무스타파 세트: ' + e.message); // left out of the rooms (addSheetProp skips it)
     }
   }
-  // the design names the map is built with (worldgen.js MustafarArena, transposed after): each its world twin's
-  // footprint and lights turned back (x ↔ y), so the design pass blocks and lights the right tiles
-  const tp = (q) => [q[1], q[0], ...q.slice(2)];
-  for (const [design, world] of Object.entries(MUSTAFAR_SHEETS.mirror)) {
-    if (out[design] || !out[world]) continue;
-    const w = out[world];
-    out[design] = { ...w, meta: { ...w.meta, footprint: w.meta.footprint.map(tp), lights: (w.meta.lights || []).map(tp) } };
-  }
+  // every name the map uses (worldgen.js MIRROR_SHEET, both ways): the shipped one, else its twin flipped
+  for (const [a, b] of Object.entries(MUSTAFAR_SHEETS.mirror)) for (const [n, t] of [[a, b], [b, a]]) if (!out[n] && out[t]) out[n] = flipSheet(out[t]);
   return out;
 }
 

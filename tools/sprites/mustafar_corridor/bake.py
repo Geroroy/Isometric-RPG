@@ -90,7 +90,7 @@ def main():
     ax, ay = -lo  # the portal's sill centre (world origin) in the output
     bb = out['body'].getbbox()
     OUT.mkdir(parents=True, exist_ok=True)
-    for turned in (True, False):
+    for turned in (True,):  # (its mirrored twin is flipped by the loader: gfx/mustafarFloor.js)
         b2, n2 = out['body'].crop(bb), out['neon'].crop(bb)
         ox, oy = ax - bb[0], ay - bb[1]
         fp = [[-L, -W / 2], [0, -W / 2], [0, W / 2], [-L, W / 2]]  # along x

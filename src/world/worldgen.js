@@ -560,8 +560,8 @@ const MIRROR_SHEET = {
   mfCatwalk: 'mfCatwalk_y',
   mfHolo: 'mfHolo_y',
 };
-// what the loader fetches (the world's sprites) and the design names it stands in for (gfx/mustafarFloor.js)
-export const MUSTAFAR_SHEETS = { world: [...new Set(Object.values(MIRROR_SHEET))], mirror: MIRROR_SHEET };
+// the pairs, for the loader (gfx/mustafarFloor.js: one of each is shipped, the other flipped from it)
+export const MUSTAFAR_SHEETS = { mirror: MIRROR_SHEET };
 
 export class MustafarArena extends World {
   generate() {

@@ -101,7 +101,7 @@ def main():
         ax = (fx0 + fx1) / 2 + 20 * OVER * DEPTH / 2
         ay = (fy0 + fy1) / 2 - 10 * OVER * DEPTH / 2
         bb = bp.getbbox()
-        for turned in (False, True):
+        for turned in (False,):  # (the mirrored twin for a west wall is flipped by the loader: gfx/mustafarFloor.js)
             b2, n2 = bp.crop(bb), npj.crop(bb)
             ox, oy = ax - bb[0], ay - bb[1]
             if turned:  # mirrored: along a west wall, facing +x
