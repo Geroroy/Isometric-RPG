@@ -26,7 +26,7 @@ export async function loadMustafarFloor() {
 // city-sheet sprites (renderer.js draws a prop with `sheet` from assets.city: body, then the neon layer after
 // the light map), one per wall direction (and screen colour)
 // the set sprites as baked (one of each mirrored pair); the other of a pair is this one flipped (flipSheet)
-const SHIPPED = ['mfConsole', 'mfConsoleRed', 'mfCorridor_r', 'mfWindow', 'mfPassage_x', 'mfChair_x', 'mfTable_y', 'mfArm', 'mfCatwalk', 'mfHolo_y'];
+const SHIPPED = ['mfConsole', 'mfConsoleRed', 'mfCorridor_r', 'mfWindow', 'mfPassage_x', 'mfChair_x', 'mfTable_y', 'mfArm', 'mfCatwalk', 'mfHolo_y', 'mfFall'];
 
 /** A set sprite mirrored left-right: its transpose in the world (x ↔ y), as the bakers' mirrors were. */
 function flipSheet(src) {
@@ -52,9 +52,16 @@ export async function loadMustafarConsoles() {
   for (const name of SHIPPED) {
     try {
       const meta = await cachedJSON(base + name + '.json');
-      const [body, neon] = await Promise.all([cachedImage(base + meta.layers.body), meta.layers.neon ? cachedImage(base + meta.layers.neon) : null]);
-      const frame = (page) => ({ page, sx: 0, sy: 0, w: page.width, h: page.height, ox: meta.anchor[0], oy: meta.anchor[1], k: meta.k });
-      out[name] = { meta, body: frame(body), neon: neon && frame(neon), reflect: null };
+      const frame = (page, sy = 0, h = page.height) => ({ page, sx: 0, sy, w: page.width, h, ox: meta.anchor[0], oy: meta.anchor[1], k: meta.k });
+      if (meta.layers.sheet) {
+        // body over neon in one image (tools/sprites/mustafar_set/pack.py)
+        const page = await cachedImage(base + meta.layers.sheet);
+        const h = meta.layers.split;
+        out[name] = { meta, body: frame(page, 0, h), neon: frame(page, h, h), reflect: null };
+      } else {
+        const [body, neon] = await Promise.all([cachedImage(base + meta.layers.body), meta.layers.neon ? cachedImage(base + meta.layers.neon) : null]);
+        out[name] = { meta, body: frame(body), neon: neon && frame(neon), reflect: null };
+      }
     } catch (e) {
       console.warn('무스타파 세트: ' + e.message); // left out of the rooms (addSheetProp skips it)
     }

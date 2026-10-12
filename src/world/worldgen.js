@@ -559,6 +559,8 @@ const MIRROR_SHEET = {
   mfArm_y: 'mfArm',
   mfCatwalk: 'mfCatwalk_y',
   mfHolo: 'mfHolo_y',
+  mfFall: 'mfFall_x',
+  mfFall_x: 'mfFall',
 };
 // the pairs, for the loader (gfx/mustafarFloor.js: one of each is shipped, the other flipped from it)
 export const MUSTAFAR_SHEETS = { mirror: MIRROR_SHEET };
@@ -693,7 +695,10 @@ export class MustafarArena extends World {
     for (const y of [M.balconyEnd.y - 2, M.balconyEnd.y + 2]) this.addProp('catRail', M.balconyEnd.x + 0.5, y, { angleIdx: 0, noBlock: true });
     this.addProp('catRail', M.balconyEnd.x + 2.0, M.balconyEnd.y - 1, { angleIdx: 1, noBlock: true });
     this.addProp('catRail', M.balconyEnd.x + 2.0, M.balconyEnd.y + 1, { angleIdx: 1, noBlock: true });
-    for (const [x, y] of [[88, 87], [95, 86.5], [102, 87.5], [108, 92], [106, 100]]) this.addProp('lavaFall', x, y);
+    // the lava falls beyond the balcony (the film's): rock cliffs pouring into pools at the catwalk's side
+    // (tools/sprites/mustafar_set mfFall; the model falls if the sprite did not load)
+    if (!this.addSheetProp('mfFall_x', 89, 89, { noBlock: true }) | !this.addSheetProp('mfFall_x', 97.5, 88.5, { noBlock: true }))
+      for (const [x, y] of [[88, 87], [95, 86.5], [102, 87.5], [108, 92], [106, 100]]) this.addProp('lavaFall', x, y);
     for (const [x, y] of [[86, 101], [97, 101.5]]) this.addProp('pylon', x, y);
 
     // --- the collector arm ---------------------------------------------------
@@ -703,7 +708,9 @@ export class MustafarArena extends World {
     const arm = this.addSheetProp('mfArm', A.x, A.y, { noBlock: true, flat: true });
     this.tower = this.addProp('armTower', M.armTower.x, M.armTower.y);
     for (let x = A.x - 8; x <= A.x + 8; x += 4) this.addProp('cable', x, A.y - 1.1, { noBlock: true });
-    for (const [x, y] of [[33, 97.5], [42, 97], [50, 97.5], ...(arm ? [] : [[27, 104]])]) this.addProp('lavaFall', x, y); // (the head stands where the last fall was)
+    // the falls behind the arm (they light the hanging scene); the model falls if the sprite did not load
+    if (!this.addSheetProp('mfFall_x', 36, 98, { noBlock: true }) | !this.addSheetProp('mfFall_x', 46, 98.5, { noBlock: true }))
+      for (const [x, y] of [[33, 97.5], [42, 97], [50, 97.5], ...(arm ? [] : [[27, 104]])]) this.addProp('lavaFall', x, y); // (the head stands where the last fall was)
     for (let x = -A.hw; x <= A.hw; x += 4) this.lights.push({ x: A.x + x, y: A.y, z: 0.2, r: 255, g: 120, b: 40, rad: 140, flicker: 0.15 });
 
     // --- the river bank: black sand and rock ---------------------------------
@@ -763,8 +770,9 @@ export class MustafarArena extends World {
         this.biome[i] = streaks.some((l) => distToPolyline(cx, cy, l) < 0.65 + n * 0.05) ? BIOME.LAVA : BIOME.ASH;
         this.blocked[i] = 2;
       }
-    // the fall's head: three chutes out of the cleft, a pump house over them
-    for (const [dx, dy] of [[-1.6, 1.6], [0, 0], [1.6, -1.6]]) this.addProp('lavaFall', fall[0][0] + dx, fall[0][1] + dy, { noBlock: true });
+    // the fall's head: the film's lava fall out of the cleft (a cliff pouring into a pool), a pump house over it
+    if (!this.addSheetProp('mfFall', fall[0][0] - 2, fall[0][1] + 1, { noBlock: true }))
+      for (const [dx, dy] of [[-1.6, 1.6], [0, 0], [1.6, -1.6]]) this.addProp('lavaFall', fall[0][0] + dx, fall[0][1] + dy, { noBlock: true });
     this.addProp('mustafarConsole', fall[0][0] - 3, fall[0][1] - 1, { noBlock: true });
     for (const [x, y] of fall) this.lights.push({ x, y, z: 0.4, r: 255, g: 130, b: 40, rad: 190, flicker: 0.15 });
     // the right block's finned spire and its second collector arm (the first is the duel's, M.arm)

@@ -13,6 +13,9 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
 - `mfWindow`: against a north wall (faces +y), 5.5 m long, 2.8 m tall; `mfWindow_r` mirrored for a west wall
 - `mfHolo`: the control room's holo-table (image_20: an elongated hexagon, its top a glowing blue map, red indicator
   lights round the rim), along x, 4.4 m by 1.8 m, 1 m tall, fitted on eight points; `mfHolo_y` its twin along y
+- `mfFall`: a lava fall (image_21: a rock cliff with three falls pouring into a cracked lava pool), the cliff along
+  y, the pool in front of it to +x; 7 m of cliff, the pool 1.6 m deep, fitted on the pool's four corners (the cliff's
+  height follows the render); the lava glowing; `mfFall_x` its twin (cliff along x, pool to +y)
 - `mfChair`: faces +y (mirrored from the render, which faces +x: `mfChair_x`), 1.5 m tall
 - `mfPassage`: a corridor's inside with no roof (the far wall tall with light panels, the near wall low, a portal at
   each end), along y, 15 m by 4 m (the far wall on −x); `mfPassage_x` along x as rendered. Fitted by least squares
@@ -82,6 +85,21 @@ PIECES = {
         gain=0.9,
         lights=[[0, 0, 1.4, 90, 170, 255, 120, 0.04]],  # the map's blue light
         mirror='mfHolo_y',
+    ),
+    'mfFall': dict(
+        src='image_21.png',
+        corners=[
+            ((1240, 545), (0, -3.5, 0)),  # the pool's back-right corner, at the cliff's foot
+            ((1365, 605), (1.6, -3.5, 0)),  # front-right
+            ((820, 880), (1.6, 3.5, 0)),  # front-left
+            ((650, 790), (0, 3.5, 0)),  # back-left, at the cliff's foot
+        ],
+        footprint=[[-1, -3.5], [1.6, -3.5], [1.6, 3.5], [-1, 3.5]],
+        emit='lava',
+        gain=0.8,
+        neon_base=0.6,
+        lights=[[0.8, 0, 1.0, 200, 95, 30, 120, 0.12]],
+        mirror='mfFall_x',
     ),
     'mfWindow': dict(
         src='image_7.png',
@@ -199,6 +217,15 @@ def emissive_holo(a):
     return np.asarray(m) / 255.0
 
 
+def emissive_lava(a):
+    """Only the hottest lava glows (the falls' cores, the pool's brightest cracks); the rest is lit by the room."""
+    r, g = a[..., 0], a[..., 1]
+    lum = a[..., :3] @ np.array([0.299, 0.587, 0.114], np.float32)
+    m = (lum > 0.6) & (r > 0.85) & (g > 0.45) & (a[..., 3] > 0.5)
+    m = Image.fromarray((m * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.0))
+    return np.asarray(m) / 255.0 * 0.7
+
+
 def emissive_table(a):
     """The table's light strip (near white) and its red indicator lights."""
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
@@ -227,7 +254,7 @@ def bake(name, P):
         a = a.copy()
         al = Image.fromarray(((a[..., 3] >= 240 / 255) * 255).astype(np.uint8), 'L')
         a[..., 3] = np.asarray(al.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(0.8))) / 255.0
-    em = {'table': emissive_table, 'holo': emissive_holo}.get(P.get('emit'), emissive)
+    em = {'table': emissive_table, 'holo': emissive_holo, 'lava': emissive_lava}.get(P.get('emit'), emissive)
     m = em(a) if P.get('emit') else np.zeros(a.shape[:2], np.float32)
     body = a.copy()
     body[..., :3] *= np.where(m[..., None] > 0.5, 1, P.get('gain', BODY_GAIN))
@@ -341,7 +368,7 @@ def bake_fit(name, P, body, neon):
         if has_neon:
             n2.save(OUT / f'{nm}_neon.png', optimize=True)
             meta['layers']['neon'] = f'{nm}_neon.png'
-            meta['neon'] = {'base': 1, 'hum': 0.04, 'speed': 0.5, 'flicker': {'rate': 0.01, 'dur': [0.05, 0.12], 'level': 0.7}}
+            meta['neon'] = {'base': P.get('neon_base', 1), 'hum': 0.04, 'speed': 0.5, 'flicker': {'rate': 0.01, 'dur': [0.05, 0.12], 'level': 0.7}}
         (OUT / f'{nm}.json').write_text(json.dumps(meta))
         print(f'{nm}: {b2.width}x{b2.height} (x{OVER}), anchor {meta["anchor"]}, fit residual {res:.1f} game px')
 
