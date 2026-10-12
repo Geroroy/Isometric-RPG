@@ -32,18 +32,22 @@ import { Unit } from './units.js';
 import { Cinema } from './cinema.js';
 import { MUSTAFAR as M } from '../world/worldgen.js';
 import { dist, rand } from '../core/math.js';
+import { HITFEEL, applyFeel } from './hitfeel.js';
 
 // the sets the fight passes through, in order, with the mark on Obi-Wan's bar
 // each one ends at (the film moves on at the next beat whatever the player did)
+// `exit`: the beat that carries the fight out of the set. Driving Obi-Wan down to the
+// set's mark plays it at once (the film's music jumps ahead to it); otherwise the music
+// gets there in its own time.
 const SETS = [
-  { key: 'deck', t: 0, floor: 0.92, place: '착륙장' },
-  { key: 'corridor', t: 40, floor: 0.84, place: '입구 복도' },
-  { key: 'hall', t: 66, floor: 0.76, place: '분리주의 회의실' },
-  { key: 'control', t: 93, floor: 0.64, place: '제어실' },
-  { key: 'balcony', t: 158, floor: 0.5, place: '외부 발코니' },
-  { key: 'arm', t: 275, floor: 0.4, place: '집하기 팔' },
-  { key: 'arm2', t: 326, floor: 0.3, place: '집하기 팔' },
-  { key: 'river', t: 375, floor: 0.22, place: '용암 강' },
+  { key: 'deck', t: 0, floor: 0.92, place: '착륙장', exit: 'door' },
+  { key: 'corridor', t: 40, floor: 0.84, place: '입구 복도', exit: 'hall' },
+  { key: 'hall', t: 66, floor: 0.76, place: '분리주의 회의실', exit: 'push' },
+  { key: 'control', t: 93, floor: 0.64, place: '제어실', exit: 'console' },
+  { key: 'balcony', t: 158, floor: 0.5, place: '외부 발코니', exit: 'collapse' },
+  { key: 'arm', t: 275, floor: 0.4, place: '집하기 팔', exit: 'failed' },
+  { key: 'arm2', t: 326, floor: 0.3, place: '집하기 팔', exit: 'end' },
+  { key: 'river', t: 375, floor: 0.22, place: '용암 강', exit: 'ending' },
 ];
 const FIGHT_LENGTH = 389; // the fight clip runs out at 391.5 s: the ending takes over just before
 
@@ -56,7 +60,7 @@ class ObiWan extends Dooku {
     this.maxHp = this.hp = 950;
     this.saberColor = [60, 130, 255];
     this.saberCore = 'rgba(230,242,255,0.95)';
-    this.blockChance = [0, 0.7, 0.62, 0.55]; // Soresu: hard to get through
+    this.blockChance = [0, 0.55, 0.5, 0.45]; // Soresu: the hardest guard to get through (Dooku: 0.62 / 0.5 / 0.42)
   }
 
   /** Instead of Dooku's lightning: a Force push to break Anakin's rhythm. */
@@ -135,16 +139,16 @@ export class MustafarDuel extends Duel {
       lose: '아나킨은 끝내 스승의 수비를 뚫지 못했다. 오비완은 쓰러진 제자를 두고 파드메를 실은 우주선으로 걸어간다.',
     };
     this.beats = [
-      { t: 34, run: () => this.sceneDoor() },
-      { t: 62, run: () => this.sceneHall() },
-      { t: 82, run: () => this.scenePush() },
-      { t: 148, run: () => this.sceneConsole() },
-      { t: 209, run: () => this.sceneBlast() },
-      { t: 234, run: () => this.sceneCollapse() },
-      { t: 311, run: () => this.sceneFailed() },
-      { t: 340, run: () => !this.lock && this.startLock(true) },
-      { t: 351, run: () => this.sceneEnd() },
-      { t: FIGHT_LENGTH, run: () => this.ending() },
+      { key: 'door', t: 34, run: () => this.sceneDoor() },
+      { key: 'hall', t: 62, run: () => this.sceneHall() },
+      { key: 'push', t: 82, run: () => this.scenePush() },
+      { key: 'console', t: 148, run: () => this.sceneConsole() },
+      { key: 'blast', t: 209, run: () => this.sceneBlast(), inSet: true },
+      { key: 'collapse', t: 234, run: () => this.sceneCollapse() },
+      { key: 'failed', t: 311, run: () => this.sceneFailed() },
+      { key: 'lock', t: 340, run: () => !this.lock && this.startLock(true), inSet: true },
+      { key: 'end', t: 351, run: () => this.sceneEnd() },
+      { key: 'ending', t: FIGHT_LENGTH, run: () => this.ending() },
     ];
   }
 
@@ -292,6 +296,7 @@ export class MustafarDuel extends Duel {
   /** The fight has moved into set `i`: its mark becomes Obi-Wan's floor. */
   enterSet(i) {
     if (i <= this.setI) return;
+    this.advanceAt = 0;
     const ob = this.foe;
     const prev = this.setI >= 0 ? SETS[this.setI] : null;
     this.setI = i;
@@ -314,6 +319,10 @@ export class MustafarDuel extends Duel {
   phases() {
     const g = this.game;
     if (g.cinema || this.over) return;
+    if (this.advanceAt && g.time >= this.advanceAt && !this.lock) {
+      this.advanceAt = 0;
+      this.advance();
+    }
     const b = this.beats[this.beatI];
     if (b && this.filmT >= b.t && !this.lock) {
       this.beatI++;
@@ -331,7 +340,12 @@ export class MustafarDuel extends Duel {
     if (this.onRiver) this.updateRiver(dt);
   }
 
-  /** Damage to Obi-Wan stops at the set's mark; reaching it counts. */
+  /**
+   * Damage to Obi-Wan. Hits that land carry the duel's heavier hit feel. His
+   * health stops at the set's mark; reaching it counts for the rating and plays
+   * the scene that takes the fight on (advance). A hit that lands while he is at
+   * the mark still strikes home — flash, sparks, hit stop — and costs him his guard.
+   */
   filterHit(src, tgt, amount, opts) {
     const g = this.game;
     const ob = this.foe;
@@ -342,14 +356,61 @@ export class MustafarDuel extends Duel {
     }
     let a = super.filterHit(src, tgt, amount, opts);
     if (tgt !== ob || a <= 0) return a;
+    if (opts.type === 'saber' && !opts.feel) opts.feel = 'duel'; // (gfx feel: game.damage reads it after this)
     const min = this.floor * ob.maxHp;
+    const full = a;
     a = Math.min(a, Math.max(0, ob.hp - min));
-    if (a > 0 && ob.hp - a <= min + 0.5 && !this.pressed.includes(this.setI)) {
+    if (a <= 0) {
+      // at the mark: the blow lands on his guard instead
+      ob.flash = 0.1;
+      g.fx.sparks(ob.x, ob.y, 1.1, '#ff9a6a', 8);
+      g.audio.play('hit', ob);
+      applyFeel(g, HITFEEL.duel, true);
+      ob.composure -= Math.min(30, full * 0.5);
+      ob.lastHurtT = g.time;
+      if (ob.composure <= 0 && ob.state !== 'broken') this.breakGuard(ob);
+      else if (ob.state !== 'broken') ob.set('stagger', 0.5);
+      this.reachMark();
+      return 0;
+    }
+    if (ob.hp - a <= min + 0.5) this.reachMark();
+    return a;
+  }
+
+  /** Obi-Wan is down to this set's mark: counted once, then the film moves on. */
+  reachMark() {
+    const g = this.game;
+    const ob = this.foe;
+    if (!this.pressed.includes(this.setI)) {
       this.pressed.push(this.setI);
       g.fx.text(ob.x, ob.y, '몰아붙였다!', '#ffe9a8', 1.15, 2.4);
-      ob.set('stagger', 1.0);
+      if (ob.state !== 'broken') ob.set('stagger', 1.0);
     }
-    return a;
+    if (!this.advanceAt) this.advanceAt = g.time + 0.7; // a beat to see him reel, then the next scene
+  }
+
+  /** Play the scene that leaves the current set now: skip what lies between, jump the film's music there. */
+  advance() {
+    const st = SETS[this.setI];
+    if (!st) return;
+    const j = this.beats.findIndex((b, k) => k >= this.beatI && b.key === st.exit);
+    if (j < 0) return;
+    this.beatI = j; // the in-set beats on the way (the lava rain, the forced bind) are passed over
+    this.seekFilm(this.beats[j].t);
+  }
+
+  /** Move the fight's music (and the film clock) forward to `t`, with a short dip so the jump is soft. */
+  seekFilm(t) {
+    this.filmT = Math.max(this.filmT, t);
+    const m = this.game.music;
+    if (!m || !m.cur || m.cur.situation !== 'mustafar' || !m.cur.url) return;
+    const tr = m.track(m.cur.url);
+    if (tr.el.currentTime >= t) return;
+    m.fade(tr, 0.1, 0.2);
+    setTimeout(() => {
+      tr.el.currentTime = t;
+      m.fade(tr, 1, 0.6);
+    }, 220);
   }
 
   /** Force push (Obi-Wan's "cast"): pushes Anakin back, can't be blocked. */
