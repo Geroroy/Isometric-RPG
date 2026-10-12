@@ -400,26 +400,23 @@ export class Renderer {
     standing.length = ns;
     standing.sort(byDepth);
     const pDepth = p.drawDepth ?? p.x + p.y;
-    // what hides the player: on most maps (Diablo-style) a structure in front of him fades and his
-    // silhouette shows through; a map laid out so that nothing tall ever stands in front of him
-    // (world.occlusion 'none': the rebuilt Coruscant, tools/maps/undercity_v2.py) draws every layer
-    // solid — no fade, no ghost
-    const occlude = g.world.occlusion !== 'none';
+    // a structure drawn after the player whose opaque pixels cover his body gets a window round him
+    // (drawWindowed): wholly clear inside, a few px of feather at the rim — he is seen whole, never
+    // blended into the wall (no fade, no ghost silhouette); its neon layer takes the same window
+    const pf = !p.dead && !p.hidden ? p.frame() : null;
+    const pp = worldToScreen(p.x, p.y, p.z); // (ps above is the camera's focus: clamped at a level's edge)
     for (const d of standing) {
       if (d.prop) {
         const pr = d.prop;
-        let alpha = 1;
-        if (occlude && d.depth > pDepth && !p.dead) {
-          const r = pr.rect;
-          if (ps.x > r[0] + 4 && ps.x < r[0] + r[2] - 4 && ps.y - 30 > r[1] && ps.y - 20 < r[1] + r[3] && r[3] > 30) alpha = 0.45;
-        }
-        ctx.globalAlpha = alpha;
+        const r = pr.rect;
         // parked speeders hover: a slow bob of a pixel or so
         const bob = pr.sheet && SHEET_PROPS[pr.sheet].bob ? Math.round(Math.sin(this.time * SHEET_PROPS[pr.sheet].bob + pr.phase) * 1.2) : 0;
-        this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
-        pr.alpha = alpha;
         pr.bob = bob;
-        ctx.globalAlpha = 1;
+        pr.window = null;
+        if (pf && d.depth > pDepth && r[3] > 30 && pp.x + 8 > r[0] && pp.x - 8 < r[0] + r[2] && pp.y > r[1] + 8 && pp.y - pf.h < r[1] + r[3] && this.coversPlayer(pr, pp, pf)) {
+          pr.window = { x: pp.x - cam.x, y: pp.y - pf.h * 0.5 - cam.y, r: Math.max(30, pf.h * 0.8) };
+          this.drawWindowed(pr.frame, pr.sx, pr.sy + bob, pr.window);
+        } else this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
       } else if (d.unit) {
         this.drawUnit(d.unit);
       } else if (d.scorch) {
@@ -431,12 +428,6 @@ export class Renderer {
         const s = worldToScreen(pk.x, pk.y, 0.15 + Math.sin(pk.t * 4) * 0.08);
         this.drawFrame(this.assets.props[pk.type][0], s.x, s.y);
       }
-    }
-    // Player silhouette through occluders.
-    if (occlude && !p.dead && !p.hidden) {
-      ctx.globalAlpha = 0.28;
-      this.drawFrame(p.frame(), ps.x, ps.y);
-      ctx.globalAlpha = 1;
     }
 
     g.fx.drawWorld(ctx, cam);
@@ -528,6 +519,54 @@ export class Renderer {
     if (d <= lo) d = lo + 0.005;
     if (d >= hi) d = hi - 0.005;
     return d;
+  }
+
+  /** Whether a prop's opaque pixels cover the player's body (3 columns across him, 4 points down). */
+  coversPlayer(pr, ps, pf) {
+    const f = pr.frame;
+    const data = (f.alphaData ||= alphaOf(f));
+    if (!data) return true;
+    const k = f.k || 1;
+    let hit = 0;
+    for (const dx of [-6, 0, 6])
+      for (const t of [0.2, 0.45, 0.7, 0.9]) {
+        const x = Math.round((ps.x + dx - (pr.sx - f.ox * k)) / k);
+        const y = Math.round((ps.y - pf.h * t - (pr.sy - f.oy * k)) / k);
+        if (x >= 0 && y >= 0 && x < f.w && y < f.h && data[y * f.w + x] > 128) hit++;
+      }
+    return hit >= 3;
+  }
+
+  /**
+   * A frame drawn with a window cut out of it: wholly clear within `w.r - FEATHER` of (w.x, w.y) (screen
+   * px, camera applied), the rim feathered over FEATHER px; in the frame's own pixels when it is a scaled
+   * sheet (k), so the window stays the same size on screen whatever the sheet's scale.
+   */
+  drawWindowed(f, x, y, w) {
+    const k = f.k || 1;
+    const c = (this.cutCanvas ||= document.createElement('canvas'));
+    if (c.width < f.w || c.height < f.h) {
+      c.width = Math.max(c.width, f.w);
+      c.height = Math.max(c.height, f.h);
+    }
+    const cx2 = c.getContext('2d');
+    cx2.globalCompositeOperation = 'copy';
+    cx2.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, f.w, f.h);
+    cx2.globalCompositeOperation = 'destination-out';
+    const dx = Math.round(x - f.ox * k - this.cam.x);
+    const dy = Math.round(y - f.oy * k - this.cam.y);
+    const cx = (w.x - dx) / k;
+    const cy = (w.y - dy) / k;
+    const R = w.r / k;
+    const FEATHER = 6 / k;
+    const g = cx2.createRadialGradient(cx, cy, Math.max(0, R - FEATHER), cx, cy, R);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    cx2.fillStyle = g;
+    cx2.fillRect(cx - R, cy - R, R * 2, R * 2);
+    cx2.globalCompositeOperation = 'source-over';
+    this.smooth(k !== 1);
+    this.ctx.drawImage(c, 0, 0, f.w, f.h, dx, dy, f.w * k, f.h * k);
   }
 
   drawFrame(f, x, y) {
@@ -717,8 +756,9 @@ export class Renderer {
         this.drawFrame(L.reflect, pr.sx, pr.sy);
       }
       if (L.neon) {
-        ctx.globalAlpha = Math.min(1, level) * (pr.alpha ?? 1);
-        this.drawFrame(L.neon, pr.sx, pr.sy + (pr.bob || 0));
+        ctx.globalAlpha = Math.min(1, level);
+        if (pr.window) this.drawWindowed(L.neon, pr.sx, pr.sy + (pr.bob || 0), pr.window);
+        else this.drawFrame(L.neon, pr.sx, pr.sy + (pr.bob || 0));
       }
       ctx.globalAlpha = 1;
       const holo = SHEET_PROPS[pr.sheet].holo;
@@ -1374,6 +1414,23 @@ function boxOf(x, y, poly) {
  * decide each other. Screen-down is +x and +y, so a box wholly at smaller x (or y) than another is
  * behind it — unless it is also at larger y (or x): then they stand side by side on screen.
  */
+/** A frame's alpha channel (once, for the occlusion test); null when its page cannot be read. */
+function alphaOf(f) {
+  try {
+    const c = document.createElement('canvas');
+    c.width = f.w;
+    c.height = f.h;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, f.w, f.h);
+    const d = x.getImageData(0, 0, f.w, f.h).data;
+    const a = new Uint8Array(f.w * f.h);
+    for (let i = 0; i < a.length; i++) a[i] = d[i * 4 + 3];
+    return a;
+  } catch {
+    return null;
+  }
+}
+
 function boxOrder(a, b) {
   const e = 0.05;
   const xb = a[2] <= b[0] + e;

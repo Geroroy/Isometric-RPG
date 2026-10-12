@@ -79,10 +79,10 @@ const res = await page.evaluate(async (step) => {
       for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 30) diff++;
       const share = diff / Math.max(1, own(f));
       n++;
-      if (share < 0.6) bad.push([x, y, +share.toFixed(2), who(p.x, p.y).join(',')]);
+      if (share < 0.9) bad.push([x, y, +share.toFixed(2), who(p.x, p.y).join(','), diff, own(f), [sx, sy, R.w, R.h]]);
     }
   return { n, bad };
 }, +step);
-console.log(`tiles ${res.n}; the player less than 60% in view on ${res.bad.length}`);
+console.log(`tiles ${res.n}; the player less than 90% in view on ${res.bad.length}`);
 for (const b of res.bad.slice(0, 40)) console.log('  ', JSON.stringify(b));
 await browser.close();
