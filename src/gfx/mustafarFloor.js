@@ -66,6 +66,17 @@ export async function loadMustafarConsoles() {
       console.warn('무스타파 세트: ' + e.message); // left out of the rooms (addSheetProp skips it)
     }
   }
+  // the cargo containers, one atlas (tools/sprites/mustafar_cargo)
+  try {
+    const atlas = await cachedJSON(base + 'cargo.json');
+    const page = await cachedImage(base + atlas.page);
+    for (const [name, m] of Object.entries(atlas.sprites)) {
+      const [sx, sy, w, h] = m.rect;
+      out[name] = { meta: m, body: { page, sx, sy, w, h, ox: m.anchor[0], oy: m.anchor[1], k: m.k }, neon: null, reflect: null };
+    }
+  } catch (e) {
+    console.warn('무스타파 화물: ' + e.message);
+  }
   // every name the map uses (worldgen.js MIRROR_SHEET, both ways): the shipped one, else its twin flipped
   for (const [a, b] of Object.entries(MUSTAFAR_SHEETS.mirror)) for (const [n, t] of [[a, b], [b, a]]) if (!out[n] && out[t]) out[n] = flipSheet(out[t]);
   return out;

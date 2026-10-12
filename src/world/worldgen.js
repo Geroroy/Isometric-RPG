@@ -614,7 +614,8 @@ export class MustafarArena extends World {
     // --- the landing platform: pylons, crates, Padmé's skiff -----------------
     const D = M.deck;
     for (const [dx, dy] of [[-8.5, -5.5], [8, -6], [-9.5, 4.5], [8.5, 5.5], [0, 7.5]]) this.addProp('pylon', D.x + dx, D.y + dy);
-    for (const [dx, dy] of [[6, -2], [6.8, -1.2], [-6.5, 3.5]]) this.addProp('crate', D.x + dx, D.y + dy);
+    // (the deck's stores: the cargo sprites, placed after the transpose — cargo(); these crates if they did not load)
+    if (!cityFootprint('cgCrateL')) for (const [dx, dy] of [[6, -2], [6.8, -1.2], [-6.5, 3.5]]) this.addProp('crate', D.x + dx, D.y + dy);
     // the robes thrown off before the fight (shown by the opening scene)
     this.cloak = this.addProp('cloakPile', D.x - 2.2, D.y + 1.6);
     this.robe = this.addProp('robePile', D.x + 3.4, D.y - 1.8);
@@ -725,6 +726,7 @@ export class MustafarArena extends World {
     this.roadSegs = [];
     this.transpose();
     this.rockAndFall();
+    this.cargo();
     // Padmé's skiff on its apron, nose along it (the film's chrome skiff, tools/sprites/mustafar_set; the model if
     // the sprite did not load); placed in the world, after the transpose
     if (!this.addSheetProp('mfSkiff_y', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y - 0.5)) this.addProp('skiff', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y);
@@ -803,6 +805,37 @@ export class MustafarArena extends World {
         else if (e === 2) this.addProp('boulder', x, y, { noBlock: true });
         else this.addProp('lavaRock', x, y, { noBlock: true });
       }
+  }
+
+  /**
+   * The facility's stores (tools/sprites/mustafar_cargo), in world coordinates: strapped crates, drums and caged
+   * canisters unloaded beside the skiff and along the landing platform's far rim, as the film's sets keep their
+   * cargo; a stack in the conference room's open corner and the control room's. Clear of the fights' lines (the
+   * deck's middle, the walkway, the table, the sunken floor).
+   */
+  cargo() {
+    const M = MUSTAFAR;
+    const D = M.deck;
+    const H = M.hall;
+    const C = M.control;
+    const put = (n, x, y) => this.addSheetProp(n, x, y);
+    // beside the skiff's tail and on the near rim
+    put('cgCrateL', D.x - 4.5, D.y + 6.2);
+    put('cgCrateS', D.x - 2.6, D.y + 7.4);
+    put('cgDrum', D.x - 5.3, D.y + 4.6);
+    put('cgCube', D.x - 1.2, D.y + 8.2);
+    // the far rim, by the walkway
+    put('cgTank', D.x + 4.4, D.y - 4.6);
+    put('cgCanister', D.x + 2.8, D.y - 6.1);
+    put('cgCageCap', D.x + 4.8, D.y - 1.8);
+    // the conference room's near corner
+    put('cgCage', H.x + H.hw - 1.4, H.y + H.hh - 1.6);
+    put('cgCapsule', H.x + H.hw - 3.6, H.y + H.hh - 1.2);
+    put('cgDrum', H.x + H.hw - 1.2, H.y + H.hh - 3.6);
+    // the control room's near corner, outside the sunken floor
+    put('cgTank', C.x + C.hw - 1.4, C.y + C.hh - 1.6);
+    put('cgCanister', C.x + C.hw - 3.4, C.y + C.hh - 1.1);
+    put('cgCube', C.x + C.hw - 1.1, C.y + C.hh - 3.6);
   }
 
   /**
