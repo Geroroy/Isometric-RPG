@@ -65,6 +65,7 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (req.headers.has('x-cw-direct')) return; // the game's own file cache (src/gfx/fileCache.js) keeps these by hash
   const rel0 = relOf(url);
   // audio elements ask for byte ranges: answered from the whole file in the cache (fetched whole
   // once), so the music is not downloaded again on every visit

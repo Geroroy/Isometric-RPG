@@ -1,3 +1,4 @@
+import { cachedBuffer } from '../gfx/fileCache.js';
 // Audio: procedural WebAudio synth + optional user-supplied sound bank.
 //
 // Lightsaber synthesis follows how the original effect was made: a steady
@@ -273,9 +274,7 @@ export class Audio {
     const base = BANK_URL.replace(/[^/]+$/, '');
     const load = async (file) => {
       try {
-        const r = await fetch(base + file);
-        if (!r.ok) return null;
-        return await this.ctx.decodeAudioData(await r.arrayBuffer());
+        return await this.ctx.decodeAudioData(await cachedBuffer(base + file)); // kept on the device (gfx/fileCache.js)
       } catch {
         return null;
       }

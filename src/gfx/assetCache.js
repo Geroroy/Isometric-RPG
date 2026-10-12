@@ -11,6 +11,7 @@ import propSrc from './models/props.js?raw';
 import bakerSrc from './baker.js?raw';
 import assetSrc from './assets.js?raw';
 import specSrc from './specs.js?raw';
+import { cachedJSON, cachedBlob } from './fileCache.js';
 
 const DB = 'cw-sprites';
 const STORE = 'bundles';
@@ -112,19 +113,14 @@ const BAKED = 'sprites/baked/';
 export async function loadShipped(name) {
   if (/[?&]bake\b/.test(location.search)) return null;
   try {
-    const res = await fetch(import.meta.env.BASE_URL + BAKED + name + '.json');
-    if (!res.ok) return null;
-    const meta = await res.json();
+    const meta = await cachedJSON(import.meta.env.BASE_URL + BAKED + name + '.json').catch(() => null);
+    if (!meta) return null;
     if (meta.hash !== SOURCE_HASH) {
       console.warn(`sprite cache: shipped '${name}' bundle is stale (${meta.hash} ≠ ${SOURCE_HASH}) — run tools/bake_core.mjs`);
       return null;
     }
     const pages = await Promise.all(
-      meta.pages.map((p) =>
-        fetch(import.meta.env.BASE_URL + BAKED + p)
-          .then((r) => r.blob())
-          .then((b) => createImageBitmap(b)),
-      ),
+      meta.pages.map((p) => cachedBlob(import.meta.env.BASE_URL + BAKED + p).then((b) => createImageBitmap(b))),
     );
     return decode(meta.json, pages);
   } catch (e) {

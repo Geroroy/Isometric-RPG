@@ -15,6 +15,7 @@
 import { RNG } from '../core/math.js';
 import { worldToScreen, HALF_H } from '../core/iso.js';
 
+import { cachedJSON, cachedImage } from './fileCache.js';
 const BASE = import.meta.env.BASE_URL;
 const VOID = 13; // world BIOME.VOID: the drop between the levels / off the platforms
 
@@ -35,14 +36,8 @@ let loading = false;
 function load() {
   if (loading) return;
   loading = true;
-  const img = (src) =>
-    new Promise((res, rej) => {
-      const i = new Image();
-      i.onload = () => res(i);
-      i.onerror = rej;
-      i.src = BASE + src;
-    });
-  Promise.all([fetch(BASE + 'sprites/traffic/traffic.json').then((r) => r.json()), img('sprites/traffic/traffic.png'), img('sprites/traffic/traffic_half.png'), img('sprites/traffic/traffic_shadow.png'), img('sprites/traffic/traffic_quarter.png')])
+  const img = (src) => cachedImage(BASE + src); // kept on the device (fileCache.js)
+  Promise.all([cachedJSON(BASE + 'sprites/traffic/traffic.json'), img('sprites/traffic/traffic.png'), img('sprites/traffic/traffic_half.png'), img('sprites/traffic/traffic_shadow.png'), img('sprites/traffic/traffic_quarter.png')])
     .then(([m, a, b, sh, q]) => {
       meta = m;
       full = a;

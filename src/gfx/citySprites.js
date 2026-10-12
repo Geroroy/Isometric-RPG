@@ -5,6 +5,7 @@
 // texture, which the terrain samples in world coordinates.
 
 import { MAP_V2 } from '../world/mapVersion.js';
+import { cachedJSON, cachedImage } from './fileCache.js';
 
 const DIR = 'sprites/city/';
 
@@ -52,18 +53,11 @@ export const LOAD_BLENDER_SET = false;
 export const FLOOR_TEXTURE = 'floor_low.png';
 export const FLOOR_TILES = 8; // world tiles the floor texture covers per side
 
-const loadImg = (src) =>
-  new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('도시 스프라이트를 불러오지 못했습니다: ' + src));
-    img.src = src;
-  });
+// through the device's file cache (fileCache.js): sprites already on the device are not downloaded again
+const loadImg = (src) => cachedImage(src).catch(() => Promise.reject(new Error('도시 스프라이트를 불러오지 못했습니다: ' + src)));
 
 async function loadOne(base, file) {
-  const res = await fetch(base + file);
-  if (!res.ok) throw new Error('도시 스프라이트 JSON을 불러오지 못했습니다: ' + file);
-  const meta = await res.json();
+  const meta = await cachedJSON(base + file).catch(() => Promise.reject(new Error('도시 스프라이트 JSON을 불러오지 못했습니다: ' + file)));
   const [body, neon, reflect] = await Promise.all(['body', 'neon', 'reflect'].map((k) => loadImg(base + meta.layers[k])));
   const k = meta.k !== 1 ? meta.k : undefined;
   // frames in the shape the renderer draws: the anchor is the model's ground centre
@@ -108,7 +102,7 @@ export async function loadCitySprites(onProgress) {
   }
   const ub = import.meta.env.BASE_URL + UW_DIR;
   try {
-    const index = await (await fetch(ub + 'index.json')).json();
+    const index = await cachedJSON(ub + 'index.json');
     const un = Object.keys(index);
     for (let i = 0; i < un.length; i++) {
       onProgress(i / un.length, `코러산트 언더월드: ${un[i]}`);
@@ -118,7 +112,7 @@ export async function loadCitySprites(onProgress) {
         console.warn(e.message);
       }
     }
-    const gi = await (await fetch(ub + 'ground/ground.json')).json();
+    const gi = await cachedJSON(ub + 'ground/ground.json');
     out.ground = {};
     for (const [name, file] of Object.entries(gi)) {
       const img = await loadImg(ub + 'ground/' + file);
@@ -137,7 +131,7 @@ export async function loadCitySprites(onProgress) {
     // building's meta and rectangle, on a few body and neon pages
     const cb = import.meta.env.BASE_URL + UC_DIR;
     try {
-      const atlas = await (await fetch(cb + 'atlas.json')).json();
+      const atlas = await cachedJSON(cb + 'atlas.json');
       const [body, neon] = await Promise.all(['body', 'neon'].map((k) => Promise.all(atlas.pages[k].map((f) => loadImg(cb + f)))));
       for (const [name, meta] of Object.entries(atlas.sprites)) {
         const [sx, sy, w, h] = meta.rect;

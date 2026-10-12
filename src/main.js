@@ -5,6 +5,7 @@ import { fontsReady } from './ui/fonts.js'; // the HUD's fonts (Orbitron, Share 
 import { applySkin } from './ui/skin.js';
 import { bakeAssets, bakeDuelAssets, bakeSkin, bakeCharacter, CHARACTERS } from './gfx/assets.js';
 import { loadSheets } from './gfx/sheet.js';
+import { prune as pruneFiles, stats as fileStats } from './gfx/fileCache.js';
 import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
 import { setFloorTexture, setGroundTextures } from './gfx/terrain.js';
@@ -296,6 +297,9 @@ async function boot() {
       requestAnimationFrame(loop);
     }
   });
+  // the device's file cache: what this launch read from it, what it downloaded; then drop what the build no longer has
+  console.info(`파일 캐시: 기기에서 ${fileStats.hit}개, 내려받음 ${fileStats.miss}개`);
+  pruneFiles();
   window.__ready = true;
 }
 

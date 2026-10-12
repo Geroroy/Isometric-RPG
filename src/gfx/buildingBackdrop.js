@@ -8,6 +8,7 @@
 // layer as a few copies of its canvas at its parallax offset.
 import { RNG } from '../core/math.js';
 
+import { cachedJSON, cachedImage } from './fileCache.js';
 const BASE = import.meta.env.BASE_URL;
 // on with ?proto=bg, or in a build made with VITE_PROTO_BG=1 (a test build for review)
 export const BUILDING_PROTO = import.meta.env.VITE_PROTO_BG === '1' || (typeof location !== 'undefined' && new URLSearchParams(location.search).get('proto') === 'bg');
@@ -27,21 +28,8 @@ let loading = false;
 function load() {
   if (loading) return;
   loading = true;
-  fetch(BASE + 'sprites/backdrop/buildings.json')
-    .then((r) => r.json())
-    .then((m) =>
-      Promise.all(
-        Object.entries(m.modes).map(
-          ([mode, md]) =>
-            new Promise((res, rej) => {
-              const i = new Image();
-              i.onload = () => res((atlas[mode] = i));
-              i.onerror = rej;
-              i.src = BASE + 'sprites/backdrop/' + md.atlas;
-            }),
-        ),
-      ).then(() => (meta = m)),
-    )
+  cachedJSON(BASE + 'sprites/backdrop/buildings.json')
+    .then((m) => Promise.all(Object.entries(m.modes).map(([mode, md]) => cachedImage(BASE + 'sprites/backdrop/' + md.atlas).then((i) => (atlas[mode] = i)))).then(() => (meta = m))) // kept on the device (fileCache.js)
     .catch((e) => console.warn('backdrop buildings: none', e));
 }
 if (BUILDING_PROTO) load();

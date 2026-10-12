@@ -18,30 +18,23 @@ export const SHEETS = {
   anakin_tunic: 'sprites/anakin_tunic_128.json', // the Jedi Knight's tunic
 };
 const CHARS_DIR = 'sprites/chars/';
+import { cachedJSON, cachedImage } from './fileCache.js';
 
 let index = null;
 /** Sprite name -> sheet JSON url, for every sheet the build has. */
 export function sheetIndex() {
-  index ||= fetch(import.meta.env.BASE_URL + CHARS_DIR + 'index.json')
-    .then((r) => (r.ok ? r.json() : {}))
+  index ||= cachedJSON(import.meta.env.BASE_URL + CHARS_DIR + 'index.json')
     .catch(() => ({}))
     .then((chars) => ({ ...Object.fromEntries(Object.entries(chars).map(([k, f]) => [k, CHARS_DIR + f])), ...SHEETS }));
   return index;
 }
 
-const loadImg = (src) =>
-  new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('스프라이트 시트를 불러오지 못했습니다: ' + src));
-    img.src = src;
-  });
+// sheet files come through the device's file cache (fileCache.js): a sheet already on the device is not downloaded again
+const loadImg = (src) => cachedImage(src).catch(() => Promise.reject(new Error('스프라이트 시트를 불러오지 못했습니다: ' + src)));
 
 /** One sheet's JSON (url relative to the page) -> a sprite set. */
 export async function loadSheet(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('스프라이트 JSON을 불러오지 못했습니다: ' + url);
-  const meta = await res.json();
+  const meta = await cachedJSON(url).catch(() => Promise.reject(new Error('스프라이트 JSON을 불러오지 못했습니다: ' + url)));
   const dir = url.replace(/[^/]*$/, '');
   const [pages, shadowPages, normalPages] = await Promise.all([
     Promise.all(meta.pages.map((p) => loadImg(dir + p))),
