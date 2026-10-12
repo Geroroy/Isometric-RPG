@@ -639,10 +639,13 @@ export class MustafarArena extends World {
 
     // --- the balcony: a railed grate catwalk over the lava falls -----------
     const B = M.balcony;
-    for (let x = B.x - 7; x <= B.x + 7; x += 2) {
-      this.addProp('catRail', x, B.y - 1.4, { angleIdx: 0, noBlock: true });
-      this.addProp('catRail', x, B.y + 1.4, { angleIdx: 0, noBlock: true });
-    }
+    // the film's outside catwalk (tools/sprites/mustafar_set: a grated deck, a rail on its far side), drawn with
+    // the ground; the model rails if it did not load
+    if (!this.addSheetProp('mfCatwalk', B.x, B.y, { noBlock: true, flat: true }))
+      for (let x = B.x - 7; x <= B.x + 7; x += 2) {
+        this.addProp('catRail', x, B.y - 1.4, { angleIdx: 0, noBlock: true });
+        this.addProp('catRail', x, B.y + 1.4, { angleIdx: 0, noBlock: true });
+      }
     for (const y of [M.balconyEnd.y - 2, M.balconyEnd.y + 2]) this.addProp('catRail', M.balconyEnd.x + 0.5, y, { angleIdx: 0, noBlock: true });
     this.addProp('catRail', M.balconyEnd.x + 2.0, M.balconyEnd.y - 1, { angleIdx: 1, noBlock: true });
     this.addProp('catRail', M.balconyEnd.x + 2.0, M.balconyEnd.y + 1, { angleIdx: 1, noBlock: true });
@@ -651,9 +654,12 @@ export class MustafarArena extends World {
 
     // --- the collector arm ---------------------------------------------------
     const A = M.arm;
+    // the film's collector arm (tools/sprites/mustafar_set: the vane head at its outer, west end, the grated arm,
+    // the mast and its stays), drawn with the ground as it is walked on; the tower it hangs from stays (it falls)
+    const arm = this.addSheetProp('mfArm', A.x, A.y, { noBlock: true, flat: true });
     this.tower = this.addProp('armTower', M.armTower.x, M.armTower.y);
     for (let x = A.x - 8; x <= A.x + 8; x += 4) this.addProp('cable', x, A.y - 1.1, { noBlock: true });
-    for (const [x, y] of [[33, 97.5], [42, 97], [50, 97.5], [27, 104]]) this.addProp('lavaFall', x, y);
+    for (const [x, y] of [[33, 97.5], [42, 97], [50, 97.5], ...(arm ? [] : [[27, 104]])]) this.addProp('lavaFall', x, y); // (the head stands where the last fall was)
     for (let x = -A.hw; x <= A.hw; x += 4) this.lights.push({ x: A.x + x, y: A.y, z: 0.2, r: 255, g: 120, b: 40, rad: 140, flicker: 0.15 });
 
     // --- the river bank: black sand and rock ---------------------------------

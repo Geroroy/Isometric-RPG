@@ -13,11 +13,12 @@ export async function loadMustafarFloor() {
   return x.getImageData(0, 0, img.width, img.height);
 }
 
-// The film's set pieces — wall consoles, the covered corridor, the table, chairs and window walls
+// The film's set pieces — wall consoles, the covered corridor, the table, chairs, window walls, the collector
+// arm and the outside catwalk
 // (tools/sprites/mustafar_console, mustafar_corridor, mustafar_set):
 // city-sheet sprites (renderer.js draws a prop with `sheet` from assets.city: body, then the neon layer after
 // the light map), one per wall direction (and screen colour)
-export const MUSTAFAR_CONSOLES = ['mfConsole', 'mfConsole_r', 'mfConsoleRed', 'mfConsoleRed_r', 'mfCorridor', 'mfCorridor_r', 'mfTable', 'mfWindow', 'mfWindow_r', 'mfChair', 'mfChair_x', 'mfPassage', 'mfPassage_x'];
+export const MUSTAFAR_CONSOLES = ['mfConsole', 'mfConsole_r', 'mfConsoleRed', 'mfConsoleRed_r', 'mfCorridor', 'mfCorridor_r', 'mfTable', 'mfWindow', 'mfWindow_r', 'mfChair', 'mfChair_x', 'mfPassage', 'mfPassage_x', 'mfArm', 'mfCatwalk'];
 export async function loadMustafarConsoles() {
   const base = import.meta.env.BASE_URL + 'sprites/mustafar/';
   const out = {};
@@ -32,4 +33,14 @@ export async function loadMustafarConsoles() {
     }
   }
   return out;
+}
+
+// The droid Anakin rides down the lava river (tools/sprites/mustafar_set: mfDroid), as a unit's sprite set: one
+// direction, one frame, the anchor on its deck's top (the river scene stands him there)
+export async function loadMustafarDroid() {
+  const base = import.meta.env.BASE_URL + 'sprites/mustafar/';
+  const meta = await cachedJSON(base + 'mfDroid.json');
+  const page = await cachedImage(base + meta.layers.body);
+  const f = { page, sx: 0, sy: 0, w: page.width, h: page.height, ox: meta.anchor[0], oy: meta.anchor[1], k: meta.k };
+  return { dirs: 1, anims: { idle: { frames: 1, fps: 1, loop: true, data: [[f]] } }, markers: [] };
 }

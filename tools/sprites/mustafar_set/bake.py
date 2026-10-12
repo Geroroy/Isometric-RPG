@@ -15,6 +15,13 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
 - `mfPassage`: a corridor's inside with no roof (the far wall tall with light panels, the near wall low, a portal at
   each end), along y, 15 m by 4 m (the far wall on −x); `mfPassage_x` along x as rendered. Fitted by least squares
   on five measured corners (the render's own proportions differ: the walkway is narrowed to the corridor's)
+- `mfArm`: the collector arm (reference image_14: the vane head at its outer end, the long grated arm, the mast and
+  its stays), along x, the head to −x, 22 m of deck; seen nearly as the game sees it, so scaled evenly
+- `mfCatwalk`: the outside catwalk (image_15: a grated deck, a rail on its far side), along x, 17 m
+  (both walked on: drawn with the ground, `flat`)
+- `mfDroid`: the droid Anakin rides down the lava river (image_16: a round deck on legs and arms), a unit's
+  single frame: the anchor on the deck's top (he stands there), the legs hanging below it; the render's soft white
+  halo dropped (only its opaque pixels kept)
 """
 import json
 from pathlib import Path
@@ -65,6 +72,42 @@ PIECES = {
         mirror='mfPassage',
         flat=True,
     ),
+    'mfArm': dict(
+        src='image_14.png',
+        axis=((575, 395), (1430, 800)),  # the deck's centre line, head to end
+        span=(855, 22.0),
+        uniform=True,  # near the game's own view: one scale both ways
+        ground=(1002, 597),  # the deck's middle
+        back=0,
+        footprint=[[-11, -1.5], [11, -1.5], [11, 1.5], [-11, 1.5]],
+        mirror=None,
+        flat=True,
+        gain=1.0,
+    ),
+    'mfCatwalk': dict(
+        src='image_15.png',
+        axis=((105, 118), (1650, 710)),  # the deck's near edge
+        span=(1580, 17.0),
+        aspect=1.25,  # seen lower than the game's view: heights a little taller than an even scale
+        ground=(900, 432),  # the deck's middle
+        back=0,
+        footprint=[[-8.5, -1], [8.5, -1], [8.5, 1], [-8.5, 1]],
+        mirror=None,
+        flat=True,
+        gain=1.0,
+    ),
+    'mfDroid': dict(
+        src='image_16.png',
+        opaque=True,
+        axis=None,
+        span=(460, 1.6),  # the deck's width <-> its diameter (an axis at 20 px a metre, near enough)
+        uniform=True,
+        ground=(885, 72),  # the deck's top centre
+        back=0,
+        footprint=[[-0.8, -0.8], [0.8, -0.8], [0.8, 0.8], [-0.8, 0.8]],
+        mirror=None,
+        gain=0.9,
+    ),
     'mfChair_x': dict(
         src='image_8.png',
         cut=True,
@@ -110,15 +153,19 @@ def bake(name, P):
     if P.get('cut'):
         a = a.copy()
         a[..., 3] = cut_checker(a)
+    if P.get('opaque'):  # a soft halo round the render: keep the solid pixels, a 1 px soft edge
+        a = a.copy()
+        al = Image.fromarray(((a[..., 3] >= 240 / 255) * 255).astype(np.uint8), 'L')
+        a[..., 3] = np.asarray(al.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(0.8))) / 255.0
     m = emissive(a) if P.get('emit') else np.zeros(a.shape[:2], np.float32)
     body = a.copy()
-    body[..., :3] *= np.where(m[..., None] > 0.5, 1, BODY_GAIN)
+    body[..., :3] *= np.where(m[..., None] > 0.5, 1, P.get('gain', BODY_GAIN))
     neon = a.copy()
     neon[..., 3] *= m
     if P.get('corners'):
         return bake_fit(name, P, body, neon)
     sx = P['span'][1] * 20 * OVER / P['span'][0]
-    sy = P['height'][1] * 24.5 * OVER / P['height'][0]
+    sy = sx if P.get('uniform') else sx * P['aspect'] if P.get('aspect') else P['height'][1] * 24.5 * OVER / P['height'][0]
     k = 0.0
     if P['axis']:
         (x0, y0), (x1, y1) = P['axis']
@@ -152,7 +199,7 @@ def bake(name, P):
             fp = [[y, x] for x, y in fp]
             lights = [[l[1], l[0], *l[2:]] for l in lights]
         b2.save(OUT / f'{nm}_body.png', optimize=True)
-        meta = {'anchor': [round(float(ox), 1), round(float(oy), 1)], 'k': 1 / OVER, 'layers': {'body': f'{nm}_body.png'}, 'footprint': fp, 'lights': lights}
+        meta = {'anchor': [round(float(ox), 1), round(float(oy), 1)], 'k': 1 / OVER, 'layers': {'body': f'{nm}_body.png'}, 'footprint': fp, 'lights': lights, 'flat': bool(P.get('flat'))}
         if has_neon:
             n2.save(OUT / f'{nm}_neon.png', optimize=True)
             meta['layers']['neon'] = f'{nm}_neon.png'

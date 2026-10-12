@@ -9,7 +9,7 @@ import { prune as pruneFiles, stats as fileStats } from './gfx/fileCache.js';
 import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
 import { setFloorTexture, setGroundTextures, setFacilityFloor } from './gfx/terrain.js';
-import { loadMustafarFloor, loadMustafarConsoles } from './gfx/mustafarFloor.js';
+import { loadMustafarFloor, loadMustafarConsoles, loadMustafarDroid } from './gfx/mustafarFloor.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
@@ -89,6 +89,9 @@ async function boot() {
   if (DUEL === 'mustafar') {
     assets.city = await loadMustafarConsoles();
     setCityFootprints(assets.city);
+    // the river droid: the film's, in place of the model baked with the duel
+    const droid = await loadMustafarDroid().catch((e) => console.warn('무스타파 드로이드: ' + e.message));
+    if (droid) assets.sprites.collector = droid;
   }
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
