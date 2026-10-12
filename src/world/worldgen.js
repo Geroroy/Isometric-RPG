@@ -700,14 +700,13 @@ export class MustafarArena extends World {
 
     // --- the conference room ---------------------------------------------
     const H = M.hall;
-    // the film's screen consoles (tools/sprites/mustafar_console): along the long wall a pair centred on the
-    // table between the two doors and one past the passage north; on the end wall a sealed door in the middle
-    // with one either side
-    for (const dx of [-1.5, 1.5, 8.5]) this.console(H, 'north', dx);
+    // the film's screen consoles (tools/sprites/mustafar_console) lining the walls side by side, as the control
+    // room's: the long wall's from the corner to the passage north and one past it, the end wall's its length
+    for (const dx of [-7.5, -4.5, -1.5, 1.5, 8.5]) this.console(H, 'north', dx);
     // the passage on to the control room (the film's sets, reference/color_rots): a covered corridor whose
     // pillared portal stands in the north wall, the consoles either side meeting its pillars
     this.addSheetProp('mfCorridor', M.junction.x, H.y - H.hh, { noBlock: true });
-    for (const dy of [-4, 4]) this.console(H, 'west', dy);
+    for (const dy of [-4.5, -1.5, 1.5, 4.5]) this.console(H, 'west', dy);
     this.door({ x: M.junction.x, y: H.y - H.hh }, 1, false); // (the covered corridor's portal is its frame)
     // the film's long table, its pointed end to the passage; the high-backed chairs along its far side and
     // at its head (the near side left clear, as the near walls are); the model props if the sprites did not load.
