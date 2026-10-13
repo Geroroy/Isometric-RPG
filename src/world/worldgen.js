@@ -708,7 +708,9 @@ export class MustafarArena extends World {
     // the film's screen consoles (tools/sprites/mustafar_console) lining the walls side by side, as the control
     // room's: the long wall's from the corner to the passage north and one past it, the end wall's its length
     // (from the corner set's bank: one to the passage north, one past it)
-    for (const dx of [-5.38, -2.2, 1.3, 8.5]) this.console(H, 'north', dx); // (the first's end pillar at the cut's end, 3.62 m from the corner)
+    for (const dx of [-5.38, -2.2, 1.3]) this.console(H, 'north', dx); // (the first's end pillar at the cut's end, 3.62 m from the corner)
+    // (between the junction's portal and the near corner, under 2 m: a pillar pair of the near wall, not a console)
+    this.addSheetProp('mfWall1', (M.junction.x + 2 + H.x + H.hw - 0.25) / 2, H.y - H.hh - 0.25, { noBlock: true });
     // the passage on to the control room (the film's sets, reference/color_rots): a covered corridor whose
     // pillared portal stands in the north wall, the consoles either side meeting its pillars
     // (its shell the junction's whole length, 15 m: the roof runs on to the control room; it clears round whoever is
