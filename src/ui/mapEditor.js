@@ -4,7 +4,9 @@
 //   소품 (1)   the panel's sprites: pick one, click the map to place it (again and again; Esc or the right button
 //             stops); click a prop to select it, drag to move it; Delete removes it; R turns it (a set sprite: its
 //             mirrored twin; a model: its next angle); V its model's next variant; B whether it blocks its
-//             footprint; F flat (drawn with the ground, walked over) or standing
+//             footprint; F flat (drawn with the ground, walked over) or standing; , and . move it back and forward
+//             in the draw order (its `order`: metres along the diagonal added to its depth, 0.5 a step, 0.1 with
+//             Shift; typed in the panel, 0 is its place by position) — in front of or behind what it overlaps
 //   길 (2)     paint the tiles: the left button blocked, the right walkable; [ ] the brush's size
 //   조명 (3)   click a light to select it, drag to move it, click the ground to add one; colour, radius, height and
 //             flicker in the panel; Delete removes it (a prop's own lights go with their prop)
@@ -20,7 +22,7 @@
 // P plays the map from where the view is (game.mapTest): the player stood on the nearest walkable tile there, and
 // walks it alone — the scene, the duel and Obi-Wan held — to try the way, the cover and the lights; P again is back
 // in the editor with everything as it was before (the player, the duel), F2 out of both.
-import { World, MUSTAFAR, MUSTAFAR_SHEETS, mapText } from '../world/worldgen.js';
+import { World, MUSTAFAR, MUSTAFAR_SHEETS, mapText, propOrder } from '../world/worldgen.js';
 import { cityFootprint, cityWall, inPoly, setCityFootprints } from '../world/cityProps.js';
 import { addMirror, MIRROR_SUFFIX } from '../gfx/mustafarFloor.js';
 import { PROPS } from '../gfx/models/props.js';
@@ -32,7 +34,7 @@ import { saveLocal, clearLocal, hasLocal } from '../world/mapStore.js';
 const MIRROR = MUSTAFAR_SHEETS.mirror;
 // the keys by where they are on the keyboard (e.code), so they work in Korean input too (R comes as 'ㄱ', or as
 // 'Process' while the IME composes)
-const CODE_KEYS = { KeyR: 'r', KeyV: 'v', KeyB: 'b', KeyF: 'f', KeyP: 'p', KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', KeyZ: 'z', KeyY: 'y', Digit1: '1', Digit2: '2', Digit3: '3', BracketLeft: '[', BracketRight: ']', Equal: '=', Minus: '-' };
+const CODE_KEYS = { KeyR: 'r', KeyV: 'v', KeyB: 'b', KeyF: 'f', KeyP: 'p', KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', KeyZ: 'z', KeyY: 'y', Digit1: '1', Digit2: '2', Digit3: '3', BracketLeft: '[', BracketRight: ']', Equal: '=', Minus: '-', Comma: ',', Period: '.' };
 const keyOf = (e) => CODE_KEYS[e.code] || e.key.toLowerCase();
 /** A set sprite's other way round: its baked twin, else its mirror image (name~m, made when first wanted). */
 const twinOf = (n) => MIRROR[n] || (n.endsWith(MIRROR_SUFFIX) ? n.slice(0, -MIRROR_SUFFIX.length) : n + MIRROR_SUFFIX);
@@ -152,6 +154,7 @@ export class MapEditor {
           <label>방향 <select class="me-pdir"></select> <kbd>R</kbd></label>
           <label class="me-pvar">변형 <select class="me-pv"></select> <kbd>V</kbd></label>
           <div class="me-row"><label><input class="me-pb" type="checkbox"> 막기 <kbd>B</kbd></label><label><input class="me-pf" type="checkbox"> 바닥형 <kbd>F</kbd></label></div>
+          <div class="me-row me-porder" title="그리기 순서: 위치(x+y)에 이만큼(m)을 더한 깊이로 그림 — 양수는 더 앞(나중에 그림), 음수는 더 뒤. 0이면 위치대로. 값이 있으면 발자국으로 정하는 자동 순서 대신 이 값을 따름"><label>순서 <input class="me-po" type="number" step="0.1"></label><button class="me-pback" title="뒤로 (, · Shift: 0.1)">◀ 뒤로</button><button class="me-pfwd" title="앞으로 (. · Shift: 0.1)">앞으로 ▶</button></div>
           <div class="me-row me-pclip" title="벽 칸을 문틀·콘솔 끝·모서리에 맞춰 자르기: 왼쪽/오른쪽 기둥 중심에서 안쪽으로 몇 m까지 잘라낼지"><label>자르기 L <input class="me-pcl" type="number" step="0.05" min="0"></label><label>R <input class="me-pcr" type="number" step="0.05" min="0"></label></div>
         </div>
         <div class="me-list"></div>
@@ -177,7 +180,7 @@ export class MapEditor {
         <div class="me-btns me-file"><span class="me-src"></span><button class="me-dl" title="맵 파일(mustafar.json) 받기 — 저장소의 public/maps/mustafar.json 에 넣을 때">⬇ 파일 받기</button><button class="me-copy" title="맵 JSON을 클립보드에 복사 — 채팅에 붙여 넣어도 됨">📋 복사</button><button class="me-revert" title="이 브라우저의 저장본을 지우고 맵 파일대로 다시 불러오기">↺ 파일로 되돌리기</button></div>
         <button class="me-test" title="P">▶ 플레이 테스트 <kbd>P</kbd></button>
         <div class="me-status"></div>
-        <div class="me-help">클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>R</kbd> 회전 · <kbd>V</kbd> 변형 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 바닥형<br><kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트</div>
+        <div class="me-help">클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>R</kbd> 회전 · <kbd>V</kbd> 변형 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 바닥형 · <kbd>,</kbd><kbd>.</kbd> 그리기 순서<br><kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트</div>
       </div>`;
     document.body.appendChild(dom);
     for (const e of ['pointerdown', 'wheel', 'contextmenu', 'mousedown']) dom.addEventListener(e, (ev) => ev.stopPropagation());
@@ -372,7 +375,7 @@ export class MapEditor {
     const p = this.sel;
     if (this.mode === 'prop') {
       if (this.palette) t += ` · 배치: ${this.palette.sheet || this.palette.type}`;
-      else if (p) t += ` · 선택: ${p.sheet || p.type} (${p.x.toFixed(2)}, ${p.y.toFixed(2)})${p.flat ? ' 바닥형' : ''}${p.block ? ' 막음' : ''}`;
+      else if (p) t += ` · 선택: ${p.sheet || p.type} (${p.x.toFixed(2)}, ${p.y.toFixed(2)})${p.flat ? ' 바닥형' : ''}${p.block ? ' 막음' : ''}${p.order ? ` 순서 ${p.order > 0 ? '+' : ''}${+p.order.toFixed(2)}` : ''}`;
     }
     if (this.mode === 'light' && this.selLight) t += ` · 조명 (${this.selLight.x.toFixed(2)}, ${this.selLight.y.toFixed(2)})`;
     t += this.dirty ? ' · 저장 안 됨' : '';
@@ -425,6 +428,14 @@ export class MapEditor {
     };
     q('.me-pcl').onchange = setClip;
     q('.me-pcr').onchange = setClip;
+    q('.me-po').onchange = (e) => {
+      const v = e.target.value === '' ? 0 : +e.target.value;
+      if (Number.isFinite(v)) this.setOrder(v);
+      else this.showProp(true);
+      done(e);
+    };
+    q('.me-pback').onclick = () => this.stepOrder(-1);
+    q('.me-pfwd').onclick = () => this.stepOrder(1);
     q('.me-pb').onchange = (e) => (this.sel && !!this.sel.block !== e.target.checked && this.toggleBlock(), done(e));
     q('.me-pf').onchange = (e) => (this.sel && !!this.sel.flat !== e.target.checked && this.toggleFlat(), done(e));
   }
@@ -464,6 +475,8 @@ export class MapEditor {
     if (nv >= 2) pv.value = p.variant;
     q('.me-pb').checked = !!p.block;
     q('.me-pf').checked = !!p.flat;
+    const po = q('.me-po');
+    if (force || document.activeElement !== po) po.value = +(p.order || 0).toFixed(3);
     q('.me-pclip').classList.toggle('hidden', !(p.sheet && cityWall(p.sheet)));
     for (const [s, v] of [['.me-pcl', p.clip ? p.clip[0] : 0], ['.me-pcr', p.clip ? p.clip[1] : 0]]) {
       const i = q(s);
@@ -563,7 +576,7 @@ export class MapEditor {
 
   /** After props change: their order (the flat ones drawn in it) and the renderer's. */
   resort() {
-    this.world.props.sort((a, b) => (a.over ? 1 : 0) - (b.over ? 1 : 0) || a.x + a.y - (b.x + b.y));
+    this.world.props.sort(propOrder);
     this.rejoin();
     this.renderer.propOrder = null;
   }
@@ -661,7 +674,7 @@ export class MapEditor {
     const w = this.world;
     return {
       props: w.props.slice(),
-      ps: w.props.map((p) => ({ x: p.x, y: p.y, angleIdx: p.angleIdx, variant: p.variant, frameIdx: p.frameIdx, block: p.block, flat: p.flat, over: p.over, cut: p.cut, clip: p.clip, depth: p.depth })),
+      ps: w.props.map((p) => ({ x: p.x, y: p.y, angleIdx: p.angleIdx, variant: p.variant, frameIdx: p.frameIdx, block: p.block, flat: p.flat, over: p.over, cut: p.cut, clip: p.clip, order: p.order, depth: p.depth })),
       lights: w.lights.slice(),
       ls: w.lights.map((l) => ({ x: l.x, y: l.y, z: l.z, r: l.r, g: l.g, b: l.b, rad: l.rad, flicker: l.flicker })),
       homes: new Map([...w.props, ...w.lights].filter((o) => o.home).map((o) => [o, { ...o.home }])),
@@ -759,6 +772,7 @@ export class MapEditor {
       q.block = flags.block;
       if (flags.over) q.over = true;
       if (p.clip) q.clip = [p.clip[1], p.clip[0]]; // (its ends the other way round in the mirrored image)
+      if (p.order) q.order = p.order;
       if (p.surface) {
         this.turnTop(p.surface, p.x, p.y);
         Object.defineProperty(q, 'surface', { value: p.surface, configurable: true, writable: true });
@@ -844,6 +858,27 @@ export class MapEditor {
     this.block(p);
     this.commit(before);
     this.say(p.block ? '막음: 발밑 칸을 지나갈 수 없습니다' : '막지 않음');
+  }
+
+  /** The selected prop's draw order: `v` metres along the diagonal added to its depth (0: by its position). */
+  setOrder(v) {
+    const p = this.sel;
+    if (!p) return;
+    v = Math.round(v * 1000) / 1000;
+    if (v === (p.order || 0)) return;
+    const before = this.snapshot();
+    p.order = v || undefined;
+    this.renderer.placeProp(p);
+    this.resort();
+    this.commit(before);
+    this.say(v ? `그리기 순서 ${v > 0 ? '+' : ''}${v} m (${v > 0 ? '더 앞에' : '더 뒤에'} 그림)` : '그리기 순서: 위치대로');
+    this.showProp(true);
+  }
+
+  /** , and .: the draw order a step back or forward (0.5 m; 0.1 with Shift). */
+  stepOrder(dir) {
+    if (!this.sel) return;
+    this.setOrder((this.sel.order || 0) + dir * (this.shift ? 0.1 : 0.5));
   }
 
   /** F: drawn with the ground (walked over: a catwalk, a table) or standing. */
@@ -1088,6 +1123,12 @@ export class MapEditor {
         break;
       case 'p':
         this.startTest();
+        break;
+      case ',':
+        this.stepOrder(-1);
+        break;
+      case '.':
+        this.stepOrder(1);
         break;
       case '1':
         this.setMode('prop');

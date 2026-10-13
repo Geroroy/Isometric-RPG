@@ -95,7 +95,7 @@ export class Renderer {
       p.sy = s.y;
       const k = c.body.k || 1; // (a sheet drawn scaled: drawFrame)
       p.rect = [s.x - c.body.ox * k, s.y - c.body.oy * k, c.body.w * k, c.body.h * k];
-      p.sortDepth = p.x + p.y + (p.rect && c.meta.footprint ? Math.min(...extent(c.meta.footprint)) * 0.35 : 0);
+      p.sortDepth = p.x + p.y + (p.order || 0) + (p.rect && c.meta.footprint ? Math.min(...extent(c.meta.footprint)) * 0.35 : 0);
       p.box = boxOf(p.x, p.y, c.meta.footprint);
       this.propOrder = null;
       return;
@@ -111,7 +111,7 @@ export class Renderer {
       // big structures sort by their front-most footprint corner minus a bit
       const def = PROPS[p.type];
       const rect = def.rectByAngle ? def.rectByAngle[p.angleIdx] : def.rect;
-      p.sortDepth = p.x + p.y + (rect ? Math.min(rect[0], rect[1]) * 0.35 : 0);
+      p.sortDepth = p.x + p.y + (p.order || 0) + (rect ? Math.min(rect[0], rect[1]) * 0.35 : 0);
       p.box = rect ? [p.x - rect[0] / 2, p.y - rect[1] / 2, p.x + rect[0] / 2, p.y + rect[1] / 2] : [p.x - 0.3, p.y - 0.3, p.x + 0.3, p.y + 0.3];
       this.propOrder = null;
     }
@@ -587,6 +587,8 @@ export class Renderer {
    * Draw depths for the standing props, consistent with their footprints (boxOrder): a long building
    * is in front of whatever stands wholly behind its box, whatever their centres. Kept once per set of
    * props: drawDepth starts at the centre's depth and is raised past every box that must come before.
+   * A prop given an `order` by the map (placeProp: its depth moved by that much) is placed by hand: its
+   * pairs are left to that depth, not to its box.
    */
   orderProps(world) {
     const list = world.props.filter((p) => !p.flat && p.box);
@@ -598,7 +600,7 @@ export class Renderer {
       for (let j = i + 1; j < list.length; j++) {
         const a = list[i];
         const b = list[j];
-        if (!near(a, b)) continue;
+        if (!near(a, b) || a.order || b.order) continue;
         const o = boxOrder(a.box, b.box);
         if (o < 0) pairs.push([a, b]);
         else if (o > 0) pairs.push([b, a]);

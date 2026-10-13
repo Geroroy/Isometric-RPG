@@ -4884,6 +4884,11 @@ body.map-editing .cinema-ui {
   flex: 1;
   min-width: 0;
 }
+#mapEditor .me-porder button {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  font-size: 11px;
+}
 #mapEditor input[type='number'],
 #mapEditor select {
   font: 12px/1.3 ui-monospace, monospace;
