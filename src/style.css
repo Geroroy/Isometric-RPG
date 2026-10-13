@@ -4884,10 +4884,55 @@ body.map-editing .cinema-ui {
   flex: 1;
   min-width: 0;
 }
-#mapEditor .me-porder button {
-  flex: 0 0 auto;
-  padding: 2px 7px;
-  font-size: 11px;
+#mapEditor .me-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#mapEditor .me-lhead {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+#mapEditor .me-lhead span {
+  flex: 1;
+}
+#mapEditor .me-lhead button {
+  padding: 1px 6px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+#mapEditor .me-lstack {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 150px;
+  overflow-y: auto;
+  font: 11px/1.5 ui-monospace, monospace;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.3);
+}
+#mapEditor .me-lstack li {
+  padding: 1px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+#mapEditor .me-lstack li:hover {
+  background: rgba(140, 200, 255, 0.14);
+}
+#mapEditor .me-lstack li.sel {
+  background: rgba(255, 196, 70, 0.25);
+  color: #ffd98a;
+}
+#mapEditor .me-lstack li.me-ltier {
+  font-size: 10px;
+  color: #9fc8ee;
+  background: rgba(159, 200, 238, 0.1);
+  cursor: default;
 }
 #mapEditor input[type='number'],
 #mapEditor select {

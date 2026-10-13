@@ -397,12 +397,12 @@ export class Renderer {
       if (pr.hidden && !this.editing) continue; // placed but not shown yet (scripted; the editor shows it faint)
       const r = pr.rect;
       if (!inView(r[0], r[1], r[2], r[3])) continue;
+      if (pr.top) continue; // (drawn over everyone, below)
       if (pr.flat) {
         if (pr.hidden) ctx.globalAlpha = 0.45;
         this.drawFrame(pr.frame, pr.sx, pr.sy);
         ctx.globalAlpha = 1;
-      }
-      else {
+      } else {
         put(pr.drawDepth ?? pr.sortDepth, pr, null, null, null);
         shown.push(pr);
       }
@@ -519,19 +519,8 @@ export class Renderer {
           }
         }
         pr.coverAlpha = null;
-        if (pf && d.depth > pDepth && r[3] > 30 && pp.x + 8 > r[0] && pp.x - 8 < r[0] + r[2] && pp.y > r[1] + 8 && pp.y - pfH < r[1] + r[3] && this.coversPlayer(pr, pp, pfH)) {
-          if (pr.sheet && g.world.grade === 'mustafar') {
-            // the Mustafar set (its walls, consoles, big props) covering him: the whole sprite translucent instead
-            // of a window cut round him (its neon layer the same: drawCityGlow)
-            pr.coverAlpha = COVER_ALPHA;
-            ctx.globalAlpha = COVER_ALPHA;
-            this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
-            ctx.globalAlpha = 1;
-          } else {
-            pr.window = { x: pp.x - cam.x, y: pp.y - pfH * 0.5 - cam.y, r: Math.max(30, pfH * 0.8) };
-            this.drawWindowed(pr.frame, pr.sx, pr.sy + bob, pr.window);
-          }
-        } else this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
+        if (d.depth > pDepth) this.drawInFront(pr, bob, pf, pfH, pp, cam);
+        else this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
       } else if (d.unit) {
         this.drawUnit(d.unit);
       } else if (d.scorch) {
@@ -543,6 +532,23 @@ export class Renderer {
         const s = worldToScreen(pk.x, pk.y, 0.15 + Math.sin(pk.t * 4) * 0.08);
         this.drawFrame(this.assets.props[pk.type][0], s.x, s.y);
       }
+    }
+
+    // --- the top layer: the map's props drawn over everyone (worldgen.js `top`), in the map's order; one that
+    // covers the player goes translucent (or gets the window), as a standing piece in front of him does
+    for (const pr of g.world.props) {
+      if (!pr.top || (pr.hidden && !this.editing)) continue;
+      const r = pr.rect;
+      if (!inView(r[0], r[1], r[2], r[3])) continue;
+      pr.bob = 0;
+      pr.window = null;
+      pr.fade = 1;
+      pr.coverAlpha = null;
+      if (this.editing) {
+        if (pr.hidden) ctx.globalAlpha = 0.45;
+        this.drawFrame(pr.frame, pr.sx, pr.sy);
+        ctx.globalAlpha = 1;
+      } else this.drawInFront(pr, 0, pf, pfH, pp, cam);
     }
 
     g.fx.drawWorld(ctx, cam);
@@ -584,14 +590,36 @@ export class Renderer {
   }
 
   /**
+   * A prop drawn in front of the player: where its opaque pixels would cover his body (coversPlayer), the
+   * Mustafar set's pieces go translucent whole (their neon layer the same: drawCityGlow), the rest get a window
+   * cut round him (drawWindowed); else drawn as it is.
+   */
+  drawInFront(pr, bob, pf, pfH, pp, cam) {
+    const ctx = this.ctx;
+    const r = pr.rect;
+    pr.coverAlpha = null;
+    if (pf && r[3] > 30 && pp.x + 8 > r[0] && pp.x - 8 < r[0] + r[2] && pp.y > r[1] + 8 && pp.y - pfH < r[1] + r[3] && this.coversPlayer(pr, pp, pfH)) {
+      if (pr.sheet && this.game.world.grade === 'mustafar') {
+        pr.coverAlpha = COVER_ALPHA;
+        ctx.globalAlpha = COVER_ALPHA;
+        this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
+        ctx.globalAlpha = 1;
+      } else {
+        pr.window = { x: pp.x - cam.x, y: pp.y - pfH * 0.5 - cam.y, r: Math.max(30, pfH * 0.8) };
+        this.drawWindowed(pr.frame, pr.sx, pr.sy + bob, pr.window);
+      }
+    } else this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
+  }
+
+  /**
    * Draw depths for the standing props, consistent with their footprints (boxOrder): a long building
    * is in front of whatever stands wholly behind its box, whatever their centres. Kept once per set of
    * props: drawDepth starts at the centre's depth and is raised past every box that must come before.
-   * A prop given an `order` by the map (placeProp: its depth moved by that much) is placed by hand: its
-   * pairs are left to that depth, not to its box.
+   * A prop given an `order` by the map (placeProp: its depth moved by that much) is placed by hand (the
+   * editor's layer moves): its pairs are left to that depth, not to its box.
    */
   orderProps(world) {
-    const list = world.props.filter((p) => !p.flat && p.box);
+    const list = world.props.filter((p) => !p.flat && !p.top && p.box);
     for (const p of list) p.drawDepth = p.sortDepth;
     // relax along the "behind" relation (a few passes settle it; the layouts have no cycles)
     const near = (a, b) => Math.abs(a.sx - b.sx) < (a.rect[2] + b.rect[2]) / 2 && Math.abs(a.rect[1] + a.rect[3] / 2 - b.rect[1] - b.rect[3] / 2) < (a.rect[3] + b.rect[3]) / 2;

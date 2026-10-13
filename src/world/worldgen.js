@@ -569,13 +569,16 @@ const MIRROR_SHEET = {
 export const MUSTAFAR_SHEETS = { mirror: MIRROR_SHEET };
 
 /**
- * A prop's depth: where it sorts among the others, x + y plus its `order` (the map's: metres farther along the
- * diagonal, signed, set in the map editor to put a piece in front of or behind what it overlaps — renderer.js
- * placeProp adds it the same way for the standing pieces).
+ * A standing prop's depth: where it sorts among the others and the units, x + y plus its `order` (the map's:
+ * metres farther along the diagonal, signed; the map editor sets it to put a piece just in front of or behind a
+ * neighbour — renderer.js placeProp adds it the same way).
+ *
+ * The map's props are in three layers (the editor's 층): `flat` ones drawn with the ground, under everyone, in the
+ * map's order (walked over: a catwalk, a table); the standing ones, by depth with the units; `top` ones drawn
+ * over everyone, in the map's order. The map file lists the props in the order they are drawn within a layer, so
+ * the editor's layer moves are the list's order — nothing sorts them again.
  */
 export const propDepth = (p) => p.x + p.y + (p.order || 0);
-/** The map's props in the order they are drawn with the ground (the flat ones): `over` last, then by depth. */
-export const propOrder = (a, b) => (a.over ? 1 : 0) - (b.over ? 1 : 0) || propDepth(a) - propDepth(b);
 
 // a map file's characters (MustafarArena.toMap): a biome each, and the way — walkable, a prop's footprint, the
 // ground's own edge (a wall, the lava, the rock)
@@ -631,7 +634,9 @@ export class MustafarArena extends World {
       if (e.over) p.over = true;
       if (e.cut) p.cut = [...e.cut];
       if (e.clip) p.clip = [...e.clip]; // (a wall piece cut short: metres off its left and right ends, joinWalls)
-      if (e.order) p.order = e.order; // (drawn as if this much farther along x + y: the editor's draw order)
+      if (e.order) p.order = e.order; // (drawn as if this much farther along x + y: the editor's layer moves)
+      if (e.top) p.top = true; // (drawn over everyone)
+      if (e.over) p.over = true; // (an older map: a flat piece drawn after the other flats)
       if (e.hidden) p.hidden = true;
       if (e.id) this.named[e.id] = p;
     }
@@ -650,8 +655,12 @@ export class MustafarArena extends World {
     this.cloak = this.named.cloak;
     this.robe = this.named.robe;
     this.alarm = this.named.alarm; // lit by the duel when the shields fail
-    // (a flat piece marked `over` is drawn after the other flats: the balcony's corridor over the catwalk)
-    this.props.sort(propOrder);
+    // the props stay in the map's order: it is the draw order within a layer (an older map's `over` flats, drawn
+    // after the other flats, go to the end of the list once, and the flag goes)
+    if (this.props.some((q) => q.over)) {
+      this.props.sort((a, b) => (a.over ? 1 : 0) - (b.over ? 1 : 0));
+      for (const q of this.props) delete q.over;
+    }
     this.joinWalls();
   }
 
@@ -744,7 +753,7 @@ export class MustafarArena extends World {
       o.y = n6(p.y);
       if (!p.sheet) [o.variant, o.angleIdx] = [p.variant, p.angleIdx];
       if (p.flat) o.flat = true;
-      if (p.over) o.over = true;
+      if (p.top) o.top = true;
       if (p.block) o.block = true;
       if (p.cut) o.cut = p.cut.map(n6);
       if (p.clip && (p.clip[0] || p.clip[1])) o.clip = p.clip.map(n6);
@@ -775,11 +784,8 @@ export class MustafarArena extends World {
       biome: rows(this.biome, (b) => BIOME_CHAR[names[b]]),
       blockedKey: BLOCKED_KEY,
       blocked: rows(this.blocked, (b) => BLOCKED_CHAR[b]),
-      // (in the order they are drawn, by where the map has them)
-      props: this.props
-        .map((q) => [q, propDepth(q.home ? { ...q, ...q.home } : q)])
-        .sort(([a, da], [b, db]) => (a.over ? 1 : 0) - (b.over ? 1 : 0) || da - db)
-        .map(([q]) => prop(q)),
+      // (in their order: the draw order within a layer)
+      props: this.props.map(prop),
       lights: this.lights.filter((l) => l.map && !l.of).map(light),
     };
   }

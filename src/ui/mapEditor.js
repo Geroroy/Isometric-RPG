@@ -4,9 +4,12 @@
 //   소품 (1)   the panel's sprites: pick one, click the map to place it (again and again; Esc or the right button
 //             stops); click a prop to select it, drag to move it; Delete removes it; R turns it (a set sprite: its
 //             mirrored twin; a model: its next angle); V its model's next variant; B whether it blocks its
-//             footprint; F flat (drawn with the ground, walked over) or standing; , and . move it back and forward
-//             in the draw order (its `order`: metres along the diagonal added to its depth, 0.5 a step, 0.1 with
-//             Shift; typed in the panel, 0 is its place by position) — in front of or behind what it overlaps
+//             footprint; F its layer: 바닥 (drawn with the ground, walked over) → 서 있음 (by depth with the
+//             characters) → 맨 위 (over everyone). The panel's 레이어 list shows the props it overlaps, front to
+//             back, as drawn: 앞으로 / 뒤로 (. and ,) move it past the next one, 맨 앞 / 맨 뒤 (Shift) to the very
+//             front (the top layer) or back (the ground); crossing into another layer changes its layer. Within
+//             the ground and the top layers the map's list order is the draw order; among the standing ones a
+//             move sets the prop's `order` (metres added to its depth) to just past the neighbour
 //   길 (2)     paint the tiles: the left button blocked, the right walkable; [ ] the brush's size
 //   조명 (3)   click a light to select it, drag to move it, click the ground to add one; colour, radius, height and
 //             flicker in the panel; Delete removes it (a prop's own lights go with their prop)
@@ -22,7 +25,7 @@
 // P plays the map from where the view is (game.mapTest): the player stood on the nearest walkable tile there, and
 // walks it alone — the scene, the duel and Obi-Wan held — to try the way, the cover and the lights; P again is back
 // in the editor with everything as it was before (the player, the duel), F2 out of both.
-import { World, MUSTAFAR, MUSTAFAR_SHEETS, mapText, propOrder } from '../world/worldgen.js';
+import { World, MUSTAFAR, MUSTAFAR_SHEETS, mapText } from '../world/worldgen.js';
 import { cityFootprint, cityWall, inPoly, setCityFootprints } from '../world/cityProps.js';
 import { addMirror, MIRROR_SUFFIX } from '../gfx/mustafarFloor.js';
 import { PROPS } from '../gfx/models/props.js';
@@ -50,6 +53,11 @@ const GROUPS = [
   ['바위', (n) => n.startsWith('rk')],
   ['기타', () => true],
 ];
+// a prop's layer: with the ground, standing (by depth), over everyone
+const TIERS = ['flat', 'stand', 'top'];
+const TIER_LABEL = { flat: '바닥', stand: '서 있음', top: '맨 위' };
+const tierOf = (p) => (p.top ? 'top' : p.flat ? 'flat' : 'stand');
+const ORDER_STEP = 0.005; // (m: a standing prop set just past its neighbour)
 const hex = (r, g, b) => '#' + [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
 
 export class MapEditor {
@@ -153,8 +161,11 @@ export class MapEditor {
           <div class="me-row"><label>X <input class="me-px" type="number" step="0.05"></label><label>Y <input class="me-py" type="number" step="0.05"></label></div>
           <label>방향 <select class="me-pdir"></select> <kbd>R</kbd></label>
           <label class="me-pvar">변형 <select class="me-pv"></select> <kbd>V</kbd></label>
-          <div class="me-row"><label><input class="me-pb" type="checkbox"> 막기 <kbd>B</kbd></label><label><input class="me-pf" type="checkbox"> 바닥형 <kbd>F</kbd></label></div>
-          <div class="me-row me-porder" title="그리기 순서: 위치(x+y)에 이만큼(m)을 더한 깊이로 그림 — 양수는 더 앞(나중에 그림), 음수는 더 뒤. 0이면 위치대로. 값이 있으면 발자국으로 정하는 자동 순서 대신 이 값을 따름"><label>순서 <input class="me-po" type="number" step="0.1"></label><button class="me-pback" title="뒤로 (, · Shift: 0.1)">◀ 뒤로</button><button class="me-pfwd" title="앞으로 (. · Shift: 0.1)">앞으로 ▶</button></div>
+          <div class="me-row"><label><input class="me-pb" type="checkbox"> 막기 <kbd>B</kbd></label><label title="바닥: 땅과 함께, 모두의 아래 (밟고 지나감) · 서 있음: 캐릭터와 깊이순 · 맨 위: 모두의 위">층 <select class="me-ptier"><option value="flat">바닥</option><option value="stand">서 있음</option><option value="top">맨 위</option></select> <kbd>F</kbd></label></div>
+          <div class="me-layers" title="이 소품과 겹치는 소품들, 그려지는 순서대로 (위가 앞). 포토샵 레이어처럼 앞뒤를 바꿉니다 — 다른 층으로 넘어가면 층도 바뀜">
+            <div class="me-lhead"><span>레이어</span><button class="me-lfront" title="맨 앞으로 — 맨 위 층의 제일 앞 (Shift+.)">⏫</button><button class="me-lfwd" title="한 칸 앞으로 (.)">🔼</button><button class="me-lback" title="한 칸 뒤로 (,)">🔽</button><button class="me-lbottom" title="맨 뒤로 — 바닥 층의 제일 뒤 (Shift+,)">⏬</button></div>
+            <ol class="me-lstack"></ol>
+          </div>
           <div class="me-row me-pclip" title="벽 칸을 문틀·콘솔 끝·모서리에 맞춰 자르기: 왼쪽/오른쪽 기둥 중심에서 안쪽으로 몇 m까지 잘라낼지"><label>자르기 L <input class="me-pcl" type="number" step="0.05" min="0"></label><label>R <input class="me-pcr" type="number" step="0.05" min="0"></label></div>
         </div>
         <div class="me-list"></div>
@@ -180,7 +191,7 @@ export class MapEditor {
         <div class="me-btns me-file"><span class="me-src"></span><button class="me-dl" title="맵 파일(mustafar.json) 받기 — 저장소의 public/maps/mustafar.json 에 넣을 때">⬇ 파일 받기</button><button class="me-copy" title="맵 JSON을 클립보드에 복사 — 채팅에 붙여 넣어도 됨">📋 복사</button><button class="me-revert" title="이 브라우저의 저장본을 지우고 맵 파일대로 다시 불러오기">↺ 파일로 되돌리기</button></div>
         <button class="me-test" title="P">▶ 플레이 테스트 <kbd>P</kbd></button>
         <div class="me-status"></div>
-        <div class="me-help">클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>R</kbd> 회전 · <kbd>V</kbd> 변형 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 바닥형 · <kbd>,</kbd><kbd>.</kbd> 그리기 순서<br><kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트</div>
+        <div class="me-help">클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>R</kbd> 회전 · <kbd>V</kbd> 변형 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 층 · <kbd>,</kbd><kbd>.</kbd> 레이어 뒤로/앞으로 (<kbd>Shift</kbd> 맨 뒤/맨 앞)<br><kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트</div>
       </div>`;
     document.body.appendChild(dom);
     for (const e of ['pointerdown', 'wheel', 'contextmenu', 'mousedown']) dom.addEventListener(e, (ev) => ev.stopPropagation());
@@ -375,7 +386,7 @@ export class MapEditor {
     const p = this.sel;
     if (this.mode === 'prop') {
       if (this.palette) t += ` · 배치: ${this.palette.sheet || this.palette.type}`;
-      else if (p) t += ` · 선택: ${p.sheet || p.type} (${p.x.toFixed(2)}, ${p.y.toFixed(2)})${p.flat ? ' 바닥형' : ''}${p.block ? ' 막음' : ''}${p.order ? ` 순서 ${p.order > 0 ? '+' : ''}${+p.order.toFixed(2)}` : ''}`;
+      else if (p) t += ` · 선택: ${p.sheet || p.type} (${p.x.toFixed(2)}, ${p.y.toFixed(2)}) ${TIER_LABEL[tierOf(p)]}${p.block ? ' · 막음' : ''}`;
     }
     if (this.mode === 'light' && this.selLight) t += ` · 조명 (${this.selLight.x.toFixed(2)}, ${this.selLight.y.toFixed(2)})`;
     t += this.dirty ? ' · 저장 안 됨' : '';
@@ -428,16 +439,18 @@ export class MapEditor {
     };
     q('.me-pcl').onchange = setClip;
     q('.me-pcr').onchange = setClip;
-    q('.me-po').onchange = (e) => {
-      const v = e.target.value === '' ? 0 : +e.target.value;
-      if (Number.isFinite(v)) this.setOrder(v);
-      else this.showProp(true);
-      done(e);
+    q('.me-lfront').onclick = () => this.moveLayer('front');
+    q('.me-lfwd').onclick = () => this.moveLayer('fwd');
+    q('.me-lback').onclick = () => this.moveLayer('back');
+    q('.me-lbottom').onclick = () => this.moveLayer('bottom');
+    q('.me-lstack').onclick = (e) => {
+      const li = e.target.closest('li[data-i]');
+      if (!li) return;
+      const p = this.world.props[+li.dataset.i];
+      if (p) this.select(p);
     };
-    q('.me-pback').onclick = () => this.stepOrder(-1);
-    q('.me-pfwd').onclick = () => this.stepOrder(1);
     q('.me-pb').onchange = (e) => (this.sel && !!this.sel.block !== e.target.checked && this.toggleBlock(), done(e));
-    q('.me-pf').onchange = (e) => (this.sel && !!this.sel.flat !== e.target.checked && this.toggleFlat(), done(e));
+    q('.me-ptier').onchange = (e) => (this.sel && tierOf(this.sel) !== e.target.value && this.setTier(e.target.value), done(e));
   }
 
   showProp(force = false) {
@@ -474,14 +487,124 @@ export class MapEditor {
     }
     if (nv >= 2) pv.value = p.variant;
     q('.me-pb').checked = !!p.block;
-    q('.me-pf').checked = !!p.flat;
-    const po = q('.me-po');
-    if (force || document.activeElement !== po) po.value = +(p.order || 0).toFixed(3);
+    q('.me-ptier').value = tierOf(p);
+    this.showLayers();
     q('.me-pclip').classList.toggle('hidden', !(p.sheet && cityWall(p.sheet)));
     for (const [s, v] of [['.me-pcl', p.clip ? p.clip[0] : 0], ['.me-pcr', p.clip ? p.clip[1] : 0]]) {
       const i = q(s);
       if (force || document.activeElement !== i) i.value = +v.toFixed(3);
     }
+  }
+
+  // ------------------------------------------------------------------------------------------------- the layers
+
+  /**
+   * The props back to front as drawn: the ground layer in the map's order, the standing ones by their draw depth
+   * (renderer.js orderProps), the top layer in the map's order.
+   */
+  stack() {
+    const w = this.world;
+    const r = this.renderer;
+    if (!r.propOrder || r.propOrder.world !== w || r.propOrder.n !== w.props.length) r.orderProps(w);
+    const flats = w.props.filter((p) => tierOf(p) === 'flat');
+    const stand = w.props.filter((p) => tierOf(p) === 'stand').sort((a, b) => (a.drawDepth ?? a.sortDepth) - (b.drawDepth ?? b.sortDepth));
+    const tops = w.props.filter((p) => tierOf(p) === 'top');
+    return [...flats, ...stand, ...tops];
+  }
+
+  /** The stack's props whose pictures overlap the selected one's, front to back (the selected one among them). */
+  around(p) {
+    const a = p.rect;
+    const meets = (q) => q === p || (q.rect && a[0] < q.rect[0] + q.rect[2] && a[0] + a[2] > q.rect[0] && a[1] < q.rect[1] + q.rect[3] && a[1] + a[3] > q.rect[1]);
+    return this.stack().filter(meets).reverse();
+  }
+
+  /** The panel's layer list for the selected prop. */
+  showLayers() {
+    const ol = this.dom.querySelector('.me-lstack');
+    const p = this.sel;
+    ol.innerHTML = '';
+    if (!p) return;
+    let tier = null;
+    for (const q of this.around(p)) {
+      const t = tierOf(q);
+      if (t !== tier) {
+        tier = t;
+        const h = document.createElement('li');
+        h.className = 'me-ltier';
+        h.textContent = TIER_LABEL[t];
+        ol.appendChild(h);
+      }
+      const li = document.createElement('li');
+      li.dataset.i = this.world.props.indexOf(q);
+      li.className = q === p ? 'sel' : '';
+      li.textContent = `${q.sheet || q.type} (${q.x.toFixed(1)}, ${q.y.toFixed(1)})`;
+      ol.appendChild(li);
+    }
+    const sel = ol.querySelector('li.sel');
+    if (sel) sel.scrollIntoView({ block: 'nearest' });
+  }
+
+  /**
+   * The selected prop moved in the draw order, as a layer in a picture: `fwd` / `back` past the next prop it
+   * overlaps, `front` / `bottom` to the very front (the top layer's end) or back (the ground layer's start). Landing
+   * next to a prop of another layer puts it in that layer.
+   */
+  moveLayer(how) {
+    const p = this.sel;
+    if (!p) return;
+    const list = this.around(p); // (front to back)
+    const i = list.indexOf(p);
+    const before = this.snapshot();
+    if (how === 'front') this.placeIn(p, 'top', null, true);
+    else if (how === 'bottom') this.placeIn(p, 'flat', null, false);
+    else {
+      const target = how === 'fwd' ? list[i - 1] : list[i + 1];
+      if (!target) return this.say(how === 'fwd' ? '겹치는 소품 중 이미 제일 앞입니다 (⏫ 맨 앞: 맨 위 층으로)' : '겹치는 소품 중 이미 제일 뒤입니다 (⏬ 맨 뒤: 바닥 층으로)');
+      this.placeIn(p, tierOf(target), target, how === 'fwd');
+    }
+    this.renderer.placeProp(p);
+    this.resort();
+    this.commit(before);
+    const now = this.around(p);
+    const j = now.indexOf(p);
+    const near = how === 'fwd' || how === 'front' ? now[j + 1] : now[j - 1];
+    this.say(`${TIER_LABEL[tierOf(p)]} 층${near ? ` · ${near.sheet || near.type}${how === 'fwd' || how === 'front' ? ' 앞에' : ' 뒤에'}` : ''}`);
+    this.status();
+  }
+
+  /**
+   * The prop into `tier` next to `target` (null: the layer's end — the front — when `after`, else its start). In
+   * the ground and top layers the list's order is the draw order, so it goes beside the target in the list; among
+   * the standing ones its `order` is set so its depth is just past the target's.
+   */
+  placeIn(p, tier, target, after) {
+    const w = this.world;
+    p.flat = tier === 'flat';
+    p.top = tier === 'top';
+    if (tier !== 'stand' || !target) p.order = undefined;
+    w.props.splice(w.props.indexOf(p), 1);
+    if (tier === 'stand' && target) {
+      this.renderer.placeProp(p); // (its depth without the order)
+      const base = p.sortDepth - (p.order || 0);
+      p.order = Math.round(((target.drawDepth ?? target.sortDepth) + (after ? ORDER_STEP : -ORDER_STEP) - base) * 1000) / 1000;
+      w.props.push(p);
+    } else if (target) w.props.splice(w.props.indexOf(target) + (after ? 1 : 0), 0, p);
+    else if (after) w.props.push(p);
+    else w.props.unshift(p);
+  }
+
+  /** The selected prop's layer (the panel's 층, F): to the front of that layer. */
+  setTier(tier) {
+    const p = this.sel;
+    if (!p || tierOf(p) === tier) return;
+    const before = this.snapshot();
+    this.placeIn(p, tier, null, true);
+    this.renderer.placeProp(p);
+    this.resort();
+    this.commit(before);
+    this.say({ flat: '바닥 층: 땅과 함께, 모두의 아래에 그려짐 (밟고 지나감)', stand: '서 있음: 캐릭터와 깊이순으로 그려짐', top: '맨 위 층: 모두의 위에 그려짐' }[tier]);
+    this.status();
   }
 
   // ------------------------------------------------------------------------------------------------- the world
@@ -506,12 +629,10 @@ export class MapEditor {
     return c.getImageData(0, 0, 1, 1).data[3] > 40;
   }
 
-  /** The prop drawn on top under game px (ix, iy): the standing ones front to back, then the flat ones. */
+  /** The prop drawn on top under game px (ix, iy): the stack front to back. */
   propAt(ix, iy) {
-    const props = this.world.props;
-    const standing = props.filter((p) => !p.flat).sort((a, b) => (b.drawDepth ?? b.sortDepth) - (a.drawDepth ?? a.sortDepth));
-    for (const p of standing) if (this.hit(p, ix, iy)) return p;
-    for (let i = props.length - 1; i >= 0; i--) if (props[i].flat && this.hit(props[i], ix, iy)) return props[i];
+    const s = this.stack();
+    for (let i = s.length - 1; i >= 0; i--) if (this.hit(s[i], ix, iy)) return s[i];
     return null;
   }
 
@@ -574,9 +695,8 @@ export class MapEditor {
     p.cut = r ? [r.x - r.hw, r.y - r.hh, r.x + r.hw, r.y + r.hh] : undefined;
   }
 
-  /** After props change: their order (the flat ones drawn in it) and the renderer's. */
+  /** After props change: the walls' joints and the renderer's order (the list's order stays: it is the layers'). */
   resort() {
-    this.world.props.sort(propOrder);
     this.rejoin();
     this.renderer.propOrder = null;
   }
@@ -594,7 +714,7 @@ export class MapEditor {
     if (o.home) for (const k of Object.keys(o.home)) if (k !== 'hidden') o.home[k] = o[k];
   }
 
-  /** A new prop at (x, y): set like the map's others of its sprite (flat, over, block), else standing. */
+  /** A new prop at (x, y): set like the map's others of its sprite (its layer, block), else standing; at its layer's front. */
   add(it, x, y) {
     const w = this.world;
     const like = w.props.find((q) => (it.sheet ? q.sheet === it.sheet || q.sheet === twinOf(it.sheet) : q.type === it.type));
@@ -604,7 +724,7 @@ export class MapEditor {
       p = w.addSheetProp(it.sheet, x, y, { noBlock: true, flat });
       if (!p) return null;
       p.block = like ? !!like.block : it.sheet.startsWith('cg');
-      if (like && like.over) p.over = true;
+      if (like && like.top) p.top = true;
     } else {
       const def = PROPS[it.type];
       // (World's own: the Mustafar world's addProp would turn a model rock into a rock sprite)
@@ -674,7 +794,7 @@ export class MapEditor {
     const w = this.world;
     return {
       props: w.props.slice(),
-      ps: w.props.map((p) => ({ x: p.x, y: p.y, angleIdx: p.angleIdx, variant: p.variant, frameIdx: p.frameIdx, block: p.block, flat: p.flat, over: p.over, cut: p.cut, clip: p.clip, order: p.order, depth: p.depth })),
+      ps: w.props.map((p) => ({ x: p.x, y: p.y, angleIdx: p.angleIdx, variant: p.variant, frameIdx: p.frameIdx, block: p.block, flat: p.flat, top: p.top, cut: p.cut, clip: p.clip, order: p.order, depth: p.depth })),
       lights: w.lights.slice(),
       ls: w.lights.map((l) => ({ x: l.x, y: l.y, z: l.z, r: l.r, g: l.g, b: l.b, rad: l.rad, flicker: l.flicker })),
       homes: new Map([...w.props, ...w.lights].filter((o) => o.home).map((o) => [o, { ...o.home }])),
@@ -766,11 +886,14 @@ export class MapEditor {
     if (p.sheet) {
       const twin = this.twin(p.sheet);
       if (!twin) return this.say(`${p.sheet}: 다른 방향 스프라이트를 만들 수 없습니다`);
-      const flags = { flat: p.flat, over: p.over, block: p.block };
+      const flags = { flat: p.flat, top: p.top, block: p.block };
+      const at = this.world.props.indexOf(p); // (its place in the layers kept)
       this.drop(p, true);
       const q = this.world.addSheetProp(twin, p.x, p.y, { noBlock: true, flat: flags.flat });
+      this.world.props.splice(this.world.props.indexOf(q), 1);
+      this.world.props.splice(at, 0, q);
       q.block = flags.block;
-      if (flags.over) q.over = true;
+      if (flags.top) q.top = true;
       if (p.clip) q.clip = [p.clip[1], p.clip[0]]; // (its ends the other way round in the mirrored image)
       if (p.order) q.order = p.order;
       if (p.surface) {
@@ -860,37 +983,10 @@ export class MapEditor {
     this.say(p.block ? '막음: 발밑 칸을 지나갈 수 없습니다' : '막지 않음');
   }
 
-  /** The selected prop's draw order: `v` metres along the diagonal added to its depth (0: by its position). */
-  setOrder(v) {
-    const p = this.sel;
-    if (!p) return;
-    v = Math.round(v * 1000) / 1000;
-    if (v === (p.order || 0)) return;
-    const before = this.snapshot();
-    p.order = v || undefined;
-    this.renderer.placeProp(p);
-    this.resort();
-    this.commit(before);
-    this.say(v ? `그리기 순서 ${v > 0 ? '+' : ''}${v} m (${v > 0 ? '더 앞에' : '더 뒤에'} 그림)` : '그리기 순서: 위치대로');
-    this.showProp(true);
-  }
-
-  /** , and .: the draw order a step back or forward (0.5 m; 0.1 with Shift). */
-  stepOrder(dir) {
+  /** F: the next layer (바닥 → 서 있음 → 맨 위 → 바닥). */
+  cycleTier() {
     if (!this.sel) return;
-    this.setOrder((this.sel.order || 0) + dir * (this.shift ? 0.1 : 0.5));
-  }
-
-  /** F: drawn with the ground (walked over: a catwalk, a table) or standing. */
-  toggleFlat() {
-    const p = this.sel;
-    if (!p) return;
-    const before = this.snapshot();
-    p.flat = !p.flat;
-    this.renderer.placeProp(p);
-    this.resort();
-    this.commit(before);
-    this.say(p.flat ? '바닥형: 땅과 함께 그려짐' : '서 있는 소품');
+    this.setTier(TIERS[(TIERS.indexOf(tierOf(this.sel)) + 1) % TIERS.length]);
   }
 
   /** Paint the brush's tiles round (x, y): `v` 1 blocked, 0 walkable. */
@@ -1119,16 +1215,16 @@ export class MapEditor {
         this.toggleBlock();
         break;
       case 'f':
-        this.toggleFlat();
+        this.cycleTier();
         break;
       case 'p':
         this.startTest();
         break;
       case ',':
-        this.stepOrder(-1);
+        this.moveLayer(e.shiftKey ? 'bottom' : 'back');
         break;
       case '.':
-        this.stepOrder(1);
+        this.moveLayer(e.shiftKey ? 'front' : 'fwd');
         break;
       case '1':
         this.setMode('prop');
