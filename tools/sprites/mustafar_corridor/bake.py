@@ -12,6 +12,10 @@ than the game's view).
 - body darkened to the facility's ash metal like the consoles; the neon layer is the light strips inside the
   portal, drawn after the light map, with a warm light spilling out of the mouth
 - the footprint covers the box (renderer: the shell fades while someone is inside it, `roof`)
+- `mfCorridorL_r` / `mfCorridorL`: the same shell lengthened to 15 m (the junction's whole length, so its roof runs
+  end to end): each pixel's place along the box read off the surface its line of sight meets first (the roof, the
+  near side, the portal's face), the back part moved back and the gap filled by repeating a 1.5 m stretch of the
+  middle (its ribs, its side panels)
 """
 import json
 import sys
@@ -61,6 +65,44 @@ def emissive(a):
     return np.asarray(m) / 255.0
 
 
+def lengthen(layers, ax, ay, L2, cut=-3.0, step=1.5):
+    """The box (x from −L to 0) made L2 long: what lies behind `cut` moved back by L2 − L, the gap filled with
+    copies of the stretch [cut − step, cut], back to front."""
+    d = L2 - L
+    wd, ht = layers['body'].size
+    py, px = np.mgrid[0:ht, 0:wd].astype(np.float32)
+    sx = (px - ax) / OVER / 20
+    sy = (py - ay) / OVER / 10
+    fx, fy = (sx + sy) / 2, (sy - sx) / 2
+    wx = fx.copy()
+    hit = np.zeros(fx.shape, bool)
+    for h in np.arange(H, -0.001, -0.04):
+        x, y = fx + 1.225 * h, fy + 1.225 * h
+        solid = (x >= -L) & (x <= 0) & (np.abs(y) <= W / 2)
+        new = solid & ~hit
+        wx[new] = x[new]
+        hit |= new
+    back, near = wx < cut - step, wx >= cut
+    mid = ~back & ~near
+    shift = lambda m: (round(-m * 20 * OVER), round(-m * 10 * OVER))
+    pad = shift(d)
+    out = {}
+    for k, im in layers.items():
+        arr = np.asarray(im)
+        part = lambda m: Image.fromarray(np.where(m[..., None], arr, 0).astype(np.uint8), 'RGBA')
+        canvas = Image.new('RGBA', (wd - pad[0], ht - pad[1]))
+        o = (-pad[0], -pad[1])  # the old origin inside the bigger canvas
+        bx, by = shift(d)
+        canvas.alpha_composite(part(back), (o[0] + bx, o[1] + by))
+        n = int(round(d / step))
+        for i in range(n, -1, -1):  # the repeated middle, farthest first
+            mx, my = shift(i * d / n)
+            canvas.alpha_composite(part(mid), (o[0] + mx, o[1] + my))
+        canvas.alpha_composite(part(near), o)
+        out[k] = canvas
+    return out, ax - pad[0], ay - pad[1]
+
+
 def main():
     src = Image.open(SRC).convert('RGBA')
     a = np.asarray(src).astype(np.float32) / 255
@@ -88,14 +130,15 @@ def main():
         big = im.transform((size[0] * 2, size[1] * 2), Image.AFFINE, tuple(np.array(coeffs) * [0.5, 0.5, 1, 0.5, 0.5, 1]), resample=Image.BICUBIC)
         out[name] = big.resize(size, Image.LANCZOS)
     ax, ay = -lo  # the portal's sill centre (world origin) in the output
-    bb = out['body'].getbbox()
     OUT.mkdir(parents=True, exist_ok=True)
-    for turned in (True,):  # (its mirrored twin is flipped by the loader: gfx/mustafarFloor.js)
-        b2, n2 = out['body'].crop(bb), out['neon'].crop(bb)
-        ox, oy = ax - bb[0], ay - bb[1]
-        fp = [[-L, -W / 2], [0, -W / 2], [0, W / 2], [-L, W / 2]]  # along x
+    long_layers, lax, lay = lengthen(out, ax, ay, 15.0)
+    for nm, lay_, oax, oay, length in (('mfCorridor_r', out, ax, ay, L), ('mfCorridorL_r', long_layers, lax, lay, 15.0)):
+        bb = lay_['body'].getbbox()
+        b2, n2 = lay_['body'].crop(bb), lay_['neon'].crop(bb)
+        ox, oy = oax - bb[0], oay - bb[1]
+        fp = [[-length, -W / 2], [0, -W / 2], [0, W / 2], [-length, W / 2]]  # along x
         light = [-1.2, 0, 1.4, 255, 160, 80, 90, 0.05]
-        nm = 'mfCorridor_r' if turned else 'mfCorridor'
+        turned = True  # (its mirrored twin is flipped by the loader: gfx/mustafarFloor.js)
         if not turned:  # mirrored: along y, the portal facing +y; (x, y) -> (y, x)
             b2, n2 = b2.transpose(Image.FLIP_LEFT_RIGHT), n2.transpose(Image.FLIP_LEFT_RIGHT)
             ox = b2.width - ox

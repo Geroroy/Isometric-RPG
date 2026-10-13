@@ -21,7 +21,7 @@ from PIL import Image, ImageFilter
 ROOT = Path(__file__).resolve().parents[3]
 SRC = ROOT / 'reference/color_rots/image_23.png'
 OUT = ROOT / 'public/sprites/mustafar'
-OVER = 2
+OVER = 4  # px per game px (the remastered picture is up to 3× the game's pixels)
 GAIN = 0.85
 # name: (box in the sheet, footprint a x b metres (a along the piece's length), height for the shadow)
 PIECES = {

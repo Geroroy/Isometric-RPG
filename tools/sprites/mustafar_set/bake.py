@@ -44,11 +44,12 @@ from PIL import Image, ImageDraw, ImageFilter
 ROOT = Path(__file__).resolve().parents[3]
 REF = ROOT / 'reference/color_rots'
 OUT = ROOT / 'public/sprites/mustafar'
-OVER = 2
+OVER = 2  # px per game px (a piece's `over`: 4 for the small props, 2 for the big walked-on ones)
 BODY_GAIN = 0.78
 
 PIECES = {
     'mfTable': dict(
+        over=4,
         src='image_19.png',  # the film's table, dark top with its light strip and red indicator lights
         # render px -> (x, y, z) m, along x, the pointed end to +x, 8 m by 1.6 m, the top 0.78 m up; the render is
         # seen in a little perspective, so the game's angle comes from a least-squares fit over all eight
@@ -72,6 +73,7 @@ PIECES = {
         flat=True,
     ),
     'mfHolo': dict(
+        over=4,
         src='image_20.png',
         corners=[
             ((145, 190), (-2.2, 0, 1.0)),  # the top's points and corners
@@ -107,6 +109,7 @@ PIECES = {
         mirror='mfFall_x',
     ),
     'mfSkiff': dict(
+        over=4,
         src='image_22.png',
         corners=[
             ((1278, 795), (2.4, 0, 0)),  # the nose wheel on the deck
@@ -123,6 +126,7 @@ PIECES = {
         ship='mirror',  # (along the apron, y, in the world)
     ),
     'mfWindow': dict(
+        over=4,
         src='image_7.png',
         axis=((205, 555), (1215, 840)),  # the lamp boxes' front feet: along +x
         span=(1310, 5.5),
@@ -188,6 +192,7 @@ PIECES = {
         gain=1.0,
     ),
     'mfDroid': dict(
+        over=4,
         src='image_16.png',
         opaque=True,
         axis=None,
@@ -200,6 +205,7 @@ PIECES = {
         gain=0.9,
     ),
     'mfPlatform': dict(
+        over=4,
         src='image_18.png',
         opaque=True,
         axis=None,
@@ -212,6 +218,7 @@ PIECES = {
         gain=0.9,
     ),
     'mfChair_x': dict(
+        over=4,
         src='image_8.png',
         cut=True,
         axis=None,  # near the game's view already: scaled only
@@ -355,7 +362,7 @@ def bake_fit(name, P, body, neon):
     h, w = body.shape[:2]
     corners = np.array([[x, y, 1] for x in (0, w) for y in (0, h)], float) @ M.T
     lo = np.floor(corners.min(0)) - 2
-    size = tuple(int(v) for v in np.ceil(corners.max(0)) + 2 + (60 if P.get('shadow') else 0) - lo)  # (room for the shadow)
+    size = tuple(int(v) for v in np.ceil(corners.max(0)) + 2 + (30 * OVER if P.get('shadow') else 0) - lo)  # (room for the shadow)
     F = np.vstack([M, [0, 0, 1]])
     F[:2, 2] -= lo
     Fi = np.linalg.inv(F)
@@ -449,4 +456,5 @@ def bake_fit(name, P, body, neon):
 if __name__ == '__main__':
     OUT.mkdir(parents=True, exist_ok=True)
     for n, P in PIECES.items():
+        OVER = P.get('over', 2)  # (the small props at 4×: the remastered picture is up to 3× the game's pixels)
         bake(n, P)

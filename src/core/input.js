@@ -192,6 +192,10 @@ export class Input {
     if (k === 'f5') {
       // classic ⇄ remastered graphics, at once (as StarCraft: Remastered's F5; gfx/remaster.js) — not a reload
       e.preventDefault();
+      if (!remaster.allowed) {
+        g.emit('log', '리마스터 그래픽은 무스타파 결투에서만 쓸 수 있습니다', 'sys');
+        return;
+      }
       const on = !remaster.on;
       setRemaster(on);
       g.emit('log', on ? '그래픽: 리마스터' : '그래픽: 클래식', 'sys');

@@ -58,7 +58,7 @@ export class Renderer {
     this.time = 0;
     this.zoom = 1;
     this.touchMode = false;
-    this.res = 1; // canvas pixels a game pixel: 1 classic, 2-3 remastered (gfx/remaster.js remasterRes)
+    this.res = 1; // canvas pixels a game pixel: 1 classic, 2-4 remastered (gfx/remaster.js remasterRes)
     this.prepareProps();
     this.resize();
     onRemaster(() => this.resize());
@@ -240,7 +240,7 @@ export class Renderer {
   setDensity() {
     const t = this.terrain;
     if (!t) return;
-    const d = remaster.on ? remasterRes(this.scaleFor(1)) : 1;
+    const d = remaster.on ? Math.min(3, remasterRes(this.scaleFor(1))) : 1; // (at most 3×: a chunk's memory and time)
     t.setDensity(d);
     t.maxChunks = [96, 96, 32, 18][d]; // (0.8 MB a chunk classic, 3.3 MB at 2×, 7.4 MB at 3×)
     // the fine chunks built in workers (terrainPool.js), the classic ones standing in meanwhile

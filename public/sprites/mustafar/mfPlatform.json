@@ -1,1 +1,1 @@
-{"anchor": [92.0, 61.7], "k": 0.5, "layers": {"body": "mfPlatform_body.png"}, "footprint": [[-1.2, -0.8], [1.2, -0.8], [1.2, 0.8], [-1.2, 0.8]], "lights": [], "flat": false}
+{"anchor": [184.9, 122.4], "k": 0.25, "layers": {"body": "mfPlatform_body.png"}, "footprint": [[-1.2, -0.8], [1.2, -0.8], [1.2, 0.8], [-1.2, 0.8]], "lights": [], "flat": false}

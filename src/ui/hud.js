@@ -427,7 +427,7 @@ export class HUD {
       <section class="set-card">
         <h4>그래픽</h4>
         <label class="set-toggle"><input type="checkbox" id="remasterOn"> 리마스터 그래픽 <kbd>F5</kbd></label>
-        <p class="set-note">스타크래프트 리마스터처럼 같은 화면을 더 높은 해상도로 그립니다: 바닥·세트·광선검·빛이 촘촘하고 매끄럽게. 끄면 클래식(굵은 픽셀). 게임 중에도 바로 바뀌고, 이 기기에 저장됩니다.</p>
+        <p class="set-note">스타크래프트 리마스터처럼 같은 화면을 더 높은 해상도로 그립니다: 바닥·세트·광선검·빛이 촘촘하고 매끄럽게. 끄면 클래식(굵은 픽셀). <b>무스타파 결투에서만</b> 적용되고, 게임 중에도 바로 바뀌며 이 기기에 저장됩니다.</p>
       </section>
       <section class="set-card">
         <h4>화면 효과</h4>
@@ -493,9 +493,10 @@ export class HUD {
       });
     });
     const rm = $('#remasterOn');
-    rm.checked = remaster.on;
+    rm.checked = remaster.pref;
+    rm.disabled = !remaster.allowed; // (the Mustafar duel only)
     rm.addEventListener('change', () => setRemaster(rm.checked));
-    onRemaster((on) => (rm.checked = on));
+    onRemaster(() => (rm.checked = remaster.pref));
     const post = this.renderer.post;
     o.querySelectorAll('[data-post]').forEach((cb) => {
       cb.checked = !!post.opts[cb.dataset.post];

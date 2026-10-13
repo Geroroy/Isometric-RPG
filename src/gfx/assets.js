@@ -54,29 +54,10 @@ export async function bakeAssets(onProgress) {
     onProgress(1, '스프라이트 불러옴');
     return shipped;
   }
-  return bakeCore(onProgress, false);
-}
-
-/**
- * The same bundle baked for the remastered graphics (gfx/remaster.js): every prop, the LAAT and the characters
- * without a Blender sheet at 2× the pixel density, full colour, soft edges (baker.js `hd`; frames carry k 0.5).
- * Shipped pre-baked like 'core' (tools/bake_core.mjs core_hd); never baked on a player's device — null if it is
- * not there (the classic frames stay).
- */
-export async function loadAssetsHD() {
-  return (await loadBundle('core_hd')) || (await loadShipped('core_hd'));
-}
-
-/** Bake the remastered bundle (tools/bake_core.mjs, the page opened with ?bakehd) and keep it on this device. */
-export async function bakeAssetsHD(onProgress = () => {}) {
-  return bakeCore(onProgress, true);
-}
-
-async function bakeCore(onProgress, hd) {
   const baker = new Baker();
   // characters with a Blender sprite sheet are loaded instead (main.js), not baked
   const idx = await sheetIndex();
-  const specs = Object.fromEntries(Object.entries(CHARACTERS).filter(([k]) => !idx[k]).map(([k, f]) => [k, hd ? { ...f(), hd: true } : f()]));
+  const specs = Object.fromEntries(Object.entries(CHARACTERS).filter(([k]) => !idx[k]).map(([k, f]) => [k, f()]));
   const propNames = Object.keys(PROPS);
   let total = frameCost(specs) + 8;
   for (const n of propNames) total += PROPS[n].variants * (PROPS[n].angles || [0]).length;
@@ -89,7 +70,7 @@ async function bakeCore(onProgress, hd) {
     const models = buildPropVariants(name);
     const frames = [];
     for (const m of models) {
-      for (const f of baker.bakeStatic(m, { angles: def.angles || [0], hd })) {
+      for (const f of baker.bakeStatic(m, { angles: def.angles || [0] })) {
         frames.push(f);
         await tick(`지형 오브젝트: ${name}`);
       }
@@ -98,10 +79,10 @@ async function bakeCore(onProgress, hd) {
   }
 
   const laat = buildLaat(new RNG(3));
-  const laatFly = baker.bakeStatic(laat, { angles: [0, 1, 2, 3, 4, 5, 6, 7].map((i) => (-i * Math.PI) / 4), hd });
+  const laatFly = baker.bakeStatic(laat, { angles: [0, 1, 2, 3, 4, 5, 6, 7].map((i) => (-i * Math.PI) / 4) });
   onProgress(1, '완료');
   const assets = { sprites, props, laatFly };
-  saveBundle(hd ? 'core_hd' : 'core', assets); // in the background
+  saveBundle('core', assets); // in the background
   baker.dispose();
   return assets;
 }

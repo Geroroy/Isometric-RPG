@@ -5,7 +5,7 @@ render (reference/color_rots/image_4.png, 1774x887 RGBA, seen from a lower angle
 
 - to the game's projection (ART_GUIDE.md): 3.0 m along the wall (the feet's fronts 800 px apart in the render ->
   3 tiles = 60 px across), 2.7 m tall (the pillars ~680 px -> 66 px, Z_PX 24.5 a metre), then a vertical shear
-  so the base runs at the 2:1 slope of a wall along x; drawn at 2x (k 0.5) so it stays sharp at zoom 2
+  so the base runs at the 2:1 slope of a wall along x; drawn at 4x (k 0.25) so it stays sharp in the remastered picture
 - body darkened to the facility's ash metal; the neon layer is the screen and the desk's buttons, drawn after the
   light map (renderer.drawCityGlow) so they glow in the dark rooms; a green light spills on the floor in front,
   as in the film's conference room
@@ -22,7 +22,7 @@ from PIL import Image, ImageFilter
 ROOT = Path(__file__).resolve().parents[3]
 SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'reference/color_rots/image_4.png'
 OUT = ROOT / 'public/sprites/mustafar'
-OVER = 2  # px per game px
+OVER = 4  # px per game px (the remastered picture is up to 3× the game's pixels)
 SX = 60 / 800 * OVER  # along the wall
 SY = 66 / 680 * OVER  # up
 FEET = ((405, 658), (1205, 884))  # the pillars' front feet in the render

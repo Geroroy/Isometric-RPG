@@ -40,8 +40,7 @@
 
 - 소품·LAAT처럼 브라우저에서 three.js로 굽는 것(`gfx/assets.js`의 `core` 묶음)은 **미리 구워 `public/sprites/baked/`에 같이 배포**한다.
   기기는 이것을 받아 쓰고 굽지 않는다. 모델·소품·애니메이션·베이커 코드(`gfx/assetCache.js`의 `SOURCE_HASH` 대상)를 바꾸면
-  `npm run dev` 상태에서 `npm run bake`로 다시 만든다 — 리마스터 그래픽용 2배 묶음 `core_hd`도 함께(`npm run bake -- --hd`, 해시가 같다).
-  해시가 안 맞으면 게임이 콘솔에 경고하고 `core`는 그 자리에서 굽는다(`core_hd`는 기기에서 굽지 않고 클래식 프롭을 그대로 쓴다).
+  `npm run dev` 상태에서 `npm run bake`로 다시 만든다. 해시가 안 맞으면 게임이 콘솔에 경고하고 그 자리에서 굽는다.
 - 서비스 워커(`public/sw.js`)는 해시 없는 파일(시트·오디오·폰트·구운 묶음)을 **내용 해시로** 캐시한다: 빌드 때
   `dist/asset-manifest.json`(`vite.config.js`)이 파일마다 해시를 적고, 새 빌드(`sw.js?v=<빌드>`)는 해시가 바뀐 파일만 새로 받는다
   (안 바뀐 파일은 업데이트해도 다시 받지 않음, 음악의 범위 요청도 캐시에서 답함). 페이지는 새 빌드의 워커가 넘겨받을 때까지

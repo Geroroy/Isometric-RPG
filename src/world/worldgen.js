@@ -549,6 +549,8 @@ const MIRROR_SHEET = {
   mfConsoleRed: 'mfConsoleRed_r',
   mfCorridor: 'mfCorridor_r',
   mfCorridor_r: 'mfCorridor',
+  mfCorridorL: 'mfCorridorL_r',
+  mfCorridorL_r: 'mfCorridorL',
   mfWindow: 'mfWindow_r',
   mfPassage: 'mfPassage_x',
   mfPassageS_x: 'mfPassageS',
@@ -686,7 +688,9 @@ export class MustafarArena extends World {
     for (const dx of [-7.5, -4.5, -1.5, 1.5, 8.5]) this.console(H, 'north', dx);
     // the passage on to the control room (the film's sets, reference/color_rots): a covered corridor whose
     // pillared portal stands in the north wall, the consoles either side meeting its pillars
-    this.addSheetProp('mfCorridor', M.junction.x, H.y - H.hh, { noBlock: true });
+    // (its shell the junction's whole length, 15 m: the roof runs on to the control room; it clears round whoever is
+    // in it or just behind it)
+    if (!this.addSheetProp('mfCorridorL', M.junction.x, H.y - H.hh, { noBlock: true })) this.addSheetProp('mfCorridor', M.junction.x, H.y - H.hh, { noBlock: true });
     for (const dy of [-5.3, -2.3, 0.7, 3.7]) this.console(H, 'west', dy); // (up into the corner, to the north row's back)
     this.door({ x: M.junction.x, y: H.y - H.hh }, 1, false); // (the covered corridor's portal is its frame)
     // the film's long table, its pointed end to the passage; the high-backed chairs along its far side and
