@@ -27,7 +27,10 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
   of the covered corridor from the control room out to the balcony; `mfPassageS_x` along x
 - `mfArm`: the collector arm (reference image_14: the vane head at its outer end, the long grated arm, the mast and
   its stays), along x, the head to −x, 22 m of deck; seen nearly as the game sees it, so scaled evenly
-- `mfCatwalk`: the outside catwalk (image_15: a grated deck, a rail on its far side), along x, 17 m
+- `mfCatwalkL`: the outside catwalk (image_15: a grated deck, a rail on its far side), along x, rendered 17 m long and
+  lengthened to 26 m (`lengthen`: the middle's 2.25 m stretch, a rail post's spacing, repeated)
+- `mfLift`: the lifting arm at the catwalk's end (image_28: a grated beam into a cage of curved vanes), along x, the
+  head to +x, the beam's end (the anchor) on the deck's level; the beam sheared onto the 2:1 slope, 8 m of it
   (both walked on: drawn with the ground, `flat`)
 - `mfDroid`: the droid Anakin rides down the lava river (image_16: a round deck on legs and arms), a unit's
   single frame: the anchor on the deck's top (he stands there), the legs hanging below it; the render's soft white
@@ -179,16 +182,28 @@ PIECES = {
         flat=True,
         gain=1.0,
     ),
-    'mfCatwalk': dict(
-        src='image_15.png',
-        axis=((105, 118), (1650, 710)),  # the deck's near edge
+    'mfCatwalkL': dict(
+        src='image_15.png',  # the same catwalk lengthened to 26 m (the balcony out to the lifting arm)
+        axis=((105, 118), (1650, 710)),
         span=(1580, 17.0),
-        aspect=1.25,  # seen lower than the game's view: heights a little taller than an even scale
-        ground=(900, 432),  # the deck's middle
+        aspect=1.25,
+        ground=(900, 432),
         back=0,
         footprint=[[-8.5, -1], [8.5, -1], [8.5, 1], [-8.5, 1]],
-        mirror='mfCatwalk_y',
+        lengthen=dict(to=26.0, cut=0.0, step=2.25, half_w=1.0, top=1.2, bottom=-0.7),  # (a rail post every 2.25 m)
+        mirror='mfCatwalkL_y',
         flat=True,
+        gain=1.0,
+    ),
+    'mfLift': dict(
+        src='image_28.png',  # the lifting arm: a grated beam into a cage of curved vanes, the head at +x
+        axis=((370, 55), (800, 330)),  # the beam's top, its end to where it meets the head
+        span=(430, 8.0),
+        uniform=True,
+        ground=(385, 75),  # the beam's end, on the deck's level: where it joins the catwalk
+        back=0,
+        footprint=[[0, -1.5], [16, -1.5], [16, 1.5], [0, 1.5]],
+        mirror='mfLift_y',
         gain=1.0,
     ),
     'mfDroid': dict(
@@ -287,6 +302,52 @@ def emissive(a):
     return np.asarray(m) / 255.0
 
 
+def lengthen_layers(layers, ax, ay, P):
+    """A piece along x made longer (P['lengthen']: to, cut, step, half_w, top, bottom): each pixel's place along it
+    read off the first surface its line of sight meets (the deck from `bottom` to its top, the far rail up to `top`),
+    what lies behind `cut − step` moved back, the gap filled with copies of the stretch [cut − step, cut], back to
+    front; the anchor moved to the new middle."""
+    G = P['lengthen']
+    xs = [q[0] for q in P['footprint']]
+    L = max(xs) - min(xs)
+    d = G['to'] - L
+    wd, ht = layers['body'].size
+    py, px = np.mgrid[0:ht, 0:wd].astype(np.float32)
+    sx = (px - ax) / OVER / 20
+    sy = (py - ay) / OVER / 10
+    fx, fy = (sx + sy) / 2, (sy - sx) / 2
+    wx = fx.copy()
+    hit = np.zeros(fx.shape, bool)
+    hw = G['half_w']
+    for h in np.arange(G['top'], G['bottom'] - 0.001, -0.04):
+        x, y = fx + 1.225 * h, fy + 1.225 * h
+        solid = (np.abs(x) <= L / 2 + 0.3) & (((np.abs(y) <= hw) & (h <= 0.15)) | ((y <= -hw + 0.35) & (y >= -hw - 0.3)))
+        new = solid & ~hit
+        wx[new] = x[new]
+        hit |= new
+    cut, step = G['cut'], G['step']
+    back, near = wx < cut - step, wx >= cut
+    mid = ~back & ~near
+    shift = lambda m: (round(-m * 20 * OVER), round(-m * 10 * OVER))
+    pad = shift(d)
+    o = (-pad[0], -pad[1])
+    n = int(round(d / step))
+    out = {}
+    for k, im in layers.items():
+        arr = np.asarray(im)
+        part = lambda m: Image.fromarray(np.where(m[..., None], arr, 0).astype(np.uint8), 'RGBA')
+        canvas = Image.new('RGBA', (wd - pad[0], ht - pad[1]))
+        bx, by = shift(d)
+        canvas.alpha_composite(part(back), (o[0] + bx, o[1] + by))
+        for i in range(n, -1, -1):
+            mx, my = shift(i * d / n)
+            canvas.alpha_composite(part(mid), (o[0] + mx, o[1] + my))
+        canvas.alpha_composite(part(near), o)
+        out[k] = canvas
+    c = shift(d / 2)
+    return out, ax + o[0] + c[0], ay + o[1] + c[1]
+
+
 def bake(name, P):
     src = Image.open(REF / P['src']).convert('RGBA')
     a = np.asarray(src).astype(np.float32) / 255
@@ -325,6 +386,10 @@ def bake(name, P):
     gx, gy = P['ground']
     ax = gx * sx + 20 * OVER * P['back']
     ay = gy * sy + k * gx * sx + off - 10 * OVER * P['back']
+    if P.get('lengthen'):
+        layers, ax, ay = lengthen_layers(layers, ax, ay, P)
+        t = P['lengthen']['to'] / 2
+        P = {**P, 'footprint': [[-t, q[1]] if q[0] < 0 else [t, q[1]] for q in P['footprint']]}
     bb = layers['body'].getbbox()
     has_neon = P.get('emit', False)
     for nm, mirrored in ((name, False),):  # (the `mirror` twin is flipped by the loader: gfx/mustafarFloor.js)

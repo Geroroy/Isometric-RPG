@@ -522,8 +522,7 @@ const MUSTAFAR_D = {
   junction: { x: 79, y: 104.5, hw: 1.5, hh: 7.5 },
   control: { x: 76, y: 90, hw: 8, hh: 7 },
   door4: { x: 84, y: 94 },
-  balcony: { x: 92.5, y: 94, hw: 8.5, hh: 1 },
-  balconyEnd: { x: 102, y: 94, hw: 1.5, hh: 2.5 },
+  balcony: { x: 97, y: 94, hw: 13, hh: 1 }, // (out to the lifting arm at its end, x 110)
   arm: { x: 40, y: 104, hw: 11, hh: 1.5 },
   armTower: { x: 53, y: 104 },
   river: { x: 106, y: 142, hw: 24, hh: 4 },
@@ -559,7 +558,8 @@ const MIRROR_SHEET = {
   mfTable: 'mfTable_y',
   mfArm: 'mfArm_y',
   mfArm_y: 'mfArm',
-  mfCatwalk: 'mfCatwalk_y',
+  mfCatwalkL: 'mfCatwalkL_y',
+  mfLift: 'mfLift_y',
   mfHolo: 'mfHolo_y',
   mfFall: 'mfFall_x',
   mfFall_x: 'mfFall',
@@ -635,7 +635,7 @@ export class MustafarArena extends World {
     this.pois.push({ x: M.river.x, y: M.river.y, r: 10, name: BIOME_NAMES[BIOME.LAVA] });
     const inRect = (x, y, r) => Math.abs(x - r.x) <= r.hw && Math.abs(y - r.y) <= r.hh;
     const inEll = (x, y, e) => ((x - e.x) / e.rx) ** 2 + ((y - e.y) / e.ry) ** 2 <= 1;
-    const floors = [M.pad, M.walk, M.corridor, M.hall, M.junction, M.control, M.balconyEnd];
+    const floors = [M.pad, M.walk, M.corridor, M.hall, M.junction, M.control];
     // the interior's floor laid out of the set's floor tiles as in the film (terrain.js facilityFloor; the tiles:
     // tools/sprites/mustafar_floor): a border `edge` tiles wide of the edge tile along the walls, the corner tile
     // in the corners, the chevron field inside in cells of about `cell` tiles; the corridors one runner of the
@@ -752,14 +752,18 @@ export class MustafarArena extends World {
     const B = M.balcony;
     // the film's outside catwalk (tools/sprites/mustafar_set: a grated deck, a rail on its far side), drawn with
     // the ground; the model rails if it did not load
-    if (!this.addSheetProp('mfCatwalk', B.x, B.y, { noBlock: true, flat: true }))
+    if (!this.addSheetProp('mfCatwalkL', B.x, B.y, { noBlock: true, flat: true }))
       for (let x = B.x - 7; x <= B.x + 7; x += 2) {
         this.addProp('catRail', x, B.y - 1.4, { angleIdx: 0, noBlock: true });
         this.addProp('catRail', x, B.y + 1.4, { angleIdx: 0, noBlock: true });
       }
     // the lava falls beyond the balcony (the film's): rock cliffs pouring into pools at the catwalk's side
     // (tools/sprites/mustafar_set mfFall; the model falls if the sprite did not load)
-    if (!this.addSheetProp('mfFall_x', 89, 89, { noBlock: true }) | !this.addSheetProp('mfFall_x', 97.5, 88.5, { noBlock: true }))
+    // at the catwalk's far end the lifting arm (tools/sprites/mustafar_set mfLift: a grated beam into a cage of
+    // curved vanes), its beam going on from the deck's end over the lava
+    this.addSheetProp('mfLift', B.x + B.hw + 0.2, B.y, { noBlock: true });
+    for (const dx of [5, 10]) this.lights.push({ x: B.x + B.hw + dx, y: B.y, z: 1.5, r: 255, g: 120, b: 40, rad: 170, flicker: 0.12 });
+    if (!this.addSheetProp('mfFall_x', 89, 89, { noBlock: true }) | !this.addSheetProp('mfFall_x', 97.5, 88.5, { noBlock: true }) | !this.addSheetProp('mfFall_x', 106, 88.5, { noBlock: true }))
       for (const [x, y] of [[88, 87], [95, 86.5], [102, 87.5], [108, 92], [106, 100]]) this.addProp('lavaFall', x, y);
 
     // --- the collector arm ---------------------------------------------------
@@ -778,7 +782,7 @@ export class MustafarArena extends World {
     // warm light from the lava all round the sets
     for (const r of [M.hall, M.control]) this.lights.push({ x: r.x, y: r.y, z: 2.5, r: 255, g: 150, b: 90, rad: 220, flicker: 0.03 });
     for (let a = 0; a < Math.PI * 2; a += Math.PI / 7) this.lights.push({ x: D.x + Math.cos(a) * (D.rx + 2.5), y: D.y + Math.sin(a) * (D.ry + 2.5), z: 0.2, r: 255, g: 120, b: 40, rad: 150, flicker: 0.12 });
-    for (let x = B.x - 8; x <= B.x + 8; x += 4) for (const dy of [-3, 3]) this.lights.push({ x, y: B.y + dy, z: 0.2, r: 255, g: 120, b: 40, rad: 130, flicker: 0.12 });
+    for (let x = B.x - B.hw + 1; x <= B.x + B.hw; x += 4) for (const dy of [-3, 3]) this.lights.push({ x, y: B.y + dy, z: 0.2, r: 255, g: 120, b: 40, rad: 130, flicker: 0.12 });
     for (let x = -22; x <= 22; x += 6) this.lights.push({ x: M.river.x + x, y: M.river.y, z: 0.2, r: 255, g: 110, b: 30, rad: 150, flicker: 0.12 });
     this.spawn = { x: D.x - 1.5, y: D.y + 1.5 };
     this.roadSegs = [];
