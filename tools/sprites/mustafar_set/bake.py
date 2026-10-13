@@ -25,6 +25,9 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
   +x+y): the render is turned a little, so its facade's plane is warped by a perspective map (`quad`) onto the
   true head-on rectangle, 3.42 m; its copper body matched to the wall consoles' grey (`match`); the screen and
   lamps on a neon layer
+- `mfLowWall`: the low wall round a room's near sides (image_31: a plinth, a pipe-run panel, a pillar at each end),
+  along x facing +y, 6 m pillar to pillar, the panel 1.2 m; `mfLowWallS` the same 4 m long (2 m of its middle
+  cut out); their twins along y facing +x
 - `mfPassage`: a corridor's inside with no roof (the far wall tall with light panels, the near wall low, a portal at
   each end), along y, 15 m by 4 m (the far wall on −x); `mfPassage_x` along x as rendered. Fitted by least squares
   on five measured corners (the render's own proportions differ: the walkway is narrowed to the corridor's)
@@ -164,6 +167,29 @@ PIECES = {
         match=dict(sat=0.18, gain=1.31),
         opaque=True,  # (the render's faint halo dropped: it reached the canvas's edges)
         gain=1.0,
+    ),
+    'mfLowWall': dict(
+        src='image_31.png',  # the low wall (a plinth, a pipe-run panel, a pillar at each end) round a room's near sides
+        axis=((440, 530), (1290, 760)),  # the panel's foot line: along +x, the face to +y (the camera)
+        span=(1200, 6.0),  # pillar to pillar
+        height=(445, 1.2),  # the panel; the pillars ~1.45 m
+        ground=(865, 645),  # the foot line's middle
+        back=0,
+        footprint=[[-3, -0.5], [3, -0.5], [3, 0], [-3, 0]],  # (its body behind the foot line)
+        mirror='mfLowWall_y',
+        gain=0.9,
+    ),
+    'mfLowWallS': dict(
+        src='image_31.png',  # the same wall 4 m long: 2 m of the panel's middle cut out (cutx), for the short runs
+        cutx=(650, 1050, 0.27),  # (render columns taken out, the right part moved up the foot line's slope)
+        axis=((440, 530), (890, 652)),
+        span=(800, 4.0),
+        height=(445, 1.2),
+        ground=(665, 591),
+        back=0,
+        footprint=[[-2, -0.5], [2, -0.5], [2, 0], [-2, 0]],
+        mirror='mfLowWallS_y',
+        gain=0.9,
     ),
     'mfPassage_x': dict(
         src='image_9.png',
@@ -393,6 +419,19 @@ def bake(name, P):
     if P.get('cut'):
         a = a.copy()
         a[..., 3] = cut_checker(a)
+    if P.get('cutx'):
+        # a stretch of the render taken out (columns a..b), the part beyond moved back by it along the piece's
+        # slope on the render: a shorter piece of the same wall
+        x0, x1, slope = P['cutx']
+        d = x1 - x0
+        dy = int(round(d * slope))
+        out = np.zeros_like(a)
+        out[:, :x0] = a[:, :x0]
+        src_r = a[:, x1:]
+        h = a.shape[0]
+        # the right part up by dy (its rows moved toward 0) and left by d
+        out[: h - dy, x0 : x0 + src_r.shape[1]] = np.maximum(out[: h - dy, x0 : x0 + src_r.shape[1]], src_r[dy:]) if False else src_r[dy:]
+        a = out
     if P.get('opaque'):  # a soft halo round the render: keep the solid pixels, a 1 px soft edge
         a = a.copy()
         al = Image.fromarray(((a[..., 3] >= 240 / 255) * 255).astype(np.uint8), 'L')

@@ -553,6 +553,10 @@ const MIRROR_SHEET = {
   mfCorridorL_r: 'mfCorridorL',
   mfWindow: 'mfWindow_r',
   mfPassage: 'mfPassage_x',
+  mfLowWall: 'mfLowWall_y',
+  mfLowWall_y: 'mfLowWall',
+  mfLowWallS: 'mfLowWallS_y',
+  mfLowWallS_y: 'mfLowWallS',
   mfPassageS_x: 'mfPassageS',
   mfChair: 'mfChair_x',
   mfChair_x: 'mfChair',
@@ -712,6 +716,8 @@ export class MustafarArena extends World {
     if (!this.addSheetProp('mfCorridorL', M.junction.x, H.y - H.hh, { noBlock: true })) this.addSheetProp('mfCorridor', M.junction.x, H.y - H.hh, { noBlock: true });
     for (const dy of [-2.38, 0.8, 4.0]) this.console(H, 'west', dy); // (from the corner's console to the near corner)
     this.door({ x: M.junction.x, y: H.y - H.hh }, 1, false); // (the covered corridor's portal is its frame)
+    // the near sides closed by the set's low wall, the entry corridor's doorway left open
+    this.walls(H, null, { north: false, west: false, south: true, east: true, egaps: [[M.door2.y - 2, M.door2.y + 2]] });
     // the film's long table, its pointed end to the passage; the high-backed chairs along its far side and
     // at its head (the near side left clear, as the near walls are); the model props if the sprites did not load.
     // The fight goes up onto it, as in the film: drawn with the floor, its top a surface 0.78 m up
@@ -751,6 +757,8 @@ export class MustafarArena extends World {
     // wall from the room's far corner, x0 / y0 — the room is 16 by 14, so the offsets from its middle differ)
     [-4.38, -0.91, 2.56, 6.03].forEach((dx, i) => this.console(C, 'north', dx, i === 1));
     for (const dy of [-3.38, -0.08, 3.22]) this.console(C, 'west', dy);
+    // the near sides closed by the low wall, open at the junction (south) and the way out to the balcony (east)
+    this.walls(C, null, { north: false, west: false, south: true, east: true, sgaps: [[M.junction.x - 2, M.junction.x + 2]], egaps: [[M.door4.y - 2, M.door4.y + 2]] });
     // two holo-tables on the sunken floor, staggered across it as in the LEGO set (reference/color_rots image_10):
     // one towards the far corner, one towards the near; the model desk if the sprite did not load
     // (the two holo-tables: placed in the world after the transpose, holoTables())
@@ -1006,11 +1014,38 @@ export class MustafarArena extends World {
     return this.addSheetProp(name, r.x - r.hw - 0.3, r.y + at, { noBlock: true });
   }
 
-  /** The far walls of a room (north and west); the near sides stay open so the fight is visible, as in Fallout. */
-  walls(r, type, { north = true, west = true, gaps = [] } = {}) {
+  /**
+   * A room's walls. The far ones (north and west) of the model `type`, tall; the near ones (south and east), so
+   * the room reads as closed without hiding the fight, of the set's low wall (gfx sprites mfLowWall 6 m /
+   * mfLowWallS 4 m, tools/sprites/mustafar_set: a plinth and a pipe-run panel between pillars, 1.2 m), its foot
+   * 0.3 m inside the edge, tiled along each side in runs between the doorways (`sgaps` / `egaps`: [from, to] along
+   * the side) — a run takes 6 m pieces end to end, the last one set back to the run's end, a short run one 4 m
+   * piece; a run under 3 m stays open.
+   */
+  walls(r, type, { north = true, west = true, gaps = [], south = false, east = false, sgaps = [], egaps = [] } = {}) {
     const edge = (x, y, ai) => this.addProp(type, x, y, { angleIdx: ai, noBlock: true });
     if (north) for (let x = -r.hw + 1; x <= r.hw - 1; x += 2) if (!gaps.some(([a, b]) => r.x + x > a - 1 && r.x + x < b + 1)) edge(r.x + x, r.y - r.hh - 0.9, 0);
     if (west) for (let y = -r.hh + 1; y <= r.hh - 1; y += 2) edge(r.x - r.hw - 0.9, r.y + y, 1);
+    const runs = (a, b, gs) => {
+      const out = [];
+      let at = a;
+      for (const [g0, g1] of [...gs].sort((p, q) => p[0] - q[0])) {
+        if (g0 > at) out.push([at, g0]);
+        at = Math.max(at, g1);
+      }
+      if (b > at) out.push([at, b]);
+      return out;
+    };
+    const tile = (a, b, gs, put) =>
+      runs(a, b, gs).forEach(([a0, b0]) => {
+        const L = b0 - a0;
+        if (L < 3) return;
+        if (L < 6) return put((a0 + b0) / 2, 'mfLowWallS');
+        for (let x = a0 + 3; x < b0 - 3; x += 6) put(x, 'mfLowWall');
+        put(b0 - 3, 'mfLowWall');
+      });
+    if (south) tile(r.x - r.hw, r.x + r.hw, sgaps, (x, n) => this.addSheetProp(n, x, r.y + r.hh - 0.3));
+    if (east) tile(r.y - r.hh, r.y + r.hh, egaps, (y, n) => this.addSheetProp(n + '_y', r.x + r.hw - 0.3, y));
   }
 
   /** A doorway: hazard pillars either side of a two-tile opening (`ai` 0: passage along x, 1: along y); `frame`: its door frame prop. */

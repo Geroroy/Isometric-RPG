@@ -292,6 +292,46 @@ function facilityFloor(R, fx, fy, o) {
   }
 }
 
+// A room's floor slab seen from the side (worldgen.js MustafarArena: the rooms of the facility's floor plan, those
+// with an `edge`): a dark metal face SLAB_H m deep below each near edge (+x: along y; +y: along x), a lit lip at the
+// top, darker to the bottom — the floor reads as a plate standing over the rock. A screen pixel at (sx, sy) shows
+// the +y face's point (x, y1, z) with x = sx / 20 + y1 and z from sy; the +x face's likewise.
+const SLAB_H = 0.3;
+// (bright enough to read under the facility's dim warm ambient, which the light map multiplies in)
+const SLAB_TOP = [214, 198, 176];
+const SLAB_FACE = [128, 118, 108];
+function slabSide(plan, fx, fy, o) {
+  if (!plan) return false;
+  const sx = (fx - fy) * HALF_W;
+  const sy = (fx + fy) * HALF_H;
+  for (const R of plan) {
+    if (!R.edge) continue;
+    const x0 = R.x - R.hw;
+    const y0 = R.y - R.hh;
+    const x1 = R.x + R.hw;
+    const y1 = R.y + R.hh;
+    // the +y face (along x at y1)
+    let x = sx / HALF_W + y1;
+    let z = ((x + y1) * HALF_H - sy) / Z_PX;
+    let hit = x >= x0 && x <= x1 && z <= 0 && z >= -SLAB_H;
+    if (!hit) {
+      // the +x face (along y at x1)
+      const y = x1 - sx / HALF_W;
+      z = ((x1 + y) * HALF_H - sy) / Z_PX;
+      hit = y >= y0 && y <= y1 && z <= 0 && z >= -SLAB_H;
+    }
+    if (!hit) continue;
+    const t = -z / SLAB_H; // 0 at the top
+    const lip = t < 0.2;
+    const k = lip ? 1 : 1 - t * 0.5;
+    const base = lip ? SLAB_TOP : SLAB_FACE;
+    const grain = (hash2(Math.floor(fx * 12), Math.floor(fy * 12), 118) - 0.5) * 10;
+    for (let c = 0; c < 3; c++) o[c] = base[c] * k + grain;
+    return true;
+  }
+  return false;
+}
+
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => v / 16 - 0.5);
 
 export class Terrain {
@@ -340,6 +380,34 @@ export class Terrain {
         const rd = world.road[i];
         this.Rd[i] = b === BIOME.BASE ? 0 : clamp(1.7 - rd, 0, 1);
       }
+    }
+    // Mustafar (the facility's floor plan): the rock's distance from the nearest floor and from the nearest lava,
+    // per tile (ashFade: the rock dark away from the facility, lit near the lava)
+    this.Df = this.Dl = null;
+    if (world.floorPlan) {
+      const dist = (isSrc) => {
+        const D = new Float32Array(n).fill(16);
+        let q = [];
+        for (let i = 0; i < n; i++) if (isSrc(world.biome[i])) (D[i] = 0), q.push(i);
+        while (q.length) {
+          const next = [];
+          for (const i of q) {
+            const x = i % world.w;
+            const y = (i - x) / world.w;
+            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+              const nx = x + dx;
+              const ny = y + dy;
+              if (nx < 0 || ny < 0 || nx >= world.w || ny >= world.h) continue;
+              const j = ny * world.w + nx;
+              if (D[j] > D[i] + 1) (D[j] = D[i] + 1), next.push(j);
+            }
+          }
+          q = next;
+        }
+        return D;
+      };
+      this.Df = dist((b) => b === BIOME.MUSTAFAR || b === BIOME.GRATE);
+      this.Dl = dist((b) => b === BIOME.LAVA);
     }
     // the Mustafar interior's room per tile (index into world.floorPlan, −1 none)
     this.room = null;
@@ -815,7 +883,25 @@ export class Terrain {
             b = fc[2] * sh;
             texd = true;
             painted = true;
+          } else if (slabSide(this.world.floorPlan, fx, fy, fc)) {
+            // the rooms' floor slabs' side faces, below their near edges (SLAB_H): the floor a plate over the rock
+            r = fc[0];
+            g = fc[1];
+            b = fc[2];
+            texd = true;
+            painted = true;
           }
+        }
+        // Mustafar's rock (ASH) away from the facility's floors fades to near black, so the lit floors stand out as
+        // plates over the dark; near the lava it keeps the lava's red (the light map adds the glow). The river
+        // bank (x > 140), where the ending is played, stays as it is
+        if (this.Df && fx < 140 && this.world.biome[Math.floor(fy) * this.world.w + Math.floor(fx)] === BIOME.ASH) {
+          const df = this.sample(this.Df, u, v);
+          const dl = this.sample(this.Dl, u, v);
+          const f = Math.max(clamp(1 - (df - 1.5) / 7, 0.07, 1), 0.9 * clamp(1 - (dl - 1.5) / 4, 0, 1));
+          r *= f;
+          g *= f;
+          b *= f;
         }
         // the undercity plaza: cracked mosaic slabs, the cracks glowing neon (pink or blue by
         // cell), grout lines every tile (without the sheet's textures)

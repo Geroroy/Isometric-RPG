@@ -27,6 +27,7 @@ const AMBIENT = [150, 146, 178];
 const byDepth = (a, b) => a.depth - b.depth;
 const TRAIL_LIFE = 0.13; // seconds a saber swing's afterimage lasts
 const SHADOW_ALPHA = 0.75; // a sheet's rendered shadow (the shadow catcher's own alpha)
+const COVER_ALPHA = 0.35; // a Mustafar set sprite drawn over the player (worldgen.js MustafarArena)
 // How far the player may zoom, by what the view shows (docs/GAME_DESIGN.md 2.1.1; measured by
 // tools/qa/zoomlimits.mjs, tools/qa/zoomout.mjs). Out: to look over the map — up to 1080 × 1920 game px
 // (a whole district with the city round it; 1080p at 1×), and no smaller than 0.75 css px a game pixel
@@ -466,9 +467,19 @@ export class Renderer {
             continue;
           }
         }
+        pr.coverAlpha = null;
         if (pf && d.depth > pDepth && r[3] > 30 && pp.x + 8 > r[0] && pp.x - 8 < r[0] + r[2] && pp.y > r[1] + 8 && pp.y - pfH < r[1] + r[3] && this.coversPlayer(pr, pp, pfH)) {
-          pr.window = { x: pp.x - cam.x, y: pp.y - pfH * 0.5 - cam.y, r: Math.max(30, pfH * 0.8) };
-          this.drawWindowed(pr.frame, pr.sx, pr.sy + bob, pr.window);
+          if (pr.sheet && g.world.grade === 'mustafar') {
+            // the Mustafar set (its walls, consoles, big props) covering him: the whole sprite translucent instead
+            // of a window cut round him (its neon layer the same: drawCityGlow)
+            pr.coverAlpha = COVER_ALPHA;
+            ctx.globalAlpha = COVER_ALPHA;
+            this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
+            ctx.globalAlpha = 1;
+          } else {
+            pr.window = { x: pp.x - cam.x, y: pp.y - pfH * 0.5 - cam.y, r: Math.max(30, pfH * 0.8) };
+            this.drawWindowed(pr.frame, pr.sx, pr.sy + bob, pr.window);
+          }
         } else this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
       } else if (d.unit) {
         this.drawUnit(d.unit);
@@ -808,7 +819,7 @@ export class Renderer {
       if (r[0] + r[2] < cam.x || r[0] > cam.x + W || r[1] + r[3] < cam.y || r[1] > cam.y + H + 60) continue;
       const L = pr.layers;
       if (!L.meta.neon) continue; // nothing of it glows (a Mustafar table or chair)
-      const level = neonLevel(pr.neon, L.meta.neon, this.time, dt) * (pr.fade ?? 1);
+      const level = neonLevel(pr.neon, L.meta.neon, this.time, dt) * (pr.fade ?? 1) * (pr.coverAlpha ?? 1);
       // (an empty layer is null: citySprites.js drops it at load)
       if (L.reflect) {
         ctx.globalAlpha = Math.min(1, level) * 0.85;
