@@ -697,13 +697,13 @@ export class MustafarArena extends World {
     // the film's screen consoles (tools/sprites/mustafar_console) lining the walls side by side, as the control
     // room's: the long wall's from the corner to the passage north and one past it, the end wall's its length
     // (from the corner set's bank: one to the passage north, one past it)
-    for (const dx of [-5.2, -2.0, 1.3, 8.5]) this.console(H, 'north', dx);
+    for (const dx of [-5.38, -2.2, 1.3, 8.5]) this.console(H, 'north', dx); // (the first against the corner's console)
     // the passage on to the control room (the film's sets, reference/color_rots): a covered corridor whose
     // pillared portal stands in the north wall, the consoles either side meeting its pillars
     // (its shell the junction's whole length, 15 m: the roof runs on to the control room; it clears round whoever is
     // in it or just behind it)
     if (!this.addSheetProp('mfCorridorL', M.junction.x, H.y - H.hh, { noBlock: true })) this.addSheetProp('mfCorridor', M.junction.x, H.y - H.hh, { noBlock: true });
-    for (const dy of [-2.2, 1.0, 4.3]) this.console(H, 'west', dy); // (from the corner's console to the near corner)
+    for (const dy of [-2.38, 0.8, 4.0]) this.console(H, 'west', dy); // (from the corner's console to the near corner)
     this.door({ x: M.junction.x, y: H.y - H.hh }, 1, false); // (the covered corridor's portal is its frame)
     // the film's long table, its pointed end to the passage; the high-backed chairs along its far side and
     // at its head (the near side left clear, as the near walls are); the model props if the sprites did not load.
@@ -987,11 +987,15 @@ export class MustafarArena extends World {
    * corner on screen: along x; mfCornerL down-left: along y), their screens showing the lava. In world coordinates,
    * after the transpose (the pieces are baked for the world's own way round).
    */
-  /** A room's cut far corner closed by the screen console seen head-on (mfConsoleD), its feet on the diagonal. */
+  /**
+   * A room's cut far corner closed by the screen console seen head-on (mfConsoleD, 3.42 m): its feet on the line
+   * from one wall row's desk front to the other's (0.3 m behind the room's edges), its end pillars against theirs.
+   */
   cornerConsole(r, cut) {
     const x0 = r.x - r.hw;
     const y0 = r.y - r.hh;
-    this.addSheetProp('mfConsoleD', x0 + cut / 2 - 0.25, y0 + cut / 2 - 0.25, { noBlock: true });
+    const c = (cut - 0.3) / 2 - 0.18; // (the feet's middle, then the anchor 0.25 m behind it)
+    this.addSheetProp('mfConsoleD', x0 + c, y0 + c, { noBlock: true });
   }
 
   cornerSet(r, cut) {
