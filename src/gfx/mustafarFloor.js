@@ -26,7 +26,7 @@ export async function loadMustafarFloor() {
 // city-sheet sprites (renderer.js draws a prop with `sheet` from assets.city: body, then the neon layer after
 // the light map), one per wall direction (and screen colour)
 // the set sprites as baked (one of each mirrored pair); the other of a pair is this one flipped (flipSheet)
-const SHIPPED = ['mfConsole', 'mfConsoleRed', 'mfConsoleD', 'mfCorridor_r', 'mfCorridorL_r', 'mfWindow', 'mfPassage_x', 'mfPassageS_x', 'mfChair_x', 'mfTable_y', 'mfArm', 'mfCatwalkL', 'mfLift', 'mfHoloX', 'mfFall', 'mfSkiff_y', 'mfWallCorner', 'mfWallCornerIn'];
+const SHIPPED = ['mfConsole', 'mfConsoleRed', 'mfConsoleD', 'mfCorridor_r', 'mfCorridorL_r', 'mfWindow', 'mfPassage_x', 'mfPassageS_x', 'mfChair_x', 'mfTable_y', 'mfArm', 'mfCatwalkL', 'mfLift', 'mfHoloX', 'mfFall', 'mfSkiff_y'];
 
 // a set sprite turned the other way when it has no baked twin (the map editor's R; a map that has one): its mirror image
 // under this suffix (its baked shadow turned with it)

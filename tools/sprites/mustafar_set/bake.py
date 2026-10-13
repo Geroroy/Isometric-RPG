@@ -34,9 +34,11 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
 - `mfWallCorner`: a room's near corner seen from outside (image_33: the two near walls' fronts meeting in a pillar,
   a buttress at each arm's end), its arms 0.95 m along −x and −y, 2.7 m tall; the render's camera a little lower than
   the game's, so each face is warped onto its own plane (`quads`: one perspective map a face, folded on the corner's
-  line). Placed on both rooms' near corners, the bays beside it cut short to its arms' ends (the map's `clip`)
+  line). Placed on both rooms' near corners, the bays beside it cut short to its arms' ends (the map's `clip`).
+  Shipped in the near walls' atlas (lowwall.py; its lamp painted, no glow layer)
 - `mfWallCornerIn`: the same corner seen from inside (image_34), the corner at the back, its arms 1.45 m along +y
-  and +x; warped the same way. Shipped for a concave corner of the near walls (none in the rooms as laid out)
+  and +x; warped the same way. In the near walls' atlas too, for a concave corner of the near walls (none in the
+  rooms as laid out: the map editor has it)
 - `mfPassage`: a corridor's inside with no roof (the far wall tall with light panels, the near wall low, a portal at
   each end), along y, 15 m by 4 m (the far wall on −x); `mfPassage_x` along x as rendered. Fitted by least squares
   on five measured corners (the render's own proportions differ: the walkway is narrowed to the corridor's)

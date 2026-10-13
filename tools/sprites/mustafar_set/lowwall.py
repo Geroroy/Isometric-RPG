@@ -16,6 +16,8 @@ pillar's and the right pillar's inner sides (frame px; the render's at x 415 and
 cut), `half` the pillar centres' distance from the anchor along the wall (m), `along` its axis (the image's left end
 is −x along x, +y along y).
 
+The atlas also carries the rooms' corner pieces (bake.py `mfWallCorner`, image_33, and `mfWallCornerIn`, image_34).
+
 The atlas also carries the end piece that closes a room's near side at its far end (bake.py `mfWallEnd_y`, image_32,
 and its twin `mfWallEnd`): one image for all the room walls.
 """
@@ -57,6 +59,21 @@ def pillar_sides(im):
             c += 1
     assert len(runs) >= 2, runs
     return runs[0][1], runs[-1][0]
+
+
+def corner_pieces():
+    """The rooms' corner pieces (bake.py's mfWallCorner, mfWallCornerIn) as atlas entries: no pillars to join."""
+    out = []
+    for key in ('mfWallCorner', 'mfWallCornerIn'):
+        bake.bake('_' + key, bake.PIECES[key])
+        meta = json.loads((OUT / f'_{key}.json').read_text())
+        im = Image.open(OUT / meta['layers']['body'])
+        im.load()
+        (OUT / f'_{key}.json').unlink()
+        for f in meta['layers'].values():
+            (OUT / f).unlink()
+        out.append((key, im, meta['anchor'], meta['footprint'], {}))
+    return out
 
 
 def main():
@@ -107,6 +124,9 @@ def main():
     pieces.append(('mfWallEnd_y', im, meta['anchor'], meta['footprint'], {'pillars': [lc, rc], 'half': 1.1625, 'along': 'y'}))
     fl = im.transpose(Image.FLIP_LEFT_RIGHT)
     pieces.append(('mfWallEnd', fl, [im.width - meta['anchor'][0], meta['anchor'][1]], [[y, x] for x, y in meta['footprint']], {'pillars': [w - rc, w - lc], 'half': 1.1625, 'along': 'x'}))
+    # the corner pieces (bake.py's mfWallCorner, mfWallCornerIn): baked, then taken into the atlas (their lamps
+    # stay painted at full strength; no glow layer: the atlas has none, and the artifact no file to spare)
+    pieces += corner_pieces()
     W = 2048
     x = y = rowh = 0
     place = []
