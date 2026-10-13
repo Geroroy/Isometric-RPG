@@ -10,7 +10,8 @@
 //             flicker in the panel; Delete removes it (a prop's own lights go with their prop)
 //
 // Positions snap to a half tile (a dragged prop moves by half tiles, keeping its offset); Shift places freely.
-// Ctrl+Z undoes, Ctrl+Y (Ctrl+Shift+Z) redoes, Ctrl+S saves (under `npm run dev` straight over the map file, else a download). WASD / the arrows / the right or
+// Ctrl+Z undoes, Ctrl+Y (Ctrl+Shift+Z) redoes, Ctrl+S saves: this browser keeps the map (world/mapStore.js; the next load plays it), and under `npm run dev` it goes
+// straight over the map file too; ⬇ downloads the file for the repository, ↺ drops the browser's copy. WASD / the arrows / the right or
 // middle button drag the view, the wheel zooms. The game is paused while the editor is open.
 //
 // The selected prop's position, direction (a set sprite's or its twin; a model's angle), variant and flags are shown
@@ -25,6 +26,7 @@ import { PROPS } from '../gfx/models/props.js';
 import { worldToScreen } from '../core/iso.js';
 import { setUIHidden } from './uiHidden.js';
 import { dist } from '../core/math.js';
+import { saveLocal, clearLocal, hasLocal } from '../world/mapStore.js';
 
 const MIRROR = MUSTAFAR_SHEETS.mirror;
 // the keys by where they are on the keyboard (e.code), so they work in Korean input too (R comes as 'ㄱ', or as
@@ -170,7 +172,8 @@ export class MapEditor {
         </div>
       </div>
       <div class="me-foot">
-        <div class="me-btns"><button class="me-undo" title="Ctrl+Z">↶ 되돌리기</button><button class="me-redo" title="Ctrl+Y">↷ 다시</button><button class="me-save" title="Ctrl+S">💾 JSON 저장</button></div>
+        <div class="me-btns"><button class="me-undo" title="Ctrl+Z">↶ 되돌리기</button><button class="me-redo" title="Ctrl+Y">↷ 다시</button><button class="me-save" title="Ctrl+S — 이 브라우저에 저장(다시 열어도 유지) · npm run dev 에선 맵 파일에도 바로 씀">💾 저장</button></div>
+        <div class="me-btns me-file"><span class="me-src"></span><button class="me-dl" title="맵 파일(mustafar.json) 내려받기 — 저장소의 public/maps/mustafar.json 에 넣을 때">⬇ 파일 받기</button><button class="me-revert" title="이 브라우저의 저장본을 지우고 맵 파일대로 다시 불러오기">↺ 파일로 되돌리기</button></div>
         <button class="me-test" title="P">▶ 플레이 테스트 <kbd>P</kbd></button>
         <div class="me-status"></div>
         <div class="me-help">클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>R</kbd> 회전 · <kbd>V</kbd> 변형 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 바닥형<br><kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트</div>
@@ -182,6 +185,8 @@ export class MapEditor {
     dom.querySelector('.me-undo').onclick = () => this.undoStep();
     dom.querySelector('.me-redo').onclick = () => this.redoStep();
     dom.querySelector('.me-save').onclick = () => this.save();
+    dom.querySelector('.me-dl').onclick = () => this.download(mapText(this.world.toMap()));
+    dom.querySelector('.me-revert').onclick = () => this.revert();
     dom.querySelector('.me-test').onclick = (e) => (e.currentTarget.blur(), this.startTest());
     const size = dom.querySelector('.me-size');
     size.oninput = () => this.setBrush(+size.value);
@@ -370,6 +375,7 @@ export class MapEditor {
     if (this.mode === 'light' && this.selLight) t += ` · 조명 (${this.selLight.x.toFixed(2)}, ${this.selLight.y.toFixed(2)})`;
     t += this.dirty ? ' · 저장 안 됨' : '';
     this.dom.querySelector('.me-status').textContent = t;
+    this.dom.querySelector('.me-src').textContent = hasLocal() ? '브라우저 저장본' : '맵 파일';
     const sel = this.dom.querySelector('.me-sel');
     sel.textContent = p ? `선택: ${p.sheet || p.type}` : this.palette ? `배치할 소품: ${this.palette.sheet || this.palette.type} (Esc 해제)` : '소품을 고르거나 맵의 소품을 클릭';
     this.showProp();
@@ -870,20 +876,27 @@ export class MapEditor {
   save() {
     const text = mapText(this.world.toMap());
     this.dirty = false;
-    this.status();
-    // `npm run dev`: straight over public/maps/mustafar.json (vite.config.js mapSave) — a reload plays it
+    // this browser keeps it: the next load plays the edited map, in a build too (world/mapStore.js)
+    const kept = saveLocal(text);
+    // `npm run dev`: straight over public/maps/mustafar.json as well (vite.config.js mapSave)
     if (import.meta.env.DEV) {
       fetch('/__map/mustafar', { method: 'POST', body: text })
         .then((r) => {
           if (!r.ok) throw new Error(r.status);
-          this.say('public/maps/mustafar.json 에 저장됨 — 새로고침하면 반영됩니다');
+          this.say('저장됨 — public/maps/mustafar.json 에 바로 반영');
+          this.status();
         })
-        .catch(() => this.download(text));
-    } else this.download(text);
+        .catch(() => {
+          if (kept) this.say('이 브라우저에 저장됨 (맵 파일에는 못 씀 — 파일 받기로 옮기세요)');
+          else this.download(text);
+        });
+    } else if (kept) this.say('이 브라우저에 저장됨 — 다시 열어도 이 맵 · 저장소에 넣으려면 파일 받기');
+    else this.download(text);
+    this.status();
     return text;
   }
 
-  /** The map file as a download (a build has no dev server to write it): put it over public/maps/mustafar.json. */
+  /** The map file as a download: what goes into the repository (public/maps/mustafar.json). */
   download(text) {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
@@ -892,7 +905,16 @@ export class MapEditor {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    this.say('mustafar.json 저장됨 — public/maps/mustafar.json 에 덮어쓰면 반영됩니다');
+    this.say('mustafar.json 내려받음 — public/maps/mustafar.json 에 덮어쓰면 저장소에 반영');
+  }
+
+  /** Drop the browser's saved copy and load the map file again (the page reloads). */
+  revert() {
+    if (!hasLocal() && !this.dirty) return this.say('브라우저 저장본이 없습니다 — 이미 파일 그대로');
+    if (!confirm('이 브라우저에 저장한 맵을 지우고 맵 파일대로 다시 불러올까요?' + (this.dirty ? '\n(저장 안 한 변경도 사라집니다)' : ''))) return;
+    clearLocal();
+    this.dirty = false;
+    location.reload();
   }
 
   say(msg) {

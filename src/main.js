@@ -6,10 +6,11 @@ import { applySkin } from './ui/skin.js';
 import { bakeAssets, bakeDuelAssets, bakeSkin, bakeCharacter, CHARACTERS } from './gfx/assets.js';
 import { setRemasterAllowed } from './gfx/remaster.js';
 import { loadSheets } from './gfx/sheet.js';
-import { prune as pruneFiles, stats as fileStats, cachedJSON } from './gfx/fileCache.js';
+import { prune as pruneFiles, stats as fileStats, cachedJSON, cachedBlob } from './gfx/fileCache.js';
 import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
 import { setMustafarMap } from './world/worldgen.js';
+import { pickMap } from './world/mapStore.js';
 import { setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture } from './gfx/terrain.js';
 import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid, loadCargo, loadRocks, addMirror, MIRROR_SUFFIX } from './gfx/mustafarFloor.js';
 import { savedLook } from './ui/appearance.js';
@@ -101,8 +102,11 @@ async function boot() {
     if (droid) assets.sprites.collector = droid;
     const platform = await loadMustafarDroid('mfPlatform').catch((e) => console.warn('무스타파 플랫폼: ' + e.message));
     if (platform) assets.sprites.platform = platform;
-    // the map: its file (the map editor's), laid out by worldgen.js MustafarArena
-    const map = await cachedJSON(import.meta.env.BASE_URL + 'maps/mustafar.json');
+    // the map: its file (the map editor's), laid out by worldgen.js MustafarArena — or the editor's save kept in
+    // this browser when it was made from this file (world/mapStore.js)
+    const picked = pickMap(await (await cachedBlob(import.meta.env.BASE_URL + 'maps/mustafar.json')).text());
+    const map = picked.map;
+    if (picked.local) console.info('무스타파 맵: 맵 에디터의 브라우저 저장본을 씁니다');
     setMustafarMap(map);
     mustafarMirrors = map.props.filter((e) => e.sheet && e.sheet.endsWith(MIRROR_SUFFIX)).map((e) => e.sheet.slice(0, -MIRROR_SUFFIX.length));
   }

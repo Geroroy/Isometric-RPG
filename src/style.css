@@ -4849,6 +4849,14 @@ body.map-editing .cinema-ui {
   background: rgba(70, 160, 255, 0.22);
   border-color: rgba(110, 190, 255, 0.6);
 }
+#mapEditor .me-file {
+  align-items: center;
+  font-size: 11px;
+}
+#mapEditor .me-file .me-src {
+  opacity: 0.6;
+  margin-right: auto;
+}
 #mapEditor .me-status {
   font: 11px/1.4 ui-monospace, monospace;
   opacity: 0.8;

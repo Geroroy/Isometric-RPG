@@ -36,7 +36,7 @@
   1 m = 20 px, 위로 Z_PX 24.5 px). 발광부(화면·등·홀로)는 네온 레이어, 바닥에 닿는 큰 것은 주광(왼쪽 위) 반대로 그림자를 굽는다.
   배치는 맵 파일 `public/maps/mustafar.json`(월드 좌표: 소품·조명 한 줄에 하나, 바닥 `biome`·길 `blocked`는 타일 한 칸에 한 글자)에서 한다.
   `src/world/worldgen.js` `MustafarArena`는 이 파일을 읽어 깔기만 한다(반전 짝 스프라이트는 `MIRROR_SHEET`, 세트 상자는 `MUSTAFAR`).
-  게임 안 맵 에디터(결투 중 F2, `src/ui/mapEditor.js`; P 플레이 테스트)로 소품·길·조명을 고치고 `JSON 저장`(Ctrl+S)한다 — `npm run dev`에선 이 경로에 바로 써지고(`vite.config.js` `mapSave`) 새로고침하면 반영, 빌드에선 받은 파일을 이 경로에 덮어쓴다.
+  게임 안 맵 에디터(결투 중 F2, `src/ui/mapEditor.js`; P 플레이 테스트)로 소품·길·조명을 고치고 `저장`(Ctrl+S)한다 — 그 브라우저가 맵을 기억해(`src/world/mapStore.js`, localStorage) 다시 열어도 편집한 맵이 나오고(빌드·아티팩트에서도), `npm run dev`에선 이 경로에도 바로 써진다(`vite.config.js` `mapSave`). 저장소에 넣을 땐 `파일 받기`로 받은 파일을 이 경로에 덮어쓴다(맵 파일이 바뀌면 브라우저 저장본보다 파일이 우선).
   구운 반대 방향 짝이 없는 스프라이트는 R로 좌우 반전본(`이름~m`, 로딩 때 만듦 — 구운 그림자도 같이 뒤집히므로 그림자 방향이 중요한 큰 세트는 짝을 따로 굽는다).
 
 ## 로딩 (브라우저에서 굽는 소품)
