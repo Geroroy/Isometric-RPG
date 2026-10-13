@@ -90,7 +90,8 @@ async function boot() {
   if (DUEL === 'mustafar') setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
   // and its wall consoles, placed as the city's sheet sprites are (worldgen.js addSheetProp)
   if (DUEL === 'mustafar') {
-    assets.city = { ...(await loadMustafarConsoles()), ...(await loadRocks()) };
+    // (with the rooms' near walls: an atlas of bays, tools/sprites/mustafar_set/lowwall.py)
+    assets.city = { ...(await loadMustafarConsoles()), ...(await loadRocks()), ...(await loadCargo('lowwall.json')) };
     setCityFootprints(assets.city);
     // the river droid and Obi-Wan's platform: the film's, in place of the models baked with the duel
     const droid = await loadMustafarDroid().catch((e) => console.warn('무스타파 드로이드: ' + e.message));

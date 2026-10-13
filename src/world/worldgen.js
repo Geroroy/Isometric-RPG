@@ -542,6 +542,8 @@ const tpRect = (r) => {
 /** The facility as it lies in the world (design coordinates transposed): what the duel works in. */
 export const MUSTAFAR = Object.fromEntries(Object.entries(MUSTAFAR_D).map(([k, v]) => [k, Array.isArray(v) ? v.map(([x, y]) => [y, x]) : tpRect(v)]));
 // the set sprites' mirrored twins (a sprite flipped left-right is its transpose): design name -> world name
+// the rooms' near walls' bay lengths, pillar to pillar (tools/sprites/mustafar_set/lowwall.py LENGTHS)
+const WALL_BAYS = [1, 2.5, 3, 3.5, 4, 4.5, 5];
 const MIRROR_SHEET = {
   mfConsole: 'mfConsole_r',
   mfConsole_r: 'mfConsole',
@@ -553,10 +555,6 @@ const MIRROR_SHEET = {
   mfCorridorL_r: 'mfCorridorL',
   mfWindow: 'mfWindow_r',
   mfPassage: 'mfPassage_x',
-  mfLowWall: 'mfLowWall_y',
-  mfLowWall_y: 'mfLowWall',
-  mfLowWallS: 'mfLowWallS_y',
-  mfLowWallS_y: 'mfLowWallS',
   mfPassageS_x: 'mfPassageS',
   mfChair: 'mfChair_x',
   mfChair_x: 'mfChair',
@@ -567,6 +565,8 @@ const MIRROR_SHEET = {
   mfLift: 'mfLift_y',
   mfFall: 'mfFall_x',
   mfFall_x: 'mfFall',
+  // the near walls' bays (lowwall.py: both ways round in the atlas)
+  ...Object.fromEntries(WALL_BAYS.flatMap((L) => [[`mfWall${L}`, `mfWall${L}_y`], [`mfWall${L}_y`, `mfWall${L}`]])),
 };
 // the pairs, for the loader (gfx/mustafarFloor.js: one of each is shipped, the other flipped from it)
 export const MUSTAFAR_SHEETS = { mirror: MIRROR_SHEET };
@@ -1015,17 +1015,18 @@ export class MustafarArena extends World {
   }
 
   /**
-   * A room's walls. The far ones (north and west) of the model `type`, tall; the near ones (south and east), so
-   * the room reads as closed without hiding the fight, of the set's low wall (gfx sprites mfLowWall 6 m /
-   * mfLowWallS 4 m, tools/sprites/mustafar_set: a plinth and a pipe-run panel between pillars, 1.2 m), its foot
-   * 0.3 m inside the edge, tiled along each side in runs between the doorways (`sgaps` / `egaps`: [from, to] along
-   * the side) — a run takes 6 m pieces end to end, the last one set back to the run's end, a short run one 4 m
-   * piece; a run under 3 m stays open.
+   * A room's walls. The far ones (north and west) of the model `type`; the near ones (south and east), so the room
+   * reads as closed, of the set's wall (atlas bays mfWall<L>, tools/sprites/mustafar_set/lowwall.py: a plinth and a
+   * pipe-run panel between pillars, 2.2 m; translucent where they cover the player: renderer.js) laid out as built:
+   * its foot 0.25 m inside the floor's edge, a pillar on the near corner and on each doorway's jamb (`sgaps` /
+   * `egaps`: [from, to] along the side), each stretch between split into even bays of a baked length — the split
+   * closest to its length, of bays near 3.5 m — neighbouring bays sharing their pillar.
    */
   walls(r, type, { north = true, west = true, gaps = [], south = false, east = false, sgaps = [], egaps = [] } = {}) {
     const edge = (x, y, ai) => this.addProp(type, x, y, { angleIdx: ai, noBlock: true });
     if (north) for (let x = -r.hw + 1; x <= r.hw - 1; x += 2) if (!gaps.some(([a, b]) => r.x + x > a - 1 && r.x + x < b + 1)) edge(r.x + x, r.y - r.hh - 0.9, 0);
     if (west) for (let y = -r.hh + 1; y <= r.hh - 1; y += 2) edge(r.x - r.hw - 0.9, r.y + y, 1);
+    const IN = 0.25;
     const runs = (a, b, gs) => {
       const out = [];
       let at = a;
@@ -1036,16 +1037,27 @@ export class MustafarArena extends World {
       if (b > at) out.push([at, b]);
       return out;
     };
-    const tile = (a, b, gs, put) =>
+    // the split of a stretch: [n bays of length v] closest to its length (then bays nearest 3.5 m)
+    const split = (L) => {
+      let best = null;
+      for (let n = 1; n <= 12; n++)
+        for (const v of WALL_BAYS) {
+          if (v < 2 && L > 2) continue; // (the pillar-pair stub: only for a stretch too short for a bay)
+          const err = Math.abs(n * v - L) + Math.abs(v - 3.5) * 0.05;
+          if (!best || err < best.err) best = { n, v, err };
+        }
+      return best;
+    };
+    const lay = (a, b, gs, put) =>
       runs(a, b, gs).forEach(([a0, b0]) => {
         const L = b0 - a0;
-        if (L < 3) return;
-        if (L < 6) return put((a0 + b0) / 2, 'mfLowWallS');
-        for (let x = a0 + 3; x < b0 - 3; x += 6) put(x, 'mfLowWall');
-        put(b0 - 3, 'mfLowWall');
+        if (L < 0.6) return;
+        const { n, v } = split(L);
+        const at = a0 + (L - n * v) / 2; // (a leftover centred: a few cm either end)
+        for (let i = 0; i < n; i++) put(at + v * (i + 0.5), v);
       });
-    if (south) tile(r.x - r.hw, r.x + r.hw, sgaps, (x, n) => this.addSheetProp(n, x, r.y + r.hh - 0.3));
-    if (east) tile(r.y - r.hh, r.y + r.hh, egaps, (y, n) => this.addSheetProp(n + '_y', r.x + r.hw - 0.3, y));
+    if (south) lay(r.x - r.hw, r.x + r.hw - IN, sgaps, (x, v) => this.addSheetProp(`mfWall${v}`, x, r.y + r.hh - IN, { noBlock: true }));
+    if (east) lay(r.y - r.hh, r.y + r.hh - IN, egaps, (y, v) => this.addSheetProp(`mfWall${v}_y`, r.x + r.hw - IN, y, { noBlock: true }));
   }
 
   /** A doorway: hazard pillars either side of a two-tile opening (`ai` 0: passage along x, 1: along y); `frame`: its door frame prop. */

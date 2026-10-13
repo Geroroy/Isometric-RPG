@@ -26,7 +26,7 @@ export async function loadMustafarFloor() {
 // city-sheet sprites (renderer.js draws a prop with `sheet` from assets.city: body, then the neon layer after
 // the light map), one per wall direction (and screen colour)
 // the set sprites as baked (one of each mirrored pair); the other of a pair is this one flipped (flipSheet)
-const SHIPPED = ['mfConsole', 'mfConsoleRed', 'mfConsoleD', 'mfCorridor_r', 'mfCorridorL_r', 'mfWindow', 'mfPassage_x', 'mfPassageS_x', 'mfLowWall', 'mfLowWallS', 'mfChair_x', 'mfTable_y', 'mfArm', 'mfCatwalkL', 'mfLift', 'mfHoloX', 'mfFall', 'mfSkiff_y'];
+const SHIPPED = ['mfConsole', 'mfConsoleRed', 'mfConsoleD', 'mfCorridor_r', 'mfCorridorL_r', 'mfWindow', 'mfPassage_x', 'mfPassageS_x', 'mfChair_x', 'mfTable_y', 'mfArm', 'mfCatwalkL', 'mfLift', 'mfHoloX', 'mfFall', 'mfSkiff_y'];
 
 /** A set sprite mirrored left-right: its transpose in the world (x ↔ y), as the bakers' mirrors were. */
 function flipSheet(src) {
@@ -87,18 +87,18 @@ export async function loadMustafarDroid(name = 'mfDroid') {
  * stores on Mustafar and, in place of the old model crates, the campaign's supply crates, the droid army's cargo and
  * the undercity's piles (worldgen.js CARGO_SWAP / CARGO_CLUSTERS).
  */
-export async function loadCargo() {
+export async function loadCargo(file = 'cargo.json') {
   const base = import.meta.env.BASE_URL + 'sprites/mustafar/';
   const out = {};
   try {
-    const atlas = await cachedJSON(base + 'cargo.json');
+    const atlas = await cachedJSON(base + file);
     const page = await cachedImage(base + atlas.page);
     for (const [name, m] of Object.entries(atlas.sprites)) {
       const [sx, sy, w, h] = m.rect;
       out[name] = { meta: m, body: { page, sx, sy, w, h, ox: m.anchor[0], oy: m.anchor[1], k: m.k }, neon: null, reflect: null };
     }
   } catch (e) {
-    console.warn('화물 스프라이트: ' + e.message); // the model crates stay
+    console.warn(file + ': ' + e.message); // (the cargo: the model crates stay; the walls: left out)
   }
   return out;
 }
