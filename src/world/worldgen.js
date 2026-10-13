@@ -706,7 +706,7 @@ export class MustafarArena extends World {
     // the passage on to the control room (the film's sets, reference/color_rots): a covered corridor whose
     // pillared portal stands in the north wall, the consoles either side meeting its pillars
     this.addSheetProp('mfCorridor', M.junction.x, H.y - H.hh, { noBlock: true });
-    for (const dy of [-4.5, -1.5, 1.5, 4.5]) this.console(H, 'west', dy);
+    for (const dy of [-5.3, -2.3, 0.7, 3.7]) this.console(H, 'west', dy); // (up into the corner, to the north row's back)
     this.door({ x: M.junction.x, y: H.y - H.hh }, 1, false); // (the covered corridor's portal is its frame)
     // the film's long table, its pointed end to the passage; the high-backed chairs along its far side and
     // at its head (the near side left clear, as the near walls are); the model props if the sprites did not load.
@@ -735,8 +735,10 @@ export class MustafarArena extends World {
     // --- the control room --------------------------------------------------
     const C = M.control;
     // the film's control room: its walls lined with screen consoles side by side, the back wall's middle one red
-    for (const dx of [-6, -3, 0, 3, 6]) this.console(C, 'north', dx, dx === 0);
-    for (const dy of [-4.5, -1.5, 1.5, 4.5]) this.console(C, 'west', dy);
+    // (the two rows meet in the far corner: the west row runs up to the north row's back, the north row starts at
+    // the west row's desk front, its five spread a little to reach the room's east edge — the pillars meeting)
+    [-6.7, -3.5, -0.3, 2.9, 6.1].forEach((dx, i) => this.console(C, 'north', dx, i === 2));
+    for (const dy of [-6.3, -3.3, -0.3, 2.7, 5.7]) this.console(C, 'west', dy);
     // the holo-table in the middle of the sunken floor, as in the film (its blue map lighting the room from below)
     // (off the line from the shield generator to the balcony door, which the console scene runs along)
     if (!this.addSheetProp('mfHolo', C.x + 3.5, C.y - 1.5)) this.addProp('consoleDesk', C.x + 2, C.y + 2.5, { angleIdx: 0 });
