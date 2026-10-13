@@ -696,10 +696,16 @@ export class MustafarArena extends World {
     // the film's long table, its pointed end to the passage; the high-backed chairs along its far side and
     // at its head (the near side left clear, as the near walls are); the model props if the sprites did not load.
     // The fight goes up onto it, as in the film: drawn with the floor, its top a surface 0.78 m up
-    if (this.addSheetProp('mfTable', H.x, H.y, { noBlock: true, flat: true })) {
+    const table = this.addSheetProp('mfTable', H.x, H.y, { noBlock: true, flat: true });
+    if (table) {
       this.surfaces.push({ x0: H.x - 4, y0: H.y - 0.8, x1: H.x + 4, y1: H.y + 0.8, z: 0.78 });
-      for (const dx of [-3.2, -1.7, -0.2, 1.3, 2.8]) this.addSheetProp('mfChair', H.x + dx, H.y - 1.35);
-      this.addSheetProp('mfChair_x', H.x - 4.7, H.y);
+      // the chairs stand behind it (its far side and its head): drawn with the ground too, before it (the table
+      // `over` the other flats), so its top covers their legs and seats as it is in front of them
+      // (still in the way: a flat sprite blocks nothing, so each chair's tile is blocked here)
+      const chair = (n, x, y) => this.addSheetProp(n, x, y, { flat: true }) && (this.blocked[Math.floor(y) * MAP_W + Math.floor(x)] = 1);
+      for (const dx of [-3.2, -1.7, -0.2, 1.3, 2.8]) chair('mfChair', H.x + dx, H.y - 1.35);
+      chair('mfChair_x', H.x - 4.7, H.y);
+      table.over = true;
     } else {
       this.addProp('confTable', H.x, H.y);
       for (const dx of [-1.6, 0, 1.6]) {
