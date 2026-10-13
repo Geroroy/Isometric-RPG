@@ -36,6 +36,7 @@
   1 m = 20 px, 위로 Z_PX 24.5 px). 발광부(화면·등·홀로)는 네온 레이어, 바닥에 닿는 큰 것은 주광(왼쪽 위) 반대로 그림자를 굽는다.
   배치는 맵 파일 `public/maps/mustafar.json`(월드 좌표: 소품·조명 한 줄에 하나, 바닥 `biome`·길 `blocked`는 타일 한 칸에 한 글자)에서 한다.
   `src/world/worldgen.js` `MustafarArena`는 이 파일을 읽어 깔기만 한다(반전 짝 스프라이트는 `MIRROR_SHEET`, 세트 상자는 `MUSTAFAR`).
+  게임 안 맵 에디터(결투 중 F2, `src/ui/mapEditor.js`)로 소품·길·조명을 고치고 `JSON 저장`(Ctrl+S)으로 받은 파일을 이 경로에 덮어쓴다.
 
 ## 로딩 (브라우저에서 굽는 소품)
 

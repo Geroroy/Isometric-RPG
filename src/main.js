@@ -26,6 +26,7 @@ import { Music } from './core/music.js';
 import { Ambience } from './core/ambience.js';
 import { JukeboxUI } from './ui/jukebox.js';
 import { DebugUI } from './ui/debug.js';
+import { MapEditor } from './ui/mapEditor.js';
 import { TouchControls, isTouchDevice, hasMouse } from './ui/touch.js';
 import { MobileHUD } from './ui/mobileHud.js';
 import { Fullscreen } from './ui/fullscreen.js';
@@ -150,6 +151,8 @@ async function boot() {
   input.onFullscreen = mobile.onFullscreen = () => fullscreen.toggle();
   const zoom = new ZoomControl(renderer, touch);
   input.onZoom = (dir) => (dir === 0 ? zoom.reset() : zoom.step(dir));
+  // the map editor (F2): the Mustafar duel's map, edited in place (ui/mapEditor.js)
+  const editor = DUEL === 'mustafar' ? new MapEditor({ game, renderer, assets, onExit: () => zoom.restore() }) : null;
   touch.onEnable = () => zoom.restore();
 
   const measure = () => {
@@ -250,6 +253,7 @@ async function boot() {
   window.__mobile = mobile; // QA (tools/qa)
   window.__dialogue = dialogue;
   window.__music = music;
+  window.__editor = editor; // QA (the map editor)
   let last = performance.now();
   let titleT = 0;
   const reported = new Set();
@@ -263,7 +267,7 @@ async function boot() {
   // the frame's systems, made once (not a fresh array of closures every frame)
   let dt = 0;
   let paused = false;
-  const steps = [() => paused || game.update(dt), () => renderer.render(dt), () => post.render(dt), () => hud.update(dt), () => touch.enabled && mobile.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update(), () => duelHud && duelHud.update(dt)];
+  const steps = [() => paused || game.update(dt), () => renderer.render(dt), () => editor && editor.draw(dt), () => post.render(dt), () => hud.update(dt), () => touch.enabled && mobile.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update(), () => duelHud && duelHud.update(dt)];
   const loop = (now) => {
     if (hiddenTab) return; // restarted when the tab shows again
     requestAnimationFrame(loop);
@@ -275,7 +279,7 @@ async function boot() {
     dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); // the first frame can stamp before `last`
     if (SABER.slow) dt *= 0.25; // the saber card's slow motion (to look at the trails)
     last = now;
-    input.update(dt);
+    if (!(editor && editor.on)) input.update(dt);
     touch.update(dt);
     // the title screen sits over the live world: hide the HUD, drift the camera
     const onTitle = !help.classList.contains('hidden');
@@ -291,7 +295,7 @@ async function boot() {
     dr.x += (tx - dr.x) * Math.min(1, dt * (onTitle ? 1 : 3));
     dr.y += (ty - dr.y) * Math.min(1, dt * (onTitle ? 1 : 3));
     // menus pause the action (the map does not)
-    paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
+    paused = (editor && editor.on) || onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
     // one failing system must not freeze the whole game: report it once, keep running
     for (const step of steps) {
       try {

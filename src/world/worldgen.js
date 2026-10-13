@@ -623,10 +623,12 @@ export class MustafarArena extends World {
       if (e.id) this.named[e.id] = p;
     }
     for (const l of m.lights) {
-      const o = { x: l.x, y: l.y, z: l.z, r: l.r, g: l.g, b: l.b, rad: l.rad, flicker: l.flicker };
+      const o = this.mapLight({ x: l.x, y: l.y, z: l.z, r: l.r, g: l.g, b: l.b, rad: l.rad, flicker: l.flicker });
       this.lights.push(o);
       if (l.id) this.named[l.id] = o;
     }
+    // the named ones as the map has them (the duel moves the robes, lights the alarm: toMap writes these)
+    for (const o of Object.values(this.named)) this.keepHome(o);
     this.cloak = this.named.cloak;
     this.robe = this.named.robe;
     this.alarm = this.named.alarm; // lit by the duel when the shields fail
@@ -636,6 +638,18 @@ export class MustafarArena extends World {
 
   addProp(type, x, y, opts = {}) {
     return this.own(() => super.addProp(type, x, y, opts), opts);
+  }
+
+  /** A light of the map's (written by toMap; one the duel adds while it plays is not). */
+  mapLight(l) {
+    Object.defineProperty(l, 'map', { value: true, configurable: true });
+    return l;
+  }
+
+  /** A named prop's or light's state as the map has it (`home`, not enumerable), for toMap: the duel changes them. */
+  keepHome(o) {
+    const keys = 'sheet' in o || 'type' in o ? ['x', 'y', 'hidden'] : ['x', 'y', 'z', 'r', 'g', 'b', 'rad', 'flicker'];
+    Object.defineProperty(o, 'home', { value: Object.fromEntries(keys.map((k) => [k, o[k]])), configurable: true, writable: true });
   }
 
   addSheetProp(name, x, y, opts = {}) {
@@ -667,7 +681,8 @@ export class MustafarArena extends World {
     const names = Object.fromEntries(Object.entries(BIOME).map(([k, v]) => [v, k]));
     const used = [...new Set(this.biome)].sort((a, b) => a - b);
     const ids = new Map(Object.entries(this.named || {}).map(([k, v]) => [v, k]));
-    const prop = (p) => {
+    const prop = (q) => {
+      const p = q.home ? { ...q, ...q.home } : q;
       const o = p.sheet ? { sheet: p.sheet } : { type: p.type };
       o.x = n6(p.x);
       o.y = n6(p.y);
@@ -676,14 +691,15 @@ export class MustafarArena extends World {
       if (p.over) o.over = true;
       if (p.block) o.block = true;
       if (p.cut) o.cut = p.cut.map(n6);
-      if (ids.has(p)) o.id = ids.get(p);
+      if (ids.has(q)) o.id = ids.get(q);
       if (p.hidden) o.hidden = true;
       return o;
     };
-    const light = (l) => {
+    const light = (q) => {
+      const l = q.home || q;
       const o = {};
       for (const k of ['x', 'y', 'z', 'r', 'g', 'b', 'rad', 'flicker']) o[k] = n6(l[k]);
-      if (ids.has(l)) o.id = ids.get(l);
+      if (ids.has(q)) o.id = ids.get(q);
       return o;
     };
     return {
@@ -701,8 +717,12 @@ export class MustafarArena extends World {
       biome: rows(this.biome, (b) => BIOME_CHAR[names[b]]),
       blockedKey: BLOCKED_KEY,
       blocked: rows(this.blocked, (b) => BLOCKED_CHAR[b]),
-      props: this.props.map(prop),
-      lights: this.lights.filter((l) => !l.of).map(light),
+      // (in the order they are drawn, by where the map has them)
+      props: this.props
+        .map((q) => [q, q.home ? q.home.x + q.home.y : q.x + q.y])
+        .sort(([a, da], [b, db]) => (a.over ? 1 : 0) - (b.over ? 1 : 0) || da - db)
+        .map(([q]) => prop(q)),
+      lights: this.lights.filter((l) => l.map && !l.of).map(light),
     };
   }
 

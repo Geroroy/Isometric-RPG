@@ -4665,3 +4665,197 @@ body.ui-hidden #touch .joy-zone {
 body.touch.ui-hidden #uiRestore {
   display: block;
 }
+
+/* ---- the map editor (F2, ui/mapEditor.js): its marks over the picture, its panel on the left ---- */
+#mapEditorView {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 90;
+  cursor: crosshair;
+  touch-action: none;
+}
+body.map-editing #uiRestore,
+body.map-editing .cinema-ui {
+  display: none !important;
+}
+#mapEditor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  z-index: 91;
+  display: flex;
+  flex-direction: column;
+  background: rgba(12, 15, 20, 0.92);
+  border-right: 1px solid rgba(140, 200, 255, 0.25);
+  color: #dfe8f2;
+  font: 13px/1.4 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+  user-select: none;
+}
+#mapEditor.hidden,
+#mapEditorView.hidden,
+#mapEditor .hidden {
+  display: none;
+}
+#mapEditor button {
+  font: inherit;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+#mapEditor button:hover {
+  background: rgba(140, 200, 255, 0.16);
+}
+#mapEditor button.on {
+  background: rgba(255, 196, 70, 0.22);
+  border-color: #ffc446;
+}
+#mapEditor kbd {
+  font: 11px/1 ui-monospace, monospace;
+  padding: 1px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+  opacity: 0.8;
+}
+#mapEditor .me-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 6px;
+  font-size: 15px;
+}
+#mapEditor .me-map {
+  opacity: 0.6;
+  font-size: 12px;
+}
+#mapEditor .me-close {
+  margin-left: auto;
+  padding: 2px 8px;
+}
+#mapEditor .me-modes {
+  display: flex;
+  gap: 4px;
+  padding: 0 12px 8px;
+}
+#mapEditor .me-modes button {
+  flex: 1;
+}
+#mapEditor .me-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px;
+}
+#mapEditor .me-body p {
+  margin: 4px 0;
+}
+#mapEditor .me-search {
+  font: inherit;
+  color: inherit;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  padding: 5px 8px;
+}
+#mapEditor .me-sel {
+  font-size: 12px;
+  opacity: 0.75;
+}
+#mapEditor .me-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+#mapEditor .me-group {
+  margin: 8px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9fc8ee;
+}
+#mapEditor .me-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+#mapEditor .me-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px;
+  min-width: 0;
+}
+#mapEditor .me-item canvas {
+  width: 64px;
+  height: 64px;
+}
+#mapEditor .me-item span {
+  font-size: 10px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+#mapEditor .me-blk {
+  color: #ffb040;
+}
+#mapEditor .me-walk {
+  color: #8fe08f;
+}
+#mapEditor .me-note {
+  font-size: 12px;
+  opacity: 0.7;
+}
+#mapEditor label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#mapEditor input[type='range'] {
+  flex: 1;
+  min-width: 0;
+}
+#mapEditor .me-lprops {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#mapEditor .me-lprops.off {
+  opacity: 0.35;
+  pointer-events: none;
+}
+#mapEditor .me-foot {
+  padding: 8px 12px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#mapEditor .me-btns {
+  display: flex;
+  gap: 4px;
+}
+#mapEditor .me-btns .me-save {
+  margin-left: auto;
+  background: rgba(70, 160, 255, 0.22);
+  border-color: rgba(110, 190, 255, 0.6);
+}
+#mapEditor .me-status {
+  font: 11px/1.4 ui-monospace, monospace;
+  opacity: 0.8;
+  min-height: 2.8em;
+}
+#mapEditor .me-help {
+  font-size: 11px;
+  opacity: 0.6;
+  line-height: 1.7;
+}

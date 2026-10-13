@@ -4,6 +4,7 @@
 //   RMB          cast the right-button skill at the cursor (hold to repeat)
 //   1-6          cast hotbar skill at the cursor
 //   WASD walk · X saber on/off · E talk · P Star Cards · Q bacta · K skill tree · C character · Tab automap · M mute · H help · F1 hide/show all UI
+//   F2 the map editor (the Mustafar duel: ui/mapEditor.js, its own keys while it is open)
 import { SKILLS } from '../game/skills.js';
 import { toggleUI } from '../ui/uiHidden.js';
 import { remaster, setRemaster } from '../gfx/remaster.js';

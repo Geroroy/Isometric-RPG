@@ -61,6 +61,7 @@ export class Renderer {
     this.zoom = 1;
     this.touchMode = false;
     this.res = 1; // canvas pixels a game pixel: 1 classic, 2-4 remastered (gfx/remaster.js remasterRes)
+    this.editing = false; // the map editor is open (ui/mapEditor.js): every prop shown as placed, no fades
     this.prepareProps();
     this.resize();
     onRemaster(() => this.resize());
@@ -379,10 +380,14 @@ export class Renderer {
     const shown = this.shownProps || (this.shownProps = []);
     shown.length = 0;
     for (const pr of g.world.props) {
-      if (pr.hidden) continue; // placed but not shown yet (scripted)
+      if (pr.hidden && !this.editing) continue; // placed but not shown yet (scripted; the editor shows it faint)
       const r = pr.rect;
       if (!inView(r[0], r[1], r[2], r[3])) continue;
-      if (pr.flat) this.drawFrame(pr.frame, pr.sx, pr.sy);
+      if (pr.flat) {
+        if (pr.hidden) ctx.globalAlpha = 0.45;
+        this.drawFrame(pr.frame, pr.sx, pr.sy);
+        ctx.globalAlpha = 1;
+      }
       else {
         put(pr.drawDepth ?? pr.sortDepth, pr, null, null, null);
         shown.push(pr);
@@ -452,6 +457,15 @@ export class Renderer {
         const bob = pr.sheet && SHEET_PROPS[pr.sheet].bob ? Math.round(Math.sin(this.time * SHEET_PROPS[pr.sheet].bob + pr.phase) * 1.2) : 0;
         pr.bob = bob;
         pr.window = null;
+        if (this.editing) {
+          // the map editor: as placed, whoever stands where
+          pr.fade = 1;
+          pr.coverAlpha = null;
+          if (pr.hidden) ctx.globalAlpha = 0.45;
+          this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
+          ctx.globalAlpha = 1;
+          continue;
+        }
         // a room's near wall (worldgen.js MustafarArena: `cut`, the room's box): cut away to a ghost while anyone
         // fighting is in the room or in its doorway, so the fight shows whole; back as they leave
         if (pr.cut) {
@@ -992,8 +1006,9 @@ export class Renderer {
     };
     const p = g.player;
     spot(p.x, p.y, 0.5, 255, 236, 210, 190, 0.42);
+    const c = this.editing && g.camFocus ? g.camFocus : p; // (the lights round the view: the editor's camera)
     for (const L of g.world.lights) {
-      if (Math.abs(L.x - p.x) > 30 || Math.abs(L.y - p.y) > 30) continue;
+      if (Math.abs(L.x - c.x) > 30 || Math.abs(L.y - c.y) > 30) continue;
       const fl = 1 + Math.sin(this.time * 3 + L.x * 7) * L.flicker;
       spot(L.x, L.y, L.z, L.r, L.g, L.b, L.rad * fl, 0.55);
     }
