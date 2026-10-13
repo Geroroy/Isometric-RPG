@@ -88,7 +88,7 @@ export class Renderer {
     if (p.sheet) {
       // a Blender-rendered city sprite: body, neon and reflection layers
       const c = this.assets.city[p.sheet];
-      p.frame = c.body;
+      p.frame = p.trim ? this.trimmed(c.body, p.trim) : c.body;
       p.layers = c;
       const s = worldToScreen(p.x, p.y);
       p.sx = s.x;
@@ -115,6 +115,20 @@ export class Renderer {
       p.box = rect ? [p.x - rect[0] / 2, p.y - rect[1] / 2, p.x + rect[0] / 2, p.y + rect[1] / 2] : [p.x - 0.3, p.y - 0.3, p.x + 0.3, p.y + 0.3];
       this.propOrder = null;
     }
+  }
+
+  /** A frame less `l` columns off its left and `r` off its right (a wall piece's pillar, where another's stands). */
+  trimmed(f, [l, r]) {
+    const m = (this.trims ||= new Map()); // (one frame object a trim: the cover test caches its alpha on it)
+    let byTrim = m.get(f);
+    if (!byTrim) m.set(f, (byTrim = new Map()));
+    const id = l + ',' + r;
+    if (!byTrim.has(id)) {
+      const a = Math.round(l);
+      const b = Math.round(r);
+      byTrim.set(id, { ...f, sx: f.sx + a, w: f.w - a - b, ox: f.ox - a, alphaData: undefined });
+    }
+    return byTrim.get(id);
   }
 
   /**

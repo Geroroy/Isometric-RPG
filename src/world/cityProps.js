@@ -138,6 +138,11 @@ let FOOTPRINTS = {};
 /** The sprites' collision outlines (tiles from the origin), once they are loaded. */
 export function setCityFootprints(city) {
   FOOTPRINTS = Object.fromEntries(Object.entries(city).filter(([, v]) => v && v.meta).map(([k, v]) => [k, v.meta.footprint]));
+  WALLS = Object.fromEntries(
+    Object.entries(city)
+      .filter(([, v]) => v && v.meta && v.meta.pillars && v.body)
+      .map(([k, v]) => [k, { pillars: v.meta.pillars, half: v.meta.half, along: v.meta.along, w: v.body.w }]),
+  );
   SIZES = Object.fromEntries(
     Object.entries(city)
       .filter(([, v]) => v && v.meta && v.body)
@@ -153,6 +158,14 @@ export function setCityFootprints(city) {
 }
 
 export const cityFootprint = (name) => FOOTPRINTS[name] || null;
+
+let WALLS = {};
+/**
+ * A wall piece's pillars, for joining pieces (tools/sprites/mustafar_set/lowwall.py): `pillars` the columns of its
+ * left and right pillars' inner sides (frame px), `half` the pillar centres' distance from its anchor along it (m),
+ * `along` its axis, `w` its frame's width; null for any other sprite.
+ */
+export const cityWall = (name) => WALLS[name] || null;
 
 let SIZES = {};
 /** A sprite's size on screen in game px: [w, h, ox, oy] (ox, oy: the anchor from its top left), once loaded. */

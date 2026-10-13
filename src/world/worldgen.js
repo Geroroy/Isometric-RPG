@@ -4,7 +4,7 @@
 // ruins of an old crystal city; a droid factory stronghold far to the north.
 import { RNG, fbm, dist, distToSegment, clamp } from '../core/math.js';
 import { PROPS } from '../gfx/models/props.js';
-import { SHEET_PROPS, cityFootprint, inPoly } from './cityProps.js';
+import { SHEET_PROPS, cityFootprint, cityWall, inPoly } from './cityProps.js';
 import UNDERCITY_V1 from '../data/undercity.json';
 import UNDERCITY_V2 from '../data/undercity_v2.json';
 import { MAP_V2 } from './mapVersion.js';
@@ -641,6 +641,37 @@ export class MustafarArena extends World {
     this.alarm = this.named.alarm; // lit by the duel when the shields fail
     // (a flat piece marked `over` is drawn after the other flats: the balcony's corridor over the catwalk)
     this.props.sort((a, b) => (a.over ? 1 : 0) - (b.over ? 1 : 0) || a.x + a.y - (b.x + b.y));
+    this.joinWalls();
+  }
+
+  /**
+   * The room walls' joints: where two pieces' end pillars stand together (within half a metre: two bays of a run,
+   * a corner, a pillar pair beside a doorway), the pillar is drawn once — the other piece's trimmed off its frame
+   * (`trim`: frame columns off its left and right, renderer.js placeProp). The one kept is that of a piece that
+   * stays while the fight is in its room (no `cut`), else of the piece drawn later (the larger x + y). Worked out
+   * again whenever the walls change (the map editor).
+   */
+  joinWalls() {
+    const ends = [];
+    for (const p of this.props) {
+      const w = p.sheet && cityWall(p.sheet);
+      p.trim = null;
+      if (!w) continue;
+      // its pillars: the image's left one, its right one (−x / +x along x; +y / −y along y)
+      const pts = w.along === 'x' ? [[p.x - w.half, p.y], [p.x + w.half, p.y]] : [[p.x, p.y + w.half], [p.x, p.y - w.half]];
+      pts.forEach(([x, y], side) => ends.push({ p, w, side, x, y }));
+    }
+    const keeps = (a, b) => (!!a.p.cut !== !!b.p.cut ? !a.p.cut : a.p.x + a.p.y > b.p.x + b.p.y);
+    for (let i = 0; i < ends.length; i++)
+      for (let j = i + 1; j < ends.length; j++) {
+        const a = ends[i];
+        const b = ends[j];
+        if (a.p === b.p || Math.hypot(a.x - b.x, a.y - b.y) > 0.5) continue;
+        const d = keeps(a, b) ? b : a; // (the end trimmed)
+        const t = (d.p.trim ||= [0, 0]);
+        if (d.side === 0) t[0] = d.w.pillars[0];
+        else t[1] = d.w.w - d.w.pillars[1];
+      }
   }
 
   addProp(type, x, y, opts = {}) {

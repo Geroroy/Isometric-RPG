@@ -536,7 +536,17 @@ export class MapEditor {
   /** After props change: their order (the flat ones drawn in it) and the renderer's. */
   resort() {
     this.world.props.sort((a, b) => (a.over ? 1 : 0) - (b.over ? 1 : 0) || a.x + a.y - (b.x + b.y));
+    this.rejoin();
     this.renderer.propOrder = null;
+  }
+
+  /** The walls' joints worked out again (worldgen.js joinWalls: a shared pillar drawn once), the changed re-placed. */
+  rejoin() {
+    const w = this.world;
+    if (!w.joinWalls) return;
+    const was = new Map(w.props.map((p) => [p, p.trim ? p.trim.join() : '']));
+    w.joinWalls();
+    for (const p of w.props) if ((p.trim ? p.trim.join() : '') !== was.get(p)) this.renderer.placeProp(p);
   }
 
   homeOf(o) {
@@ -702,6 +712,7 @@ export class MapEditor {
     if (Object.values(w.named || {}).includes(p)) return this.say('결투 연출에 쓰이는 소품이라 지울 수 없습니다 (옮기기만)');
     const before = this.snapshot();
     this.drop(p);
+    this.rejoin();
     this.select(null);
     this.commit(before);
   }
