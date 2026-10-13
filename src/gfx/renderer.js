@@ -407,6 +407,9 @@ export class Renderer {
         shown.push(pr);
       }
     }
+    // service pipes over the lava and the cables the duellists hang from (the Mustafar duel), under everyone
+    if (g.world.pipes && g.world.pipes.length) this.drawPipes(ctx, cam);
+    if (g.duel && g.duel.ropes) this.drawRopes(ctx, cam);
     for (const u of g.activeUnits) {
       if (!u.dead) continue;
       const s = worldToScreen(u.x, u.y);
@@ -428,7 +431,7 @@ export class Renderer {
     };
     ctx.fillStyle = 'rgba(0,0,0,0.32)';
     for (const u of g.activeUnits) {
-      if (u.dead || u.hidden) continue;
+      if (u.dead || u.hidden || u.noShadow) continue;
       // on the ground under him (a table top's, when he stands over one)
       const gz = g.world.groundAt ? g.world.groundAt(u.x, u.y) : 0;
       const hz = Math.max(0, u.z - gz);
@@ -750,7 +753,9 @@ export class Renderer {
       }
       ctx.globalAlpha = 1;
     }
+    if (u.alpha !== undefined && u.alpha < 1) ctx.globalAlpha = Math.max(0, u.alpha); // (a deck sinking into the lava)
     this.drawFrame(f, s.x, s.y);
+    ctx.globalAlpha = 1;
     if (u.flash > 0) (this.flashUnits ||= []).push(u); // white, after the light map (hitfeel.js)
     if (u.stun > 0 && !u.choke && u.kind !== 'player') {
       const t = this.time * 6;
@@ -984,6 +989,101 @@ export class Renderer {
     }
   }
 
+  /**
+   * Service pipes over the lava (world.pipes): a tube lit from the upper left, its underside in the lava's
+   * glow, a dark seam ring every two metres, its shadow on the lava below.
+   */
+  drawPipes(ctx, cam) {
+    for (const q of this.game.world.pipes) {
+      const A = worldToScreen(q.x0, q.y0, q.z);
+      const B = worldToScreen(q.x1, q.y1, q.z);
+      const ax = A.x - cam.x;
+      const ay = A.y - cam.y;
+      const bx = B.x - cam.x;
+      const by = B.y - cam.y;
+      const len = Math.hypot(bx - ax, by - ay);
+      if (!len) continue;
+      const ux = (bx - ax) / len;
+      const uy = (by - ay) / len;
+      let nx = -uy;
+      let ny = ux;
+      if (ny > 0) (nx = -nx), (ny = -ny); // the normal points up the screen: the lit side
+      const w = Math.max(5, q.r * 2 * PX_PER_UNIT * 0.8);
+      ctx.save();
+      ctx.lineCap = 'round';
+      // its shadow on the lava
+      const dz = q.z * Z_PX + 3;
+      ctx.strokeStyle = 'rgba(0,0,0,0.38)';
+      ctx.lineWidth = w * 1.15;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay + dz);
+      ctx.lineTo(bx, by + dz);
+      ctx.stroke();
+      // the tube
+      const gr = ctx.createLinearGradient(ax + (nx * w) / 2, ay + (ny * w) / 2, ax - (nx * w) / 2, ay - (ny * w) / 2);
+      gr.addColorStop(0, '#9c9188');
+      gr.addColorStop(0.3, '#6e655c');
+      gr.addColorStop(0.7, '#3a332e');
+      gr.addColorStop(1, '#7a3a14'); // the lava's glow under it
+      ctx.strokeStyle = gr;
+      ctx.lineWidth = w;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.stroke();
+      // the seam rings
+      const wl = Math.hypot(q.x1 - q.x0, q.y1 - q.y0) || 1;
+      const S2 = worldToScreen(q.x0 + ((q.x1 - q.x0) / wl) * 2, q.y0 + ((q.y1 - q.y0) / wl) * 2, q.z); // two metres along the pipe
+      const stepPx = Math.max(8, Math.hypot(S2.x - A.x, S2.y - A.y));
+      const nRings = Math.floor(len / stepPx);
+      ctx.lineCap = 'butt';
+      for (let i = 1; i <= nRings; i++) {
+        const cx = ax + ux * stepPx * i;
+        const cy = ay + uy * stepPx * i;
+        ctx.strokeStyle = 'rgba(20,14,10,0.55)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx + (nx * w) / 2, cy + (ny * w) / 2);
+        ctx.lineTo(cx - (nx * w) / 2, cy - (ny * w) / 2);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(200,190,180,0.35)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx + (nx * w) / 2 + ux * 2, cy + (ny * w) / 2 + uy * 2);
+        ctx.lineTo(cx - (nx * w) / 2 + ux * 2, cy - (ny * w) / 2 + uy * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  /** The cables the duellists hang from (duel.ropes: an anchor high above, a unit at the end), sagging a little. */
+  drawRopes(ctx, cam) {
+    for (const r of this.game.duel.ropes) {
+      const u = r.u;
+      if (u.hidden) continue;
+      const A = worldToScreen(r.ax, r.ay, r.az);
+      const B = worldToScreen(u.x, u.y, u.z + (r.hand ?? 1.3));
+      const ax = A.x - cam.x;
+      const ay = A.y - cam.y;
+      const bx = B.x - cam.x;
+      const by = B.y - cam.y;
+      const mx = (ax + bx) / 2 + (r.sag || 0);
+      const my = (ay + by) / 2 + 5;
+      ctx.save();
+      ctx.lineCap = 'round';
+      for (const [c, w, o] of [['#120e0b', 2.6, 0], ['#7a6854', 1, -0.8]]) {
+        ctx.strokeStyle = c;
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        ctx.moveTo(ax + o, ay);
+        ctx.quadraticCurveTo(mx + o, my, bx + o, by);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
   drawGroundMarkers(ctx, cam) {
     const g = this.game;
     if (g.uiHidden) return; // (F1: all UI off)
@@ -1000,6 +1100,7 @@ export class Renderer {
       ctx.restore();
     };
     const p = g.player;
+    if (g.cinema) return; // a scene: no rings, no marks (the film's frame)
     if (!p.dead) ell(p.x, p.y, 13, '#9fdcff', 0.45);
     for (const u of g.activeUnits) {
       if (u.dead || u === p) continue;

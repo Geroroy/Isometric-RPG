@@ -72,6 +72,7 @@ export class Dooku extends Unit {
     const d = this.duel;
     const p = g.player;
     if (this.dead) return;
+    if (this.composure < 0) this.composure = 0;
     if (this.composure < 100 && g.time - this.lastHurtT > 1.5) this.composure = Math.min(100, this.composure + dt * 10);
     if (d.locked || p.dead) {
       if (this.state !== 'lock') this.setAnim('idle');
@@ -654,6 +655,7 @@ export class Duel {
     if (this.over) return;
     if (!this.cine) this.stats.t += dt;
     if (this.lock) this.updateLock(dt);
+    if (p.composure < 0) p.composure = 0;
     if (p.composure < 100 && g.time - (p.composureT || 0) > 1.6 && !p.blocking) p.composure = Math.min(100, p.composure + dt * 14);
 
     this.phases(dk.hp / dk.maxHp);

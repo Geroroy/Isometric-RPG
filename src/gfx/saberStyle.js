@@ -309,6 +309,9 @@ export function drawBlade(ctx, x1, y1, x2, y2, pal, k, time, ign = null) {
 export function record(hist, bx, by, tx, ty, now) {
   const L = hist[hist.length - 1];
   if (L && L.bx === bx && L.by === by && L.tx === tx && L.ty === ty) return;
+  // the hilt jumped (a cutscene slid the body, a knockback, a teleport): a cut, not a sweep —
+  // otherwise the band between the two poses would be drawn as one huge swing
+  if (L && Math.hypot(bx - L.bx, by - L.by) > 18) hist.length = 0;
   hist.push({ bx, by, tx, ty, t: now });
   while (hist.length > 8) hist.shift();
 }

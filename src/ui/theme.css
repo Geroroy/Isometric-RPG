@@ -214,10 +214,15 @@
   color: var(--c-chrome);
 }
 .gauge b {
-  right: 8px;
+  right: 6px;
+  padding: 0 4px;
+  border-radius: 4px;
   font-family: var(--font-tech);
   font-size: 11px;
   letter-spacing: 0.04em;
+  /* a dark backing: the number reads on the bright fill too (a full green bar swallowed it) */
+  background: rgba(8, 12, 22, 0.62);
+  text-shadow: 0 0 2px #000, 0 0 4px #000, 1px 1px 0 #000;
 }
 .cn-sub {
   gap: 8px;

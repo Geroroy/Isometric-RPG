@@ -201,7 +201,7 @@ async function boot() {
   game.on('jukebox', () => setTimeout(() => hud.toggle('juke', true), 0)); // after the dialogue closes
   music.onUnlock = (url) => {
     const c = music.catalog.find((x) => x.url === url);
-    if (c && !document.body.classList.contains('title')) hud.log(`♪ 칸티나 주크박스에 추가: ${c.title}`, 'gold');
+    if (c && !game.duel && !document.body.classList.contains('title')) hud.log(`♪ 칸티나 주크박스에 추가: ${c.title}`, 'gold');
   };
   const wake = () => {
     audio.unlock();

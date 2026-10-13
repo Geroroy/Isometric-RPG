@@ -599,6 +599,15 @@ export function setMustafarMap(m) {
   MUSTAFAR_MAP = m;
 }
 
+/** Distance from (x, y) to the segment q (x0, y0 – x1, y1). */
+export function segDist(x, y, q) {
+  const dx = q.x1 - q.x0;
+  const dy = q.y1 - q.y0;
+  const L = dx * dx + dy * dy;
+  const k = L ? clamp(((x - q.x0) * dx + (y - q.y0) * dy) / L, 0, 1) : 0;
+  return Math.hypot(x - (q.x0 + dx * k), y - (q.y0 + dy * k));
+}
+
 export class MustafarArena extends World {
   /** The map laid out from its file (public/maps/mustafar.json: MustafarArena.toMap), in world coordinates. */
   generate() {
@@ -608,6 +617,8 @@ export class MustafarArena extends World {
     this.ambient = [...m.ambient];
     this.grade = m.grade; // post.js colour grade
     this.floats = []; // moving decks on the lava river: { x, y, r } (the duel's)
+    this.strips = []; // walkable lines over the lava: { x0, y0, x1, y1, r } (a service pipe, the fallen arm adrift)
+    this.pipes = []; // service pipes drawn over the lava: { x0, y0, x1, y1, z, r } (renderer.js drawPipes)
     this.roadSegs = [];
     this.spawn = { ...m.spawn };
     this.pois = m.pois.map((q) => ({ ...q }));
@@ -790,9 +801,10 @@ export class MustafarArena extends World {
     };
   }
 
-  /** The river's moving decks are walkable wherever they are. */
+  /** The river's moving decks, and the strips (a pipe, the arm adrift), are walkable wherever they are. */
   isBlocked(x, y) {
     for (const f of this.floats) if (dist(x, y, f.x, f.y) <= f.r) return false;
+    for (const q of this.strips) if (segDist(x, y, q) <= q.r) return false;
     return super.isBlocked(x, y);
   }
 }

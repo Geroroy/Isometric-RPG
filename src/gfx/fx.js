@@ -75,6 +75,7 @@ export class Effects {
     this.scorches = []; // blaster marks on walls (depth-sorted with the walls)
     this.ripples = []; // Force: a refraction ring that bends the picture behind it
     this.shakeAmt = 0;
+    this.bombs = []; // lava bombs in flight (lavaBomb)
   }
 
   update(dt) {
@@ -97,6 +98,21 @@ export class Effects {
       }
     }
     this.parts = this.parts.filter((p) => p.t < p.life);
+    for (const b of this.bombs) {
+      b.t += dt;
+      const k = Math.min(1, b.t / b.dur);
+      b.x = b.x0 + (b.x1 - b.x0) * k;
+      b.y = b.y0 + (b.y1 - b.y0) * k;
+      b.z = 0.3 + b.h * 4 * k * (1 - k);
+      if (Math.random() < 0.8) this.parts.push({ kind: 'fire', x: b.x, y: b.y, z: b.z, vx: rand(-0.6, 0.6), vy: rand(-0.6, 0.6), vz: rand(-0.5, 1), grav: 3, t: 0, life: rand(0.2, 0.5), add: true, size: rand(1.5, 2.5) });
+      if (k >= 1 && !b.done) {
+        b.done = true;
+        this.lavaSplash(b.x1, b.y1, 1.4);
+        this.light(b.x1, b.y1, 0.3, [255, 140, 50], 110, 0.8);
+        this.shake(3);
+      }
+    }
+    this.bombs = this.bombs.filter((b) => !b.done);
     for (const arr of [this.waves, this.texts, this.bolts, this.cones, this.lights, this.flashes, this.scorches, this.ripples, this.saberClashes]) for (const w of arr) w.t += dt;
     if (this.saberClashes.length) this.saberClashes = this.saberClashes.filter((w) => w.t < w.life);
     this.flashes = this.flashes.filter((w) => w.t < w.life);
@@ -202,6 +218,18 @@ export class Effects {
       this.parts.push({ kind: 'fire', x: x + rand(-0.25, 0.25) * size, y: y + rand(-0.25, 0.25) * size, z, vx: rand(-0.2, 0.2), vy: rand(-0.2, 0.2), vz: rand(1.2, 2.6), grav: -1.5, t: 0, life: rand(0.3, 0.7), add: true, size: rand(1.5, 3) * size });
     }
     if (Math.random() < 0.5) this.smoke(x, y, z + 0.6, 1, '40,30,26');
+  }
+
+  /**
+   * A lava bomb: a glowing gob thrown out of the river, arcing from (x0, y0) to land at (x1, y1) after
+   * `dur` seconds, embers streaming off it, the landing a splash. Returns the bomb (`done` once it lands:
+   * the duel reads it to burn whoever stands there); a warning ring marks the spot on the way.
+   */
+  lavaBomb(x0, y0, x1, y1, dur = 1.5, h = 5) {
+    const b = { x0, y0, x1, y1, dur, h, t: 0, x: x0, y: y0, z: 0.3, done: false };
+    this.bombs.push(b);
+    this.ring(x1, y1, 0.7, '#ff8a30', dur);
+    return b;
   }
 
   /** A gob of lava landing: a splash of embers and a glow. */
@@ -336,6 +364,20 @@ export class Effects {
       }
     }
     ctx.globalAlpha = 1;
+    for (const b of this.bombs) {
+      // the gob: a white-hot core in an orange glow
+      const s = worldToScreen(b.x, b.y, b.z);
+      const sx = Math.round(s.x - cam.x);
+      const sy = Math.round(s.y - cam.y);
+      const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, 9);
+      g.addColorStop(0, 'rgba(255,246,200,1)');
+      g.addColorStop(0.35, 'rgba(255,150,50,0.9)');
+      g.addColorStop(1, 'rgba(255,80,20,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 9, 0, Math.PI * 2);
+      ctx.fill();
+    }
     for (const f of this.flashes) {
       const k = f.t / f.life;
       const s = worldToScreen(f.x, f.y, f.z);

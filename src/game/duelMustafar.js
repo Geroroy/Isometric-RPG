@@ -18,15 +18,22 @@
 //   2:28      Anakin's cut opens the shield generator; the alarm; outside
 //   2:38      the balcony catwalk over the lava falls
 //   3:29      the shields fail — lava rains onto the catwalk (a hazard)
-//   3:54      the catwalk gives way; cables; the collector arm
-//   4:35      the arm
+//   3:54      the catwalk gives way; hanging from the cables over the lava
+//   4:12      down onto a service pipe: inching along it, blade to blade
+//             (a mining droid hovers by)
+//   4:28      onto the collector arm; lava bombs fall round them (a hazard)
 //   5:11      "I have failed you, Anakin." … "Then you are lost!"
 //   5:26      the arm again; the blades bind
-//   5:51      "This is the end for you, my master." The tower falls and the
-//             arm with it; Obi-Wan takes the repulsor platform, Anakin the
-//             panning droid
-//   6:15      the lava river, on the moving decks
-//   6:29      the bank: the high ground (A Path I Can't Follow, reprised)
+//   5:48      "This is the end for you, my master." The tower falls and the
+//             arm with it — into the river; the fight goes on aboard the arm
+//             adrift
+//   6:13      the arm sinks: Obi-Wan leaps to the repulsor platform, Anakin
+//             to the panning droid, then across onto the platform — the two
+//             clash on one deck
+//   6:28      the bank: the high ground (A Path I Can't Follow, reprised)
+//
+// (the film's beats, after the visual guide's Mustafar duel spread:
+// reference/mustafar_set/mustafar_duel_visual_guide.jpg)
 import { Dooku, Duel, Extra } from './duel.js';
 import { Unit } from './units.js';
 import { Cinema } from './cinema.js';
@@ -35,30 +42,36 @@ import { dist, rand } from '../core/math.js';
 import { HITFEEL, applyFeel } from './hitfeel.js';
 
 // the sets the fight passes through, in order, with the mark on Obi-Wan's bar
-// each one ends at (the film moves on at the next beat whatever the player did)
-// `exit`: the beat that carries the fight out of the set. Driving Obi-Wan down to the
-// set's mark plays it at once (the film's music jumps ahead to it); otherwise the music
-// gets there in its own time.
+// each one ends at (the film moves on at the next beat whatever the player did).
+// Driving Obi-Wan down to the set's mark plays the next beat at once (the film's
+// music jumps ahead to it) — the beats inside a set too (the lava rain, the forced
+// bind), so nothing of the film is skipped; otherwise the music gets there in its
+// own time. `footing`: how fast one walks here (a pipe over the lava: inching).
 const SETS = [
-  { key: 'deck', t: 0, floor: 0.92, place: '착륙장', exit: 'door' },
-  { key: 'corridor', t: 40, floor: 0.84, place: '입구 복도', exit: 'hall' },
-  { key: 'hall', t: 66, floor: 0.76, place: '분리주의 회의실', exit: 'push' },
-  { key: 'control', t: 93, floor: 0.64, place: '제어실', exit: 'console' },
-  { key: 'balcony', t: 158, floor: 0.5, place: '외부 발코니', exit: 'collapse' },
-  { key: 'arm', t: 275, floor: 0.4, place: '집하기 팔', exit: 'failed' },
-  { key: 'arm2', t: 326, floor: 0.3, place: '집하기 팔', exit: 'end' },
-  { key: 'river', t: 375, floor: 0.22, place: '용암 강', exit: 'ending' },
+  { key: 'deck', t: 0, floor: 0.92, place: '착륙장' },
+  { key: 'corridor', t: 40, floor: 0.84, place: '입구 복도' },
+  { key: 'hall', t: 66, floor: 0.76, place: '분리주의 회의실' },
+  { key: 'control', t: 93, floor: 0.64, place: '제어실' },
+  { key: 'balcony', t: 158, floor: 0.5, place: '외부 발코니' },
+  { key: 'pipe', t: 252, floor: 0.44, place: '배관 위', footing: 0.5 },
+  { key: 'arm', t: 272, floor: 0.4, place: '집하기 팔', bombs: true },
+  { key: 'arm2', t: 326, floor: 0.3, place: '집하기 팔', bombs: true },
+  { key: 'raft', t: 363, floor: 0.26, place: '용암 강 · 떠내려가는 팔', bombs: true },
+  { key: 'river', t: 382, floor: 0.22, place: '용암 강' },
 ];
-const FIGHT_LENGTH = 389; // the ending takes over here
+const FIGHT_LENGTH = 388; // the ending takes over here
 // The fight's music (docs/MUSTAFAR_SCORE.md): film time [start, end) -> a clip (music
 // situation), played from its top at `start`. Each clip runs a little past its end so
 // the crossfade into the next has music under it.
 const SCORE = [
   { sit: 'mustafarA', start: 0, end: 231 }, // Anakin vs. Obi-Wan 0:00– : the duel begins, through the shield blast
-  { sit: 'mustafarB', start: 231, end: 311 }, // Battle of the Heroes 0:00– : the catwalk falls, the cables, the arm
-  { sit: 'mustafarC', start: 311, end: 351 }, // Battle of the Heroes 3:04– : "I have failed you", the bind
-  { sit: 'mustafarD', start: 351, end: FIGHT_LENGTH + 2 }, // Battle of the Heroes 2:30– : the tower, the river
+  { sit: 'mustafarB', start: 231, end: 311 }, // Battle of the Heroes 0:00– : the catwalk falls, the cables, the pipe, the arm
+  { sit: 'mustafarC', start: 311, end: 348 }, // Battle of the Heroes 3:04– : "I have failed you", the bind
+  { sit: 'mustafarD', start: 348, end: FIGHT_LENGTH + 2 }, // Battle of the Heroes 2:30– : the tower, the arm adrift, the decks
 ];
+// the service pipe the cables drop them onto (world coordinates: over the lava east of the arm, its
+// south end at the rock under the collector tower); the cable hook hangs over it
+const PIPE = { x: 109.5, y0: 30, y1: 44.5, z: 0.35, r: 0.45 };
 const scoreAt = (t) => SCORE.find((c) => t < c.end) || SCORE[SCORE.length - 1];
 
 // ----------------------------------------------------------------------------
@@ -159,11 +172,15 @@ export class MustafarDuel extends Duel {
       { key: 'console', t: 148, run: () => this.sceneConsole() },
       { key: 'blast', t: 209, run: () => this.sceneBlast(), inSet: true },
       { key: 'collapse', t: 234, run: () => this.sceneCollapse() },
+      { key: 'ontoArm', t: 268, run: () => this.sceneOntoArm() },
       { key: 'failed', t: 311, run: () => this.sceneFailed() },
       { key: 'lock', t: 340, run: () => !this.lock && this.startLock(true), inSet: true },
-      { key: 'end', t: 351, run: () => this.sceneEnd() },
+      { key: 'end', t: 348, run: () => this.sceneEnd() },
+      { key: 'decks', t: 373, run: () => this.sceneDecks() },
       { key: 'ending', t: FIGHT_LENGTH, run: () => this.ending() },
     ];
+    this.bombs = []; // lava bombs in flight (fx.lavaBomb), burning whoever they land on
+    this.ropes = null; // the cables (renderer.js drawRopes) while they hang
   }
 
   setup() {
@@ -174,16 +191,32 @@ export class MustafarDuel extends Duel {
     p.saberLit = false;
     p.x = D.x - 0.8;
     p.y = D.y - 1.5;
-    const ob = (this.foe = new ObiWan(g, D.x - 5.2, D.y + 2.6));
+    // Obi-Wan: not there yet — he appears in the door of Padmé's skiff (the opening)
+    const ob = (this.foe = new ObiWan(g, 110.9, 118.9));
     ob.sprite = 'obiwan3Robe';
+    ob.hidden = true;
     const pd = (this.padme = new Extra(g, 'padme', D.x - 4.2, D.y + 0.4));
     p.faceTo(pd.x, pd.y);
     pd.faceTo(p.x, p.y);
     ob.faceTo(p.x, p.y);
     // the river's decks, hidden until the arm falls
     this.droid = new Float(g, 'collector', M.river.x, M.river.y - 2, 1.15);
-    this.platform = new Float(g, 'platform', M.river.x + 1.4, M.river.y + 1, 0.9);
+    this.platform = new Float(g, 'platform', M.river.x + 1.4, M.river.y + 1, 1.15);
+    // the collector arm adrift on the river, after its fall: the map's arm sprite as a deck
+    const arm = g.assets.city && g.assets.city.mfArm_y;
+    if (arm) {
+      g.assets.sprites.armRaft = { dirs: 1, anims: { idle: { frames: 1, fps: 1, loop: true, data: [[arm.body]] } }, markers: [] };
+      this.raft = new Float(g, 'armRaft', M.river.x, M.river.y - 10, 1.4);
+      this.raft.noShadow = true;
+      this.raft.depthBias = -40; // under everyone on the river
+      this.raft.half = 10.5; // its half length, along y
+    }
     g.units.push(ob, pd, this.droid, this.platform);
+    if (this.raft) g.units.push(this.raft);
+    // the service pipe (the cables drop them onto it): drawn over the lava, walkable, a little above it
+    g.world.pipes.push({ x0: PIPE.x, y0: PIPE.y0 - 1.5, x1: PIPE.x, y1: PIPE.y1 + 1.2, z: PIPE.z, r: PIPE.r });
+    g.world.strips.push({ x0: PIPE.x, y0: PIPE.y0, x1: PIPE.x, y1: PIPE.y1, r: PIPE.r });
+    g.world.surfaces.push({ x0: PIPE.x - 0.6, y0: PIPE.y0 - 1, x1: PIPE.x + 0.6, y1: PIPE.y1 + 1, z: PIPE.z });
   }
 
   /** Music: the cutscene's track, else the fight's clip for the film clock. */
@@ -250,7 +283,9 @@ export class MustafarDuel extends Duel {
       { t: 3.6, do: () => this.pose(p, 'choke') },
       { t: 3.9, do: () => pd.setAnim('choked') },
       say(4.6, 'padme', '아나킨…!', 1.6),
-      { t: 6.2, cam: { ...mid(p, ob), dur: 1.4 } },
+      // Obi-Wan appears in the skiff's door: a cut to him, then back to the two of them
+      { t: 5.4, do: () => ((ob.hidden = false), ob.faceTo(p.x, p.y), ob.setAnim('idle', 1, true)), cam: { x: ob.x + 0.4, y: ob.y - 0.2, zoom: 1.7, dur: 0 } },
+      { t: 6.2, cam: { ...mid(p, ob), zoom: 1.5, dur: 1.4 } },
       say(6.8, 'obiwan', '그녀를 놔줘, 아나킨.', 1.6),
       say(8.5, 'obiwan', '놔주라고!', 1.2),
       { t: 10.2, do: () => (p.setAnim('idle'), pd.setAnim('collapse', 1, true)) },
@@ -335,7 +370,10 @@ export class MustafarDuel extends Duel {
     // the film moves on: whatever the player managed, Obi-Wan is where the previous set left him
     if (prev) ob.hp = Math.min(ob.hp, Math.max(1, prev.floor * ob.maxHp));
     this.floor = st.floor;
-    this.phase = i >= 5 ? 3 : i >= 3 ? 2 : 1; // Obi-Wan presses harder as the film goes on
+    this.phase = i >= 6 ? 3 : i >= 3 ? 2 : 1; // Obi-Wan presses harder as the film goes on
+    this.footing = st.footing || 0; // (a pipe over the lava: inching along)
+    this.bombsOn = !!st.bombs; // (the arm: lava bombs out of the river)
+    this.bombT = 2.4;
     this.card(st.place);
   }
 
@@ -368,7 +406,69 @@ export class MustafarDuel extends Duel {
     super.update(dt);
     if (this.over) return;
     if (this.rain && !this.game.cinema) this.updateRain(dt);
+    if (this.footing && !this.game.cinema) this.balance();
+    if (this.onRaft) this.updateRaft(dt);
     if (this.onRiver) this.updateRiver(dt);
+    this.updateBombs(dt);
+  }
+
+  /** On the pipe: both keep to its line (a step sideways is a step into the lava), within its ends. */
+  balance() {
+    for (const u of [this.game.player, this.foe]) {
+      if (u.airborne) continue;
+      u.x += (PIPE.x - u.x) * 0.5;
+      u.y = Math.max(PIPE.y0 + 0.4, Math.min(PIPE.y1 - 0.2, u.y));
+      u.kx = 0;
+      u.ky *= 0.6;
+    }
+  }
+
+  /**
+   * Lava bombs (the film: the erupting river throws gobs of lava round the duellists on the arm). One every
+   * few seconds, launched out of the river east of the arm, landing near them on the deck they fight on: a
+   * warning ring, then the splash burns whoever stands in it (Obi-Wan's guard takes it as a blow).
+   */
+  updateBombs(dt) {
+    const g = this.game;
+    const p = g.player;
+    const ob = this.foe;
+    for (const b of this.bombs) {
+      if (!b.done) continue;
+      for (const u of [p, ob]) {
+        if (u.dead || dist(u.x, u.y, b.x1, b.y1) > 1.0) continue;
+        if (u === p) {
+          g.damage(null, u, 14, { type: 'lava' });
+          u.stun = Math.max(u.stun, 0.35);
+          u.knock(Math.atan2(u.y - b.y1, u.x - b.x1), 2.5);
+          u.setAnim('hurt', 0.8, true);
+          g.fx.text(u.x, u.y, '용암!', '#ff8a50', 0.9);
+        } else {
+          g.damage(null, u, 14, { type: 'lava' });
+          if (ob.state !== 'broken') ob.set('stagger', 0.6);
+        }
+      }
+    }
+    this.bombs = this.bombs.filter((b) => !b.done);
+    if (!this.bombsOn || g.cinema || this.lock) return;
+    this.bombT -= dt;
+    if (this.bombT > 0) return;
+    this.bombT = rand(2.4, 4.2);
+    // where it lands: on the deck, near one of them
+    const near = Math.random() < 0.6 ? ob : p;
+    let x1;
+    let y1;
+    if (this.onRaft && this.raft) {
+      x1 = this.raft.x + rand(-0.9, 0.9);
+      y1 = Math.max(this.raft.y - this.raft.half + 1, Math.min(this.raft.y + this.raft.half - 1, near.y + rand(-2.5, 2.5)));
+    } else {
+      const A = M.arm;
+      x1 = A.x + rand(-1.1, 1.1);
+      y1 = Math.max(A.y - A.hh + 1, Math.min(A.y + A.hh - 1, near.y + rand(-2.5, 2.5)));
+    }
+    // thrown out of the lava to the east (the river side), in a high arc
+    const b = g.fx.lavaBomb(x1 + rand(5, 8), y1 + rand(-3, 3), x1, y1, rand(1.4, 1.8), rand(4, 6));
+    this.bombs.push(b);
+    g.audio.play('explode', { x: x1 + 6, y: y1 }, { volume: 0.25 });
   }
 
   /**
@@ -420,14 +520,14 @@ export class MustafarDuel extends Duel {
     if (!this.advanceAt) this.advanceAt = g.time + 0.7; // a beat to see him reel, then the next scene
   }
 
-  /** Play the scene that leaves the current set now: skip what lies between, jump the film's music there. */
+  /**
+   * Play the film's next beat now (the one inside the set when there is one — the lava rain, the forced
+   * bind — then the one that leaves it): the film's music jumps ahead to it.
+   */
   advance() {
-    const st = SETS[this.setI];
-    if (!st) return;
-    const j = this.beats.findIndex((b, k) => k >= this.beatI && b.key === st.exit);
-    if (j < 0) return;
-    this.beatI = j; // the in-set beats on the way (the lava rain, the forced bind) are passed over
-    this.seekFilm(this.beats[j].t);
+    const b = this.beats[this.beatI];
+    if (!b) return;
+    this.seekFilm(b.t);
   }
 
   /** Move the film clock forward to `t`; the music follows it there (clock). */
@@ -680,14 +780,14 @@ export class MustafarDuel extends Duel {
     this.drops = this.drops.filter((d) => !d.done);
   }
 
-  // 3:54 — the catwalk gives way; hanging from the arm's cables; the arm
+  // 3:54 — the catwalk gives way; hanging from the cables over the lava; down onto a service pipe
   sceneCollapse() {
     const g = this.game;
     const p = g.player;
     const ob = this.foe;
-    const A = M.arm;
-    const cx = A.x - 0.95; // the cables' line, along the arm
-    const cab = { p: 44, ob: 36 };
+    const cx = PIPE.x + 0.2; // the cables hang over the pipe
+    const cab = { p: 40.5, ob: 33.5 };
+    const hook = { ax: cx, ay: 37, az: 8.5 }; // the crane hook high above: both cables come down from it
     const cues = [
       { t: 0, do: () => (g.fx.shake(10), g.audio.play('explode', p), p.setAnim('hurt', 0.6, true), ob.setAnim('hurt', 0.6, true)), cam: { follow: p, zoom: 1.2, dur: 0.4 } },
       { t: 0.6, do: (c) => (c.onFrame = () => (g.fx.shake(4), Math.random() < 0.6 && g.fx.sparks(p.x + rand(-2, 2), p.y + rand(-3, 3), 0.3, '#ffb040', 3, 4)), g.fx.text(p.x, p.y, '발코니가 무너진다!', '#ff9a50', 1.2, 2.6)) },
@@ -714,7 +814,8 @@ export class MustafarDuel extends Duel {
           this.pose(p, 'hang', 1);
           this.pose(ob, 'hang', 1);
           p.kx = p.ky = ob.kx = ob.ky = 0;
-          this.card('집하기 팔');
+          this.card('용암 위의 케이블');
+          this.ropes = [{ ...hook, u: p, sag: 4 }, { ...hook, u: ob, sag: -4 }];
           c.onFrame = () => {
             const k = c.t - 4.6;
             // the cables swing them towards each other and apart
@@ -729,15 +830,37 @@ export class MustafarDuel extends Duel {
       { t: 4.7, fade: 0, fadeDur: 1.0 },
       ...[6.8, 9.0, 11.3, 13.6].map((t) => ({ t, do: () => (g.clash(cx, (p.y + ob.y) / 2, 1.9, 12), g.audio.play('clash', ob), (p.clashFlash = ob.clashFlash = 0.15)) })),
       { t: 15.6, do: (c) => (c.onFrame = null) },
-      // they drop onto the arm, Obi-Wan first
-      { t: 16.0, do: (c) => (ob.setAnim('leap', 1, true), c.move(ob, A.x + 0.2, ob.y - 1.2, 0.6), (ob.z = 0), (ob.airborne = false)) },
-      { t: 16.6, do: () => (ob.setAnim('idle', 1, true), g.fx.dust(ob.x, ob.y, 5)) },
-      { t: 17.4, do: (c) => (p.setAnim('leap', 1, true), c.move(p, A.x + 0.2, p.y + 1.2, 0.6), (p.z = 0), (p.airborne = false)), cam: { follow: p, dur: 1.0 } },
-      { t: 18.0, do: () => (p.setAnim('idle', 1, true), g.fx.dust(p.x, p.y, 5), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
+      // they let go and drop onto the service pipe below, Obi-Wan first — then it is a balancing act
+      { t: 16.0, do: (c) => ((this.ropes = this.ropes.filter((r) => r.u !== ob)), ob.setAnim('leap', 1, true), c.move(ob, PIPE.x, ob.y + 1.0, 0.6), (ob.z = PIPE.z), (ob.airborne = false)) },
+      { t: 16.6, do: () => (ob.setAnim('idle', 1, true), g.fx.sparks(ob.x, ob.y, PIPE.z, '#c8c0b8', 4, 2), this.card('배관 위')) },
+      { t: 17.4, do: (c) => ((this.ropes = null), p.setAnim('leap', 1, true), c.move(p, PIPE.x, p.y - 1.0, 0.6), (p.z = PIPE.z), (p.airborne = false)), cam: { follow: p, dur: 1.0 } },
+      { t: 18.0, do: () => (p.setAnim('idle', 1, true), g.fx.sparks(p.x, p.y, PIPE.z, '#c8c0b8', 4, 2), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
     ];
     this.scene(234, 18.4, cues).then(() => {
-      p.z = ob.z = 0;
+      this.ropes = null;
+      p.z = ob.z = PIPE.z;
       this.enterSet(5);
+    });
+  }
+
+  // 4:28 — to the pipe's end, and across onto the collector arm (the lava bombs begin)
+  sceneOntoArm() {
+    const g = this.game;
+    const p = g.player;
+    const ob = this.foe;
+    const A = M.arm;
+    const end = PIPE.y1 - 0.3;
+    const cues = [
+      { t: 0, do: (c) => this.travel(c, { x: PIPE.x, y: end - 2.0 }, { x: PIPE.x, y: end }, 1.6), cam: { follow: p, zoom: 1.3, dur: 0.8 } },
+      { t: 1.0, do: (c) => this.clash(c) },
+      { t: 2.0, do: (c) => (ob.setAnim('leap', 1, true), g.audio.play('leap', ob), c.move(ob, A.x + 0.4, A.y + A.hh - 4.5, 0.7)) },
+      { t: 2.7, do: () => (ob.setAnim('idle', 1, true), (ob.z = 0), g.fx.dust(ob.x, ob.y, 5), ob.faceTo(p.x, p.y), this.card('집하기 팔')) },
+      { t: 3.0, do: (c) => (p.setAnim('leap', 1, true), g.audio.play('leap', p), c.move(p, A.x + 0.4, A.y + A.hh - 7.5, 0.7)), cam: { follow: p, dur: 0.8 } },
+      { t: 3.7, do: () => (p.setAnim('idle', 1, true), (p.z = 0), g.fx.dust(p.x, p.y, 5), p.faceTo(ob.x, ob.y)) },
+    ];
+    this.scene(268, 4.0, cues).then(() => {
+      p.z = ob.z = 0;
+      this.enterSet(6);
     });
   }
 
@@ -760,10 +883,10 @@ export class MustafarDuel extends Duel {
       { t: 12.1, do: () => (p.setAnim('idle'), this.pose(ob, 'talk', 1)) },
       { t: 14.4, do: () => (ob.setAnim('idle'), p.setAnim('idle')) },
     ];
-    this.scene(311, 14.8, cues).then(() => this.enterSet(6));
+    this.scene(311, 14.8, cues).then(() => this.enterSet(7));
   }
 
-  // 5:51 — "This is the end for you, my master." The tower falls, and the arm.
+  // 5:48 — "This is the end for you, my master." A lava bomb takes the tower; the arm comes down into the river.
   sceneEnd() {
     const g = this.game;
     const p = g.player;
@@ -773,6 +896,8 @@ export class MustafarDuel extends Duel {
     const w = g.world;
     this.lock = null;
     g.emit('lock', false);
+    this.bombsOn = false;
+    const armProp = w.props.find((q) => q.sheet === 'mfArm_y' && Math.abs(q.x - A.x) < 1.5);
     const cues = [
       { t: 0, do: () => (p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y), this.pose(p, 'talk', 1), ob.setAnim('idle')), cam: { follow: p, zoom: 1.4, dur: 0.8 } },
       say(0.8, 'anakin', '이걸로 끝이에요, 마스터.', 2.6),
@@ -780,60 +905,170 @@ export class MustafarDuel extends Duel {
       { t: 3.8, do: (c) => this.clash(c, p) },
       { t: 4.8, do: (c) => this.clash(c) },
       { t: 5.6, do: () => (p.setAnim('idle'), ob.setAnim('idle')) },
-      // the collector tower at the arm's end groans and goes
-      { t: 6.6, do: (c) => (g.fx.shake(6), g.audio.play('explode', p), (c.onFrame = () => (g.fx.shake(3), Math.random() < 0.5 && g.fx.sparks(T.x + rand(-1.5, 1.5), T.y + rand(-1.5, 1.5), rand(0.5, 6), '#ffb040', 3, 4)))), cam: { x: T.x, y: T.y - 3, zoom: 1.1, dur: 1.2 } },
-      { t: 8.8, do: () => (g.fx.explosion(T.x, T.y, 2.4), g.fx.explosion(T.x + 1, T.y - 1, 1.4), w.tower && (w.tower.hidden = true), g.audio.play('explode', p), g.fx.text(T.x, T.y - 2, '집하기 탑이 무너진다!', '#ff9a50', 1.2, 2.6)) },
+      // a "cool lava" bomb out of the river strikes the collector tower at the arm's end: it groans and goes
+      { t: 6.0, do: () => g.fx.lavaBomb(T.x + 7, T.y - 3, T.x + 0.5, T.y - 1.5, 1.4, 6), cam: { x: T.x, y: T.y - 3, zoom: 1.1, dur: 1.2 } },
+      { t: 7.4, do: (c) => (g.fx.shake(6), g.audio.play('explode', p), (c.onFrame = () => (g.fx.shake(3), Math.random() < 0.5 && g.fx.sparks(T.x + rand(-1.5, 1.5), T.y + rand(-1.5, 1.5), rand(0.5, 6), '#ffb040', 3, 4)))) },
+      { t: 8.8, do: () => (g.fx.explosion(T.x, T.y, 2.4), g.fx.explosion(T.x + 1, T.y - 1, 1.4), g.audio.play('explode', p), g.fx.text(T.x, T.y - 2, '집하기 탑이 무너진다!', '#ff9a50', 1.2, 2.6)) },
       { t: 9.4, do: (c) => (g.fx.shake(12), p.setAnim('hurt', 0.5, true), ob.setAnim('hurt', 0.5, true), c.move(p, A.x + 0.4, Math.min(A.y + A.hh - 1, p.y + 3), 2.2), c.move(ob, A.x - 0.3, Math.min(A.y + A.hh - 2, ob.y + 3), 2.2)), cam: { follow: p, dur: 1.0 } },
-      { t: 11.6, do: () => (p.setAnim('leap', 1, true), ob.setAnim('leap', 1, true)) },
+      { t: 11.6, do: () => (p.setAnim('block', 1, true), ob.setAnim('block', 1, true), g.fx.text(p.x, p.y, '팔이 기운다!', '#ff9a50', 1.2, 2.6)) },
       { t: 12.2, fade: 1, fadeDur: 0.6 },
-      // the arm comes down into the lava; the two decks
+      // the arm comes down into the lava river — and floats: the fight goes on aboard it
       {
         t: 13.4,
         do: (c) => {
           c.onFrame = null;
-          this.river();
-          this.onRiver = true;
-          this.card('용암 강');
+          if (armProp) armProp.hidden = true;
+          this.raftLaunch();
+          this.card('용암 강 · 떠내려가는 팔');
         },
-        cam: { x: M.river.x + 1, y: M.river.y + 4, zoom: 1.35 },
+        cam: { follow: p, zoom: 1.3 },
       },
       { t: 13.5, fade: 0, fadeDur: 1.0 },
-      { t: 14.2, do: () => (ob.setAnim('leap', 1, true), p.setAnim('leap', 1, true)) },
-      { t: 14.9, do: () => (ob.setAnim('idle', 1, true), p.setAnim('idle', 1, true), g.fx.dust(ob.x, ob.y, 4), g.fx.dust(p.x, p.y, 4)) },
-      { t: 20.0, do: (c) => this.clash(c) },
-      { t: 22.4, do: (c) => this.clash(c, p) },
-      { t: 23.4, do: () => (p.setAnim('idle'), ob.setAnim('idle')) },
+      { t: 13.6, do: () => (g.fx.shake(8), g.audio.play('explode', p), g.fx.lavaSplash(p.x + 1.5, p.y, 2), g.fx.lavaSplash(ob.x - 1.5, ob.y, 2), g.fx.lavaSplash(p.x, p.y + 2.5, 1.5)) },
+      { t: 14.2, do: () => (p.setAnim('idle', 1, true), ob.setAnim('idle', 1, true), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
+      { t: 14.6, do: (c) => this.clash(c, p) },
+      { t: 15.2, do: () => (p.setAnim('idle'), ob.setAnim('idle')) },
     ];
-    this.scene(351, 23.8, cues).then(() => this.enterSet(7));
+    this.scene(348, 15.4, cues).then(() => this.enterSet(8));
   }
 
-  /** The lava river: Obi-Wan on the repulsor platform, Anakin on the panning droid. */
-  river() {
+  /** The fallen arm hits the river and drifts: the raft deck, both duellists aboard. */
+  raftLaunch() {
     const g = this.game;
     const p = g.player;
     const ob = this.foe;
     const w = g.world;
     const R = M.river;
+    const raft = this.raft;
+    this.raftT = 0;
+    this.onRaft = true;
+    if (raft) {
+      raft.hidden = false;
+      raft.alpha = 1;
+      raft.x = R.x - 0.5;
+      raft.y = R.y - 11;
+      raft.z = 0;
+      w.strips.push((this.raftStrip = { x0: raft.x, y0: raft.y - raft.half, x1: raft.x, y1: raft.y + raft.half, r: 1.25 }));
+      this.raftLights = [
+        { x: raft.x, y: raft.y - 5, z: 0.2, r: 255, g: 140, b: 60, rad: 120, flicker: 0.12 },
+        { x: raft.x, y: raft.y + 5, z: 0.2, r: 255, g: 140, b: 60, rad: 120, flicker: 0.12 },
+      ];
+      w.lights.push(...this.raftLights);
+      p.x = raft.x + 0.2;
+      p.y = raft.y + 2.6;
+      ob.x = raft.x - 0.2;
+      ob.y = raft.y - 1.4;
+    } else {
+      // (no arm sprite: the decks straight away)
+      this.river();
+      this.onRiver = true;
+    }
+    p.kx = p.ky = ob.kx = ob.ky = 0;
+    p.z = ob.z = 0;
+    p.airborne = ob.airborne = false;
+    p.faceTo(ob.x, ob.y);
+    ob.faceTo(p.x, p.y);
+    g.updateActive();
+  }
+
+  /** The arm drifts downstream, swaying; its riders go with it and never leave it (the lava is right there). */
+  updateRaft(dt) {
+    const raft = this.raft;
+    if (!raft) return;
+    const g = this.game;
+    const R = M.river;
+    this.raftT += dt;
+    const k = this.raftT;
+    const ox = raft.x;
+    const oy = raft.y;
+    raft.y = Math.min(R.y - 2, R.y - 11 + k * 0.2);
+    raft.x = R.x - 0.5 + Math.sin(k * 0.5) * 0.25;
+    if (this.raftSink) {
+      // going under: it fades into the lava, splashing along its length
+      raft.alpha = Math.max(0, (raft.alpha ?? 1) - dt * 0.45);
+      if (Math.random() < 0.5) g.fx.lavaSplash(raft.x + rand(-1, 1), raft.y + rand(-raft.half, raft.half), 0.8);
+      if (raft.alpha <= 0) {
+        raft.hidden = true;
+        this.onRaft = false;
+        g.world.strips = g.world.strips.filter((q) => q !== this.raftStrip);
+        return;
+      }
+    }
+    const st = this.raftStrip;
+    st.x0 = st.x1 = raft.x;
+    st.y0 = raft.y - raft.half;
+    st.y1 = raft.y + raft.half;
+    for (const u of [g.player, this.foe]) {
+      if (u.deck && u.deck !== raft) continue; // (already leapt to a deck)
+      u.x += raft.x - ox;
+      u.y += raft.y - oy;
+      if (u.airborne) continue;
+      u.x = raft.x + Math.max(-1.1, Math.min(1.1, u.x - raft.x));
+      u.y = raft.y + Math.max(-raft.half + 1, Math.min(raft.half - 1, u.y - raft.y));
+    }
+    if (this.raftLights) {
+      this.raftLights[0].x = this.raftLights[1].x = raft.x;
+      this.raftLights[0].y = raft.y - 5;
+      this.raftLights[1].y = raft.y + 5;
+    }
+  }
+
+  // 6:13 — the arm goes under: Obi-Wan to the repulsor platform, Anakin to the panning droid — and across
+  sceneDecks() {
+    const g = this.game;
+    const p = g.player;
+    const ob = this.foe;
+    const raft = this.raft;
+    this.bombsOn = false;
+    const cues = [
+      { t: 0, do: () => (p.setAnim('idle'), ob.setAnim('idle'), g.fx.shake(6), g.audio.play('explode', p), g.fx.text(p.x, p.y, '팔이 가라앉는다!', '#ff9a50', 1.2, 2.6)), cam: { follow: p, zoom: 1.25, dur: 0.8 } },
+      // the decks come alongside: the repulsor platform on the far side, the panning droid on the near
+      {
+        t: 0.8,
+        do: () => {
+          this.river();
+          this.onRiver = true;
+          if (raft) this.raftSink = true;
+        },
+      },
+      { t: 1.6, do: (c) => (ob.setAnim('leap', 1, true), g.audio.play('leap', ob), (ob.airborne = true), c.move(ob, this.platform.x, this.platform.y, 0.7)) },
+      { t: 2.3, do: () => (ob.setAnim('idle', 1, true), (ob.airborne = false), (ob.deck = this.platform), g.fx.dust(ob.x, ob.y, 4), ob.faceTo(p.x, p.y)) },
+      { t: 2.8, do: (c) => (p.setAnim('leap', 1, true), g.audio.play('leap', p), (p.airborne = true), c.move(p, this.droid.x, this.droid.y, 0.7)), cam: { follow: p, dur: 0.6 } },
+      { t: 3.5, do: () => (p.setAnim('idle', 1, true), (p.airborne = false), (p.deck = this.droid), g.fx.dust(p.x, p.y, 4), p.faceTo(ob.x, ob.y), this.card('용암 강')) },
+      say(4.4, 'obiwan', '…', 0.1),
+      // Anakin will not let him go: across onto the platform, and the two clash on one deck
+      { t: 5.6, do: (c) => (p.setAnim('leap', 1, true), g.audio.play('leap', p), (p.airborne = true), c.move(p, this.platform.x + 0.6, this.platform.y + 0.5, 0.7)), cam: { follow: this.platform, zoom: 1.4, dur: 0.8 } },
+      { t: 6.3, do: () => (p.setAnim('idle', 1, true), (p.airborne = false), (p.deck = this.platform), g.fx.dust(p.x, p.y, 4), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
+      { t: 6.6, do: (c) => this.clash(c, p) },
+      { t: 7.6, do: (c) => this.clash(c) },
+      { t: 8.4, do: () => (p.setAnim('idle'), ob.setAnim('idle')) },
+    ];
+    this.scene(373, 8.8, cues).then(() => {
+      p.z = ob.z = 0;
+      p.deck = ob.deck = this.platform;
+      this.enterSet(9);
+    });
+  }
+
+  /** The lava river's decks come alongside the sinking arm: the repulsor platform, the panning droid. */
+  river() {
+    const g = this.game;
+    const w = g.world;
+    const R = M.river;
+    const raft = this.raft;
     this.riverT = 0;
     this.platform.hidden = this.droid.hidden = false;
-    this.platform.x = R.x + 1.4;
-    this.platform.y = R.y + 1.5;
-    this.droid.x = R.x;
-    this.droid.y = R.y - 1.4;
+    this.platform.x = R.x + 2.2;
+    this.platform.y = raft ? raft.y + 2.4 : R.y + 1.5;
+    this.droid.x = R.x - 1.8;
+    this.droid.y = raft ? raft.y - 0.8 : R.y - 1.4;
+    this.riverY0 = this.platform.y;
     w.floats = [this.platform, this.droid];
     this.floatLights = [
       { x: this.platform.x, y: this.platform.y, z: 0.2, r: 255, g: 140, b: 70, rad: 90, flicker: 0.08 }, // (its lamps glow orange)
       { x: this.droid.x, y: this.droid.y, z: 0.2, r: 255, g: 150, b: 60, rad: 90, flicker: 0.1 },
     ];
     w.lights.push(...this.floatLights);
-    ob.x = this.platform.x;
-    ob.y = this.platform.y;
-    p.x = this.droid.x;
-    p.y = this.droid.y;
-    p.kx = p.ky = ob.kx = ob.ky = 0;
-    p.z = ob.z = 0;
-    p.faceTo(ob.x, ob.y);
-    ob.faceTo(p.x, p.y);
     g.updateActive();
   }
 
@@ -850,11 +1085,12 @@ export class MustafarDuel extends Duel {
     const dx0 = this.droid.x;
     const dy0 = this.droid.y;
     // (downstream is +y: the river runs along y)
-    this.platform.y = Math.min(R.y + 7, R.y + 1.5 + k * 0.22);
-    this.platform.x = R.x + 1.4 + Math.sin(k * 0.7) * 0.2;
-    this.droid.y = this.platform.y - 2.7 - Math.max(0, Math.sin(k * 0.9)) * 0.5;
-    this.droid.x = R.x + Math.cos(k * 0.8) * 0.3;
+    this.platform.y = Math.min(R.y + 7, (this.riverY0 ?? R.y + 1.5) + k * 0.22);
+    this.platform.x = R.x + 2.2 + Math.sin(k * 0.7) * 0.2;
+    this.droid.y = this.platform.y - 3.0 - Math.max(0, Math.sin(k * 0.9)) * 0.5;
+    this.droid.x = R.x - 1.8 + Math.cos(k * 0.8) * 0.3;
     const carry = (u, f, ox, oy) => {
+      if (u.deck !== f || u.airborne) return; // (not aboard this one; mid-leap)
       u.x += f.x - ox;
       u.y += f.y - oy;
       // nobody leaves his deck: the lava is right there
@@ -867,6 +1103,7 @@ export class MustafarDuel extends Duel {
       }
     };
     carry(p, this.droid, dx0, dy0);
+    carry(p, this.platform, px, py);
     carry(ob, this.platform, px, py);
     if (this.floatLights) {
       this.floatLights[0].x = this.platform.x;
@@ -889,6 +1126,11 @@ export class MustafarDuel extends Duel {
     this.onRiver = false;
     const bank = { x: M.bank.x - 2.2, y: this.platform.y + 1.6 }; // where Obi-Wan lands: the slope above the river
     const foot = { x: bank.x - 1.1, y: bank.y - 2.0 }; // where Anakin falls, at the lava's edge below him
+    // the high ground: the bank stands a metre over the river (a raised top: he lands up on it, Anakin rolls
+    // down off it)
+    g.world.surfaces.push({ x0: bank.x - 0.5, y0: bank.y - 6, x1: bank.x + 14, y1: bank.y + 12, z: 1.0 });
+    this.raftSink = false;
+    this.onRaft = false;
     const cues = [
       { t: 0, fade: 1, fadeDur: 0 },
       {
@@ -983,7 +1225,7 @@ export class MustafarDuel extends Duel {
     if (won) {
       const s = this.stats;
       const p = this.game.player;
-      const score = 40 + s.sets * 7 + s.parries * 4 + s.locksWon * 5 - (s.taken / p.maxHp) * 30;
+      const score = 40 + s.sets * 5.5 + s.parries * 4 + s.locksWon * 5 - (s.taken / p.maxHp) * 30;
       this.result.rank = score >= 85 ? 'S' : score >= 70 ? 'A' : score >= 52 ? 'B' : 'C';
     }
   }

@@ -23,6 +23,7 @@ export const UNIT_DEFS = {
   padme: { name: '파드메 아미달라', sprite: 'padme', team: 'rep', hp: 100, radius: 0.3, knockRes: 0 },
   collector: { name: '채굴 드로이드', sprite: 'collector', team: 'civ', hp: 100, radius: 1.2, knockRes: 0 },
   platform: { name: '반중력 플랫폼', sprite: 'platform', team: 'civ', hp: 100, radius: 1.0, knockRes: 0 },
+  armRaft: { name: '집하기 팔', sprite: 'armRaft', team: 'civ', hp: 100, radius: 1.5, knockRes: 0 }, // the fallen arm adrift on the river (duelMustafar.js)
   citizen: { name: '시민', sprite: 'citWorker', team: 'civ', hp: 100, radius: 0.28, knockRes: 0.6 },
   fighter: { name: '제다이 스타파이터', sprite: 'fighter', team: 'rep', hp: 100, radius: 1.2, knockRes: 0 },
   master: { name: '마스터 세렌 베일', sprite: 'master', team: 'rep', hp: 100, radius: 0.32, knockRes: 0 },
@@ -570,6 +571,8 @@ export class Player extends Unit {
   moveSpeed() {
     let s = 4.6 * (1 + (this.buffs.speed ? this.buffs.speed.move : 0));
     if (this.buffs.barrier) s *= 0.75;
+    const d = this.game.duel;
+    if (d && d.footing) s *= d.footing; // a narrow pipe over the lava: inching along it (duelMustafar.js)
     const bio = this.game.world.biomeAt(this.x, this.y);
     if (bio === BIOME.CITY_MUD) s *= 0.72; // the undercity's mud
     else if (bio === BIOME.CITY_SWAMP) s *= 0.6; // its standing water
