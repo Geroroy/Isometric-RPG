@@ -19,7 +19,7 @@
 // walks it alone — the scene, the duel and Obi-Wan held — to try the way, the cover and the lights; P again is back
 // in the editor with everything as it was before (the player, the duel), F2 out of both.
 import { World, MUSTAFAR, MUSTAFAR_SHEETS, mapText } from '../world/worldgen.js';
-import { cityFootprint, inPoly, setCityFootprints } from '../world/cityProps.js';
+import { cityFootprint, cityWall, inPoly, setCityFootprints } from '../world/cityProps.js';
 import { addMirror, MIRROR_SUFFIX } from '../gfx/mustafarFloor.js';
 import { PROPS } from '../gfx/models/props.js';
 import { worldToScreen } from '../core/iso.js';
@@ -149,6 +149,7 @@ export class MapEditor {
           <label>방향 <select class="me-pdir"></select> <kbd>R</kbd></label>
           <label class="me-pvar">변형 <select class="me-pv"></select> <kbd>V</kbd></label>
           <div class="me-row"><label><input class="me-pb" type="checkbox"> 막기 <kbd>B</kbd></label><label><input class="me-pf" type="checkbox"> 바닥형 <kbd>F</kbd></label></div>
+          <div class="me-row me-pclip" title="벽 칸을 문틀·콘솔 끝·모서리에 맞춰 자르기: 왼쪽/오른쪽 기둥 중심에서 안쪽으로 몇 m까지 잘라낼지"><label>자르기 L <input class="me-pcl" type="number" step="0.05" min="0"></label><label>R <input class="me-pcr" type="number" step="0.05" min="0"></label></div>
         </div>
         <div class="me-list"></div>
       </div>
@@ -402,6 +403,20 @@ export class MapEditor {
       if (p && !p.sheet) this.setVariant(+e.target.value);
       done(e);
     };
+    const setClip = () => {
+      const p = this.sel;
+      if (!p) return;
+      const l = Math.max(0, +q('.me-pcl').value || 0);
+      const r = Math.max(0, +q('.me-pcr').value || 0);
+      const was = p.clip || [0, 0];
+      if (l === was[0] && r === was[1]) return;
+      const before = this.snapshot();
+      p.clip = l || r ? [l, r] : undefined;
+      this.resort();
+      this.commit(before);
+    };
+    q('.me-pcl').onchange = setClip;
+    q('.me-pcr').onchange = setClip;
     q('.me-pb').onchange = (e) => (this.sel && !!this.sel.block !== e.target.checked && this.toggleBlock(), done(e));
     q('.me-pf').onchange = (e) => (this.sel && !!this.sel.flat !== e.target.checked && this.toggleFlat(), done(e));
   }
@@ -441,6 +456,11 @@ export class MapEditor {
     if (nv >= 2) pv.value = p.variant;
     q('.me-pb').checked = !!p.block;
     q('.me-pf').checked = !!p.flat;
+    q('.me-pclip').classList.toggle('hidden', !(p.sheet && cityWall(p.sheet)));
+    for (const [s, v] of [['.me-pcl', p.clip ? p.clip[0] : 0], ['.me-pcr', p.clip ? p.clip[1] : 0]]) {
+      const i = q(s);
+      if (force || document.activeElement !== i) i.value = +v.toFixed(3);
+    }
   }
 
   // ------------------------------------------------------------------------------------------------- the world
@@ -633,7 +653,7 @@ export class MapEditor {
     const w = this.world;
     return {
       props: w.props.slice(),
-      ps: w.props.map((p) => ({ x: p.x, y: p.y, angleIdx: p.angleIdx, variant: p.variant, frameIdx: p.frameIdx, block: p.block, flat: p.flat, over: p.over, cut: p.cut, depth: p.depth })),
+      ps: w.props.map((p) => ({ x: p.x, y: p.y, angleIdx: p.angleIdx, variant: p.variant, frameIdx: p.frameIdx, block: p.block, flat: p.flat, over: p.over, cut: p.cut, clip: p.clip, depth: p.depth })),
       lights: w.lights.slice(),
       ls: w.lights.map((l) => ({ x: l.x, y: l.y, z: l.z, r: l.r, g: l.g, b: l.b, rad: l.rad, flicker: l.flicker })),
       homes: new Map([...w.props, ...w.lights].filter((o) => o.home).map((o) => [o, { ...o.home }])),
@@ -730,6 +750,7 @@ export class MapEditor {
       const q = this.world.addSheetProp(twin, p.x, p.y, { noBlock: true, flat: flags.flat });
       q.block = flags.block;
       if (flags.over) q.over = true;
+      if (p.clip) q.clip = [p.clip[1], p.clip[0]]; // (its ends the other way round in the mirrored image)
       if (p.surface) {
         this.turnTop(p.surface, p.x, p.y);
         Object.defineProperty(q, 'surface', { value: p.surface, configurable: true, writable: true });

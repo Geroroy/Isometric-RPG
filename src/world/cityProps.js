@@ -141,7 +141,7 @@ export function setCityFootprints(city) {
   WALLS = Object.fromEntries(
     Object.entries(city)
       .filter(([, v]) => v && v.meta && v.meta.pillars && v.body)
-      .map(([k, v]) => [k, { pillars: v.meta.pillars, half: v.meta.half, along: v.meta.along, w: v.body.w }]),
+      .map(([k, v]) => [k, { pillars: v.meta.pillars, half: v.meta.half, along: v.meta.along, w: v.body.w, ox: v.body.ox, k: v.body.k || 1 }]),
   );
   SIZES = Object.fromEntries(
     Object.entries(city)
@@ -163,7 +163,8 @@ let WALLS = {};
 /**
  * A wall piece's pillars, for joining pieces (tools/sprites/mustafar_set/lowwall.py): `pillars` the columns of its
  * left and right pillars' inner sides (frame px), `half` the pillar centres' distance from its anchor along it (m),
- * `along` its axis, `w` its frame's width; null for any other sprite.
+ * `along` its axis, `w` its frame's width, `ox` its anchor's column, `k` its frame's scale (20 / k frame px a metre
+ * along it: the image's left pillar's centre at ox − half · 20 / k); null for any other sprite.
  */
 export const cityWall = (name) => WALLS[name] || null;
 

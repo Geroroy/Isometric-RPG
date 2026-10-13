@@ -621,6 +621,7 @@ export class MustafarArena extends World {
       p.block = !!e.block;
       if (e.over) p.over = true;
       if (e.cut) p.cut = [...e.cut];
+      if (e.clip) p.clip = [...e.clip]; // (a wall piece cut short: metres off its left and right ends, joinWalls)
       if (e.hidden) p.hidden = true;
       if (e.id) this.named[e.id] = p;
     }
@@ -648,8 +649,10 @@ export class MustafarArena extends World {
    * The room walls' joints: where two pieces' end pillars stand together (within half a metre: two bays of a run,
    * a corner, a pillar pair beside a doorway), the pillar is drawn once — the other piece's trimmed off its frame
    * (`trim`: frame columns off its left and right, renderer.js placeProp). The one kept is that of a piece that
-   * stays while the fight is in its room (no `cut`), else of the piece drawn later (the larger x + y). Worked out
-   * again whenever the walls change (the map editor).
+   * stays while the fight is in its room (no `cut`), else of the piece drawn later (the larger x + y). A piece the
+   * map cuts short (`clip`: [l, r], everything short of l metres in from its image's left pillar's centre and of r
+   * in from its right one taken off — a bay fitted between a doorway's jamb or a console's end and a corner) is
+   * trimmed by that too. Worked out again whenever the walls change (the map editor).
    */
   joinWalls() {
     const ends = [];
@@ -657,6 +660,11 @@ export class MustafarArena extends World {
       const w = p.sheet && cityWall(p.sheet);
       p.trim = null;
       if (!w) continue;
+      if (p.clip && (p.clip[0] || p.clip[1])) {
+        const ppm = 20 / w.k; // (frame px a metre along it)
+        const [l, r] = p.clip;
+        p.trim = [l > 0 ? Math.max(0, w.ox + (l - w.half) * ppm) : 0, r > 0 ? Math.max(0, w.w - (w.ox + (w.half - r) * ppm)) : 0];
+      }
       // its pillars: the image's left one, its right one (−x / +x along x; +y / −y along y)
       const pts = w.along === 'x' ? [[p.x - w.half, p.y], [p.x + w.half, p.y]] : [[p.x, p.y + w.half], [p.x, p.y - w.half]];
       pts.forEach(([x, y], side) => ends.push({ p, w, side, x, y }));
@@ -669,8 +677,8 @@ export class MustafarArena extends World {
         if (a.p === b.p || Math.hypot(a.x - b.x, a.y - b.y) > 0.5) continue;
         const d = keeps(a, b) ? b : a; // (the end trimmed)
         const t = (d.p.trim ||= [0, 0]);
-        if (d.side === 0) t[0] = d.w.pillars[0];
-        else t[1] = d.w.w - d.w.pillars[1];
+        if (d.side === 0) t[0] = Math.max(t[0], d.w.pillars[0]);
+        else t[1] = Math.max(t[1], d.w.w - d.w.pillars[1]);
       }
   }
 
@@ -729,6 +737,7 @@ export class MustafarArena extends World {
       if (p.over) o.over = true;
       if (p.block) o.block = true;
       if (p.cut) o.cut = p.cut.map(n6);
+      if (p.clip && (p.clip[0] || p.clip[1])) o.clip = p.clip.map(n6);
       if (ids.has(q)) o.id = ids.get(q);
       if (p.hidden) o.hidden = true;
       return o;
