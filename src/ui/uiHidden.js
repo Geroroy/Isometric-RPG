@@ -2,6 +2,8 @@
 // subtitles and bars, the selection ring: style.css body.ui-hidden, renderer.drawGroundMarkers). F1 on a PC
 // (core/input.js); on a phone the menu's "숨김" key (ui/mobileHud.js), and while hidden a faint restore button stays
 // in the top-right corner (a phone has no key to bring the UI back).
+// The character can still be moved while it is hidden: the keys and the mouse on a PC, the joystick's (unseen) zone
+// on a phone (style.css).
 
 let restore = null;
 

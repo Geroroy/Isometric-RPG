@@ -4625,6 +4625,12 @@ body.ui-hidden .cinema-ui .cn-place,
 body.ui-hidden .cinema-ui .cn-skip {
   visibility: hidden !important;
 }
+/* …but the character still moves: on a phone the joystick's zone keeps taking the left thumb (steer, tap to move),
+   unseen — the stick's ring stays hidden with the rest. (On a PC the world canvas takes the mouse and the keys work
+   as ever.) */
+body.ui-hidden #touch .joy-zone {
+  visibility: visible !important;
+}
 /* the way back on a phone (ui/uiHidden.js): a faint button in the top-right corner, only while the UI is hidden */
 #uiRestore {
   display: none;
