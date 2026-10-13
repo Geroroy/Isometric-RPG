@@ -11,8 +11,8 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
 
 - `mfTable`: along x, 8 m long (the film's long table, its pointed end to +x), 0.78 m tall
 - `mfWindow`: against a north wall (faces +y), 5.5 m long, 2.8 m tall; `mfWindow_r` mirrored for a west wall
-- `mfHolo`: the control room's holo-table (image_20: an elongated hexagon, its top a glowing blue map, red indicator
-  lights round the rim), along x, 4.4 m by 1.8 m, 1 m tall, fitted on eight points; `mfHolo_y` its twin along y
+- `mfHoloX`: the control room's holo-table (image_20: an elongated hexagon, its top a glowing blue map, red indicator
+  lights round the rim), along x, 4.4 m by 1.8 m, 1 m tall, fitted on eight points with its verticals kept vertical
 - `mfFall`: a lava fall (image_21: a rock cliff with three falls pouring into a cracked lava pool), the cliff along
   y, the pool in front of it to +x; 7 m of cliff, the pool 1.6 m deep, fitted on the pool's four corners (the cliff's
   height follows the render); the lava glowing; `mfFall_x` its twin (cliff along x, pool to +y)
@@ -75,7 +75,7 @@ PIECES = {
         mirror='mfTable_y',
         flat=True,
     ),
-    'mfHolo': dict(
+    'mfHoloX': dict(  # the control room's holo-table along x (two side by side: worldgen.js holoTables)
         over=4,
         src='image_20.png',
         corners=[
@@ -85,16 +85,15 @@ PIECES = {
             ((1635, 445), (2.2, 0, 1.0)),
             ((1350, 550), (1.4, 0.9, 1.0)),
             ((445, 395), (-1.4, 0.9, 1.0)),
-            ((515, 632), (-1.3, 1.0, 0)),  # the plinth's near corners on the floor
-            ((1305, 818), (1.3, 1.0, 0)),
+            ((515, 632), (-1.22, 0.7, 0)),  # the plinth's near corners on the floor (narrower than the top:
+            ((1305, 818), (1.22, 0.7, 0)),  # its sides slant in, measured off the near edges' lengths)
         ],
+        vertical=True,  # (the render's verticals kept vertical: an unconstrained fit tipped the top forward)
         footprint=[[-2.2, -0.9], [2.2, -0.9], [2.2, 0.9], [-2.2, 0.9]],
         emit='holo',
-        ship='mirror',  # (placed along y in the world)
         shadow=1.0,
         gain=0.9,
         lights=[[0, 0, 1.4, 90, 170, 255, 120, 0.04]],  # the map's blue light
-        mirror='mfHolo_y',
     ),
     'mfFall': dict(
         src='image_21.png',
@@ -423,6 +422,10 @@ def bake_fit(name, P, body, neon):
     A = np.array([[sx, sy, 1] for (sx, sy), _ in P['corners']], float)
     T = np.array([screen(*w) for _, w in P['corners']], float)
     M = np.linalg.lstsq(A, T, rcond=None)[0].T  # 2x3, T = M @ [x y 1]
+    if P.get('vertical'):
+        # screen x from the render's x alone (no shear of the verticals); y as fitted
+        cx = np.linalg.lstsq(A[:, [0, 2]], T[:, 0], rcond=None)[0]
+        M[0] = [cx[0], 0, cx[1]]
     res = np.abs(A @ M.T - T).max() / OVER
     h, w = body.shape[:2]
     corners = np.array([[x, y, 1] for x in (0, w) for y in (0, h)], float) @ M.T

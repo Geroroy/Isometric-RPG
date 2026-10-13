@@ -1,0 +1,1 @@
+{"anchor": [198.0, 233.0], "k": 0.25, "layers": {"sheet": "mfHoloX.png", "split": 430}, "footprint": [[-2.2, -0.9], [2.2, -0.9], [2.2, 0.9], [-2.2, 0.9]], "lights": [[0, 0, 1.4, 90, 170, 255, 120, 0.04]], "flat": false, "neon": {"base": 1, "hum": 0.04, "speed": 0.5, "flicker": {"rate": 0.01, "dur": [0.05, 0.12], "level": 0.7}}}

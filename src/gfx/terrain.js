@@ -242,7 +242,11 @@ function facilityFloor(R, fx, fy, o) {
   const ly = fy - y0;
   const ex = lx < E ? -1 : lx > W - E ? 1 : 0;
   const ey = ly < E ? -1 : ly > H - E ? 1 : 0;
-  if (ex && ey) {
+  // a cut far corner (worldgen.js: the diagonal bay): the edge band along the diagonal, as along a wall
+  const dd = R.cut ? (lx + ly - R.cut) / Math.SQRT2 : Infinity;
+  if (dd < E && dd < Math.min(lx, ly)) {
+    texel(T.edge, 1 - dd / E, (lx - ly) / Math.SQRT2 / E, o);
+  } else if (ex && ey) {
     // the corner tile: its walls are its −u and −v sides
     const a = ex < 0 ? lx / E : (W - lx) / E;
     const b = ey < 0 ? ly / E : (H - ly) / E;

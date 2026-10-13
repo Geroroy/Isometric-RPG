@@ -17,6 +17,20 @@ import { SABER, setSaberOpt, TRAIL_NAMES } from '../gfx/saberStyle.js';
 import { THEME, loadTheme, rgba, setFraction } from './theme.js';
 import { canvasFont } from './fonts.js';
 
+// the place-name banner shown on entering a place (Settings: on/off, kept on the device)
+const BANNER_STORE = 'cw.banner';
+const showBanner = () => {
+  try {
+    return localStorage.getItem(BANNER_STORE) !== '0';
+  } catch {
+    return true;
+  }
+};
+const setShowBanner = (on) => {
+  try {
+    localStorage.setItem(BANNER_STORE, on ? '1' : '0');
+  } catch {}
+};
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (tag, cls, html) => {
   const e = document.createElement(tag);
@@ -436,6 +450,7 @@ export class HUD {
         <label class="set-toggle"><input type="checkbox" data-post="vignette"> 비네팅</label>
         <label class="set-toggle"><input type="checkbox" data-post="grain"> 필름 그레인</label>
         <label class="set-toggle"><input type="checkbox" data-post="fps"> FPS 표시</label>
+        <label class="set-toggle"><input type="checkbox" id="bannerOn"> 장소 이름 배너 (지역에 들어설 때)</label>
         <p class="set-note" id="postNote">이 기기에 저장됩니다. 느린 기기에서는 끄면 가벼워집니다.</p>
       </section>
       <section class="set-card">
@@ -491,6 +506,12 @@ export class HUD {
         this.audio.setVolume(r.dataset.vol, r.value / 100);
         show();
       });
+    });
+    const bn = $('#bannerOn');
+    bn.checked = showBanner();
+    bn.addEventListener('change', () => {
+      setShowBanner(bn.checked);
+      if (!bn.checked) this.bannerEl.classList.remove('show');
     });
     const rm = $('#remasterOn');
     rm.checked = remaster.pref;
@@ -703,6 +724,7 @@ export class HUD {
   }
 
   banner(name) {
+    if (!showBanner()) return; // (Settings › 화면 효과: the place-name banner off)
     const g = this.game;
     const kicker = g.duel ? (/무스타파/.test(name) ? 'MUSTAFAR' : 'GEONOSIS') : g.place === 'hub' ? 'CORUSCANT' : 'CHRISTOPHSIS';
     this.bannerEl.innerHTML = `<div class="bn-kicker">${kicker}</div><div class="bn-name">${name}</div>`;
