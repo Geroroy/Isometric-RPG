@@ -4805,6 +4805,9 @@ body.map-editing .cinema-ui {
   white-space: nowrap;
   opacity: 0.75;
 }
+#mapEditor .me-rform label {
+  font-size: 12px;
+}
 #mapEditor .me-tiles {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

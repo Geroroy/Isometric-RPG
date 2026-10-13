@@ -17,6 +17,11 @@
 //             paint with the brush (the left button; the right button drags the view); the lava and the rock block
 //             the way as the ground does, a floor painted over them opens it. The ground is rebuilt after each
 //             stroke (a new Terrain: its chunks come back over a moment)
+//   방 (5)     the rooms' floor plan (the map's floorPlan: where the facility floor's pattern is laid — the border
+//             of edge tiles, the chevron field, a corridor's runner): click a room to select it, drag it to move
+//             it, drag a corner to resize it; its numbers in the panel (edge, cell, the cut corner, pad, pit, a
+//             corridor); 방 추가 then a click adds one, Delete removes it, 바닥 채우기 paints the facility tile over
+//             its tiles. The ground is rebuilt after each change
 //
 // Positions snap to a half tile (a dragged prop moves by half tiles, keeping its offset); Shift places freely.
 // Ctrl+Z undoes, Ctrl+Y (Ctrl+Shift+Z) redoes, Ctrl+S saves: this browser keeps the map (world/mapStore.js; the next load plays it), and under `npm run dev` it goes
@@ -42,7 +47,7 @@ import { saveLocal, clearLocal, hasLocal } from '../world/mapStore.js';
 const MIRROR = MUSTAFAR_SHEETS.mirror;
 // the keys by where they are on the keyboard (e.code), so they work in Korean input too (R comes as 'ㄱ', or as
 // 'Process' while the IME composes)
-const CODE_KEYS = { KeyR: 'r', KeyV: 'v', KeyB: 'b', KeyF: 'f', KeyP: 'p', KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', KeyZ: 'z', KeyY: 'y', Digit1: '1', Digit2: '2', Digit3: '3', Digit4: '4', BracketLeft: '[', BracketRight: ']', Equal: '=', Minus: '-', Comma: ',', Period: '.' };
+const CODE_KEYS = { KeyR: 'r', KeyV: 'v', KeyB: 'b', KeyF: 'f', KeyP: 'p', KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', KeyZ: 'z', KeyY: 'y', Digit1: '1', Digit2: '2', Digit3: '3', Digit4: '4', Digit5: '5', BracketLeft: '[', BracketRight: ']', Equal: '=', Minus: '-', Comma: ',', Period: '.' };
 const keyOf = (e) => CODE_KEYS[e.code] || e.key.toLowerCase();
 /** A set sprite's other way round: its baked twin, else its mirror image (name~m, made when first wanted). */
 const twinOf = (n) => MIRROR[n] || (n.endsWith(MIRROR_SUFFIX) ? n.slice(0, -MIRROR_SUFFIX.length) : n + MIRROR_SUFFIX);
@@ -85,6 +90,8 @@ export class MapEditor {
     this.palette = null; // the sprite picked to place: { sheet } or { type }
     this.sel = null; // the selected prop
     this.selLight = null;
+    this.selRoom = null; // the selected room (floorPlan entry), the room mode
+    this.addingRoom = false; // 방 추가: the next click places one
     this.hover = null;
     this.drag = null;
     this.undo = [];
@@ -166,7 +173,7 @@ export class MapEditor {
     dom.innerHTML = `
       <div class="me-head"><b>맵 에디터</b> <span class="me-map">무스타파</span><button class="me-close" title="닫기 (F2)">✕</button></div>
       <div class="me-modes">
-        <button data-mode="prop">소품 <kbd>1</kbd></button><button data-mode="brush">길 <kbd>2</kbd></button><button data-mode="light">조명 <kbd>3</kbd></button><button data-mode="tile">타일 <kbd>4</kbd></button>
+        <button data-mode="prop">소품 <kbd>1</kbd></button><button data-mode="brush">길 <kbd>2</kbd></button><button data-mode="light">조명 <kbd>3</kbd></button><button data-mode="tile">타일 <kbd>4</kbd></button><button data-mode="room">방 <kbd>5</kbd></button>
       </div>
       <div class="me-body me-prop">
         <input class="me-search" type="search" placeholder="스프라이트 찾기…">
@@ -195,6 +202,18 @@ export class MapEditor {
         <label>붓 크기 <input class="me-tsize" type="range" min="1" max="7" step="1" value="1"> <span class="me-tsize-v">1</span>칸 <kbd>[</kbd><kbd>]</kbd></label>
         <p class="me-note">용암·바위는 땅이 막는 칸이 되고, 그 위에 바닥을 칠하면 다시 걸을 수 있음 · 방 안의 시설 바닥은 바닥 계획(floorPlan)의 무늬로 그려짐</p>
       </div>
+      <div class="me-body me-room">
+        <p class="me-note">방을 클릭해 선택 · 안쪽을 끌어 이동 · 모서리를 끌어 크기 조절 · 바닥 무늬(시설 바닥 타일의 테두리·쉐브론)는 이 영역 안에만 그려짐</p>
+        <div class="me-btns"><button class="me-radd" title="누른 뒤 맵을 클릭하면 그 자리에 새 방">＋ 방 추가</button><button class="me-rfill" title="방 영역의 타일을 시설 바닥으로 칠함">바닥 채우기</button><button class="me-rdel" title="Del">방 삭제</button></div>
+        <div class="me-form me-rform">
+          <div class="me-row"><label>X <input class="me-rx" type="number" step="0.5"></label><label>Y <input class="me-ry" type="number" step="0.5"></label></div>
+          <div class="me-row"><label>반폭 <input class="me-rhw" type="number" step="0.5" min="0.5"></label><label>반높이 <input class="me-rhh" type="number" step="0.5" min="0.5"></label></div>
+          <div class="me-row"><label title="무늬의 방향: 쉐브론이 어느 축을 따라 맞서는지 · 복도의 길이 방향">축 <select class="me-raxis"><option value="x">x</option><option value="y">y</option></select></label><label title="복도: 테두리·쉐브론 대신 긴 방향으로 띠 하나"><input class="me-rrun" type="checkbox"> 복도</label></div>
+          <div class="me-row me-rfull"><label title="벽을 따라 도는 테두리 타일 띠의 폭(칸)">테두리 <input class="me-redge" type="number" step="0.5" min="0"></label><label title="가운데 쉐브론 무늬 한 칸의 크기(칸)">무늬 칸 <input class="me-rcell" type="number" step="0.5" min="1"></label></div>
+          <div class="me-row me-rfull"><label title="먼 모서리를 대각선으로 잘라낸 길이(칸): 0이면 안 자름">모서리 자르기 <input class="me-rcut" type="number" step="0.1" min="0"></label><label title="먼 벽의 콘솔 밑으로 바닥이 더 나가는 폭(칸)">여유 <input class="me-rpad" type="number" step="0.5" min="0"></label></div>
+          <div class="me-row me-rfull"><label title="가운데가 이만큼(칸) 안쪽에서 한 단 꺼짐: 0이면 평평">꺼진 바닥 <input class="me-rpit" type="number" step="0.1" min="0"></label></div>
+        </div>
+      </div>
       <div class="me-body me-light">
         <p class="me-note">조명을 클릭해 선택 · 끌어서 이동 · 빈 곳을 클릭하면 새 조명</p>
         <div class="me-lprops">
@@ -211,7 +230,7 @@ export class MapEditor {
         <div class="me-btns me-file"><span class="me-src"></span><button class="me-dl" title="맵 파일(mustafar.json) 받기 — 저장소의 public/maps/mustafar.json 에 넣을 때">⬇ 파일 받기</button><button class="me-copy" title="맵 JSON을 클립보드에 복사 — 채팅에 붙여 넣어도 됨">📋 복사</button><button class="me-revert" title="이 브라우저의 저장본을 지우고 맵 파일대로 다시 불러오기">↺ 파일로 되돌리기</button></div>
         <button class="me-test" title="P">▶ 플레이 테스트 <kbd>P</kbd></button>
         <div class="me-status"></div>
-        <div class="me-help">클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>R</kbd> 회전 · <kbd>V</kbd> 변형 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 층 · <kbd>,</kbd><kbd>.</kbd> 레이어 뒤로/앞으로 (<kbd>Shift</kbd> 맨 뒤/맨 앞)<br><kbd>4</kbd> 타일 칠하기 · <kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트</div>
+        <div class="me-help">클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>R</kbd> 회전 · <kbd>V</kbd> 변형 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 층 · <kbd>,</kbd><kbd>.</kbd> 레이어 뒤로/앞으로 (<kbd>Shift</kbd> 맨 뒤/맨 앞)<br><kbd>4</kbd> 타일 칠하기 · <kbd>5</kbd> 방 영역 · <kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트</div>
       </div>`;
     document.body.appendChild(dom);
     for (const e of ['pointerdown', 'wheel', 'contextmenu', 'mousedown']) dom.addEventListener(e, (ev) => ev.stopPropagation());
@@ -219,6 +238,10 @@ export class MapEditor {
     dom.querySelectorAll('.me-modes button').forEach((b) => (b.onclick = () => this.setMode(b.dataset.mode)));
     dom.querySelectorAll('.me-tiles button').forEach((b) => (b.onclick = () => this.setTile(+b.dataset.tile)));
     dom.querySelector('.me-tsize').oninput = (e) => this.setBrush(+e.target.value);
+    dom.querySelector('.me-radd').onclick = (e) => (e.currentTarget.blur(), this.addRoomNext());
+    dom.querySelector('.me-rfill').onclick = (e) => (e.currentTarget.blur(), this.fillRoom());
+    dom.querySelector('.me-rdel').onclick = (e) => (e.currentTarget.blur(), this.remove());
+    this.buildRoomForm();
     dom.querySelector('.me-undo').onclick = () => this.undoStep();
     dom.querySelector('.me-redo').onclick = () => this.redoStep();
     dom.querySelector('.me-save').onclick = () => this.save();
@@ -384,12 +407,152 @@ export class MapEditor {
     d.querySelector('.me-lf-v').textContent = (+l.flicker).toFixed(2);
   }
 
+  // ------------------------------------------------------------------------------------------------- the rooms
+
+  /** The selected room's numbers typed in the panel (the map's floorPlan entry). */
+  buildRoomForm() {
+    const d = this.dom;
+    const q = (s) => d.querySelector(s);
+    const num = (sel, key, lo = -Infinity) => {
+      q(sel).onchange = (e) => {
+        const R = this.selRoom;
+        const v = +e.target.value;
+        if (!R || e.target.value === '' || !Number.isFinite(v)) return this.showRoom(true);
+        this.setRoom({ [key]: Math.max(lo, v) });
+        e.target.blur();
+      };
+    };
+    num('.me-rx', 'x');
+    num('.me-ry', 'y');
+    num('.me-rhw', 'hw', 0.5);
+    num('.me-rhh', 'hh', 0.5);
+    num('.me-redge', 'edge', 0);
+    num('.me-rcell', 'cell', 1);
+    num('.me-rcut', 'cut', 0);
+    num('.me-rpad', 'pad', 0);
+    num('.me-rpit', 'pit', 0);
+    q('.me-raxis').onchange = (e) => (this.selRoom && this.setRoom({ axis: e.target.value }), e.target.blur());
+    q('.me-rrun').onchange = (e) => (this.selRoom && this.setRoom({ runner: e.target.checked }), e.target.blur());
+  }
+
+  showRoom(force = false) {
+    const d = this.dom;
+    if (!d) return;
+    const R = this.selRoom;
+    d.querySelector('.me-rform').classList.toggle('hidden', !R);
+    d.querySelector('.me-radd').classList.toggle('on', !!this.addingRoom);
+    if (!R) return;
+    const q = (s) => d.querySelector(s);
+    for (const [sel, v] of [['.me-rx', R.x], ['.me-ry', R.y], ['.me-rhw', R.hw], ['.me-rhh', R.hh], ['.me-redge', R.edge || 0], ['.me-rcell', R.cell || 4.5], ['.me-rcut', R.cut || 0], ['.me-rpad', R.pad || 0], ['.me-rpit', R.pit || 0]]) {
+      const i = q(sel);
+      if (force || document.activeElement !== i) i.value = +(+v).toFixed(3);
+    }
+    q('.me-raxis').value = R.axis || 'y';
+    q('.me-rrun').checked = !!R.runner;
+    d.querySelectorAll('.me-rfull').forEach((e) => e.classList.toggle('hidden', !!R.runner));
+  }
+
+  /** The selected room changed (`patch`: its fields; a 0 drops cut, pad and pit), the ground rebuilt. */
+  setRoom(patch) {
+    const R = this.selRoom;
+    if (!R) return;
+    const before = this.snapshot();
+    for (const [k, v] of Object.entries(patch)) {
+      if ((k === 'cut' || k === 'pad' || k === 'pit') && !v) delete R[k];
+      else if (k === 'runner') {
+        if (v) {
+          R.runner = true;
+          for (const f of ['edge', 'cell', 'cut', 'pad', 'pit']) delete R[f];
+        } else {
+          delete R.runner;
+          R.edge ??= 2;
+          R.cell ??= 4.5;
+        }
+      } else R[k] = v;
+    }
+    this.rebuildGround();
+    this.commit(before);
+    this.showRoom(true);
+    this.status();
+  }
+
+  /** The room under world point (x, y): the smallest one there (a corridor inside a room's pad). */
+  roomAt(x, y) {
+    let best = null;
+    for (const R of this.world.floorPlan) {
+      const pad = R.pad || 0;
+      if (x < R.x - R.hw - pad || x > R.x + R.hw || y < R.y - R.hh - pad || y > R.y + R.hh) continue;
+      if (!best || R.hw * R.hh < best.hw * best.hh) best = R;
+    }
+    return best;
+  }
+
+  /** The selected room's corner under screen px (mx, my), within a handle's reach: [sx, sy] signs, else null. */
+  roomCornerAt(mx, my) {
+    const R = this.selRoom;
+    if (!R) return null;
+    const r = this.renderer;
+    for (const sx of [-1, 1])
+      for (const sy of [-1, 1]) {
+        const s = worldToScreen(R.x + sx * R.hw, R.y + sy * R.hh);
+        const px = (s.x - r.cam.x) * r.scale;
+        const py = (s.y - r.cam.y) * r.scale;
+        if (Math.abs(px - mx) <= 8 && Math.abs(py - my) <= 8) return [sx, sy];
+      }
+    return null;
+  }
+
+  /** 방 추가: the next click on the map puts a room there (a 6 × 6 one with the rooms' usual pattern). */
+  addRoomNext() {
+    this.addingRoom = !this.addingRoom;
+    this.showRoom();
+    this.status();
+    if (this.addingRoom) this.say('맵을 클릭하면 그 자리에 새 방 (Esc 취소)');
+  }
+
+  addRoom(x, y) {
+    const before = this.snapshot();
+    const R = { x: snap(x), y: snap(y), hw: 3, hh: 3, axis: 'y', edge: 2, cell: 4.5 };
+    this.world.floorPlan.push(R);
+    this.selRoom = R;
+    this.addingRoom = false;
+    this.rebuildGround();
+    this.commit(before);
+    this.showRoom(true);
+    this.status();
+    this.say('새 방: 모서리를 끌어 크기를 맞추고, 바닥 채우기로 타일을 깔 수 있습니다');
+  }
+
+  /** 바닥 채우기: the facility floor tile over the selected room's tiles (the way opened where the ground blocked it). */
+  fillRoom() {
+    const R = this.selRoom;
+    if (!R) return this.say('먼저 방을 고르세요');
+    const w = this.world;
+    const before = this.snapshot();
+    let n = 0;
+    for (let ty = Math.floor(R.y - R.hh); ty < Math.ceil(R.y + R.hh); ty++)
+      for (let tx = Math.floor(R.x - R.hw); tx < Math.ceil(R.x + R.hw); tx++) {
+        if (!w.inBounds(tx, ty)) continue;
+        const i = ty * w.w + tx;
+        if (w.biome[i] === BIOME.MUSTAFAR) continue;
+        w.biome[i] = BIOME.MUSTAFAR;
+        if (w.blocked[i] === 2) w.blocked[i] = 0;
+        n++;
+      }
+    if (!n) return this.say('이미 전부 시설 바닥입니다');
+    this.rebuildGround();
+    this.commit(before);
+    this.say(`${n}칸을 시설 바닥으로 칠했습니다`);
+  }
+
   setMode(m) {
     this.mode = m;
     this.drag = null;
     this.dom.querySelectorAll('.me-modes button').forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
-    for (const k of ['prop', 'brush', 'light', 'tile']) this.dom.querySelector('.me-' + k).classList.toggle('hidden', k !== m);
+    for (const k of ['prop', 'brush', 'light', 'tile', 'room']) this.dom.querySelector('.me-' + k).classList.toggle('hidden', k !== m);
     if (m === 'tile') this.setTile(this.tile);
+    if (m !== 'room') this.addingRoom = false;
+    this.showRoom();
     if (m !== 'prop') this.pickPalette(null);
     if (m !== 'light') this.selLight = null;
     this.showLight();
@@ -421,6 +584,7 @@ export class MapEditor {
       else if (p) t += ` · 선택: ${p.sheet || p.type} (${p.x.toFixed(2)}, ${p.y.toFixed(2)}) ${TIER_LABEL[tierOf(p)]}${p.block ? ' · 막음' : ''}`;
     }
     if (this.mode === 'light' && this.selLight) t += ` · 조명 (${this.selLight.x.toFixed(2)}, ${this.selLight.y.toFixed(2)})`;
+    if (this.mode === 'room') t += this.addingRoom ? ' · 새 방: 맵을 클릭' : this.selRoom ? ` · 방 ${this.world.floorPlan.indexOf(this.selRoom) + 1}: (${this.selRoom.x}, ${this.selRoom.y}) ${this.selRoom.hw * 2}×${this.selRoom.hh * 2}` : '';
     if (this.mode === 'tile') {
       const here = w.x >= 0 && w.y >= 0 && w.x < this.world.w && w.y < this.world.h ? TILES.find((q) => q.b === this.world.biome[Math.floor(w.y) * this.world.w + Math.floor(w.x)]) : null;
       t += ` · 칠하기: ${TILES.find((q) => q.b === this.tile).name}${here ? ` (여기: ${here.name})` : ''}`;
@@ -838,6 +1002,8 @@ export class MapEditor {
       ss: w.surfaces.map((t) => ({ ...t })),
       blocked: w.blocked.slice(),
       biome: w.biome.slice(),
+      rooms: w.floorPlan.slice(),
+      rs: w.floorPlan.map((R) => ({ ...R })),
     };
   }
 
@@ -851,10 +1017,19 @@ export class MapEditor {
     s.lights.forEach((l, i) => Object.assign(l, s.ls[i]));
     for (const [o, h] of s.homes) o.home = { ...h };
     w.blocked.set(s.blocked);
-    if (s.biome.some((b, i) => b !== w.biome[i])) {
+    const roomsNow = JSON.stringify(w.floorPlan);
+    w.floorPlan.length = 0;
+    w.floorPlan.push(...s.rooms);
+    s.rooms.forEach((R, i) => {
+      for (const k of Object.keys(R)) delete R[k];
+      Object.assign(R, s.rs[i]);
+    });
+    if (s.biome.some((b, i) => b !== w.biome[i]) || JSON.stringify(w.floorPlan) !== roomsNow) {
       w.biome.set(s.biome);
       this.rebuildGround();
     }
+    if (this.selRoom && !w.floorPlan.includes(this.selRoom)) this.selRoom = null;
+    this.showRoom(true);
     w.surfaces.length = 0;
     w.surfaces.push(...s.surfaces);
     s.surfaces.forEach((t, i) => Object.assign(t, s.ss[i]));
@@ -908,6 +1083,17 @@ export class MapEditor {
       this.selLight = null;
       this.showLight();
       return this.commit(before);
+    }
+    if (this.mode === 'room') {
+      const R = this.selRoom;
+      if (!R) return;
+      const before = this.snapshot();
+      w.floorPlan.splice(w.floorPlan.indexOf(R), 1);
+      this.selRoom = null;
+      this.rebuildGround();
+      this.commit(before);
+      this.showRoom();
+      return this.status();
     }
     const p = this.sel;
     if (!p) return;
@@ -1268,7 +1454,9 @@ export class MapEditor {
     if (e.repeat) return;
     switch (k) {
       case 'escape':
-        if (this.palette) this.pickPalette(null);
+        if (this.addingRoom) ((this.addingRoom = false), this.showRoom(), this.status());
+        else if (this.mode === 'room' && this.selRoom) ((this.selRoom = null), this.showRoom(), this.status());
+        else if (this.palette) this.pickPalette(null);
         else if (this.sel) this.select(null);
         else if (this.selLight) ((this.selLight = null), this.showLight());
         else this.close();
@@ -1310,6 +1498,9 @@ export class MapEditor {
       case '4':
         this.setMode('tile');
         break;
+      case '5':
+        this.setMode('room');
+        break;
       case '[':
         this.setBrush(this.brush.size - 1);
         break;
@@ -1350,6 +1541,22 @@ export class MapEditor {
     const m = this.at(e.clientX, e.clientY);
     this.cursor = m;
     const pan = e.button === 1 || (e.button === 2 && this.mode !== 'brush');
+    if (this.mode === 'room' && !pan) {
+      if (e.button !== 0) return;
+      if (this.addingRoom) return this.addRoom(m.x, m.y);
+      const corner = this.roomCornerAt(e.clientX, e.clientY);
+      if (corner) {
+        const R = this.selRoom;
+        this.drag = { room: R, corner, w0: m, r0: { ...R }, before: this.snapshot(), moved: false };
+        return;
+      }
+      const R = this.roomAt(m.x, m.y);
+      this.selRoom = R;
+      this.showRoom(true);
+      this.status();
+      if (R) this.drag = { room: R, w0: m, r0: { ...R }, before: this.snapshot(), moved: false };
+      return;
+    }
     if (this.mode === 'tile' && !pan) {
       if (e.button !== 0) return;
       this.drag = { tile: true, before: this.snapshot(), changed: false, at: performance.now() };
@@ -1434,6 +1641,31 @@ export class MapEditor {
     let dx = m.x - d.w0.x;
     let dy = m.y - d.w0.y;
     if (!this.shift) [dx, dy] = [snap(dx), snap(dy)]; // (by half tiles: a prop keeps its offset from the grid)
+    if (d.room) {
+      const R = d.room;
+      const r0 = d.r0;
+      if (d.corner) {
+        // the corner dragged: the opposite one stays
+        const [cx, cy] = d.corner;
+        const ox = r0.x - cx * r0.hw;
+        const oy = r0.y - cy * r0.hh;
+        const nx = r0.x + cx * r0.hw + dx;
+        const ny = r0.y + cy * r0.hh + dy;
+        const hw = Math.max(0.5, Math.abs(nx - ox) / 2);
+        const hh = Math.max(0.5, Math.abs(ny - oy) / 2);
+        R.hw = hw;
+        R.hh = hh;
+        R.x = ox + cx * hw;
+        R.y = oy + cy * hh;
+      } else {
+        R.x = r0.x + dx;
+        R.y = r0.y + dy;
+      }
+      d.moved = d.moved || !!(dx || dy);
+      this.showRoom();
+      this.status();
+      return;
+    }
     if (d.light) {
       d.light.x = d.x0 + dx;
       d.light.y = d.y0 + dy;
@@ -1461,6 +1693,10 @@ export class MapEditor {
       this.commit(d.before);
     }
     if (d.light && d.moved) this.commit(d.before);
+    if (d.room && d.moved) {
+      this.rebuildGround();
+      this.commit(d.before);
+    }
     if (d.prop && d.moved) {
       this.block(d.prop);
       this.recut(d.prop);
@@ -1527,7 +1763,59 @@ export class MapEditor {
     const ty0 = Math.max(0, Math.floor(Math.min(...corners.map((c) => c.y))));
     const ty1 = Math.min(w.h - 1, Math.ceil(Math.max(...corners.map((c) => c.y))));
 
-    if (this.mode === 'tile') {
+    if (this.mode === 'room') {
+      // the rooms' rectangles (the pad dotted beyond the far sides), the selected one's corner handles
+      for (const R of w.floorPlan) {
+        const on = R === this.selRoom;
+        const pad = R.pad || 0;
+        ctx.beginPath();
+        for (const [i, [x, y]] of [[R.x - R.hw, R.y - R.hh], [R.x + R.hw, R.y - R.hh], [R.x + R.hw, R.y + R.hh], [R.x - R.hw, R.y + R.hh]].entries()) {
+          const [px, py] = P(x, y);
+          if (i) ctx.lineTo(px, py);
+          else ctx.moveTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = on ? 'rgba(255,196,70,0.14)' : 'rgba(120,200,255,0.08)';
+        ctx.fill();
+        ctx.strokeStyle = on ? '#ffc446' : 'rgba(120,200,255,0.7)';
+        ctx.lineWidth = on ? 2 : 1;
+        ctx.stroke();
+        if (pad) {
+          ctx.beginPath();
+          const a = P(R.x - R.hw - pad, R.y - R.hh - pad);
+          const b = P(R.x + R.hw, R.y - R.hh - pad);
+          const c = P(R.x - R.hw - pad, R.y + R.hh);
+          ctx.moveTo(c[0], c[1]);
+          ctx.lineTo(a[0], a[1]);
+          ctx.lineTo(b[0], b[1]);
+          ctx.setLineDash([4, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        const [lx, ly] = P(R.x, R.y);
+        ctx.fillStyle = on ? '#ffd98a' : 'rgba(180,220,255,0.9)';
+        ctx.font = '11px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`방 ${w.floorPlan.indexOf(R) + 1}${R.runner ? ' (복도)' : ''} ${R.hw * 2}×${R.hh * 2}`, lx, ly + 4);
+        ctx.textAlign = 'left';
+        if (on)
+          for (const sx of [-1, 1])
+            for (const sy of [-1, 1]) {
+              const [hx, hy] = P(R.x + sx * R.hw, R.y + sy * R.hh);
+              ctx.fillStyle = '#ffc446';
+              ctx.fillRect(hx - 4, hy - 4, 8, 8);
+            }
+      }
+      if (this.addingRoom) {
+        ctx.beginPath();
+        diamond(Math.floor(snap(m.x)) - 3, Math.floor(snap(m.y)) - 3, 6);
+        ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+        ctx.setLineDash([3, 3]);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    } else if (this.mode === 'tile') {
       const n = this.brush.size;
       ctx.beginPath();
       diamond(Math.floor(m.x - (n - 1) / 2), Math.floor(m.y - (n - 1) / 2), n);
