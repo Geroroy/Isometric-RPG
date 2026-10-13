@@ -238,26 +238,27 @@ function facilityFloor(R, fx, fy, o) {
   // the border: a band `R.edge` tiles wide along the walls (edge tiles, square, one after another), corner tiles
   // where two meet; inside it the field in cells fitted to about `R.cell`
   const E = R.edge;
-  const lx = fx - x0;
+  const lx = fx - x0; // (down to −pad under the far walls' consoles: the band stretched over it, its wall side out)
   const ly = fy - y0;
+  const pad = R.pad || 0;
   const ex = lx < E ? -1 : lx > W - E ? 1 : 0;
   const ey = ly < E ? -1 : ly > H - E ? 1 : 0;
   // a cut far corner (worldgen.js: the diagonal bay): the edge band along the diagonal, as along a wall
   const dd = R.cut ? (lx + ly - R.cut) / Math.SQRT2 : Infinity;
   if (dd < E && dd < Math.min(lx, ly)) {
-    texel(T.edge, 1 - dd / E, (lx - ly) / Math.SQRT2 / E, o);
+    texel(T.edge, (E - dd) / (E + pad), (lx - ly) / Math.SQRT2 / E, o);
   } else if (ex && ey) {
     // the corner tile: its walls are its −u and −v sides
-    const a = ex < 0 ? lx / E : (W - lx) / E;
-    const b = ey < 0 ? ly / E : (H - ly) / E;
+    const a = ex < 0 ? (lx + pad) / (E + pad) : (W - lx) / E;
+    const b = ey < 0 ? (ly + pad) / (E + pad) : (H - ly) / E;
     texel(T.corner, a, b, o);
   } else if (ex) {
     // the edge tile: its wall is its +u side, the band running along v, a whole number of tiles along the wall
     const n = Math.max(1, Math.round((H - 2 * E) / E));
-    texel(T.edge, ex > 0 ? 1 - (W - lx) / E : 1 - lx / E, ((ly - E) / (H - 2 * E)) * n, o);
+    texel(T.edge, ex > 0 ? 1 - (W - lx) / E : 1 - (lx + pad) / (E + pad), ((ly - E) / (H - 2 * E)) * n, o);
   } else if (ey) {
     const n = Math.max(1, Math.round((W - 2 * E) / E));
-    texel(T.edge, ey > 0 ? 1 - (H - ly) / E : 1 - ly / E, ((lx - E) / (W - 2 * E)) * n, o);
+    texel(T.edge, ey > 0 ? 1 - (H - ly) / E : 1 - (ly + pad) / (E + pad), ((lx - E) / (W - 2 * E)) * n, o);
   } else {
     const iw = W - 2 * E;
     const ih = H - 2 * E;
@@ -347,7 +348,8 @@ export class Terrain {
       for (let y = 0; y < world.h; y++)
         for (let x = 0; x < world.w; x++) {
           if (world.biome[y * world.w + x] !== BIOME.MUSTAFAR) continue;
-          const k = world.floorPlan.findIndex((R) => Math.abs(x + 0.5 - R.x) <= R.hw && Math.abs(y + 0.5 - R.y) <= R.hh);
+          // (a room's floor runs `pad` out under its far walls' consoles)
+          const k = world.floorPlan.findIndex((R) => x + 0.5 >= R.x - R.hw - (R.pad || 0) && x + 0.5 <= R.x + R.hw && y + 0.5 >= R.y - R.hh - (R.pad || 0) && y + 0.5 <= R.y + R.hh);
           this.room[y * world.w + x] = k;
         }
     }

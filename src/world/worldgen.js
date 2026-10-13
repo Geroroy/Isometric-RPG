@@ -579,6 +579,8 @@ const ROCKS = {
 // diagonal, as the film's angled bays), metres along each wall: the diagonal 3 m, one console
 const HALL_CUT = 2.12;
 const CONTROL_CUT = 2.12;
+// the floor runs this far out under the far walls' consoles (a tile), blocked: their feet stand on the set's floor
+const ROOM_PAD = 1;
 
 export class MustafarArena extends World {
   /** The model rocks become the rock sprites when they loaded: a cliff a wall (now and then a landform), a boulder a crag, a lava rock a pile. */
@@ -642,7 +644,12 @@ export class MustafarArena extends World {
     // the rooms' far corners cut across (pentagons, as the film's and the LEGO set's rooms): `cut` metres along
     // each wall from the corner, the head-on console across it (cornerConsole)
     const cutOf = (r) => (r === M.hall ? HALL_CUT : r === M.control ? CONTROL_CUT : 0);
-    const inCut = (x, y, r) => x - (r.x - r.hw) + (y - (r.y - r.hh)) < cutOf(r);
+    const padOf = (r) => (r === M.hall || r === M.control ? ROOM_PAD : 0);
+    const lxy = (x, y, r) => x - (r.x - r.hw) + (y - (r.y - r.hh));
+    // the floor: the room and a strip under its far walls' consoles (ROOM_PAD), the cut corner's floor out to the
+    // corner console's back; walked on: the room less the cut
+    const floorOf = (x, y, r) => x >= r.x - r.hw - padOf(r) && x <= r.x + r.hw && y >= r.y - r.hh - padOf(r) && y <= r.y + r.hh && lxy(x, y, r) >= cutOf(r) - padOf(r);
+    const walkOf = (x, y, r) => inRect(x, y, r) && lxy(x, y, r) >= cutOf(r);
     const inEll = (x, y, e) => ((x - e.x) / e.rx) ** 2 + ((y - e.y) / e.ry) ** 2 <= 1;
     const floors = [M.pad, M.walk, M.corridor, M.hall, M.junction, M.control];
     // the interior's floor laid out of the set's floor tiles as in the film (terrain.js facilityFloor; the tiles:
@@ -651,8 +658,8 @@ export class MustafarArena extends World {
     // trim tile down their length; the control room's centre sunk a step inside a walkway (rects as above, first
     // match wins)
     this.floorPlan = [
-      { ...M.hall, axis: 'x', edge: 2, cell: 4.5, cut: HALL_CUT },
-      { ...M.control, axis: 'x', edge: 2, cell: 4.5, pit: 2.6, cut: CONTROL_CUT },
+      { ...M.hall, axis: 'x', edge: 2, cell: 4.5, cut: HALL_CUT, pad: ROOM_PAD },
+      { ...M.control, axis: 'x', edge: 2, cell: 4.5, pit: 2.6, cut: CONTROL_CUT, pad: ROOM_PAD },
       { ...M.corridor, axis: 'x', runner: true },
       { ...M.junction, axis: 'y', runner: true },
     ];
@@ -664,12 +671,14 @@ export class MustafarArena extends World {
         const cy = y + 0.5;
         let b = BIOME.LAVA;
         const bankEdge = M.bank.y - 3.5 + (fbm(x / 5, 3, 11) - 0.5) * 3;
-        if (inEll(cx, cy, M.deck) || floors.some((r) => inRect(cx, cy, r) && !inCut(cx, cy, r))) b = BIOME.MUSTAFAR;
+        if (inEll(cx, cy, M.deck) || floors.some((r) => floorOf(cx, cy, r))) b = BIOME.MUSTAFAR;
         else if (grates.some((r) => inRect(cx, cy, r))) b = BIOME.GRATE;
         else if (inRect(cx, cy, { ...M.hall, hw: M.hall.hw + 2, hh: M.hall.hh + 2 }) || inRect(cx, cy, { ...M.control, hw: M.control.hw + 2, hh: M.control.hh + 2 }) || inRect(cx, cy, { ...M.corridor, hw: M.corridor.hw + 1, hh: M.corridor.hh + 2 }) || inRect(cx, cy, { ...M.junction, hw: M.junction.hw + 2, hh: M.junction.hh })) b = BIOME.ASH; // the building's rock footing
         else if (cy > bankEdge && Math.abs(cx - M.bank.x) < 24) b = BIOME.ASH;
         this.biome[i] = b;
         this.blocked[i] = b === BIOME.MUSTAFAR || b === BIOME.GRATE ? 0 : 2;
+        // (under the consoles: the rooms' strips, unless another floor — the junction's end — is walked there)
+        if (b === BIOME.MUSTAFAR && !inEll(cx, cy, M.deck) && !floors.some((r) => walkOf(cx, cy, r))) this.blocked[i] = 2;
         this.explored[i] = 1;
       }
     }
@@ -695,7 +704,7 @@ export class MustafarArena extends World {
     // the film's screen consoles (tools/sprites/mustafar_console) lining the walls side by side, as the control
     // room's: the long wall's from the corner to the passage north and one past it, the end wall's its length
     // (from the corner set's bank: one to the passage north, one past it)
-    for (const dx of [-5.38, -2.2, 1.3, 8.5]) this.console(H, 'north', dx); // (the first against the corner's console)
+    for (const dx of [-5.38, -2.2, 1.3, 8.5]) this.console(H, 'north', dx); // (the first's end pillar at the cut's end, 3.62 m from the corner)
     // the passage on to the control room (the film's sets, reference/color_rots): a covered corridor whose
     // pillared portal stands in the north wall, the consoles either side meeting its pillars
     // (its shell the junction's whole length, 15 m: the roof runs on to the control room; it clears round whoever is
@@ -738,8 +747,10 @@ export class MustafarArena extends World {
     // the film's control room: its walls lined with screen consoles side by side, the back wall's middle one red
     // (the far corner: the head-on console across its cut, placed in the world after the transpose; each row runs
     // on from it, its first console against it, the north row's middle one red)
-    [-5.38, -2.2, 1.0, 4.2, 7.4].forEach((dx, i) => this.console(C, 'north', dx, i === 2));
-    for (const dy of [-2.38, 0.8, 4.0]) this.console(C, 'west', dy);
+    // (each row's first console's end pillar at the cut's end, 2.12 m from the corner: its centre 3.62 m along the
+    // wall from the room's far corner, x0 / y0 — the room is 16 by 14, so the offsets from its middle differ)
+    [-4.38, -0.91, 2.56, 6.03].forEach((dx, i) => this.console(C, 'north', dx, i === 1));
+    for (const dy of [-3.38, -0.08, 3.22]) this.console(C, 'west', dy);
     // two holo-tables on the sunken floor, staggered across it as in the LEGO set (reference/color_rots image_10):
     // one towards the far corner, one towards the near; the model desk if the sprite did not load
     // (the two holo-tables: placed in the world after the transpose, holoTables())
