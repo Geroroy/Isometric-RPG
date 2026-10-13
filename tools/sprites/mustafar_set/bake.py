@@ -22,8 +22,9 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
   `mfSkiff_y` (nose to +y: along the landing apron)
 - `mfChair`: faces +y (mirrored from the render, which faces +x: `mfChair_x`), 1.5 m tall
 - `mfConsoleD`: the screen console seen head-on (image_30), across a room's cut far corner (the diagonal, facing
-  +x+y): fitted on its pillars' corners so it stands level and upright, 3.42 m; its copper body matched to the wall
-  consoles' grey (`match`); the screen and lamps on a neon layer
+  +x+y): the render is turned a little, so its facade's plane is warped by a perspective map (`quad`) onto the
+  true head-on rectangle, 3.42 m; its copper body matched to the wall consoles' grey (`match`); the screen and
+  lamps on a neon layer
 - `mfPassage`: a corridor's inside with no roof (the far wall tall with light panels, the near wall low, a portal at
   each end), along y, 15 m by 4 m (the far wall on −x); `mfPassage_x` along x as rendered. Fitted by least squares
   on five measured corners (the render's own proportions differ: the walkway is narrowed to the corridor's)
@@ -145,18 +146,16 @@ PIECES = {
     'mfConsoleD': dict(
         src='image_30.png',  # the screen console seen head-on: across a room's cut far corner, facing +x+y (the camera)
         over=4,
-        # render px -> (x, y, z) m: the wall along (1, −1)/√2 (level across the screen, 28.3 px a metre), 3.42 m wide
-        # (as wide as the cut's diagonal out to the wall rows' desk fronts), 2.7 m tall; the pillars' outer corners
-        # and the desk's front corners (0.25 m out from the wall); fitted with the verticals kept vertical
-        corners=[
-            ((305, 110), (-1.209, 1.209, 2.7)),  # pillar tops
-            ((1430, 150), (1.209, -1.209, 2.7)),
-            ((305, 745), (-1.209, 1.209, 0)),  # pillar feet
-            ((1430, 818), (1.209, -1.209, 0)),
-            ((500, 727), (-0.65, 1.0, 0)),  # the desk's front feet
-            ((1280, 784), (1.0, -0.65, 0)),
+        # the render is turned a little (its right end toward the camera: taller and lower): its facade's front
+        # plane — the pillars' front faces' outer corners — warped by a perspective map onto the true rectangle
+        # (quad: TL, TR, BR, BL -> (x, y, z) m), the wall along (1, −1)/√2, 3.42 m wide, 2.7 m tall, the facade
+        # 0.25 m in front of the anchor
+        quad=[
+            ((268, 152), (-1.032, 1.386, 2.7)),
+            ((1485, 196), (1.386, -1.032, 2.7)),
+            ((1485, 831), (1.386, -1.032, 0)),
+            ((268, 757), (-1.032, 1.386, 0)),
         ],
-        vertical=True,
         footprint=[[-1.387, 1.033], [1.033, -1.387], [1.281, -1.139], [-1.139, 1.281]],
         lights=[[0.7, 0.7, 1.5, 230, 190, 90, 110, 0.04]],
         emit='screen',
@@ -412,6 +411,8 @@ def bake(name, P):
     body[..., :3] *= np.where(m[..., None] > 0.5, 1, P.get('gain', BODY_GAIN))
     neon = a.copy()
     neon[..., 3] *= m
+    if P.get('quad'):
+        return bake_quad(name, P, body, neon)
     if P.get('corners'):
         return bake_fit(name, P, body, neon)
     sx = P['span'][1] * P.get('px_m', 20) * OVER / P['span'][0]  # (px a metre along its axis: 20 along x or y, 28.3 along a diagonal)
@@ -465,6 +466,54 @@ def bake(name, P):
 
 def screen(x, y, z):
     return ((x - y) * 20 * OVER, ((x + y) * 10 - z * 24.5) * OVER)
+
+
+def homography(src, dst):
+    """The projective map taking the four `src` points to the four `dst` points (as a 3x3 matrix)."""
+    A = []
+    b = []
+    for (x, y), (u, v) in zip(src, dst):
+        A.append([x, y, 1, 0, 0, 0, -x * u, -y * u])
+        b.append(u)
+        A.append([0, 0, 0, x, y, 1, -x * v, -y * v])
+        b.append(v)
+    h = np.linalg.solve(np.array(A, float), np.array(b, float))
+    return np.array([[h[0], h[1], h[2]], [h[3], h[4], h[5]], [h[6], h[7], 1.0]])
+
+
+def bake_quad(name, P, body, neon):
+    """A render turned off the game's view: a plane of it (four measured points) mapped by a perspective warp onto
+    its place in the game's projection — a facade made to face the camera head-on (an affine fit cannot)."""
+    src = [q[0] for q in P['quad']]
+    dst = [screen(*q[1]) for q in P['quad']]
+    H = homography(src, dst)
+    h, w = body.shape[:2]
+    pts = np.array([[x, y, 1] for x in (0, w) for y in (0, h)], float) @ H.T
+    pts = pts[:, :2] / pts[:, 2:3]
+    lo = np.floor(pts.min(0)) - 2
+    size = tuple(int(v) for v in np.ceil(pts.max(0)) + 2 - lo)
+    # PIL wants output -> input: the inverse map, the output origin moved to lo
+    Hi = np.linalg.inv(H)
+    T = np.array([[1, 0, lo[0]], [0, 1, lo[1]], [0, 0, 1]], float)
+    M = Hi @ T
+    M /= M[2, 2]
+    coeffs = tuple(M.reshape(-1)[:8])
+    layers = {}
+    for nm, arr in (('body', body), ('neon', neon)):
+        im = Image.fromarray((np.clip(arr, 0, 1) * 255 + 0.5).astype(np.uint8), 'RGBA')
+        layers[nm] = im.transform(size, Image.PERSPECTIVE, coeffs, resample=Image.BICUBIC)
+    ax, ay = -lo
+    bb = layers['body'].getbbox()
+    b2, n2 = layers['body'].crop(bb), layers['neon'].crop(bb)
+    ox, oy = ax - bb[0], ay - bb[1]
+    b2.save(OUT / f'{name}_body.png', optimize=True)
+    meta = {'anchor': [round(float(ox), 1), round(float(oy), 1)], 'k': 1 / OVER, 'layers': {'body': f'{name}_body.png'}, 'footprint': P['footprint'], 'lights': P.get('lights', []), 'flat': bool(P.get('flat'))}
+    if P.get('emit'):
+        n2.save(OUT / f'{name}_neon.png', optimize=True)
+        meta['layers']['neon'] = f'{name}_neon.png'
+        meta['neon'] = {'base': P.get('neon_base', 1), 'hum': 0.04, 'speed': 0.5, 'flicker': {'rate': 0.01, 'dur': [0.05, 0.12], 'level': 0.7}}
+    (OUT / f'{name}.json').write_text(json.dumps(meta))
+    print(f'{name}: {b2.width}x{b2.height} (x{OVER}), anchor {meta["anchor"]} (perspective warp)')
 
 
 def bake_fit(name, P, body, neon):
