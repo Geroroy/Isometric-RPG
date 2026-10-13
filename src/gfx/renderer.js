@@ -28,6 +28,7 @@ const byDepth = (a, b) => a.depth - b.depth;
 const TRAIL_LIFE = 0.13; // seconds a saber swing's afterimage lasts
 const SHADOW_ALPHA = 0.75; // a sheet's rendered shadow (the shadow catcher's own alpha)
 const COVER_ALPHA = 0.35; // a Mustafar set sprite drawn over the player (worldgen.js MustafarArena)
+const CUT_ALPHA = 0.22; // a room's near wall while the fight is inside it (a ghost of it: the room still reads closed)
 // How far the player may zoom, by what the view shows (docs/GAME_DESIGN.md 2.1.1; measured by
 // tools/qa/zoomlimits.mjs, tools/qa/zoomout.mjs). Out: to look over the map — up to 1080 × 1920 game px
 // (a whole district with the city round it; 1080p at 1×), and no smaller than 0.75 css px a game pixel
@@ -451,6 +452,20 @@ export class Renderer {
         const bob = pr.sheet && SHEET_PROPS[pr.sheet].bob ? Math.round(Math.sin(this.time * SHEET_PROPS[pr.sheet].bob + pr.phase) * 1.2) : 0;
         pr.bob = bob;
         pr.window = null;
+        // a room's near wall (worldgen.js MustafarArena: `cut`, the room's box): cut away to a ghost while anyone
+        // fighting is in the room or in its doorway, so the fight shows whole; back as they leave
+        if (pr.cut) {
+          const [x0, y0, x1, y1] = pr.cut;
+          const inside = g.activeUnits.some((u) => !u.dead && !u.hidden && u.x > x0 - 0.5 && u.x < x1 + 1.5 && u.y > y0 - 0.5 && u.y < y1 + 1.5);
+          pr.fade = (pr.fade ?? 1) + ((inside ? CUT_ALPHA : 1) - (pr.fade ?? 1)) * Math.min(1, dt * 5);
+          pr.coverAlpha = pr.fade < 0.99 ? pr.fade : null;
+          if (pr.fade < 0.99) {
+            ctx.globalAlpha = pr.fade;
+            this.drawFrame(pr.frame, pr.sx, pr.sy);
+            ctx.globalAlpha = 1;
+            continue;
+          }
+        }
         // a covered passage (a sheet with `roof`): its shell clears while anyone stands inside it, showing the
         // open inside drawn under it (worldgen.js: the Mustafar corridors), or just behind it, where its height
         // would hide him (2 m on its far sides)

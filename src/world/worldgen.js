@@ -823,6 +823,12 @@ export class MustafarArena extends World {
     this.holoTables();
     this.cornerConsole(MUSTAFAR.hall, HALL_CUT);
     this.cornerConsole(MUSTAFAR.control, CONTROL_CUT);
+    // the near walls cut away while the fight is in their room (renderer.js `cut`: the room's box, world coordinates)
+    for (const p of this.props) {
+      if (!p.sheet || !p.sheet.startsWith('mfWall')) continue;
+      const r = [MUSTAFAR.hall, MUSTAFAR.control].find((q) => Math.abs(p.x - q.x) <= q.hw + 0.6 && Math.abs(p.y - q.y) <= q.hh + 0.6);
+      if (r) p.cut = [r.x - r.hw, r.y - r.hh, r.x + r.hw, r.y + r.hh];
+    }
     // Padmé's skiff on its apron, nose along it (the film's chrome skiff, tools/sprites/mustafar_set; the model if
     // the sprite did not load); placed in the world, after the transpose
     if (!this.addSheetProp('mfSkiff_y', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y - 0.5)) this.addProp('skiff', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y);
