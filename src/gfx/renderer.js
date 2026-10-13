@@ -1021,10 +1021,10 @@ export class Renderer {
       ctx.stroke();
       // the tube
       const gr = ctx.createLinearGradient(ax + (nx * w) / 2, ay + (ny * w) / 2, ax - (nx * w) / 2, ay - (ny * w) / 2);
-      gr.addColorStop(0, '#9c9188');
-      gr.addColorStop(0.3, '#6e655c');
-      gr.addColorStop(0.7, '#3a332e');
-      gr.addColorStop(1, '#7a3a14'); // the lava's glow under it
+      gr.addColorStop(0, '#7d7068'); // rust-dark steel, lit from the upper left
+      gr.addColorStop(0.3, '#4f463f');
+      gr.addColorStop(0.7, '#2a231f');
+      gr.addColorStop(1, '#6a3212'); // the lava's glow under it
       ctx.strokeStyle = gr;
       ctx.lineWidth = w;
       ctx.beginPath();
