@@ -8,6 +8,15 @@ const el = (cls, html = '') => {
   return e;
 };
 
+// one emblem (pointing right, at the name; mirrored on the right side): three bars tapering to a chevron, a
+// ring with a dot in it
+const EMBLEM = `<svg class="bb-mark" viewBox="0 0 66 26" aria-hidden="true">
+  <path d="M2 3h24l6 5H2zM2 10.5h32l3 2.5-3 2.5H2zM2 18h30l-6 5H2z"/>
+  <path d="M38 4.5h7a8.5 8.5 0 0 1 0 17h-7l4-4h3a4.5 4.5 0 0 0 0-9h-3z"/>
+  <circle cx="54" cy="13" r="7.5" fill="none" stroke-width="2.6"/>
+  <circle cx="54" cy="13" r="3.2"/>
+</svg>`;
+
 export class DuelHUD {
   constructor(game) {
     this.game = game;
@@ -24,12 +33,17 @@ export class DuelHUD {
     };
     const c = this.cfg;
     if (game.duel.hud) c.kicker = `${c.kicker} · ${c.title}`;
+    // the boss's bar as Star Wars Jedi: Survivor draws it (reference/unsorted/image.jpg): a long thin pill of coral
+    // red with a dark rim, no plate; the name under it in pale cream between two mirrored emblems (striped
+    // chevrons and a dotted ring); the composure (the block meter) a thin gold line under the bar, shown only
+    // while it is not full
     this.boss = el(
       'boss-bar',
-      `<div class="bb-name">${c.name} <span>${c.sub}</span></div>
-       <div class="bb-hp"><i class="bb-chip"></i><i class="bb-fill"></i>${c.marks.map((m) => `<b style="left:${m * 100}%"></b>`).join('')}</div>
-       <div class="bb-comp"><i></i></div>`,
+      `<div class="bb-hp"><i class="bb-chip"></i><i class="bb-fill"></i></div>
+       <div class="bb-comp"><i></i></div>
+       <div class="bb-name">${EMBLEM}<span>${c.name}</span>${EMBLEM.replace('bb-mark', 'bb-mark r')}</div>`,
     );
+    this.boss.title = c.sub;
     this.comp = el('ps-comp', '<span>평정</span><div><i></i></div>');
     document.querySelector('.cn-stats').appendChild(this.comp); // the PC console (the phone plate has its own, ui/mobileHud.js)
     this.lockEl = el('lock-meter hidden', '<div class="lm-label">칼날 겨루기</div><div class="lm-bar"><i></i></div><div class="lm-hint"></div>');
@@ -53,6 +67,7 @@ export class DuelHUD {
     const bc = this.boss.querySelector('.bb-comp i');
     bc.style.width = Math.max(0, dk.composure) + '%';
     bc.parentElement.classList.toggle('broken', dk.state === 'broken');
+    bc.parentElement.classList.toggle('full', dk.composure >= 99.5 && dk.state !== 'broken');
     const pc = this.comp.querySelector('i');
     pc.style.width = Math.max(0, p.composure) + '%';
     this.comp.classList.toggle('low', p.composure < 30);
