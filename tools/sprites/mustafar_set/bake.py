@@ -22,7 +22,8 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
   `mfSkiff_y` (nose to +y: along the landing apron)
 - `mfChair`: faces +y (mirrored from the render, which faces +x: `mfChair_x`), 1.5 m tall
 - `mfConsoleD`: the screen console seen head-on (image_30), across a room's cut far corner (the diagonal, facing
-  +x+y): level across the screen, 3 m = 84.9 px; the screen and lamps on a neon layer
+  +x+y): fitted on its pillars' corners so it stands level and upright, 3.42 m; its copper body matched to the wall
+  consoles' grey (`match`); the screen and lamps on a neon layer
 - `mfPassage`: a corridor's inside with no roof (the far wall tall with light panels, the near wall low, a portal at
   each end), along y, 15 m by 4 m (the far wall on −x); `mfPassage_x` along x as rendered. Fitted by least squares
   on five measured corners (the render's own proportions differ: the walkway is narrowed to the corridor's)
@@ -144,19 +145,26 @@ PIECES = {
     'mfConsoleD': dict(
         src='image_30.png',  # the screen console seen head-on: across a room's cut far corner, facing +x+y (the camera)
         over=4,
-        axis=((500, 727), (1280, 784)),  # the desk's foot: level across the screen
-        span=(1332, 3.42),  # (as wide as the cut's diagonal out to the wall rows' desk fronts: its end pillars meet theirs)
-        px_m=28.28,  # (along the diagonal: 2 × 20 / √2 px a metre)
-        slope=0.0,
-        height=(725, 2.7),
-        ground=(890, 792),  # between the pillars' feet
-        back=0.25,  # m behind them to its middle
-        back_dir=(0, -14.14),  # (behind it is −x−y: straight up the screen)
+        # render px -> (x, y, z) m: the wall along (1, −1)/√2 (level across the screen, 28.3 px a metre), 3.42 m wide
+        # (as wide as the cut's diagonal out to the wall rows' desk fronts), 2.7 m tall; the pillars' outer corners
+        # and the desk's front corners (0.25 m out from the wall); fitted with the verticals kept vertical
+        corners=[
+            ((305, 110), (-1.209, 1.209, 2.7)),  # pillar tops
+            ((1430, 150), (1.209, -1.209, 2.7)),
+            ((305, 745), (-1.209, 1.209, 0)),  # pillar feet
+            ((1430, 818), (1.209, -1.209, 0)),
+            ((500, 727), (-0.65, 1.0, 0)),  # the desk's front feet
+            ((1280, 784), (1.0, -0.65, 0)),
+        ],
+        vertical=True,
         footprint=[[-1.387, 1.033], [1.033, -1.387], [1.281, -1.139], [-1.139, 1.281]],
         lights=[[0.7, 0.7, 1.5, 230, 190, 90, 110, 0.04]],
         emit='screen',
         glow_boxes=[(560, 300, 1300, 560), (440, 560, 1330, 660), (300, 470, 370, 520), (1410, 560, 1460, 600)],
-        gain=0.85,
+        # the render's copper body matched to the wall consoles' grey (mfConsole: saturation 0.08, luma 0.24)
+        match=dict(sat=0.18, gain=1.31),
+        opaque=True,  # (the render's faint halo dropped: it reached the canvas's edges)
+        gain=1.0,
     ),
     'mfPassage_x': dict(
         src='image_9.png',
@@ -393,6 +401,14 @@ def bake(name, P):
     em = {'table': emissive_table, 'holo': emissive_holo, 'lava': emissive_lava, 'screen': emissive_screen}.get(P.get('emit'), emissive)
     m = (em(a, P.get('glow_boxes')) if P.get('emit') == 'screen' else em(a)) if P.get('emit') else np.zeros(a.shape[:2], np.float32)
     body = a.copy()
+    if P.get('match'):
+        # the body's colour matched to another console's: its chroma scaled toward its luma, then brightened (the
+        # glowing parts left as they are)
+        M = P['match']
+        lum = body[..., :3] @ np.array([0.299, 0.587, 0.114], np.float32)
+        rgb = lum[..., None] + (body[..., :3] - lum[..., None]) * M['sat']
+        keep = m[..., None] > 0.5
+        body[..., :3] = np.where(keep, body[..., :3], np.clip(rgb * M['gain'], 0, 1))
     body[..., :3] *= np.where(m[..., None] > 0.5, 1, P.get('gain', BODY_GAIN))
     neon = a.copy()
     neon[..., 3] *= m
