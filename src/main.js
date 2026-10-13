@@ -279,7 +279,7 @@ async function boot() {
     dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); // the first frame can stamp before `last`
     if (SABER.slow) dt *= 0.25; // the saber card's slow motion (to look at the trails)
     last = now;
-    if (!(editor && editor.on)) input.update(dt);
+    if (!(editor && editor.holds)) input.update(dt);
     touch.update(dt);
     // the title screen sits over the live world: hide the HUD, drift the camera
     const onTitle = !help.classList.contains('hidden');
@@ -295,7 +295,7 @@ async function boot() {
     dr.x += (tx - dr.x) * Math.min(1, dt * (onTitle ? 1 : 3));
     dr.y += (ty - dr.y) * Math.min(1, dt * (onTitle ? 1 : 3));
     // menus pause the action (the map does not)
-    paused = (editor && editor.on) || onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
+    paused = (editor && editor.holds) || onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
     // one failing system must not freeze the whole game: report it once, keep running
     for (const step of steps) {
       try {

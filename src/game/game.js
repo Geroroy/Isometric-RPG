@@ -636,10 +636,12 @@ export class Game {
     }
     this.time += dt;
     const p = this.player;
-    if (this.cinema) this.cinema.update(dt);
-    if (this.duel) this.duel.update(dt);
+    // (the map editor's play-test, `mapTest`: the player walks the map alone — the scene, the duel and everyone
+    // else held where they are: ui/mapEditor.js)
+    if (this.cinema && !this.mapTest) this.cinema.update(dt);
+    if (this.duel && !this.mapTest) this.duel.update(dt);
     this.updateActive();
-    for (const u of this.activeUnits) u.update(dt);
+    for (const u of this.activeUnits) if (!this.mapTest || u === p) u.update(dt);
 
     // Unit separation (soft collisions).
     const act = this.activeUnits;

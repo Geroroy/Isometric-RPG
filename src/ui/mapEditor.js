@@ -12,6 +12,12 @@
 // Positions snap to a half tile (a dragged prop moves by half tiles, keeping its offset); Shift places freely.
 // Ctrl+Z undoes, Ctrl+Y (Ctrl+Shift+Z) redoes, Ctrl+S saves (downloads the file). WASD / the arrows / the right or
 // middle button drag the view, the wheel zooms. The game is paused while the editor is open.
+//
+// The selected prop's position, direction (a set sprite's or its twin; a model's angle), variant and flags are shown
+// and typed in the panel (a light's position the same).
+// P plays the map from where the view is (game.mapTest): the player stood on the nearest walkable tile there, and
+// walks it alone — the scene, the duel and Obi-Wan held — to try the way, the cover and the lights; P again is back
+// in the editor with everything as it was before (the player, the duel), F2 out of both.
 import { World, MUSTAFAR, MUSTAFAR_SHEETS, mapText } from '../world/worldgen.js';
 import { cityFootprint, inPoly } from '../world/cityProps.js';
 import { PROPS } from '../gfx/models/props.js';
@@ -40,6 +46,7 @@ export class MapEditor {
     this.assets = assets;
     this.onExit = onExit;
     this.on = false;
+    this.testing = false; // the play-test (P)
     this.mode = 'prop';
     this.palette = null; // the sprite picked to place: { sheet } or { type }
     this.sel = null; // the selected prop
@@ -66,6 +73,11 @@ export class MapEditor {
 
   get world() {
     return this.game.world;
+  }
+
+  /** Whether the editor holds the game (paused, its own input): open and not play-testing. */
+  get holds() {
+    return this.on && !this.testing;
   }
 
   // ---------------------------------------------------------------------------------------------------- open/close
@@ -99,6 +111,7 @@ export class MapEditor {
 
   close() {
     const g = this.game;
+    if (this.testing) this.endTest(false);
     this.on = false;
     this.drag = null;
     this.dom.classList.add('hidden');
@@ -123,6 +136,12 @@ export class MapEditor {
       <div class="me-body me-prop">
         <input class="me-search" type="search" placeholder="스프라이트 찾기…">
         <div class="me-sel"></div>
+        <div class="me-form me-pform">
+          <div class="me-row"><label>X <input class="me-px" type="number" step="0.05"></label><label>Y <input class="me-py" type="number" step="0.05"></label></div>
+          <label>방향 <select class="me-pdir"></select> <kbd>R</kbd></label>
+          <label class="me-pvar">변형 <select class="me-pv"></select> <kbd>V</kbd></label>
+          <div class="me-row"><label><input class="me-pb" type="checkbox"> 막기 <kbd>B</kbd></label><label><input class="me-pf" type="checkbox"> 바닥형 <kbd>F</kbd></label></div>
+        </div>
         <div class="me-list"></div>
       </div>
       <div class="me-body me-brush">
@@ -133,6 +152,7 @@ export class MapEditor {
       <div class="me-body me-light">
         <p class="me-note">조명을 클릭해 선택 · 끌어서 이동 · 빈 곳을 클릭하면 새 조명</p>
         <div class="me-lprops">
+          <div class="me-row"><label>X <input class="me-lx" type="number" step="0.05"></label><label>Y <input class="me-ly" type="number" step="0.05"></label></div>
           <label>색 <input class="me-lc" type="color"></label>
           <label>반경 <input class="me-lr" type="range" min="10" max="400" step="5"> <span class="me-lr-v"></span></label>
           <label>높이 <input class="me-lz" type="range" min="0" max="5" step="0.1"> <span class="me-lz-v"></span> m</label>
@@ -142,8 +162,9 @@ export class MapEditor {
       </div>
       <div class="me-foot">
         <div class="me-btns"><button class="me-undo" title="Ctrl+Z">↶ 되돌리기</button><button class="me-redo" title="Ctrl+Y">↷ 다시</button><button class="me-save" title="Ctrl+S">💾 JSON 저장</button></div>
+        <button class="me-test" title="P">▶ 플레이 테스트 <kbd>P</kbd></button>
         <div class="me-status"></div>
-        <div class="me-help">클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>R</kbd> 회전 · <kbd>V</kbd> 변형 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 바닥형<br><kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대</div>
+        <div class="me-help">클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>R</kbd> 회전 · <kbd>V</kbd> 변형 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 바닥형<br><kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트</div>
       </div>`;
     document.body.appendChild(dom);
     for (const e of ['pointerdown', 'wheel', 'contextmenu', 'mousedown']) dom.addEventListener(e, (ev) => ev.stopPropagation());
@@ -152,11 +173,19 @@ export class MapEditor {
     dom.querySelector('.me-undo').onclick = () => this.undoStep();
     dom.querySelector('.me-redo').onclick = () => this.redoStep();
     dom.querySelector('.me-save').onclick = () => this.save();
+    dom.querySelector('.me-test').onclick = (e) => (e.currentTarget.blur(), this.startTest());
     const size = dom.querySelector('.me-size');
     size.oninput = () => this.setBrush(+size.value);
     dom.querySelector('.me-search').oninput = (e) => this.filter(e.target.value);
     this.buildPalette();
     this.buildLightPanel();
+    this.buildPropForm();
+    // the play-test's note at the top of the screen
+    const tb = (this.testBar = document.createElement('div'));
+    tb.id = 'mapTestBar';
+    tb.className = 'hidden';
+    tb.innerHTML = '<b>플레이 테스트</b> — 걸어서 길 · 가림 · 조명을 확인 (결투는 멈춤) · <kbd>P</kbd> 에디터로 · <kbd>F2</kbd> 끝내기';
+    document.body.appendChild(tb);
 
     const cv = (this.canvas = document.createElement('canvas'));
     cv.id = 'mapEditorView';
@@ -267,12 +296,21 @@ export class MapEditor {
     q('.me-lr').oninput = edit((l) => (l.rad = +q('.me-lr').value));
     q('.me-lz').oninput = edit((l) => (l.z = +q('.me-lz').value));
     q('.me-lf').oninput = edit((l) => (l.flicker = +q('.me-lf').value));
+    // a typed position (its own undo step, on change)
+    for (const [s, k] of [['.me-lx', 'x'], ['.me-ly', 'y']]) {
+      q(s).oninput = null;
+      q(s).addEventListener('change', () => {
+        const v = q(s).value;
+        if (v !== '' && Number.isFinite(+v) && this.selLight && +v !== this.selLight[k]) edit((l) => (l[k] = +v))();
+        else this.showLight();
+      });
+    }
     // one undo step a slider's whole drag
-    for (const s of ['.me-lc', '.me-lr', '.me-lz', '.me-lf'])
-      q(s).onchange = () => {
+    for (const s of ['.me-lc', '.me-lr', '.me-lz', '.me-lf', '.me-lx', '.me-ly'])
+      q(s).addEventListener('change', () => {
         if (this.lightEdit) this.commit(this.lightEdit);
         this.lightEdit = null;
-      };
+      });
     q('.me-ldel').onclick = () => this.remove();
   }
 
@@ -281,6 +319,10 @@ export class MapEditor {
     const l = this.selLight;
     d.querySelector('.me-lprops').classList.toggle('off', !l);
     if (!l) return;
+    for (const [s, v] of [['.me-lx', l.x], ['.me-ly', l.y]]) {
+      const i = d.querySelector(s);
+      if (document.activeElement !== i) i.value = +v.toFixed(3);
+    }
     d.querySelector('.me-lc').value = hex(l.r, l.g, l.b);
     d.querySelector('.me-lr').value = l.rad;
     d.querySelector('.me-lr-v').textContent = Math.round(l.rad);
@@ -321,6 +363,76 @@ export class MapEditor {
     this.dom.querySelector('.me-status').textContent = t;
     const sel = this.dom.querySelector('.me-sel');
     sel.textContent = p ? `선택: ${p.sheet || p.type}` : this.palette ? `배치할 소품: ${this.palette.sheet || this.palette.type} (Esc 해제)` : '소품을 고르거나 맵의 소품을 클릭';
+    this.showProp();
+    if (this.selLight) this.showLight();
+  }
+
+  /** The selected prop's numbers and choices in the panel (its form): built for it, kept up while it moves. */
+  buildPropForm() {
+    const d = this.dom;
+    const q = (s) => d.querySelector(s);
+    const setXY = () => {
+      const p = this.sel;
+      const x = +q('.me-px').value;
+      const y = +q('.me-py').value;
+      if (!p || q('.me-px').value === '' || q('.me-py').value === '' || !Number.isFinite(x) || !Number.isFinite(y)) return this.showProp(true);
+      if (x === p.x && y === p.y) return;
+      this.moveTo(p, Math.max(0, Math.min(this.world.w, x)), Math.max(0, Math.min(this.world.h, y)));
+    };
+    q('.me-px').onchange = setXY;
+    q('.me-py').onchange = setXY;
+    const done = (e) => e.target.blur(); // (back to the editor's keys)
+    q('.me-pdir').onchange = (e) => {
+      const p = this.sel;
+      if (p && p.sheet) {
+        if (e.target.value !== p.sheet) this.rotate();
+      } else if (p) this.setAngle(+e.target.value);
+      done(e);
+    };
+    q('.me-pv').onchange = (e) => {
+      const p = this.sel;
+      if (p && !p.sheet) this.setVariant(+e.target.value);
+      done(e);
+    };
+    q('.me-pb').onchange = (e) => (this.sel && !!this.sel.block !== e.target.checked && this.toggleBlock(), done(e));
+    q('.me-pf').onchange = (e) => (this.sel && !!this.sel.flat !== e.target.checked && this.toggleFlat(), done(e));
+  }
+
+  showProp(force = false) {
+    const d = this.dom;
+    if (!d) return;
+    const p = this.sel;
+    const form = d.querySelector('.me-pform');
+    form.classList.toggle('hidden', !p);
+    if (!p) return;
+    const q = (s) => d.querySelector(s);
+    for (const [s, v] of [['.me-px', p.x], ['.me-py', p.y]]) {
+      const i = q(s);
+      if (force || document.activeElement !== i) i.value = +v.toFixed(3);
+    }
+    // its directions: a set sprite and its mirrored twin, a model's angles
+    const dir = q('.me-pdir');
+    const key = p.sheet ? p.sheet + '|' + (MIRROR[p.sheet] || '') : 'model|' + p.type;
+    if (dir.dataset.key !== key || force) {
+      dir.dataset.key = key;
+      dir.innerHTML = '';
+      const opts = p.sheet
+        ? [p.sheet, MIRROR[p.sheet]].filter((n) => n && cityFootprint(n)).sort().map((n) => [n, `${n}${/_[rxy]$/.test(n) ? ' (반전)' : ' (기본)'}`])
+        : (PROPS[p.type].angles || [0]).map((a, i) => [i, `${i}: ${Math.round((a * 180) / Math.PI)}°`]);
+      for (const [v, t] of opts) dir.add(new Option(t, v));
+      dir.disabled = opts.length < 2;
+    }
+    dir.value = p.sheet ? p.sheet : p.angleIdx;
+    const nv = p.sheet ? 0 : PROPS[p.type].variants || 1;
+    q('.me-pvar').classList.toggle('hidden', nv < 2);
+    const pv = q('.me-pv');
+    if (pv.options.length !== nv) {
+      pv.innerHTML = '';
+      for (let i = 0; i < nv; i++) pv.add(new Option(String(i), i));
+    }
+    if (nv >= 2) pv.value = p.variant;
+    q('.me-pb').checked = !!p.block;
+    q('.me-pf').checked = !!p.flat;
   }
 
   // ------------------------------------------------------------------------------------------------- the world
@@ -536,6 +648,7 @@ export class MapEditor {
 
   select(p) {
     this.sel = p;
+    this.showProp();
     this.status();
   }
 
@@ -580,11 +693,7 @@ export class MapEditor {
     } else {
       const n = (PROPS[p.type].angles || [0]).length;
       if (n < 2) return this.say(`${p.type}: 방향이 하나뿐입니다`);
-      this.unblock(p);
-      p.angleIdx = (p.angleIdx + 1) % n;
-      p.frameIdx = p.variant * n + p.angleIdx;
-      this.block(p);
-      this.renderer.placeProp(p);
+      return this.setAngle((p.angleIdx + 1) % n);
     }
     this.commit(before);
   }
@@ -595,11 +704,42 @@ export class MapEditor {
     if (!p || p.sheet) return;
     const def = PROPS[p.type];
     if ((def.variants || 1) < 2) return this.say(`${p.type}: 변형이 하나뿐입니다`);
+    this.setVariant((p.variant + 1) % def.variants);
+  }
+
+  setVariant(v) {
+    const p = this.sel;
+    if (!p || p.sheet || v === p.variant) return;
     const before = this.snapshot();
-    const n = (def.angles || [0]).length;
-    p.variant = (p.variant + 1) % def.variants;
+    const n = (PROPS[p.type].angles || [0]).length;
+    p.variant = v;
     p.frameIdx = p.variant * n + p.angleIdx;
     this.renderer.placeProp(p);
+    this.commit(before);
+  }
+
+  /** A model turned to its angle `i` (its footprint with it). */
+  setAngle(i) {
+    const p = this.sel;
+    if (!p || p.sheet || i === p.angleIdx) return;
+    const before = this.snapshot();
+    const n = (PROPS[p.type].angles || [0]).length;
+    this.unblock(p);
+    p.angleIdx = i;
+    p.frameIdx = p.variant * n + p.angleIdx;
+    this.block(p);
+    this.renderer.placeProp(p);
+    this.commit(before);
+  }
+
+  /** A prop to a typed position, as a drag puts it (its footprint, its room's wall cut, the order). */
+  moveTo(p, x, y) {
+    const before = this.snapshot();
+    this.unblock(p);
+    this.place(p, x, y);
+    this.block(p);
+    this.recut(p);
+    this.resort();
     this.commit(before);
   }
 
@@ -663,6 +803,76 @@ export class MapEditor {
     this.toast = { msg, t: 2.6 };
   }
 
+  // ------------------------------------------------------------------------------------------------ play-test
+
+  /** The walkable tile nearest (x, y) (its middle), within a few tiles; else none. */
+  walkableNear(x, y) {
+    const w = this.world;
+    let best = null;
+    let bd = Infinity;
+    for (let ty = Math.floor(y) - 8; ty <= Math.floor(y) + 8; ty++)
+      for (let tx = Math.floor(x) - 8; tx <= Math.floor(x) + 8; tx++) {
+        if (w.isBlocked(tx + 0.5, ty + 0.5)) continue;
+        const d = Math.hypot(tx + 0.5 - x, ty + 0.5 - y);
+        if (d < bd) [bd, best] = [d, { x: tx + 0.5, y: ty + 0.5 }];
+      }
+    return best;
+  }
+
+  /** P: play the map from where the view is — the player alone, everything else held (game.mapTest). */
+  startTest() {
+    if (!this.on || this.testing) return;
+    const g = this.game;
+    const p = g.player;
+    const spot = this.walkableNear(this.focus.x, this.focus.y);
+    if (!spot) return this.say('여기 근처에는 걸을 수 있는 칸이 없습니다');
+    this.drag = null;
+    this.keys.clear();
+    // as things are, to come back to (the player whole: a shallow copy of his state)
+    this.held = { p: { ...p }, locked: g.duel && g.duel.locked, god: g.cheats && g.cheats.god };
+    p.x = spot.x;
+    p.y = spot.y;
+    p.z = this.world.groundAt ? this.world.groundAt(spot.x, spot.y) : 0;
+    p.vz = 0;
+    p.action = p.path = p.queued = null;
+    p.scripted = p.hidden = false;
+    p.stun = 0;
+    p.choke = null;
+    p.saberOut = false;
+    if (g.duel) g.duel.locked = false;
+    if (g.cheats) g.cheats.god = true;
+    g.mapTest = true;
+    this.testing = true;
+    g.camFocus = null;
+    this.renderer.editing = false;
+    this.dom.classList.add('hidden');
+    this.canvas.classList.add('hidden');
+    this.testBar.classList.remove('hidden');
+  }
+
+  /** Back from the play-test: the player and the duel as they were; the editor's view where he walked (`back`). */
+  endTest(back = true) {
+    if (!this.testing) return;
+    const g = this.game;
+    const p = g.player;
+    const at = { x: p.x, y: p.y };
+    Object.assign(p, this.held.p);
+    if (g.duel) g.duel.locked = this.held.locked;
+    if (g.cheats) g.cheats.god = this.held.god;
+    g.mapTest = false;
+    this.testing = false;
+    this.testBar.classList.add('hidden');
+    if (!back) return;
+    this.focus.x = at.x;
+    this.focus.y = at.y;
+    g.camFocus = this.focus;
+    this.renderer.editing = true;
+    this.renderer.propOrder = null;
+    this.dom.classList.remove('hidden');
+    this.canvas.classList.remove('hidden');
+    this.status();
+  }
+
   // ---------------------------------------------------------------------------------------------------- input
 
   keydown(e) {
@@ -674,10 +884,20 @@ export class MapEditor {
       return;
     }
     if (!this.on) return;
+    if (this.testing) {
+      // the play-test: the game's own keys, but P (back to the editor)
+      if (k === 'p' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (!e.repeat) this.endTest();
+      }
+      return;
+    }
     if (k === 'f5') return; // (the graphics switch still works)
     const tag = e.target && e.target.tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') {
-      if (k === 'escape') e.target.blur();
+      // typing in the panel: its own keys; Enter (a typed number: its change) or Esc gives the keys back
+      if (k === 'escape' || (k === 'enter' && e.target.type !== 'search')) e.target.blur();
       e.stopImmediatePropagation();
       return;
     }
@@ -718,6 +938,9 @@ export class MapEditor {
         break;
       case 'f':
         this.toggleFlat();
+        break;
+      case 'p':
+        this.startTest();
         break;
       case '1':
         this.setMode('prop');
@@ -872,7 +1095,7 @@ export class MapEditor {
 
   /** Each frame, after the world is drawn: the view's keys, then the editor's marks over the picture. */
   draw(dt) {
-    if (!this.on) return;
+    if (!this.holds) return;
     // pan with the keys
     let kx = 0;
     let ky = 0;

@@ -95,9 +95,11 @@ export class Input {
     this.audio.unlock();
     const g = this.game;
     const p = g.player;
-    if (p.dead || g.cinema || g.talkingTo) return; // mid-conversation the world isn't clickable
+    if (p.dead || (g.cinema && !g.mapTest) || g.talkingTo) return; // mid-conversation the world isn't clickable
     this.updateMouse();
-    const duel = g.duel;
+    // the map editor's play-test (ui/mapEditor.js): walking only — no fight, no skills
+    if (g.mapTest && e.button !== 0) return;
+    const duel = g.mapTest ? null : g.duel;
     if (duel && e.button === 0 && duel.press()) return;
     if (duel && e.button === 2) {
       // in the duel the right button is the guard
@@ -113,14 +115,14 @@ export class Input {
       }
       this.lmb = true;
       this.holdT = 0;
-      const t = this.enemyUnderCursor();
-      if (g.hover && g.hover.npc) {
+      const t = g.mapTest ? null : this.enemyUnderCursor();
+      if (g.hover && g.hover.npc && !g.mapTest) {
         this.lmb = false;
         p.commandTalk(g.hover);
       } else if (t) {
         this.lmbTarget = t;
         p.basicAttack(t);
-      } else if (this.shift) {
+      } else if (this.shift && !g.mapTest) {
         this.attackInPlace();
       } else {
         const m = g.mouseWorld;
@@ -202,7 +204,7 @@ export class Input {
       g.emit('log', on ? '그래픽: 리마스터' : '그래픽: 클래식', 'sys');
       return;
     }
-    if (g.cinema) {
+    if (g.cinema && !g.mapTest) {
       // cutscene: only skipping
       if (k === 'escape' || k === 'enter') g.cinema.skip();
       e.preventDefault();
@@ -218,6 +220,7 @@ export class Input {
     // a panel or the title screen is open: only the keys that work the panels
     const panelOpen = Object.values(hud.open).some(Boolean) || !document.getElementById('help').classList.contains('hidden');
     if (panelOpen && !PANEL_KEYS.has(k) && e.code !== 'Backquote') return;
+    if (g.mapTest && (/^[1-6]$/.test(e.key) || k === ' ' || k === 'q' || k === 'x')) return; // (the play-test: walking only)
     if (k === ' ' && g.duel && g.duel.press()) {
       e.preventDefault();
       return;
@@ -345,7 +348,7 @@ export class Input {
       if (this.lmbTarget) {
         if (this.lmbTarget.dead) this.lmbTarget = null;
         else if (!p.action) p.basicAttack(this.lmbTarget);
-      } else if (this.shift) {
+      } else if (this.shift && !g.mapTest) {
         if (!p.action) this.attackInPlace();
       } else if (this.holdT > 0.12) {
         const m = g.mouseWorld;
