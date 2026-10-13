@@ -19,13 +19,21 @@
 // walks it alone — the scene, the duel and Obi-Wan held — to try the way, the cover and the lights; P again is back
 // in the editor with everything as it was before (the player, the duel), F2 out of both.
 import { World, MUSTAFAR, MUSTAFAR_SHEETS, mapText } from '../world/worldgen.js';
-import { cityFootprint, inPoly } from '../world/cityProps.js';
+import { cityFootprint, inPoly, setCityFootprints } from '../world/cityProps.js';
+import { addMirror, MIRROR_SUFFIX } from '../gfx/mustafarFloor.js';
 import { PROPS } from '../gfx/models/props.js';
 import { worldToScreen } from '../core/iso.js';
 import { setUIHidden } from './uiHidden.js';
 import { dist } from '../core/math.js';
 
 const MIRROR = MUSTAFAR_SHEETS.mirror;
+// the keys by where they are on the keyboard (e.code), so they work in Korean input too (R comes as 'ㄱ', or as
+// 'Process' while the IME composes)
+const CODE_KEYS = { KeyR: 'r', KeyV: 'v', KeyB: 'b', KeyF: 'f', KeyP: 'p', KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', KeyZ: 'z', KeyY: 'y', Digit1: '1', Digit2: '2', Digit3: '3', BracketLeft: '[', BracketRight: ']', Equal: '=', Minus: '-' };
+const keyOf = (e) => CODE_KEYS[e.code] || e.key.toLowerCase();
+/** A set sprite's other way round: its baked twin, else its mirror image (name~m, made when first wanted). */
+const twinOf = (n) => MIRROR[n] || (n.endsWith(MIRROR_SUFFIX) ? n.slice(0, -MIRROR_SUFFIX.length) : n + MIRROR_SUFFIX);
+const isTwin = (n) => /_[rxy]$/.test(n) || n.endsWith(MIRROR_SUFFIX);
 const UNDO_MAX = 200;
 const snap = (v) => Math.round(v * 2) / 2;
 const PAN_SPEED = 900; // game px a second at zoom 1
@@ -65,7 +73,7 @@ export class MapEditor {
     this.pick1.canvas.width = this.pick1.canvas.height = 1;
     window.addEventListener('keydown', (e) => this.keydown(e), true);
     window.addEventListener('keyup', (e) => {
-      this.keys.delete(e.key.toLowerCase());
+      this.keys.delete(keyOf(e));
       if (e.key === 'Shift') this.shift = false;
     });
     window.addEventListener('blur', () => this.keys.clear());
@@ -204,7 +212,7 @@ export class MapEditor {
     const list = this.dom.querySelector('.me-list');
     const city = this.assets.city || {};
     const names = Object.keys(city)
-      .filter((n) => city[n] && city[n].body && cityFootprint(n))
+      .filter((n) => city[n] && city[n].body && cityFootprint(n) && !n.endsWith(MIRROR_SUFFIX))
       .sort();
     const shown = new Set();
     for (const n of names) if (!(MIRROR[n] && shown.has(MIRROR[n]))) shown.add(n);
@@ -412,12 +420,12 @@ export class MapEditor {
     }
     // its directions: a set sprite and its mirrored twin, a model's angles
     const dir = q('.me-pdir');
-    const key = p.sheet ? p.sheet + '|' + (MIRROR[p.sheet] || '') : 'model|' + p.type;
+    const key = p.sheet ? p.sheet : 'model|' + p.type;
     if (dir.dataset.key !== key || force) {
       dir.dataset.key = key;
       dir.innerHTML = '';
       const opts = p.sheet
-        ? [p.sheet, MIRROR[p.sheet]].filter((n) => n && cityFootprint(n)).sort().map((n) => [n, `${n}${/_[rxy]$/.test(n) ? ' (반전)' : ' (기본)'}`])
+        ? [p.sheet, twinOf(p.sheet)].sort((a, b) => isTwin(a) - isTwin(b)).map((n) => [n, `${n}${isTwin(n) ? ' (반전)' : ' (기본)'}`])
         : (PROPS[p.type].angles || [0]).map((a, i) => [i, `${i}: ${Math.round((a * 180) / Math.PI)}°`]);
       for (const [v, t] of opts) dir.add(new Option(t, v));
       dir.disabled = opts.length < 2;
@@ -538,7 +546,7 @@ export class MapEditor {
   /** A new prop at (x, y): set like the map's others of its sprite (flat, over, block), else standing. */
   add(it, x, y) {
     const w = this.world;
-    const like = w.props.find((q) => (it.sheet ? q.sheet === it.sheet || q.sheet === MIRROR[it.sheet] : q.type === it.type));
+    const like = w.props.find((q) => (it.sheet ? q.sheet === it.sheet || q.sheet === twinOf(it.sheet) : q.type === it.type));
     let p;
     if (it.sheet) {
       const flat = like ? !!like.flat : false;
@@ -553,6 +561,14 @@ export class MapEditor {
       if (!p) return null;
       p.block = like ? !!like.block : !def.flat && !!(def.rect || def.rectByAngle || def.block > 0);
     }
+    // a table's top, as the map's other one has it (turned with the sprite if that one is the other way)
+    if (like && like.surface && it.sheet) {
+      const s = like.surface;
+      const t = { x0: s.x0 - like.x + x, y0: s.y0 - like.y + y, x1: s.x1 - like.x + x, y1: s.y1 - like.y + y, z: s.z };
+      if (like.sheet !== it.sheet) this.turnTop(t, x, y);
+      w.surfaces.push(t);
+      Object.defineProperty(p, 'surface', { value: t, configurable: true, writable: true });
+    }
     this.block(p);
     this.recut(p);
     this.renderer.placeProp(p);
@@ -560,9 +576,17 @@ export class MapEditor {
     return p;
   }
 
-  /** A prop off the map, with its own lights. */
-  drop(p) {
+  /** A raised top turned with its sprite (x ↔ y about the piece's middle). */
+  turnTop(t, x, y) {
+    const [hx, hy] = [(t.x1 - t.x0) / 2, (t.y1 - t.y0) / 2];
+    const [cx, cy] = [(t.x0 + t.x1) / 2 - x, (t.y0 + t.y1) / 2 - y];
+    [t.x0, t.x1, t.y0, t.y1] = [x + cy - hy, x + cy + hy, y + cx - hx, y + cx + hx];
+  }
+
+  /** A prop off the map, with its own lights (and its raised top, unless `keepTop`: it is being turned). */
+  drop(p, keepTop = false) {
     const w = this.world;
+    if (p.surface && !keepTop && w.surfaces.includes(p.surface)) w.surfaces.splice(w.surfaces.indexOf(p.surface), 1);
     this.unblock(p);
     const i = w.props.indexOf(p);
     if (i >= 0) w.props.splice(i, 1);
@@ -580,6 +604,12 @@ export class MapEditor {
         l.x += dx;
         l.y += dy;
       }
+    if (p.surface) {
+      p.surface.x0 += dx;
+      p.surface.x1 += dx;
+      p.surface.y0 += dy;
+      p.surface.y1 += dy;
+    }
     p.x = x;
     p.y = y;
     p.depth = x + y;
@@ -597,6 +627,8 @@ export class MapEditor {
       lights: w.lights.slice(),
       ls: w.lights.map((l) => ({ x: l.x, y: l.y, z: l.z, r: l.r, g: l.g, b: l.b, rad: l.rad, flicker: l.flicker })),
       homes: new Map([...w.props, ...w.lights].filter((o) => o.home).map((o) => [o, { ...o.home }])),
+      surfaces: w.surfaces.slice(),
+      ss: w.surfaces.map((t) => ({ ...t })),
       blocked: w.blocked.slice(),
     };
   }
@@ -611,6 +643,9 @@ export class MapEditor {
     s.lights.forEach((l, i) => Object.assign(l, s.ls[i]));
     for (const [o, h] of s.homes) o.home = { ...h };
     w.blocked.set(s.blocked);
+    w.surfaces.length = 0;
+    w.surfaces.push(...s.surfaces);
+    s.surfaces.forEach((t, i) => Object.assign(t, s.ss[i]));
     for (const p of w.props) this.renderer.placeProp(p);
     this.resort();
     if (this.sel && !w.props.includes(this.sel)) this.select(null);
@@ -677,13 +712,17 @@ export class MapEditor {
     if (!p) return;
     const before = this.snapshot();
     if (p.sheet) {
-      const twin = MIRROR[p.sheet];
-      if (!twin || !cityFootprint(twin)) return this.say(`${p.sheet}: 다른 방향 스프라이트가 없습니다`);
+      const twin = this.twin(p.sheet);
+      if (!twin) return this.say(`${p.sheet}: 다른 방향 스프라이트를 만들 수 없습니다`);
       const flags = { flat: p.flat, over: p.over, block: p.block };
-      this.drop(p);
+      this.drop(p, true);
       const q = this.world.addSheetProp(twin, p.x, p.y, { noBlock: true, flat: flags.flat });
       q.block = flags.block;
       if (flags.over) q.over = true;
+      if (p.surface) {
+        this.turnTop(p.surface, p.x, p.y);
+        Object.defineProperty(q, 'surface', { value: p.surface, configurable: true, writable: true });
+      }
       for (const [k, v] of Object.entries(this.world.named || {})) if (v === p) ((this.world.named[k] = q), this.world.keepHome(q));
       this.block(q);
       this.recut(q);
@@ -696,6 +735,18 @@ export class MapEditor {
       return this.setAngle((p.angleIdx + 1) % n);
     }
     this.commit(before);
+  }
+
+  /** A set sprite's other way round, loaded (its mirror image made now if it has no baked twin); null if none. */
+  twin(name) {
+    const t = twinOf(name);
+    if (!cityFootprint(t)) {
+      const city = this.assets.city;
+      if (!city[t] && t.endsWith(MIRROR_SUFFIX)) addMirror(city, name);
+      if (!city[t]) return null;
+      setCityFootprints(city);
+    }
+    return t;
   }
 
   /** V: a model's next variant. */
@@ -876,7 +927,7 @@ export class MapEditor {
   // ---------------------------------------------------------------------------------------------------- input
 
   keydown(e) {
-    const k = e.key.toLowerCase();
+    const k = keyOf(e);
     if (k === 'f2') {
       e.preventDefault();
       e.stopImmediatePropagation();
@@ -1210,6 +1261,19 @@ export class MapEditor {
           for (const i of this.tiles(this.sel)) diamond(i % w.w, Math.floor(i / w.w));
           ctx.fillStyle = 'rgba(255,170,40,0.3)';
           ctx.fill();
+        }
+        if (this.sel.surface) {
+          // its raised top (walked on, at its height)
+          const t = this.sel.surface;
+          const c = [P(t.x0, t.y0, t.z), P(t.x1, t.y0, t.z), P(t.x1, t.y1, t.z), P(t.x0, t.y1, t.z)];
+          ctx.beginPath();
+          c.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(90,220,255,0.18)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(90,220,255,0.8)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
         }
         outline(this.sel, '#ffd25a', 2);
       }

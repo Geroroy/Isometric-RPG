@@ -13,6 +13,7 @@ import { screenVecToWorldAngle } from '../core/iso.js';
 
 // WASD walks in screen directions (W = up the screen)
 const MOVE_KEYS = { w: [0, -1], a: [-1, 0], s: [0, 1], d: [1, 0] };
+const MOVE_CODE = { KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd' };
 
 // keys that still work while a panel or the title screen is open (they close or switch panels)
 const PANEL_KEYS = new Set(['escape', ' ', 'enter', 'f1', 'h', 'tab', 'k', 't', 'c', 'p', 'v', 'o', 'f', 'm']);
@@ -51,7 +52,7 @@ export class Input {
     window.addEventListener('keydown', (e) => this.key(e));
     window.addEventListener('keyup', (e) => {
       if (e.key === 'Shift') this.shift = false;
-      this.moveKeys.delete(e.key.toLowerCase());
+      this.moveKeys.delete(MOVE_CODE[e.code] || e.key.toLowerCase());
     });
     window.addEventListener('blur', () => {
       this.lmb = this.rmb = this.shift = false;
@@ -178,8 +179,9 @@ export class Input {
     const p = g.player;
     const hud = this.hud;
     if (e.key === 'Shift') this.shift = true;
-    if (MOVE_KEYS[e.key.toLowerCase()] && !e.ctrlKey && !e.metaKey) {
-      this.moveKeys.add(e.key.toLowerCase());
+    const mk = MOVE_CODE[e.code] || e.key.toLowerCase(); // (by the key's place: Korean input sends 'ㅈ' for W)
+    if (MOVE_KEYS[mk] && !e.ctrlKey && !e.metaKey) {
+      this.moveKeys.add(mk);
       return;
     }
     if (e.repeat && !/^[1-6]$/.test(e.key)) return;

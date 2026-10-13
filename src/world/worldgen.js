@@ -627,6 +627,11 @@ export class MustafarArena extends World {
       this.lights.push(o);
       if (l.id) this.named[l.id] = o;
     }
+    // a raised top belongs to the flat piece under its middle (a table): it goes where the piece goes (the editor)
+    for (const t of this.surfaces) {
+      const p = this.props.find((q) => q.flat && Math.abs(q.x - (t.x0 + t.x1) / 2) < 0.05 && Math.abs(q.y - (t.y0 + t.y1) / 2) < 0.05);
+      if (p) Object.defineProperty(p, 'surface', { value: t, configurable: true, writable: true });
+    }
     // the named ones as the map has them (the duel moves the robes, lights the alarm: toMap writes these)
     for (const o of Object.values(this.named)) this.keepHome(o);
     this.cloak = this.named.cloak;

@@ -11,7 +11,7 @@ import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
 import { setMustafarMap } from './world/worldgen.js';
 import { setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture } from './gfx/terrain.js';
-import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid, loadCargo, loadRocks } from './gfx/mustafarFloor.js';
+import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid, loadCargo, loadRocks, addMirror, MIRROR_SUFFIX } from './gfx/mustafarFloor.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
@@ -74,6 +74,7 @@ async function boot() {
   };
   await fontsReady(); // the HUD's fonts in before the first frame (canvas text keeps what it is drawn with)
   const assets = await bakeAssets(onProgress);
+  let mustafarMirrors = []; // (the map's name~m sprites: made once the cargo is loaded too, below)
   // characters rendered in Blender: sprite sheet + frame JSON (after the bake
   // has been cached — the cache stores baked canvases only)
   Object.assign(assets.sprites, await loadSheets(Object.keys(CHARACTERS), onProgress));
@@ -101,10 +102,14 @@ async function boot() {
     const platform = await loadMustafarDroid('mfPlatform').catch((e) => console.warn('무스타파 플랫폼: ' + e.message));
     if (platform) assets.sprites.platform = platform;
     // the map: its file (the map editor's), laid out by worldgen.js MustafarArena
-    setMustafarMap(await cachedJSON(import.meta.env.BASE_URL + 'maps/mustafar.json'));
+    const map = await cachedJSON(import.meta.env.BASE_URL + 'maps/mustafar.json');
+    setMustafarMap(map);
+    mustafarMirrors = map.props.filter((e) => e.sheet && e.sheet.endsWith(MIRROR_SUFFIX)).map((e) => e.sheet.slice(0, -MIRROR_SUFFIX.length));
   }
   // the cargo containers, in every mode (they stand in for the old model crates: worldgen.js CARGO_SWAP)
   assets.city = { ...(assets.city || {}), ...(await loadCargo()) };
+  // the Mustafar map's sprites turned the other way that have no baked twin (name~m: the map editor's R)
+  for (const n of mustafarMirrors) addMirror(assets.city, n);
   setCityFootprints(assets.city);
   // the equipped appearance (the Movie Duel keeps the default look)
   const look = MODE === 'campaign' ? savedLook() : null;
