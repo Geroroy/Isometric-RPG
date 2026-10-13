@@ -10,7 +10,7 @@
 //             flicker in the panel; Delete removes it (a prop's own lights go with their prop)
 //
 // Positions snap to a half tile (a dragged prop moves by half tiles, keeping its offset); Shift places freely.
-// Ctrl+Z undoes, Ctrl+Y (Ctrl+Shift+Z) redoes, Ctrl+S saves (downloads the file). WASD / the arrows / the right or
+// Ctrl+Z undoes, Ctrl+Y (Ctrl+Shift+Z) redoes, Ctrl+S saves (under `npm run dev` straight over the map file, else a download). WASD / the arrows / the right or
 // middle button drag the view, the wheel zooms. The game is paused while the editor is open.
 //
 // The selected prop's position, direction (a set sprite's or its twin; a model's angle), variant and flags are shown
@@ -869,6 +869,22 @@ export class MapEditor {
 
   save() {
     const text = mapText(this.world.toMap());
+    this.dirty = false;
+    this.status();
+    // `npm run dev`: straight over public/maps/mustafar.json (vite.config.js mapSave) — a reload plays it
+    if (import.meta.env.DEV) {
+      fetch('/__map/mustafar', { method: 'POST', body: text })
+        .then((r) => {
+          if (!r.ok) throw new Error(r.status);
+          this.say('public/maps/mustafar.json 에 저장됨 — 새로고침하면 반영됩니다');
+        })
+        .catch(() => this.download(text));
+    } else this.download(text);
+    return text;
+  }
+
+  /** The map file as a download (a build has no dev server to write it): put it over public/maps/mustafar.json. */
+  download(text) {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
     a.download = 'mustafar.json';
@@ -876,10 +892,7 @@ export class MapEditor {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    this.dirty = false;
     this.say('mustafar.json 저장됨 — public/maps/mustafar.json 에 덮어쓰면 반영됩니다');
-    this.status();
-    return text;
   }
 
   say(msg) {

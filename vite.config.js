@@ -37,11 +37,39 @@ function assetManifest() {
   };
 }
 
+// `npm run dev` only: the map editor's save (src/ui/mapEditor.js, Ctrl+S) POSTs the map here and it is
+// written straight over public/maps/<name>.json, so a reload plays it (a build has no such route: it downloads).
+function mapSave() {
+  return {
+    name: 'map-save',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use('/__map/', (req, res, next) => {
+        const name = decodeURIComponent((req.url || '').replace(/^\//, '').split('?')[0]);
+        if (req.method !== 'POST' || !/^[a-z0-9_-]+$/i.test(name)) return next();
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+          try {
+            JSON.parse(body);
+            fs.writeFileSync(path.resolve('public/maps', name + '.json'), body);
+            res.statusCode = 204;
+          } catch (e) {
+            res.statusCode = 400;
+            res.write(String(e.message));
+          }
+          res.end();
+        });
+      });
+    },
+  };
+}
+
 export default defineConfig({
   // relative asset paths so the build can be hosted from any sub-folder
   base: './',
   build: { chunkSizeWarningLimit: 1200 },
   // this build's id: the service worker reads this build's asset manifest (public/sw.js)
   define: { __BUILD__: JSON.stringify(Date.now().toString(36)) },
-  plugins: [assetManifest()],
+  plugins: [assetManifest(), mapSave()],
 });
