@@ -31,6 +31,12 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
   (`quad`) onto a wall along y facing +x (the conference room's right side, from the far wall's last console to the
   near wall's first pillar); pillars 2.7 m as the consoles'; `mfWallEnd` its twin (along x, facing +y). Shipped in
   the near walls' atlas (lowwall.py)
+- `mfWallCorner`: a room's near corner seen from outside (image_33: the two near walls' fronts meeting in a pillar,
+  a buttress at each arm's end), its arms 0.95 m along −x and −y, 2.7 m tall; the render's camera a little lower than
+  the game's, so each face is warped onto its own plane (`quads`: one perspective map a face, folded on the corner's
+  line). Placed on both rooms' near corners, the bays beside it cut short to its arms' ends (the map's `clip`)
+- `mfWallCornerIn`: the same corner seen from inside (image_34), the corner at the back, its arms 1.45 m along +y
+  and +x; warped the same way. Shipped for a concave corner of the near walls (none in the rooms as laid out)
 - `mfPassage`: a corridor's inside with no roof (the far wall tall with light panels, the near wall low, a portal at
   each end), along y, 15 m by 4 m (the far wall on −x); `mfPassage_x` along x as rendered. Fitted by least squares
   on five measured corners (the render's own proportions differ: the walkway is narrowed to the corridor's)
@@ -188,6 +194,39 @@ PIECES = {
         footprint=[[-0.5, -1.4675], [-0.5, 1.4675], [0, 1.4675], [0, -1.4675]],
         gain=0.9,  # (as the near walls')
         mirror='mfWallEnd',
+    ),
+    'mfWallCorner': dict(
+        src='image_33.png',
+        over=4,
+        # a room's near corner seen from outside (image_33: the two near walls' fronts meeting in a pillar with a
+        # cut edge, a sloped buttress at each arm's end): the corner on the anchor, its arms along −x (the render's
+        # left) and −y (its right), their fronts on the walls' fronts (x and y of the anchor), 0.95 m each, 2.7 m
+        # tall as the pillars. The render's camera is a little lower than the game's (its tops slope ~0.45, not
+        # 0.5): each face warped onto its own plane (`quads`, folded at the corner's line, x 800), the corner's
+        # edge where the two fronts' lines meet (the cut edge 16 px above it)
+        quads=[
+            ((0, 800), [((627, 160), (-0.95, 0, 2.7)), ((800, 238), (0, 0, 2.7)), ((800, 838), (0, 0, 0)), ((627, 760), (-0.95, 0, 0))]),
+            ((800, 1587), [((800, 238), (0, 0, 2.7)), ((963, 162), (0, -0.95, 2.7)), ((963, 762), (0, -0.95, 0)), ((800, 838), (0, 0, 0))]),
+        ],
+        footprint=[[0, 0], [-0.95, 0], [-0.95, -0.5], [-0.5, -0.5], [-0.5, -0.95], [0, -0.95]],
+        emit='screen',
+        glow_boxes=[(850, 220, 910, 290)],  # (the red lamp)
+        gain=0.8,  # (a little lighter than the near walls' render: matched to their luma)
+    ),
+    'mfWallCornerIn': dict(
+        src='image_34.png',
+        over=4,
+        # the same corner seen from inside (image_34): the corner at the back on the anchor, its arms along +y (the
+        # render's left) and +x (its right), their fronts on x and y of the anchor, 1.45 m each, 2.7 m tall; the
+        # render in some perspective (the feet slope 0.64, the tops 0.57): each face warped onto its plane
+        quads=[
+            ((0, 800), [((540, 210), (0, 1.45, 2.7)), ((800, 100), (0, 0, 2.7)), ((800, 665), (0, 0, 0)), ((540, 831), (0, 1.45, 0))]),
+            ((800, 1587), [((800, 100), (0, 0, 2.7)), ((1060, 210), (1.45, 0, 2.7)), ((1060, 831), (1.45, 0, 0)), ((800, 665), (0, 0, 0))]),
+        ],
+        footprint=[[0, 0], [0, 1.45], [-0.5, 1.45], [-0.5, -0.5], [1.45, -0.5], [1.45, 0]],
+        emit='screen',
+        glow_boxes=[(600, 210, 660, 275), (930, 210, 990, 275)],
+        gain=0.85,
     ),
     'mfPassage_x': dict(
         src='image_9.png',
@@ -451,6 +490,8 @@ def bake(name, P):
     neon[..., 3] *= m
     if P.get('quad'):
         return bake_quad(name, P, body, neon)
+    if P.get('quads'):
+        return bake_quads(name, P, body, neon)
     if P.get('corners'):
         return bake_fit(name, P, body, neon)
     sx = P['span'][1] * P.get('px_m', 20) * OVER / P['span'][0]  # (px a metre along its axis: 20 along x or y, 28.3 along a diagonal)
@@ -552,6 +593,48 @@ def bake_quad(name, P, body, neon):
         meta['neon'] = {'base': P.get('neon_base', 1), 'hum': 0.04, 'speed': 0.5, 'flicker': {'rate': 0.01, 'dur': [0.05, 0.12], 'level': 0.7}}
     (OUT / f'{name}.json').write_text(json.dumps(meta))
     print(f'{name}: {b2.width}x{b2.height} (x{OVER}), anchor {meta["anchor"]} (perspective warp)')
+
+
+def bake_quads(name, P, body, neon):
+    """A render seen from a little off the game's view across a corner: each face (the render's columns c0..c1)
+    warped by its own perspective map (four measured points onto its plane, as bake_quad) — folded on the line two
+    faces share — into one image."""
+    parts = []
+    for (c0, c1), quad in P['quads']:
+        H = homography([q[0] for q in quad], [screen(*q[1]) for q in quad])
+        parts.append((c0, c1, H))
+    h, w = body.shape[:2]
+    pts = []
+    for c0, c1, H in parts:
+        q = np.array([[x, y, 1] for x in (c0, min(c1, w)) for y in (0, h)], float) @ H.T
+        pts.append(q[:, :2] / q[:, 2:3])
+    pts = np.vstack(pts)
+    lo = np.floor(pts.min(0)) - 2
+    size = tuple(int(v) for v in np.ceil(pts.max(0)) + 2 - lo)
+    T = np.array([[1, 0, lo[0]], [0, 1, lo[1]], [0, 0, 1]], float)
+    layers = {'body': Image.new('RGBA', size), 'neon': Image.new('RGBA', size)}
+    for c0, c1, H in parts:
+        M = np.linalg.inv(H) @ T
+        M /= M[2, 2]
+        coeffs = tuple(M.reshape(-1)[:8])
+        for nm, arr in (('body', body), ('neon', neon)):
+            part = arr.copy()
+            part[:, :c0] = 0
+            part[:, c1:] = 0
+            im = Image.fromarray((np.clip(part, 0, 1) * 255 + 0.5).astype(np.uint8), 'RGBA')
+            layers[nm].alpha_composite(im.transform(size, Image.PERSPECTIVE, coeffs, resample=Image.BICUBIC))
+    ax, ay = -lo
+    bb = layers['body'].getbbox()
+    b2, n2 = layers['body'].crop(bb), layers['neon'].crop(bb)
+    ox, oy = ax - bb[0], ay - bb[1]
+    b2.save(OUT / f'{name}_body.png', optimize=True)
+    meta = {'anchor': [round(float(ox), 1), round(float(oy), 1)], 'k': 1 / OVER, 'layers': {'body': f'{name}_body.png'}, 'footprint': P['footprint'], 'lights': P.get('lights', []), 'flat': bool(P.get('flat'))}
+    if P.get('emit'):
+        n2.save(OUT / f'{name}_neon.png', optimize=True)
+        meta['layers']['neon'] = f'{name}_neon.png'
+        meta['neon'] = {'base': P.get('neon_base', 1), 'hum': 0.04, 'speed': 0.5, 'flicker': {'rate': 0.01, 'dur': [0.05, 0.12], 'level': 0.7}}
+    (OUT / f'{name}.json').write_text(json.dumps(meta))
+    print(f'{name}: {b2.width}x{b2.height} (x{OVER}), anchor {meta["anchor"]} (perspective warp, {len(parts)} faces)')
 
 
 def bake_fit(name, P, body, neon):
