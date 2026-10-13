@@ -560,6 +560,8 @@ const MIRROR_SHEET = {
   mfLift: 'mfLift_y',
   mfFall: 'mfFall_x',
   mfFall_x: 'mfFall',
+  mfWallEnd_y: 'mfWallEnd',
+  mfWallEnd: 'mfWallEnd_y',
   // the near walls' bays (lowwall.py: both ways round in the atlas)
   ...Object.fromEntries(WALL_BAYS.flatMap((L) => [[`mfWall${L}`, `mfWall${L}_y`], [`mfWall${L}_y`, `mfWall${L}`]])),
 };

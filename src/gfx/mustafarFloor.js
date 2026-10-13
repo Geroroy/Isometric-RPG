@@ -28,7 +28,6 @@ export async function loadMustafarFloor() {
 // the set sprites as baked (one of each mirrored pair); the other of a pair is this one flipped (flipSheet)
 const SHIPPED = ['mfConsole', 'mfConsoleRed', 'mfConsoleD', 'mfCorridor_r', 'mfCorridorL_r', 'mfWindow', 'mfPassage_x', 'mfPassageS_x', 'mfChair_x', 'mfTable_y', 'mfArm', 'mfCatwalkL', 'mfLift', 'mfHoloX', 'mfFall', 'mfSkiff_y'];
 
-/** A set sprite mirrored left-right: its transpose in the world (x ↔ y), as the bakers' mirrors were. */
 // a set sprite turned the other way when it has no baked twin (the map editor's R; a map that has one): its mirror image
 // under this suffix (its baked shadow turned with it)
 export const MIRROR_SUFFIX = '~m';
@@ -40,6 +39,7 @@ export function addMirror(city, name) {
   return city[twin] ? twin : null;
 }
 
+/** A set sprite mirrored left-right: its transpose in the world (x ↔ y), as the bakers' mirrors were. */
 function flipSheet(src) {
   const flip = (f) => {
     if (!f) return null;

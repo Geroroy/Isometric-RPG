@@ -9,6 +9,9 @@ sharing their pillar (drawn twice on one spot). Each bay is the render shortened
 (bake.py `cutx`: the part beyond moved up the foot line's slope); one scale for all — 1180 render px pillar to
 pillar = 6 m, the panel 2.2 m tall (the pillars ~2.7, as the far walls' consoles); the face to +y (`mfWall<L>`), its
 twin flipped to face +x (`mfWall<L>_y`); drawn at 4× (k 0.25). The anchor is the foot line's middle.
+
+The atlas also carries the end piece that closes a room's near side at its far end (bake.py `mfWallEnd_y`, image_32,
+and its twin `mfWallEnd`): one image for all the room walls.
 """
 import json
 import sys
@@ -57,6 +60,16 @@ def main():
         # the twin facing +x: flipped, its footprint transposed
         fl = im.transpose(Image.FLIP_LEFT_RIGHT)
         pieces.append((key + '_y', fl, [im.width - meta['anchor'][0], meta['anchor'][1]], [[y, x] for x, y in meta['footprint']]))
+    # the end piece (bake.py's mfWallEnd_y: baked, then taken into the atlas)
+    P = bake.PIECES['mfWallEnd_y']
+    bake.bake('_wallend', {k: v for k, v in P.items() if k != 'mirror'})
+    meta = json.loads((OUT / '_wallend.json').read_text())
+    im = Image.open(OUT / meta['layers']['body'])
+    (OUT / '_wallend.json').unlink()
+    (OUT / meta['layers']['body']).unlink()
+    pieces.append(('mfWallEnd_y', im, meta['anchor'], meta['footprint']))
+    fl = im.transpose(Image.FLIP_LEFT_RIGHT)
+    pieces.append(('mfWallEnd', fl, [im.width - meta['anchor'][0], meta['anchor'][1]], [[y, x] for x, y in meta['footprint']]))
     W = 2048
     x = y = rowh = 0
     place = []

@@ -26,6 +26,11 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
   true head-on rectangle, 3.42 m; its copper body matched to the wall consoles' grey (`match`); the screen and
   lamps on a neon layer
 - the near walls (image_31): tools/sprites/mustafar_set/lowwall.py, an atlas of bays of several lengths
+- `mfWallEnd_y`: a room's near side closed at its far end (image_32: a pipe-run panel between two pillars, each with
+  a sloped buttress, rendered head-on): its middle taken out (`cutx`) to 2.33 m pillar to pillar, the facade warped
+  (`quad`) onto a wall along y facing +x (the conference room's right side, from the far wall's last console to the
+  near wall's first pillar); pillars 2.7 m as the consoles'; `mfWallEnd` its twin (along x, facing +y). Shipped in
+  the near walls' atlas (lowwall.py)
 - `mfPassage`: a corridor's inside with no roof (the far wall tall with light panels, the near wall low, a portal at
   each end), along y, 15 m by 4 m (the far wall on −x); `mfPassage_x` along x as rendered. Fitted by least squares
   on five measured corners (the render's own proportions differ: the walkway is narrowed to the corridor's)
@@ -165,6 +170,24 @@ PIECES = {
         match=dict(sat=0.18, gain=1.31),
         opaque=True,  # (the render's faint halo dropped: it reached the canvas's edges)
         gain=1.0,
+    ),
+    'mfWallEnd_y': dict(
+        src='image_32.png',
+        over=4,
+        # the render head-on (pillars 33..1480 across, foot 786, pillar tops 118: 247 px a metre at 2.7 m); 722 px of
+        # its middle panel taken out, symmetric about its plaque (x 757): pillar centres 2.33 m apart, 2.94 m outside
+        cutx=(396, 1118, 0),
+        # its front (the pillars' outer corners) onto the wall along y, its face at the anchor's x, facing +x: the
+        # render's left end to +y (screen left)
+        quad=[
+            ((33, 118), (0, 1.4675, 2.7)),
+            ((758, 118), (0, -1.4675, 2.7)),
+            ((758, 786), (0, -1.4675, 0)),
+            ((33, 786), (0, 1.4675, 0)),
+        ],
+        footprint=[[-0.5, -1.4675], [-0.5, 1.4675], [0, 1.4675], [0, -1.4675]],
+        gain=0.9,  # (as the near walls')
+        mirror='mfWallEnd',
     ),
     'mfPassage_x': dict(
         src='image_9.png',
@@ -636,7 +659,12 @@ def bake_fit(name, P, body, neon):
 
 
 if __name__ == '__main__':
+    import sys
+
     OUT.mkdir(parents=True, exist_ok=True)
+    only = set(sys.argv[1:])  # (names to bake: the rest left as they are; none: all)
     for n, P in PIECES.items():
+        if only and n not in only:
+            continue
         OVER = P.get('over', 2)  # (the small props at 4×: the remastered picture is up to 3× the game's pixels)
         bake(n, P)
