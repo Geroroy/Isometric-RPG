@@ -12,8 +12,7 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
 - `mfTable`: along x, 8 m long (the film's long table, its pointed end to +x), 0.78 m tall
 - `mfWindow`: against a north wall (faces +y), 5.5 m long, 2.8 m tall; `mfWindow_r` mirrored for a west wall
 - `mfHoloX`: the control room's holo-table (image_20: an elongated hexagon, its top a glowing blue map, red indicator
-  lights round the rim), along x, 4.4 m by 1.8 m, 1 m tall, fitted on eight points with its verticals kept vertical;
-  the render's own colours, no glow layer or light
+  lights round the rim), along x, 4.4 m by 1.8 m, 1 m tall, fitted on eight points with its verticals kept vertical
 - `mfFall`: a lava fall (image_21: a rock cliff with three falls pouring into a cracked lava pool), the cliff along
   y, the pool in front of it to +x; 7 m of cliff, the pool 1.6 m deep, fitted on the pool's four corners (the cliff's
   height follows the render); the lava glowing; `mfFall_x` its twin (cliff along x, pool to +y)
@@ -93,8 +92,10 @@ PIECES = {
         ],
         vertical=True,  # (the render's verticals kept vertical: an unconstrained fit tipped the top forward)
         footprint=[[-2.2, -0.9], [2.2, -0.9], [2.2, 0.9], [-2.2, 0.9]],
+        emit='holo',
         shadow=1.0,
-        gain=1.0,  # (the render as it is: no glow layer, no darkening)
+        gain=0.9,
+        lights=[[0, 0, 1.4, 90, 170, 255, 120, 0.04]],  # the map's blue light
     ),
     'mfFall': dict(
         src='image_21.png',
