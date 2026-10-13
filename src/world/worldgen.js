@@ -575,12 +575,10 @@ const ROCKS = {
   pile: [...Array(6).keys()].map((i) => 'rk3_' + i), // boulder piles: the rock's rim, under the blocks, the bank
 };
 
-// the rooms' far corners cut across (MustafarArena.cornerSet: a corridor out of the corner between two console
-// banks, as the set's, reference/color_rots image_11..13, image_29), metres along each wall: the diagonal 4 m, the
-// corridor's portal
-const HALL_CUT = 2.12; // (the conference room's: one head-on console across it, 3 m, cornerConsole)
-const CONTROL_CUT = 2.83;
-const CORNER_BANK = 4; // m: each console bank along its wall from the cut's end
+// the rooms' far corners cut across (MustafarArena.cornerConsole: the screen console seen head-on across the
+// diagonal, as the film's angled bays), metres along each wall: the diagonal 3 m, one console
+const HALL_CUT = 2.12;
+const CONTROL_CUT = 2.12;
 
 export class MustafarArena extends World {
   /** The model rocks become the rock sprites when they loaded: a cliff a wall (now and then a landform), a boulder a crag, a lava rock a pile. */
@@ -642,7 +640,7 @@ export class MustafarArena extends World {
     this.pois.push({ x: M.river.x, y: M.river.y, r: 10, name: BIOME_NAMES[BIOME.LAVA] });
     const inRect = (x, y, r) => Math.abs(x - r.x) <= r.hw && Math.abs(y - r.y) <= r.hh;
     // the rooms' far corners cut across (pentagons, as the film's and the LEGO set's rooms): `cut` metres along
-    // each wall from the corner, the corner set across it (cornerSet)
+    // each wall from the corner, the head-on console across it (cornerConsole)
     const cutOf = (r) => (r === M.hall ? HALL_CUT : r === M.control ? CONTROL_CUT : 0);
     const inCut = (x, y, r) => x - (r.x - r.hw) + (y - (r.y - r.hh)) < cutOf(r);
     const inEll = (x, y, e) => ((x - e.x) / e.rx) ** 2 + ((y - e.y) / e.ry) ** 2 <= 1;
@@ -738,11 +736,10 @@ export class MustafarArena extends World {
     // --- the control room --------------------------------------------------
     const C = M.control;
     // the film's control room: its walls lined with screen consoles side by side, the back wall's middle one red
-    // (the two rows meet in the far corner: the west row runs up to the north row's back, the north row starts at
-    // the west row's desk front, its five spread a little to reach the room's east edge — the pillars meeting)
-    // (the far corner: the corner set, placed in the world after the transpose; the rows on from its banks)
-    for (const dx of [-0.45, 2.6, 5.65]) this.console(C, 'north', dx);
-    for (const dy of [0.7, 3.8]) this.console(C, 'west', dy);
+    // (the far corner: the head-on console across its cut, placed in the world after the transpose; each row runs
+    // on from it, its first console against it, the north row's middle one red)
+    [-5.38, -2.2, 1.0, 4.2, 7.4].forEach((dx, i) => this.console(C, 'north', dx, i === 2));
+    for (const dy of [-2.38, 0.8, 4.0]) this.console(C, 'west', dy);
     // two holo-tables on the sunken floor, staggered across it as in the LEGO set (reference/color_rots image_10):
     // one towards the far corner, one towards the near; the model desk if the sprite did not load
     // (the two holo-tables: placed in the world after the transpose, holoTables())
@@ -804,7 +801,7 @@ export class MustafarArena extends World {
     this.cargo();
     this.holoTables();
     this.cornerConsole(MUSTAFAR.hall, HALL_CUT);
-    this.cornerSet(MUSTAFAR.control, CONTROL_CUT);
+    this.cornerConsole(MUSTAFAR.control, CONTROL_CUT);
     // Padmé's skiff on its apron, nose along it (the film's chrome skiff, tools/sprites/mustafar_set; the model if
     // the sprite did not load); placed in the world, after the transpose
     if (!this.addSheetProp('mfSkiff_y', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y - 0.5)) this.addProp('skiff', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y);
@@ -982,12 +979,6 @@ export class MustafarArena extends World {
   }
 
   /**
-   * A room's cut far corner filled with the corner set (tools/sprites/mustafar_corner, image_29): the corridor's
-   * portal across the diagonal (mfCornerC), a console bank on from it along each wall (mfCornerR down-right of the
-   * corner on screen: along x; mfCornerL down-left: along y), their screens showing the lava. In world coordinates,
-   * after the transpose (the pieces are baked for the world's own way round).
-   */
-  /**
    * A room's cut far corner closed by the screen console seen head-on (mfConsoleD, 3.42 m): its feet on the line
    * from one wall row's desk front to the other's (0.3 m behind the room's edges), its end pillars against theirs.
    */
@@ -996,15 +987,6 @@ export class MustafarArena extends World {
     const y0 = r.y - r.hh;
     const c = (cut - 0.3) / 2 - 0.18; // (the feet's middle, then the anchor 0.25 m behind it)
     this.addSheetProp('mfConsoleD', x0 + c, y0 + c, { noBlock: true });
-  }
-
-  cornerSet(r, cut) {
-    const x0 = r.x - r.hw;
-    const y0 = r.y - r.hh;
-    const b = CORNER_BANK / 2;
-    this.addSheetProp('mfCornerC', x0 + cut / 2, y0 + cut / 2, { noBlock: true });
-    this.addSheetProp('mfCornerR', x0 + cut + b, y0 + 0.4, { noBlock: true });
-    this.addSheetProp('mfCornerL', x0 + 0.4, y0 + cut + b, { noBlock: true });
   }
 
   console(r, side, at, red = false) {

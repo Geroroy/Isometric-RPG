@@ -1,1 +1,0 @@
-{"anchor": [222.6, 620.2], "k": 0.25, "layers": {"sheet": "mfCornerL.png", "split": 803}, "footprint": [[-0.6, -2], [0.1, -2], [0.1, 2], [-0.6, 2]], "lights": [[1.0, 0, 1.5, 255, 90, 40, 120, 0.05]], "neon": {"base": 1, "hum": 0.06, "speed": 0.6, "flicker": {"rate": 0.02, "dur": [0.05, 0.15], "level": 0.6}}}
