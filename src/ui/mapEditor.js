@@ -11,7 +11,8 @@
 //
 // Positions snap to a half tile (a dragged prop moves by half tiles, keeping its offset); Shift places freely.
 // Ctrl+Z undoes, Ctrl+Y (Ctrl+Shift+Z) redoes, Ctrl+S saves: this browser keeps the map (world/mapStore.js; the next load plays it), and under `npm run dev` it goes
-// straight over the map file too; ⬇ downloads the file for the repository, ↺ drops the browser's copy. WASD / the arrows / the right or
+// straight over the map file too; ⬇ hands the file over for the repository (the artifact's `downloads` capability, else a download), 📋 copies its
+// text, ↺ drops the browser's copy. WASD / the arrows / the right or
 // middle button drag the view, the wheel zooms. The game is paused while the editor is open.
 //
 // The selected prop's position, direction (a set sprite's or its twin; a model's angle), variant and flags are shown
@@ -173,7 +174,7 @@ export class MapEditor {
       </div>
       <div class="me-foot">
         <div class="me-btns"><button class="me-undo" title="Ctrl+Z">↶ 되돌리기</button><button class="me-redo" title="Ctrl+Y">↷ 다시</button><button class="me-save" title="Ctrl+S — 이 브라우저에 저장(다시 열어도 유지) · npm run dev 에선 맵 파일에도 바로 씀">💾 저장</button></div>
-        <div class="me-btns me-file"><span class="me-src"></span><button class="me-dl" title="맵 파일(mustafar.json) 내려받기 — 저장소의 public/maps/mustafar.json 에 넣을 때">⬇ 파일 받기</button><button class="me-revert" title="이 브라우저의 저장본을 지우고 맵 파일대로 다시 불러오기">↺ 파일로 되돌리기</button></div>
+        <div class="me-btns me-file"><span class="me-src"></span><button class="me-dl" title="맵 파일(mustafar.json) 받기 — 저장소의 public/maps/mustafar.json 에 넣을 때">⬇ 파일 받기</button><button class="me-copy" title="맵 JSON을 클립보드에 복사 — 채팅에 붙여 넣어도 됨">📋 복사</button><button class="me-revert" title="이 브라우저의 저장본을 지우고 맵 파일대로 다시 불러오기">↺ 파일로 되돌리기</button></div>
         <button class="me-test" title="P">▶ 플레이 테스트 <kbd>P</kbd></button>
         <div class="me-status"></div>
         <div class="me-help">클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>R</kbd> 회전 · <kbd>V</kbd> 변형 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 바닥형<br><kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트</div>
@@ -186,6 +187,7 @@ export class MapEditor {
     dom.querySelector('.me-redo').onclick = () => this.redoStep();
     dom.querySelector('.me-save').onclick = () => this.save();
     dom.querySelector('.me-dl').onclick = () => this.download(mapText(this.world.toMap()));
+    dom.querySelector('.me-copy').onclick = () => this.copy(mapText(this.world.toMap()));
     dom.querySelector('.me-revert').onclick = () => this.revert();
     dom.querySelector('.me-test').onclick = (e) => (e.currentTarget.blur(), this.startTest());
     const size = dom.querySelector('.me-size');
@@ -896,8 +898,25 @@ export class MapEditor {
     return text;
   }
 
-  /** The map file as a download: what goes into the repository (public/maps/mustafar.json). */
-  download(text) {
+  /**
+   * The map file to the user: what goes into the repository (public/maps/mustafar.json). In the claude.ai artifact
+   * the page may not download on its own, so the file goes through the viewer's `downloads` capability (a save
+   * prompt); elsewhere a plain download.
+   */
+  async download(text) {
+    const dl = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('downloads').catch(() => null) : null;
+    if (dl) {
+      try {
+        await dl.save({ filename: 'mustafar.json', data: text });
+        this.say('mustafar.json 저장됨 — public/maps/mustafar.json 에 덮어쓰거나 채팅에 올리면 저장소에 반영');
+      } catch (e) {
+        const code = e && e.code;
+        if (code === 'declined') this.say('파일 저장을 취소했습니다');
+        else if (code === 'unavailable' || code === 'not_granted') this.copy(text, '이 화면에선 파일 저장이 안 됩니다 — ');
+        else this.say('파일 저장 실패: ' + (e && e.message ? e.message : code || e));
+      }
+      return;
+    }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
     a.download = 'mustafar.json';
@@ -906,6 +925,16 @@ export class MapEditor {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     this.say('mustafar.json 내려받음 — public/maps/mustafar.json 에 덮어쓰면 저장소에 반영');
+  }
+
+  /** The map file's text to the clipboard (when no save works: paste it into the chat or a file). */
+  async copy(text, why = '') {
+    try {
+      await navigator.clipboard.writeText(text);
+      this.say(why + '맵 JSON을 클립보드에 복사했습니다 — 채팅이나 파일에 붙여 넣으세요');
+    } catch {
+      this.say(why + '클립보드 복사도 안 됩니다');
+    }
   }
 
   /** Drop the browser's saved copy and load the map file again (the page reloads). */
