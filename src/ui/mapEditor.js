@@ -13,6 +13,10 @@
 //   길 (2)     paint the tiles: the left button blocked, the right walkable; [ ] the brush's size
 //   조명 (3)   click a light to select it, drag to move it, click the ground to add one; colour, radius, height and
 //             flicker in the panel; Delete removes it (a prop's own lights go with their prop)
+//   타일 (4)   paint the ground: pick a tile (the facility's floor, the catwalk grating, the rock, the lava) and
+//             paint with the brush (the left button; the right button drags the view); the lava and the rock block
+//             the way as the ground does, a floor painted over them opens it. The ground is rebuilt after each
+//             stroke (a new Terrain: its chunks come back over a moment)
 //
 // Positions snap to a half tile (a dragged prop moves by half tiles, keeping its offset); Shift places freely.
 // Ctrl+Z undoes, Ctrl+Y (Ctrl+Shift+Z) redoes, Ctrl+S saves: this browser keeps the map (world/mapStore.js; the next load plays it), and under `npm run dev` it goes
@@ -26,6 +30,7 @@
 // walks it alone — the scene, the duel and Obi-Wan held — to try the way, the cover and the lights; P again is back
 // in the editor with everything as it was before (the player, the duel), F2 out of both.
 import { World, MUSTAFAR, MUSTAFAR_SHEETS, mapText } from '../world/worldgen.js';
+import { BIOME } from '../world/biome.js';
 import { cityFootprint, cityWall, inPoly, setCityFootprints } from '../world/cityProps.js';
 import { addMirror, MIRROR_SUFFIX } from '../gfx/mustafarFloor.js';
 import { PROPS } from '../gfx/models/props.js';
@@ -37,7 +42,7 @@ import { saveLocal, clearLocal, hasLocal } from '../world/mapStore.js';
 const MIRROR = MUSTAFAR_SHEETS.mirror;
 // the keys by where they are on the keyboard (e.code), so they work in Korean input too (R comes as 'ㄱ', or as
 // 'Process' while the IME composes)
-const CODE_KEYS = { KeyR: 'r', KeyV: 'v', KeyB: 'b', KeyF: 'f', KeyP: 'p', KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', KeyZ: 'z', KeyY: 'y', Digit1: '1', Digit2: '2', Digit3: '3', BracketLeft: '[', BracketRight: ']', Equal: '=', Minus: '-', Comma: ',', Period: '.' };
+const CODE_KEYS = { KeyR: 'r', KeyV: 'v', KeyB: 'b', KeyF: 'f', KeyP: 'p', KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', KeyZ: 'z', KeyY: 'y', Digit1: '1', Digit2: '2', Digit3: '3', Digit4: '4', BracketLeft: '[', BracketRight: ']', Equal: '=', Minus: '-', Comma: ',', Period: '.' };
 const keyOf = (e) => CODE_KEYS[e.code] || e.key.toLowerCase();
 /** A set sprite's other way round: its baked twin, else its mirror image (name~m, made when first wanted). */
 const twinOf = (n) => MIRROR[n] || (n.endsWith(MIRROR_SUFFIX) ? n.slice(0, -MIRROR_SUFFIX.length) : n + MIRROR_SUFFIX);
@@ -52,6 +57,14 @@ const GROUPS = [
   ['화물', (n) => n.startsWith('cg')],
   ['바위', (n) => n.startsWith('rk')],
   ['기타', () => true],
+];
+// the ground tiles painted in the tile mode: the biome, its name, the panel's swatch, and whether it blocks the way
+// as the ground does (worldgen.js: only the decks are walkable in the fight)
+const TILES = [
+  { b: BIOME.MUSTAFAR, name: '시설 바닥', color: '#5a5654', ground: false },
+  { b: BIOME.GRATE, name: '격자 바닥', color: '#3a3836', ground: false },
+  { b: BIOME.ASH, name: '바위 (재)', color: '#2e2a28', ground: true },
+  { b: BIOME.LAVA, name: '용암', color: '#c8401c', ground: true },
 ];
 // a prop's layer: with the ground, standing (by depth), over everyone
 const TIERS = ['flat', 'stand', 'top'];
@@ -78,6 +91,7 @@ export class MapEditor {
     this.redo = [];
     this.dirty = false;
     this.brush = { size: 1 };
+    this.tile = TILES[0].b; // the tile mode's tile
     this.keys = new Set();
     this.mx = 0;
     this.my = 0;
@@ -152,7 +166,7 @@ export class MapEditor {
     dom.innerHTML = `
       <div class="me-head"><b>맵 에디터</b> <span class="me-map">무스타파</span><button class="me-close" title="닫기 (F2)">✕</button></div>
       <div class="me-modes">
-        <button data-mode="prop">소품 <kbd>1</kbd></button><button data-mode="brush">길 <kbd>2</kbd></button><button data-mode="light">조명 <kbd>3</kbd></button>
+        <button data-mode="prop">소품 <kbd>1</kbd></button><button data-mode="brush">길 <kbd>2</kbd></button><button data-mode="light">조명 <kbd>3</kbd></button><button data-mode="tile">타일 <kbd>4</kbd></button>
       </div>
       <div class="me-body me-prop">
         <input class="me-search" type="search" placeholder="스프라이트 찾기…">
@@ -175,6 +189,12 @@ export class MapEditor {
         <label>붓 크기 <input class="me-size" type="range" min="1" max="7" step="1" value="1"> <span class="me-size-v">1</span>칸 <kbd>[</kbd><kbd>]</kbd></label>
         <p class="me-note">주황: 소품이 막은 칸 · 빨강: 땅이 막은 칸(용암 · 바위 · 벽)</p>
       </div>
+      <div class="me-body me-tile">
+        <p>타일을 고르고 왼쪽 버튼으로 칠하기 · 오른쪽 버튼 드래그: 시점</p>
+        <div class="me-tiles">${TILES.map((t) => `<button data-tile="${t.b}"><i style="background:${t.color}"></i>${t.name}</button>`).join('')}</div>
+        <label>붓 크기 <input class="me-tsize" type="range" min="1" max="7" step="1" value="1"> <span class="me-tsize-v">1</span>칸 <kbd>[</kbd><kbd>]</kbd></label>
+        <p class="me-note">용암·바위는 땅이 막는 칸이 되고, 그 위에 바닥을 칠하면 다시 걸을 수 있음 · 방 안의 시설 바닥은 바닥 계획(floorPlan)의 무늬로 그려짐</p>
+      </div>
       <div class="me-body me-light">
         <p class="me-note">조명을 클릭해 선택 · 끌어서 이동 · 빈 곳을 클릭하면 새 조명</p>
         <div class="me-lprops">
@@ -191,12 +211,14 @@ export class MapEditor {
         <div class="me-btns me-file"><span class="me-src"></span><button class="me-dl" title="맵 파일(mustafar.json) 받기 — 저장소의 public/maps/mustafar.json 에 넣을 때">⬇ 파일 받기</button><button class="me-copy" title="맵 JSON을 클립보드에 복사 — 채팅에 붙여 넣어도 됨">📋 복사</button><button class="me-revert" title="이 브라우저의 저장본을 지우고 맵 파일대로 다시 불러오기">↺ 파일로 되돌리기</button></div>
         <button class="me-test" title="P">▶ 플레이 테스트 <kbd>P</kbd></button>
         <div class="me-status"></div>
-        <div class="me-help">클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>R</kbd> 회전 · <kbd>V</kbd> 변형 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 층 · <kbd>,</kbd><kbd>.</kbd> 레이어 뒤로/앞으로 (<kbd>Shift</kbd> 맨 뒤/맨 앞)<br><kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트</div>
+        <div class="me-help">클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>R</kbd> 회전 · <kbd>V</kbd> 변형 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 층 · <kbd>,</kbd><kbd>.</kbd> 레이어 뒤로/앞으로 (<kbd>Shift</kbd> 맨 뒤/맨 앞)<br><kbd>4</kbd> 타일 칠하기 · <kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트</div>
       </div>`;
     document.body.appendChild(dom);
     for (const e of ['pointerdown', 'wheel', 'contextmenu', 'mousedown']) dom.addEventListener(e, (ev) => ev.stopPropagation());
     dom.querySelector('.me-close').onclick = () => this.close();
     dom.querySelectorAll('.me-modes button').forEach((b) => (b.onclick = () => this.setMode(b.dataset.mode)));
+    dom.querySelectorAll('.me-tiles button').forEach((b) => (b.onclick = () => this.setTile(+b.dataset.tile)));
+    dom.querySelector('.me-tsize').oninput = (e) => this.setBrush(+e.target.value);
     dom.querySelector('.me-undo').onclick = () => this.undoStep();
     dom.querySelector('.me-redo').onclick = () => this.redoStep();
     dom.querySelector('.me-save').onclick = () => this.save();
@@ -366,7 +388,8 @@ export class MapEditor {
     this.mode = m;
     this.drag = null;
     this.dom.querySelectorAll('.me-modes button').forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
-    for (const k of ['prop', 'brush', 'light']) this.dom.querySelector('.me-' + k).classList.toggle('hidden', k !== m);
+    for (const k of ['prop', 'brush', 'light', 'tile']) this.dom.querySelector('.me-' + k).classList.toggle('hidden', k !== m);
+    if (m === 'tile') this.setTile(this.tile);
     if (m !== 'prop') this.pickPalette(null);
     if (m !== 'light') this.selLight = null;
     this.showLight();
@@ -375,8 +398,17 @@ export class MapEditor {
 
   setBrush(n) {
     this.brush.size = Math.max(1, Math.min(7, n));
-    this.dom.querySelector('.me-size').value = this.brush.size;
-    this.dom.querySelector('.me-size-v').textContent = this.brush.size;
+    for (const k of ['size', 'tsize']) {
+      this.dom.querySelector('.me-' + k).value = this.brush.size;
+      this.dom.querySelector(`.me-${k}-v`).textContent = this.brush.size;
+    }
+  }
+
+  /** The tile mode's tile (its biome). */
+  setTile(b) {
+    this.tile = b;
+    this.dom.querySelectorAll('.me-tiles button').forEach((e) => e.classList.toggle('on', +e.dataset.tile === b));
+    this.status();
   }
 
   status() {
@@ -389,6 +421,10 @@ export class MapEditor {
       else if (p) t += ` · 선택: ${p.sheet || p.type} (${p.x.toFixed(2)}, ${p.y.toFixed(2)}) ${TIER_LABEL[tierOf(p)]}${p.block ? ' · 막음' : ''}`;
     }
     if (this.mode === 'light' && this.selLight) t += ` · 조명 (${this.selLight.x.toFixed(2)}, ${this.selLight.y.toFixed(2)})`;
+    if (this.mode === 'tile') {
+      const here = w.x >= 0 && w.y >= 0 && w.x < this.world.w && w.y < this.world.h ? TILES.find((q) => q.b === this.world.biome[Math.floor(w.y) * this.world.w + Math.floor(w.x)]) : null;
+      t += ` · 칠하기: ${TILES.find((q) => q.b === this.tile).name}${here ? ` (여기: ${here.name})` : ''}`;
+    }
     t += this.dirty ? ' · 저장 안 됨' : '';
     this.dom.querySelector('.me-status').textContent = t;
     this.dom.querySelector('.me-src').textContent = hasLocal() ? '브라우저 저장본' : '맵 파일';
@@ -801,6 +837,7 @@ export class MapEditor {
       surfaces: w.surfaces.slice(),
       ss: w.surfaces.map((t) => ({ ...t })),
       blocked: w.blocked.slice(),
+      biome: w.biome.slice(),
     };
   }
 
@@ -814,6 +851,10 @@ export class MapEditor {
     s.lights.forEach((l, i) => Object.assign(l, s.ls[i]));
     for (const [o, h] of s.homes) o.home = { ...h };
     w.blocked.set(s.blocked);
+    if (s.biome.some((b, i) => b !== w.biome[i])) {
+      w.biome.set(s.biome);
+      this.rebuildGround();
+    }
     w.surfaces.length = 0;
     w.surfaces.push(...s.surfaces);
     s.surfaces.forEach((t, i) => Object.assign(t, s.ss[i]));
@@ -987,6 +1028,37 @@ export class MapEditor {
   cycleTier() {
     if (!this.sel) return;
     this.setTier(TIERS[(TIERS.indexOf(tierOf(this.sel)) + 1) % TIERS.length]);
+  }
+
+  /** Paint the brush's tiles round (x, y) with the tile mode's tile: the ground's way with it (TILES ground). */
+  paintTile(x, y) {
+    const w = this.world;
+    const t = TILES.find((q) => q.b === this.tile);
+    const n = this.brush.size;
+    const x0 = Math.floor(x - (n - 1) / 2);
+    const y0 = Math.floor(y - (n - 1) / 2);
+    for (let ty = y0; ty < y0 + n; ty++)
+      for (let tx = x0; tx < x0 + n; tx++) {
+        if (!w.inBounds(tx, ty)) continue;
+        const i = ty * w.w + tx;
+        if (w.biome[i] === t.b) continue;
+        w.biome[i] = t.b;
+        if (t.ground) w.blocked[i] = 2;
+        else if (w.blocked[i] === 2) w.blocked[i] = 0;
+        this.drag.changed = true;
+      }
+  }
+
+  /** The ground drawn again from the tiles (a new Terrain: gfx/terrain.js reads the biome once, in its chunks). */
+  rebuildGround() {
+    const w = this.world;
+    const r = this.renderer;
+    if (w.terrain && w.terrain.pool) {
+      w.terrain.pool.close();
+      w.terrain.pool = null;
+    }
+    w.terrain = null;
+    r.setWorld();
   }
 
   /** Paint the brush's tiles round (x, y): `v` 1 blocked, 0 walkable. */
@@ -1235,6 +1307,9 @@ export class MapEditor {
       case '3':
         this.setMode('light');
         break;
+      case '4':
+        this.setMode('tile');
+        break;
       case '[':
         this.setBrush(this.brush.size - 1);
         break;
@@ -1275,6 +1350,12 @@ export class MapEditor {
     const m = this.at(e.clientX, e.clientY);
     this.cursor = m;
     const pan = e.button === 1 || (e.button === 2 && this.mode !== 'brush');
+    if (this.mode === 'tile' && !pan) {
+      if (e.button !== 0) return;
+      this.drag = { tile: true, before: this.snapshot(), changed: false, at: performance.now() };
+      this.paintTile(m.x, m.y);
+      return;
+    }
     if (pan) {
       if (e.button === 2 && this.mode === 'prop' && this.palette) return this.pickPalette(null); // (right click: stop placing)
       this.drag = { pan: true, x: e.clientX, y: e.clientY, fx: this.focus.x, fy: this.focus.y, moved: false };
@@ -1341,6 +1422,15 @@ export class MapEditor {
       return;
     }
     if (d.brush) return this.paint(m.x, m.y, d.v);
+    if (d.tile) {
+      this.paintTile(m.x, m.y);
+      if (d.changed && performance.now() - d.at > 400) {
+        // (the ground redrawn as the stroke goes, a few times a second)
+        d.at = performance.now();
+        this.rebuildGround();
+      }
+      return;
+    }
     let dx = m.x - d.w0.x;
     let dy = m.y - d.w0.y;
     if (!this.shift) [dx, dy] = [snap(dx), snap(dy)]; // (by half tiles: a prop keeps its offset from the grid)
@@ -1366,6 +1456,10 @@ export class MapEditor {
     this.drag = null;
     if (!d) return;
     if (d.brush && d.changed) this.commit(d.before);
+    if (d.tile && d.changed) {
+      this.rebuildGround();
+      this.commit(d.before);
+    }
     if (d.light && d.moved) this.commit(d.before);
     if (d.prop && d.moved) {
       this.block(d.prop);
@@ -1433,7 +1527,18 @@ export class MapEditor {
     const ty0 = Math.max(0, Math.floor(Math.min(...corners.map((c) => c.y))));
     const ty1 = Math.min(w.h - 1, Math.ceil(Math.max(...corners.map((c) => c.y))));
 
-    if (this.mode === 'brush') {
+    if (this.mode === 'tile') {
+      const n = this.brush.size;
+      ctx.beginPath();
+      diamond(Math.floor(m.x - (n - 1) / 2), Math.floor(m.y - (n - 1) / 2), n);
+      ctx.fillStyle = TILES.find((q) => q.b === this.tile).color;
+      ctx.globalAlpha = 0.35;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else if (this.mode === 'brush') {
       for (const [v, col] of [
         [1, 'rgba(255,170,40,0.38)'],
         [2, 'rgba(255,40,40,0.22)'],
