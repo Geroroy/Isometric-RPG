@@ -3,7 +3,7 @@ bays of several lengths, pillar centre to pillar centre, in one atlas with their
 
     python3 tools/sprites/mustafar_set/lowwall.py -> public/sprites/mustafar/lowwall.{png,json}
 
-worldgen.js MustafarArena.walls lays a room's near side out of them as a builder would: a pillar on the near corner
+The map (public/maps/mustafar.json) lays a room's near side out of them as a builder would: a pillar on the near corner
 and on each doorway's jamb, the stretch between split into even bays of the nearest baked length, neighbouring bays
 sharing their pillar (drawn twice on one spot). Each bay is the render shortened by taking columns out of its middle
 (bake.py `cutx`: the part beyond moved up the foot line's slope); one scale for all — 1180 render px pillar to

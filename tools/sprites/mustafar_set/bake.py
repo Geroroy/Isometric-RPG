@@ -81,7 +81,7 @@ PIECES = {
         mirror='mfTable_y',
         flat=True,
     ),
-    'mfHoloX': dict(  # the control room's holo-table along x (two side by side: worldgen.js holoTables)
+    'mfHoloX': dict(  # the control room's holo-table along x (two side by side: public/maps/mustafar.json)
         over=4,
         src='image_20.png',
         corners=[

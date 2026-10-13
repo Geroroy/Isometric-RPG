@@ -3,9 +3,8 @@
 // dusty plains, crystal fields, rocky highlands, scorched battlefields and the
 // ruins of an old crystal city; a droid factory stronghold far to the north.
 import { RNG, fbm, dist, distToSegment, clamp } from '../core/math.js';
-import { HALF_W, HALF_H } from '../core/iso.js';
 import { PROPS } from '../gfx/models/props.js';
-import { SHEET_PROPS, cityFootprint, citySize, inPoly } from './cityProps.js';
+import { SHEET_PROPS, cityFootprint, inPoly } from './cityProps.js';
 import UNDERCITY_V1 from '../data/undercity.json';
 import UNDERCITY_V2 from '../data/undercity_v2.json';
 import { MAP_V2 } from './mapVersion.js';
@@ -507,10 +506,11 @@ export class Arena extends World {
 //   river       the lava river: the collector droid and the repulsor platform
 //   bank        the black sand slope south of it — the high ground
 
-// The facility in design coordinates: the sets in the film's order along −x (deck → corridor → hall), north
-// (junction → control room), east (the balcony), the arm far west, the river south. The map is built here and then
-// transposed (x ↔ y: MustafarArena.transpose) so that on screen it reads as the film's wide shot and the concept
-// art (reference/color_rots): the landing platform on the left, the collector arms on the right
+// The facility's sets, in design coordinates: the sets in the film's order along −x (deck → corridor → hall), north
+// (junction → control room), east (the balcony), the arm far west, the river south; transposed into the world
+// (x ↔ y) so that on screen it reads as the film's wide shot and the concept art (reference/color_rots): the landing
+// platform on the left, the collector arms on the right. The map itself is its file (public/maps/mustafar.json):
+// these are the sets' boxes the duel works in (MUSTAFAR)
 const MUSTAFAR_D = {
   deck: { x: 118, y: 118, rx: 9.5, ry: 6.5 },
   pad: { x: 117, y: 109.5, hw: 4.5, hh: 2.5 }, // the skiff's parking apron
@@ -528,11 +528,6 @@ const MUSTAFAR_D = {
   river: { x: 106, y: 142, hw: 24, hh: 4 },
   bank: { x: 112, y: 150 },
 };
-const distToPolyline = (x, y, pts) => {
-  let d = Infinity;
-  for (let i = 1; i < pts.length; i++) d = Math.min(d, distToSegment(x, y, pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]));
-  return d;
-};
 const tpRect = (r) => {
   const o = { ...r, x: r.y, y: r.x };
   if ('hw' in r) [o.hw, o.hh] = [r.hh, r.hw];
@@ -541,9 +536,9 @@ const tpRect = (r) => {
 };
 /** The facility as it lies in the world (design coordinates transposed): what the duel works in. */
 export const MUSTAFAR = Object.fromEntries(Object.entries(MUSTAFAR_D).map(([k, v]) => [k, Array.isArray(v) ? v.map(([x, y]) => [y, x]) : tpRect(v)]));
-// the set sprites' mirrored twins (a sprite flipped left-right is its transpose): design name -> world name
 // the rooms' near walls' bay lengths, pillar to pillar (tools/sprites/mustafar_set/lowwall.py LENGTHS)
 const WALL_BAYS = [1, 2.5, 3, 3.5, 4, 4.5, 5];
+// the set sprites' mirrored twins (a sprite flipped left-right is its transpose: the same piece the other way round)
 const MIRROR_SHEET = {
   mfConsole: 'mfConsole_r',
   mfConsole_r: 'mfConsole',
@@ -571,511 +566,144 @@ const MIRROR_SHEET = {
 // the pairs, for the loader (gfx/mustafarFloor.js: one of each is shipped, the other flipped from it)
 export const MUSTAFAR_SHEETS = { mirror: MIRROR_SHEET };
 
-// Mustafar's rock sprites (tools/sprites/mustafar_rocks) in place of the model rocks: by size class
-const ROCKS = {
-  land: [...Array(9).keys()].map((i) => 'rk1_' + i), // landforms 12-15 m across: deep in the mountain
-  wall: [...Array(6).keys()].map((i) => 'rk4_' + i), // cliff walls
-  crag: [...Array(8).keys()].map((i) => 'rk2_' + i), // crags and slabs
-  pile: [...Array(6).keys()].map((i) => 'rk3_' + i), // boulder piles: the rock's rim, under the blocks, the bank
-};
+// a map file's characters (MustafarArena.toMap): a biome each, and the way — walkable, a prop's footprint, the
+// ground's own edge (a wall, the lava, the rock)
+const BIOME_CHAR = { DUST: 'd', ROCK: 'r', CRYSTAL: 'c', SCORCH: 's', RUIN: 'u', BASE: 'b', GRASS: 'g', HANGAR: 'h', MUSTAFAR: 'M', LAVA: '~', ASH: ':', CITY_UP: 'U', CITY_LOW: 'L', VOID: 'v', CITY_MOSAIC: 'm', CITY_MUD: 'w', CITY_SWAMP: 'p', CITY_DIRT: 't', GRATE: '#' };
+const BLOCKED_KEY = { '.': 'walkable', o: 'blocked (a prop)', '#': 'blocked (the ground: lava, rock, a wall)' };
+const BLOCKED_CHAR = ['.', 'o', '#'];
 
-// the rooms' far corners cut across (MustafarArena.cornerConsole: the screen console seen head-on across the
-// diagonal, as the film's angled bays), metres along each wall: the diagonal 3 m, one console
-const HALL_CUT = 2.12;
-const CONTROL_CUT = 2.12;
-// the floor runs this far out under the far walls' consoles (a tile), blocked: their feet stand on the set's floor
-const ROOM_PAD = 1;
+/** A map file as text (public/maps/*.json): its rows, props and lights one a line, so a change reads as a line's. */
+export function mapText(m) {
+  const one = (v) => JSON.stringify(v);
+  const field = ([k, v]) => (Array.isArray(v) && v.length && typeof v[0] !== 'number' ? `  ${one(k)}: [\n${v.map((e) => '    ' + one(e)).join(',\n')}\n  ]` : `  ${one(k)}: ${one(v)}`);
+  return `{\n${Object.entries(m).map(field).join(',\n')}\n}\n`;
+}
+
+// the map's data (public/maps/mustafar.json, the map editor's file): main.js loads it before the world is made
+let MUSTAFAR_MAP = null;
+export function setMustafarMap(m) {
+  MUSTAFAR_MAP = m;
+}
 
 export class MustafarArena extends World {
-  /** The model rocks become the rock sprites when they loaded: a cliff a wall (now and then a landform), a boulder a crag, a lava rock a pile. */
-  addProp(type, x, y, opts = {}) {
-    const cls = type === 'cliff' ? (this.rng.next() < 0.3 ? 'land' : 'wall') : type === 'boulder' ? 'crag' : type === 'lavaRock' ? 'pile' : null;
-    if (cls && cityFootprint(ROCKS[cls][0])) {
-      // the biggest that keeps clear of the sets: a smaller class when its picture would lie over a deck or room
-      const order = ['land', 'wall', 'crag', 'pile'];
-      for (const c of order.slice(order.indexOf(cls))) {
-        const list = ROCKS[c];
-        const name = list[Math.floor(this.rng.next() * list.length)];
-        if (this.rockClear(name, x, y)) return this.addSheetProp(name, x, y, { noBlock: true });
-      }
-      return null; // no room for any: the bare rock
-    }
-    return super.addProp(type, x, y, opts);
-  }
-
-  /**
-   * Whether a rock sprite at (x, y) keeps off the sets: no walkable tile (a deck, a room, a catwalk) under any
-   * part of its picture — the tiles behind it that its height covers and those beside it under its width — with
-   * a tile of margin.
-   */
-  rockClear(name, x, y) {
-    const sz = citySize(name);
-    if (!sz) return true;
-    const [w, h, ox, oy] = sz;
-    const sx = (x - y) * HALF_W;
-    const sy = (x + y) * HALF_H;
-    const x0 = sx - ox - HALF_W * 2;
-    const x1 = sx - ox + w + HALF_W * 2;
-    const y0 = sy - oy - HALF_H * 2;
-    const y1 = sy - oy + h + HALF_H * 2;
-    // tiles whose ground point falls in that screen box: u = x - y in [x0, x1] / HALF_W, v = x + y in [y0, y1] / HALF_H
-    for (let v = Math.floor(y0 / HALF_H); v <= Math.ceil(y1 / HALF_H); v++)
-      for (let u = Math.floor(x0 / HALF_W); u <= Math.ceil(x1 / HALF_W); u++) {
-        if ((u + v) & 1) continue;
-        const tx = (u + v) / 2;
-        const ty = (v - u) / 2;
-        if (!this.inBounds(tx, ty)) continue;
-        const b = this.biome[ty * MAP_W + tx];
-        if (b === BIOME.MUSTAFAR || b === BIOME.GRATE) return false;
-      }
-    return true;
-  }
-
+  /** The map laid out from its file (public/maps/mustafar.json: MustafarArena.toMap), in world coordinates. */
   generate() {
+    const m = MUSTAFAR_MAP;
+    if (!m) throw new Error('무스타파 맵 데이터가 없다 (public/maps/mustafar.json)');
     this.rng = new RNG(this.seed);
-    const M = MUSTAFAR_D; // (built in design coordinates, transposed at the end)
-    this.ambient = [150, 86, 70];
-    this.grade = 'mustafar'; // post.js colour grade
-    this.floats = []; // moving decks on the lava river: { x, y, r }
-    this.pois.push({ x: M.deck.x, y: M.deck.y, r: 13, name: '무스타파 · 착륙장' });
-    this.pois.push({ x: M.corridor.x, y: M.corridor.y, r: 9, name: '무스타파 · 입구 복도' });
-    this.pois.push({ x: M.hall.x, y: M.hall.y, r: 10, name: '무스타파 · 분리주의 회의실' });
-    this.pois.push({ x: M.control.x, y: M.control.y, r: 10, name: '무스타파 · 제어실' });
-    this.pois.push({ x: M.balcony.x, y: M.balcony.y, r: 9, name: '무스타파 · 외부 발코니' });
-    this.pois.push({ x: M.arm.x, y: M.arm.y, r: 13, name: '무스타파 · 집하기 팔' });
-    this.pois.push({ x: M.river.x, y: M.river.y, r: 10, name: BIOME_NAMES[BIOME.LAVA] });
-    const inRect = (x, y, r) => Math.abs(x - r.x) <= r.hw && Math.abs(y - r.y) <= r.hh;
-    // the rooms' far corners cut across (pentagons, as the film's and the LEGO set's rooms): `cut` metres along
-    // each wall from the corner, the head-on console across it (cornerConsole)
-    const cutOf = (r) => (r === M.hall ? HALL_CUT : r === M.control ? CONTROL_CUT : 0);
-    const padOf = (r) => (r === M.hall || r === M.control ? ROOM_PAD : 0);
-    const lxy = (x, y, r) => x - (r.x - r.hw) + (y - (r.y - r.hh));
-    // the floor: the room and a strip under its far walls' consoles (ROOM_PAD), the cut corner's floor out to the
-    // corner console's back; walked on: the room less the cut
-    const floorOf = (x, y, r) => x >= r.x - r.hw - padOf(r) && x <= r.x + r.hw && y >= r.y - r.hh - padOf(r) && y <= r.y + r.hh && lxy(x, y, r) >= cutOf(r) - padOf(r);
-    const walkOf = (x, y, r) => inRect(x, y, r) && lxy(x, y, r) >= cutOf(r);
-    const inEll = (x, y, e) => ((x - e.x) / e.rx) ** 2 + ((y - e.y) / e.ry) ** 2 <= 1;
-    const floors = [M.pad, M.walk, M.corridor, M.hall, M.junction, M.control];
-    // the interior's floor laid out of the set's floor tiles as in the film (terrain.js facilityFloor; the tiles:
-    // tools/sprites/mustafar_floor): a border `edge` tiles wide of the edge tile along the walls, the corner tile
-    // in the corners, the chevron field inside in cells of about `cell` tiles; the corridors one runner of the
-    // trim tile down their length; the control room's centre sunk a step inside a walkway (rects as above, first
-    // match wins)
-    this.floorPlan = [
-      { ...M.hall, axis: 'x', edge: 2, cell: 4.5, cut: HALL_CUT, pad: ROOM_PAD },
-      { ...M.control, axis: 'x', edge: 2, cell: 4.5, pit: 2.6, cut: CONTROL_CUT, pad: ROOM_PAD },
-      { ...M.corridor, axis: 'x', runner: true },
-      { ...M.junction, axis: 'y', runner: true },
-    ];
-    const grates = [M.balcony, M.arm];
-    for (let y = 0; y < MAP_H; y++) {
-      for (let x = 0; x < MAP_W; x++) {
-        const i = y * MAP_W + x;
-        const cx = x + 0.5;
-        const cy = y + 0.5;
-        let b = BIOME.LAVA;
-        const bankEdge = M.bank.y - 3.5 + (fbm(x / 5, 3, 11) - 0.5) * 3;
-        if (inEll(cx, cy, M.deck) || floors.some((r) => floorOf(cx, cy, r))) b = BIOME.MUSTAFAR;
-        else if (grates.some((r) => inRect(cx, cy, r))) b = BIOME.GRATE;
-        else if (inRect(cx, cy, { ...M.hall, hw: M.hall.hw + 2, hh: M.hall.hh + 2 }) || inRect(cx, cy, { ...M.control, hw: M.control.hw + 2, hh: M.control.hh + 2 }) || inRect(cx, cy, { ...M.corridor, hw: M.corridor.hw + 1, hh: M.corridor.hh + 2 }) || inRect(cx, cy, { ...M.junction, hw: M.junction.hw + 2, hh: M.junction.hh })) b = BIOME.ASH; // the building's rock footing
-        else if (cy > bankEdge && Math.abs(cx - M.bank.x) < 24) b = BIOME.ASH;
-        this.biome[i] = b;
-        this.blocked[i] = b === BIOME.MUSTAFAR || b === BIOME.GRATE ? 0 : 2;
-        // (under the consoles: the rooms' strips, unless another floor — the junction's end — is walked there)
-        if (b === BIOME.MUSTAFAR && !inEll(cx, cy, M.deck) && !floors.some((r) => walkOf(cx, cy, r))) this.blocked[i] = 2;
+    this.ambient = [...m.ambient];
+    this.grade = m.grade; // post.js colour grade
+    this.floats = []; // moving decks on the lava river: { x, y, r } (the duel's)
+    this.roadSegs = [];
+    this.spawn = { ...m.spawn };
+    this.pois = m.pois.map((q) => ({ ...q }));
+    // the interior's floor laid out of the set's floor tiles per room (terrain.js facilityFloor)
+    this.floorPlan = m.floorPlan.map((r) => ({ ...r }));
+    this.surfaces = m.surfaces.map((t) => ({ ...t })); // raised tops walked on (the tables)
+    // the ground and the way, a character a tile (the way as laid: a prop's footprint, the chairs', the door jambs')
+    const bk = Object.fromEntries(Object.entries(m.biomeKey).map(([c, n]) => [c, BIOME[n]]));
+    const wk = Object.fromEntries(BLOCKED_CHAR.map((c, i) => [c, i]));
+    for (let y = 0; y < this.h; y++)
+      for (let x = 0; x < this.w; x++) {
+        const i = y * this.w + x;
+        this.biome[i] = bk[m.biome[y][x]];
+        this.blocked[i] = wk[m.blocked[y][x]];
         this.explored[i] = 1;
       }
+    // the props (their footprints are in the way above) and the lights; the named ones the duel uses: the robes
+    // thrown off before the fight, the control room's alarm light
+    this.named = {};
+    for (const e of m.props) {
+      const p = e.sheet ? this.addSheetProp(e.sheet, e.x, e.y, { noBlock: true, flat: e.flat }) : this.addProp(e.type, e.x, e.y, { noBlock: true, variant: e.variant, angleIdx: e.angleIdx });
+      if (!p) continue; // its sprite did not load
+      p.block = !!e.block;
+      if (e.over) p.over = true;
+      if (e.cut) p.cut = [...e.cut];
+      if (e.hidden) p.hidden = true;
+      if (e.id) this.named[e.id] = p;
     }
-
-    // --- the landing platform: crates, Padmé's skiff --------------------------
-    const D = M.deck;
-    // (the deck's stores: the cargo sprites, placed after the transpose — cargo(); these crates if they did not load)
-    if (!cityFootprint('cgCrateL')) for (const [dx, dy] of [[6, -2], [6.8, -1.2], [-6.5, 3.5]]) this.addProp('crate', D.x + dx, D.y + dy);
-    // the robes thrown off before the fight (shown by the opening scene)
-    this.cloak = this.addProp('cloakPile', D.x - 2.2, D.y + 1.6);
-    this.robe = this.addProp('robePile', D.x + 3.4, D.y - 1.8);
-    this.cloak.hidden = this.robe.hidden = true;
-    // (only the set sprites the film gives stand here: no model props — the walkway's rails, the door frames,
-    // the pylons, walls, bodies and towers are left out)
-
-    // --- entry corridor ---------------------------------------------------
-    // its long wall windows on the lava, as in the film (tools/sprites/mustafar_set: three 5.5 m bays)
-    const windows = [-5.5, 0, 5.5].map((dx) => this.addSheetProp('mfWindow', M.corridor.x + dx, M.corridor.y - M.corridor.hh - 0.5, { noBlock: true }));
-    this.walls(M.corridor, 'hazardWall', { west: false, north: windows.includes(null) });
-
-    // --- the conference room ---------------------------------------------
-    const H = M.hall;
-    // the film's screen consoles (tools/sprites/mustafar_console) lining the walls side by side, as the control
-    // room's: the long wall's from the corner to the passage north and one past it, the end wall's its length
-    // (from the corner set's bank: one to the passage north, one past it)
-    for (const dx of [-5.38, -2.2, 1.3]) this.console(H, 'north', dx); // (the first's end pillar at the cut's end, 3.62 m from the corner)
-    // (between the junction's portal and the near corner, under 2 m: a pillar pair of the near wall, not a console)
-    this.addSheetProp('mfWall1', (M.junction.x + 2 + H.x + H.hw - 0.25) / 2, H.y - H.hh - 0.25, { noBlock: true });
-    // the passage on to the control room (the film's sets, reference/color_rots): a covered corridor whose
-    // pillared portal stands in the north wall, the consoles either side meeting its pillars
-    // (its shell the junction's whole length, 15 m: the roof runs on to the control room; it clears round whoever is
-    // in it or just behind it)
-    if (!this.addSheetProp('mfCorridorL', M.junction.x, H.y - H.hh, { noBlock: true })) this.addSheetProp('mfCorridor', M.junction.x, H.y - H.hh, { noBlock: true });
-    for (const dy of [-2.38, 0.8, 4.0]) this.console(H, 'west', dy); // (from the corner's console to the near corner)
-    this.door({ x: M.junction.x, y: H.y - H.hh }, 1, false); // (the covered corridor's portal is its frame)
-    // the near sides closed by the set's low wall, the entry corridor's doorway left open
-    this.walls(H, null, { north: false, west: false, south: true, east: true, egaps: [[M.door2.y - 2, M.door2.y + 2]] });
-    // the film's long table, its pointed end to the passage; the high-backed chairs along its far side and
-    // at its head (the near side left clear, as the near walls are); the model props if the sprites did not load.
-    // The fight goes up onto it, as in the film: drawn with the floor, its top a surface 0.78 m up
-    const table = this.addSheetProp('mfTable', H.x, H.y, { noBlock: true, flat: true });
-    if (table) {
-      this.surfaces.push({ x0: H.x - 4, y0: H.y - 0.8, x1: H.x + 4, y1: H.y + 0.8, z: 0.78 });
-      // the chairs stand behind it (its far side and its head): drawn with the ground too, before it (the table
-      // `over` the other flats), so its top covers their legs and seats as it is in front of them
-      // (still in the way: a flat sprite blocks nothing, so each chair's tile is blocked here)
-      const chair = (n, x, y) => this.addSheetProp(n, x, y, { flat: true }) && (this.blocked[Math.floor(y) * MAP_W + Math.floor(x)] = 1);
-      for (const dx of [-3.2, -1.7, -0.2, 1.3, 2.8]) chair('mfChair', H.x + dx, H.y - 1.35);
-      chair('mfChair_x', H.x - 4.7, H.y);
-      table.over = true;
-    } else {
-      this.addProp('confTable', H.x, H.y);
-      for (const dx of [-1.6, 0, 1.6]) {
-        this.addProp('confChair', H.x + dx, H.y - 1.5, { angleIdx: 3 });
-        this.addProp('confChair', H.x + dx, H.y + 1.5, { angleIdx: 1 });
-      }
-      this.addProp('confChair', H.x - 3.6, H.y, { angleIdx: 0 });
-      this.addProp('confChair', H.x + 3.6, H.y, { angleIdx: 2 });
+    for (const l of m.lights) {
+      const o = { x: l.x, y: l.y, z: l.z, r: l.r, g: l.g, b: l.b, rad: l.rad, flicker: l.flicker };
+      this.lights.push(o);
+      if (l.id) this.named[l.id] = o;
     }
-
-    // --- the junction corridor (north out of the hall) --------------------
-    // its inside the film's corridor, open to the camera (tools/sprites/mustafar_set: the far wall with its light
-    // panels, a low near wall, a portal at either end), drawn with the ground so whoever walks it stays in view;
-    // its hall end under the covered corridor's shell (which clears while anyone is inside)
-    if (!this.addSheetProp('mfPassage', M.junction.x, M.junction.y, { noBlock: true, flat: true }))
-      this.walls({ x: M.junction.x, y: (M.junction.y - M.junction.hh + 106) / 2, hw: M.junction.hw, hh: (106 - (M.junction.y - M.junction.hh)) / 2 }, 'hazardWall', { north: false });
-
-    // --- the control room --------------------------------------------------
-    const C = M.control;
-    // the film's control room: its walls lined with screen consoles side by side, the back wall's middle one red
-    // (the far corner: the head-on console across its cut, placed in the world after the transpose; each row runs
-    // on from it, its first console against it, the north row's middle one red)
-    // (each row's first console's end pillar at the cut's end, 2.12 m from the corner: its centre 3.62 m along the
-    // wall from the room's far corner, x0 / y0 — the room is 16 by 14, so the offsets from its middle differ)
-    [-4.38, -0.91, 2.56, 6.03].forEach((dx, i) => this.console(C, 'north', dx, i === 1));
-    for (const dy of [-3.38, -0.08, 3.22]) this.console(C, 'west', dy);
-    // the near sides closed by the low wall, open at the junction (south) and the way out to the balcony (east)
-    this.walls(C, null, { north: false, west: false, south: true, east: true, sgaps: [[M.junction.x - 2, M.junction.x + 2]], egaps: [[M.door4.y - 2, M.door4.y + 2]] });
-    // two holo-tables on the sunken floor, staggered across it as in the LEGO set (reference/color_rots image_10):
-    // one towards the far corner, one towards the near; the model desk if the sprite did not load
-    // (the two holo-tables: placed in the world after the transpose, holoTables())
-    // the way out to the balcony (the film's sets, as the hall's to the junction): a covered corridor, its back on
-    // the room's east edge, its portal on the catwalk; its inside the open corridor cut to the shell's 6 m, drawn
-    // over the catwalk's first stretch (`over`), seen while the shell clears round whoever walks it. The old door
-    // frame if the sprites did not load
-    const vest = this.addSheetProp('mfPassageS_x', M.door4.x + 3, M.door4.y, { noBlock: true, flat: true });
-    if (vest) {
-      vest.over = true;
-      this.addSheetProp('mfCorridor_r', M.door4.x + 6, M.door4.y, { noBlock: true });
-    }
-    this.door(M.door4, 0, !vest);
-    for (const [dx, dy] of [[-3, -2], [3, 2], [5, -3], [-4, 4]]) this.lights.push({ x: C.x + dx, y: C.y + dy, z: 3.2, r: 235, g: 240, b: 255, rad: 150, flicker: 0.02 }); // the white light bars
-    for (const [dx, dy] of [[0, 0], [-5, 3]]) this.lights.push({ x: C.x + dx, y: C.y + dy, z: 0.1, r: 90, g: 210, b: 255, rad: 110, flicker: 0.05 }); // cyan floor glow
-    this.alarm = { x: C.x, y: C.y, z: 2.5, r: 255, g: 40, b: 30, rad: 0, flicker: 0.5 }; // lit by the duel when the shields fail
-    this.lights.push(this.alarm);
-
-    // --- the balcony: a railed grate catwalk over the lava falls -----------
-    const B = M.balcony;
-    // the film's outside catwalk (tools/sprites/mustafar_set: a grated deck, a rail on its far side), drawn with
-    // the ground; the model rails if it did not load
-    if (!this.addSheetProp('mfCatwalkL', B.x, B.y, { noBlock: true, flat: true }))
-      for (let x = B.x - 7; x <= B.x + 7; x += 2) {
-        this.addProp('catRail', x, B.y - 1.4, { angleIdx: 0, noBlock: true });
-        this.addProp('catRail', x, B.y + 1.4, { angleIdx: 0, noBlock: true });
-      }
-    // the lava falls beyond the balcony (the film's): rock cliffs pouring into pools at the catwalk's side
-    // (tools/sprites/mustafar_set mfFall; the model falls if the sprite did not load)
-    // at the catwalk's far end the lifting arm (tools/sprites/mustafar_set mfLift: a grated beam into a cage of
-    // curved vanes), its beam going on from the deck's end over the lava
-    this.addSheetProp('mfLift', B.x + B.hw + 0.2, B.y, { noBlock: true });
-    for (const dx of [5, 10]) this.lights.push({ x: B.x + B.hw + dx, y: B.y, z: 1.5, r: 255, g: 120, b: 40, rad: 170, flicker: 0.12 });
-    if (!this.addSheetProp('mfFall_x', 89, 89, { noBlock: true }) | !this.addSheetProp('mfFall_x', 97.5, 88.5, { noBlock: true }) | !this.addSheetProp('mfFall_x', 106, 88.5, { noBlock: true }))
-      for (const [x, y] of [[88, 87], [95, 86.5], [102, 87.5], [108, 92], [106, 100]]) this.addProp('lavaFall', x, y);
-
-    // --- the collector arm ---------------------------------------------------
-    const A = M.arm;
-    // the film's collector arm (tools/sprites/mustafar_set: the vane head at its outer, west end, the grated arm,
-    // the mast and its stays), drawn with the ground as it is walked on; the tower it hangs from stays (it falls)
-    const arm = this.addSheetProp('mfArm', A.x, A.y, { noBlock: true, flat: true });
-    // the falls behind the arm (they light the hanging scene); the model falls if the sprite did not load
-    if (!this.addSheetProp('mfFall_x', 36, 98, { noBlock: true }) | !this.addSheetProp('mfFall_x', 46, 98.5, { noBlock: true }))
-      for (const [x, y] of [[33, 97.5], [42, 97], [50, 97.5], ...(arm ? [] : [[27, 104]])]) this.addProp('lavaFall', x, y); // (the head stands where the last fall was)
-    for (let x = -A.hw; x <= A.hw; x += 4) this.lights.push({ x: A.x + x, y: A.y, z: 0.2, r: 255, g: 120, b: 40, rad: 140, flicker: 0.15 });
-
-    // --- the river bank: black sand and rock ---------------------------------
-    for (let k = 0; k < 14; k++) this.addProp('lavaRock', M.bank.x + this.rng.range(-20, 20), M.bank.y + this.rng.range(-1, 9), { noBlock: true });
-
-    // warm light from the lava all round the sets
-    for (const r of [M.hall, M.control]) this.lights.push({ x: r.x, y: r.y, z: 2.5, r: 255, g: 150, b: 90, rad: 220, flicker: 0.03 });
-    for (let a = 0; a < Math.PI * 2; a += Math.PI / 7) this.lights.push({ x: D.x + Math.cos(a) * (D.rx + 2.5), y: D.y + Math.sin(a) * (D.ry + 2.5), z: 0.2, r: 255, g: 120, b: 40, rad: 150, flicker: 0.12 });
-    for (let x = B.x - B.hw + 1; x <= B.x + B.hw; x += 4) for (const dy of [-3, 3]) this.lights.push({ x, y: B.y + dy, z: 0.2, r: 255, g: 120, b: 40, rad: 130, flicker: 0.12 });
-    for (let x = -22; x <= 22; x += 6) this.lights.push({ x: M.river.x + x, y: M.river.y, z: 0.2, r: 255, g: 110, b: 30, rad: 150, flicker: 0.12 });
-    this.spawn = { x: D.x - 1.5, y: D.y + 1.5 };
-    this.roadSegs = [];
-    this.transpose();
-    this.rockAndFall();
-    this.cargo();
-    this.holoTables();
-    this.cornerConsole(MUSTAFAR.hall, HALL_CUT);
-    this.cornerConsole(MUSTAFAR.control, CONTROL_CUT);
-    // the near walls cut away while the fight is in their room (renderer.js `cut`: the room's box, world coordinates)
-    for (const p of this.props) {
-      if (!p.sheet || !p.sheet.startsWith('mfWall')) continue;
-      const r = [MUSTAFAR.hall, MUSTAFAR.control].find((q) => Math.abs(p.x - q.x) <= q.hw + 0.6 && Math.abs(p.y - q.y) <= q.hh + 0.6);
-      if (r) p.cut = [r.x - r.hw, r.y - r.hh, r.x + r.hw, r.y + r.hh];
-    }
-    // Padmé's skiff on its apron, nose along it (the film's chrome skiff, tools/sprites/mustafar_set; the model if
-    // the sprite did not load); placed in the world, after the transpose
-    if (!this.addSheetProp('mfSkiff_y', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y - 0.5)) this.addProp('skiff', MUSTAFAR.pad.x - 0.5, MUSTAFAR.pad.y);
+    this.cloak = this.named.cloak;
+    this.robe = this.named.robe;
+    this.alarm = this.named.alarm; // lit by the duel when the shields fail
     // (a flat piece marked `over` is drawn after the other flats: the balcony's corridor over the catwalk)
     this.props.sort((a, b) => (a.over ? 1 : 0) - (b.over ? 1 : 0) || a.x + a.y - (b.x + b.y));
   }
 
+  addProp(type, x, y, opts = {}) {
+    return this.own(() => super.addProp(type, x, y, opts), opts);
+  }
+
+  addSheetProp(name, x, y, opts = {}) {
+    return this.own(() => super.addSheetProp(name, x, y, opts), opts);
+  }
+
   /**
-   * The rock and the lava fall, laid in the world as the concept art and the film's wide shot show them
-   * (reference/color_rots): the mountain behind the facility (up the screen), its blocks set into it, a rock
-   * ledge under the landing platform; the lava fall pouring from a cleft in the mountain straight down the screen
-   * between the left block (the landing side) and the right one (the arms' side), under the junction and the entry
-   * corridor (they bridge it) into the river; lava streaks down the mountain's face; the second collector arm off
-   * the right block, the tall finned spire over it and a lattice tower in front of the left one.
+   * A prop placed by `put`: whether it blocks its footprint (`block`, for the map file and the editor), and the
+   * lights its definition brings tied to it (`of`, not written: the prop brings them again when it is placed).
    */
-  rockAndFall() {
-    const W = MAP_W;
-    const M = MUSTAFAR;
-    const fall = [[80, 52], [86, 58], [92, 64], [100, 72], [108, 80], [118, 90], [128, 100], [140, 112]];
-    const streaks = [
-      [[70, 70], [76, 82], [80, 92]],
-      [[112, 44], [120, 52], [126, 58]],
-      [[96, 46], [100, 56]],
-    ];
-    const deck = M.deck;
-    for (let y = 0; y < W; y++)
-      for (let x = 0; x < W; x++) {
-        const i = y * W + x;
-        if (this.biome[i] !== BIOME.LAVA) continue;
-        const cx = x + 0.5;
-        const cy = y + 0.5;
-        const n = (fbm(cx / 9, cy / 9, 17) - 0.5) * 14 + (fbm(cx / 3, cy / 3, 23) - 0.5) * 4; // the rock's ragged edge
-        const s = cx + cy;
-        const d = cx - cy;
-        const df = distToPolyline(cx, cy, fall);
-        if (df < 1.8 + n * 0.05) continue; // the fall
-        // the mountain behind and the rock the facility stands on, down to the walkway (the deck has its ledge)
-        let rock = s > 118 + n && s < 214 + n && d > -34 + n && d < 66 + n;
-        // a ledge under the landing platform, on its back side
-        if (((cx - deck.x) / (deck.rx + 3)) ** 2 + ((cy - deck.y) / (deck.ry + 3)) ** 2 <= 1 && s < deck.x + deck.y + 4) rock = true;
-        // the balcony stands out over open lava, and the fall keeps a gorge round it
-        if (Math.abs(cx - M.balcony.x) < 6 + n * 0.15 && cy > M.balcony.y - M.balcony.hh - 4) rock = false;
-        if (df < 3.4 + n * 0.08) rock = false;
-        if (!rock) continue;
-        this.biome[i] = streaks.some((l) => distToPolyline(cx, cy, l) < 0.65 + n * 0.05) ? BIOME.LAVA : BIOME.ASH;
-        this.blocked[i] = 2;
-      }
-    // the fall's head: the film's lava fall out of the cleft (a cliff pouring into a pool), a pump house over it
-    if (!this.addSheetProp('mfFall', fall[0][0] - 2, fall[0][1] + 1, { noBlock: true }))
-      for (const [dx, dy] of [[-1.6, 1.6], [0, 0], [1.6, -1.6]]) this.addProp('lavaFall', fall[0][0] + dx, fall[0][1] + dy, { noBlock: true });
-    for (const [x, y] of fall) this.lights.push({ x, y, z: 0.4, r: 255, g: 130, b: 40, rad: 190, flicker: 0.15 });
-    // the right block's second collector arm (the first is the duel's, M.arm)
-    this.addSheetProp('mfArm_y', M.hall.x + 8, M.hall.y - 21, { noBlock: true, flat: true });
-    // the mountain's height: crags over the rock (tall ones deeper in, low ones at its edge and round the
-    // facility), loose rock between
-    const ash = (x, y) => this.biome[Math.floor(y) * W + Math.floor(x)] === BIOME.ASH;
-    const edgeDist = (x, y) => {
-      for (let r = 1; r <= 6; r++) for (const [dx, dy] of [[r, 0], [-r, 0], [0, r], [0, -r]]) if (!ash(x + dx, y + dy)) return r;
-      return 7;
+  own(put, opts) {
+    const n = this.lights.length;
+    const p = put();
+    if (p) p.block = !opts.noBlock && !p.flat;
+    for (let i = n; i < this.lights.length; i++) Object.defineProperty(this.lights[i], 'of', { value: p, configurable: true });
+    return p;
+  }
+
+  /**
+   * The map as its file (public/maps/mustafar.json, mapText): what generate() reads back and the map editor saves —
+   * the ground (`biome`) and the way (`blocked`) a row of characters a tile row (their keys `biomeKey`,
+   * `blockedKey`), the props and the placed lights one a line, in world coordinates. A prop's own lights (its
+   * definition's) are not written: placing it brings them.
+   */
+  toMap() {
+    const W = this.w;
+    const n6 = (v) => Math.round(v * 1e6) / 1e6;
+    const rows = (a, ch) => Array.from({ length: this.h }, (_, y) => Array.from(a.subarray(y * W, y * W + W), ch).join(''));
+    const names = Object.fromEntries(Object.entries(BIOME).map(([k, v]) => [v, k]));
+    const used = [...new Set(this.biome)].sort((a, b) => a - b);
+    const ids = new Map(Object.entries(this.named || {}).map(([k, v]) => [v, k]));
+    const prop = (p) => {
+      const o = p.sheet ? { sheet: p.sheet } : { type: p.type };
+      o.x = n6(p.x);
+      o.y = n6(p.y);
+      if (!p.sheet) [o.variant, o.angleIdx] = [p.variant, p.angleIdx];
+      if (p.flat) o.flat = true;
+      if (p.over) o.over = true;
+      if (p.block) o.block = true;
+      if (p.cut) o.cut = p.cut.map(n6);
+      if (ids.has(p)) o.id = ids.get(p);
+      if (p.hidden) o.hidden = true;
+      return o;
     };
-    for (let gy = 10; gy < 150; gy += 3.2)
-      for (let gx = 40; gx < 160; gx += 3.2) {
-        const x = gx + this.rng.range(-1.2, 1.2);
-        const y = gy + this.rng.range(-1.2, 1.2);
-        if (!ash(x, y) || x > 134) continue; // (not on the river bank: the ending is played there)
-        const e = edgeDist(x, y);
-        if (x + y > 178) {
-          // the rock under the facility: low, loose (the blocks stand on it)
-          if (e >= 2 && this.rng.chance(0.5)) this.addProp('lavaRock', x, y, { noBlock: true });
-          continue;
-        }
-        if (e >= 3) this.addProp('cliff', x, y, { noBlock: true });
-        else if (e === 2) this.addProp('boulder', x, y, { noBlock: true });
-        else this.addProp('lavaRock', x, y, { noBlock: true });
-      }
-  }
-
-  /**
-   * The facility's stores (tools/sprites/mustafar_cargo), in world coordinates: strapped crates, drums and caged
-   * canisters unloaded beside the skiff and along the landing platform's far rim, as the film's sets keep their
-   * cargo; a stack in the conference room's open corner and the control room's. Clear of the fights' lines (the
-   * deck's middle, the walkway, the table, the sunken floor).
-   */
-  cargo() {
-    const M = MUSTAFAR;
-    const D = M.deck;
-    const H = M.hall;
-    const put = (n, x, y) => this.addSheetProp(n, x, y);
-    // beside the skiff's tail and on the near rim
-    put('cgCrateL', D.x - 4.5, D.y + 6.2);
-    put('cgCrateS', D.x - 2.6, D.y + 7.4);
-    put('cgDrum', D.x - 5.3, D.y + 4.6);
-    put('cgCube', D.x - 1.2, D.y + 8.2);
-    // the far rim, by the walkway
-    put('cgTank', D.x + 4.4, D.y - 4.6);
-    put('cgCanister', D.x + 2.8, D.y - 6.1);
-    put('cgCageCap', D.x + 4.8, D.y - 1.8);
-    // the conference room's near corner
-    put('cgCage', H.x + H.hw - 1.4, H.y + H.hh - 1.6);
-    put('cgCapsule', H.x + H.hw - 3.6, H.y + H.hh - 1.2);
-    put('cgDrum', H.x + H.hw - 1.2, H.y + H.hh - 3.6);
-    // (the control room's kept clear: the way out to the balcony is there)
-  }
-
-  /**
-   * The design layout into the world: x ↔ y for every tile, prop, light and mark (a mirror across the screen's
-   * vertical: the far walls stay the far walls). Props turn with it (a two-way prop swaps its angle, a four-way
-   * one turns to π/2 − a); set sprites become their mirrored twins (MIRROR_SHEET).
-   */
-  transpose() {
-    const W = MAP_W;
-    const flip = (a) => {
-      const b = new a.constructor(a.length);
-      for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) b[x * W + y] = a[y * W + x];
-      return b;
+    const light = (l) => {
+      const o = {};
+      for (const k of ['x', 'y', 'z', 'r', 'g', 'b', 'rad', 'flicker']) o[k] = n6(l[k]);
+      if (ids.has(l)) o.id = ids.get(l);
+      return o;
     };
-    this.biome = flip(this.biome);
-    this.blocked = flip(this.blocked);
-    this.explored = flip(this.explored);
-    this.road = flip(this.road);
-    const sw = (o) => ([o.x, o.y] = [o.y, o.x]);
-    for (const p of this.props) {
-      sw(p);
-      if (p.rect) p.rect = [p.rect[1], p.rect[0]];
-      if (p.sheet) {
-        p.sheet = MIRROR_SHEET[p.sheet] || p.sheet;
-        continue;
-      }
-      const angles = PROPS[p.type].angles || [0];
-      if (angles.length > 1) {
-        const want = Math.PI / 2 - angles[p.angleIdx];
-        let best = p.angleIdx;
-        let bd = Infinity;
-        angles.forEach((a, i) => {
-          const d = Math.abs(Math.atan2(Math.sin(a - want), Math.cos(a - want)));
-          if (d < bd) [bd, best] = [d, i];
-        });
-        p.angleIdx = best;
-        p.frameIdx = p.variant * angles.length + best;
-        const def = PROPS[p.type];
-        if (def.rectByAngle && p.rect) p.rect = def.rectByAngle[best];
-      }
-    }
-    for (const l of this.lights) sw(l);
-    for (const q of this.pois) sw(q);
-    for (const q of this.steam || []) sw(q);
-    for (const c of this.craters) sw(c);
-    sw(this.spawn);
-    this.surfaces = this.surfaces.map((t) => ({ x0: t.y0, y0: t.x0, x1: t.y1, y1: t.x1, z: t.z }));
-    this.floorPlan = this.floorPlan.map((r) => ({ ...tpRect(r), axis: r.axis === 'x' ? 'y' : 'x' }));
-  }
-
-  /**
-   * A screen console of the film (gfx/mustafarFloor.js, a sheet sprite) against a room's far wall: `side`
-   * 'north' (facing +y) or 'west' (facing +x), `at` along the wall from the room's middle; its feet on the
-   * floor's edge. Left out when its sprite did not load.
-   */
-  /**
-   * The control room's two holo-tables, side by side on the sunken floor as in the LEGO set (reference/color_rots
-   * image_10): each along the world's x (mfHoloX, its shadow baked for that way), one beside the other along y; in
-   * world coordinates, after the transpose. The model desk if the sprite did not load.
-   */
-  holoTables() {
-    const C = MUSTAFAR.control;
-    // drawn with the ground and walked on, as the conference table: their tops a surface 1 m up (the fight goes up
-    // onto them)
-    const put = [-3.2, 1.4].map((dy) => {
-      const t = this.addSheetProp('mfHoloX', C.x - 1.3, C.y + dy, { flat: true });
-      if (!t) return null;
-      t.over = true;
-      this.surfaces.push({ x0: t.x - 2.0, y0: t.y - 0.8, x1: t.x + 2.0, y1: t.y + 0.8, z: 1.0 });
-      return t;
-    });
-    if (!put[0]) this.addProp('consoleDesk', C.x - 1.3, C.y, { angleIdx: 0 });
-  }
-
-  /**
-   * A room's cut far corner closed by the screen console seen head-on (mfConsoleD, 3.42 m): its feet on the line
-   * from one wall row's desk front to the other's (0.3 m behind the room's edges), its end pillars against theirs.
-   */
-  cornerConsole(r, cut) {
-    const x0 = r.x - r.hw;
-    const y0 = r.y - r.hh;
-    const c = (cut - 0.3) / 2 - 0.18; // (the feet's middle, then the anchor 0.25 m behind it)
-    this.addSheetProp('mfConsoleD', x0 + c, y0 + c, { noBlock: true });
-  }
-
-  console(r, side, at, red = false) {
-    const name = (red ? 'mfConsoleRed' : 'mfConsole') + (side === 'west' ? '_r' : '');
-    if (side === 'north') return this.addSheetProp(name, r.x + at, r.y - r.hh - 0.3, { noBlock: true });
-    return this.addSheetProp(name, r.x - r.hw - 0.3, r.y + at, { noBlock: true });
-  }
-
-  /**
-   * A room's walls. The far ones (north and west) of the model `type`; the near ones (south and east), so the room
-   * reads as closed, of the set's wall (atlas bays mfWall<L>, tools/sprites/mustafar_set/lowwall.py: a plinth and a
-   * pipe-run panel between pillars, 2.2 m; translucent where they cover the player: renderer.js) laid out as built:
-   * its foot 0.25 m inside the floor's edge, a pillar on the near corner and on each doorway's jamb (`sgaps` /
-   * `egaps`: [from, to] along the side), each stretch between split into even bays of a baked length — the split
-   * closest to its length, of bays near 3.5 m — neighbouring bays sharing their pillar.
-   */
-  walls(r, type, { north = true, west = true, gaps = [], south = false, east = false, sgaps = [], egaps = [] } = {}) {
-    const edge = (x, y, ai) => this.addProp(type, x, y, { angleIdx: ai, noBlock: true });
-    if (north) for (let x = -r.hw + 1; x <= r.hw - 1; x += 2) if (!gaps.some(([a, b]) => r.x + x > a - 1 && r.x + x < b + 1)) edge(r.x + x, r.y - r.hh - 0.9, 0);
-    if (west) for (let y = -r.hh + 1; y <= r.hh - 1; y += 2) edge(r.x - r.hw - 0.9, r.y + y, 1);
-    const IN = 0.25;
-    const runs = (a, b, gs) => {
-      const out = [];
-      let at = a;
-      for (const [g0, g1] of [...gs].sort((p, q) => p[0] - q[0])) {
-        if (g0 > at) out.push([at, g0]);
-        at = Math.max(at, g1);
-      }
-      if (b > at) out.push([at, b]);
-      return out;
+    return {
+      format: 'cw-map',
+      version: 1,
+      w: W,
+      h: this.h,
+      ambient: this.ambient,
+      grade: this.grade,
+      spawn: { x: n6(this.spawn.x), y: n6(this.spawn.y) },
+      pois: this.pois.map((q) => ({ ...q, x: n6(q.x), y: n6(q.y) })),
+      floorPlan: this.floorPlan.map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, typeof v === 'number' ? n6(v) : v]))),
+      surfaces: this.surfaces.map((t) => Object.fromEntries(Object.entries(t).map(([k, v]) => [k, n6(v)]))),
+      biomeKey: Object.fromEntries(used.map((b) => [BIOME_CHAR[names[b]], names[b]])),
+      biome: rows(this.biome, (b) => BIOME_CHAR[names[b]]),
+      blockedKey: BLOCKED_KEY,
+      blocked: rows(this.blocked, (b) => BLOCKED_CHAR[b]),
+      props: this.props.map(prop),
+      lights: this.lights.filter((l) => !l.of).map(light),
     };
-    // the split of a stretch: [n bays of length v] closest to its length (then bays nearest 3.5 m)
-    const split = (L) => {
-      let best = null;
-      for (let n = 1; n <= 12; n++)
-        for (const v of WALL_BAYS) {
-          if (v < 2 && L > 2) continue; // (the pillar-pair stub: only for a stretch too short for a bay)
-          const err = Math.abs(n * v - L) + Math.abs(v - 3.5) * 0.05;
-          if (!best || err < best.err) best = { n, v, err };
-        }
-      return best;
-    };
-    const lay = (a, b, gs, put) =>
-      runs(a, b, gs).forEach(([a0, b0]) => {
-        const L = b0 - a0;
-        if (L < 0.6) return;
-        const { n, v } = split(L);
-        const at = a0 + (L - n * v) / 2; // (a leftover centred: a few cm either end)
-        for (let i = 0; i < n; i++) put(at + v * (i + 0.5), v);
-      });
-    if (south) lay(r.x - r.hw, r.x + r.hw - IN, sgaps, (x, v) => this.addSheetProp(`mfWall${v}`, x, r.y + r.hh - IN, { noBlock: true }));
-    if (east) lay(r.y - r.hh, r.y + r.hh - IN, egaps, (y, v) => this.addSheetProp(`mfWall${v}_y`, r.x + r.hw - IN, y, { noBlock: true }));
-  }
-
-  /** A doorway: hazard pillars either side of a two-tile opening (`ai` 0: passage along x, 1: along y); `frame`: its door frame prop. */
-  door(d, ai, frame = true) {
-    if (frame) this.addProp('doorFrame', d.x, d.y, { angleIdx: ai, noBlock: true });
-    for (const s of [-1.25, 1.25]) {
-      const tx = Math.floor(ai ? d.x + s : d.x);
-      const ty = Math.floor(ai ? d.y : d.y + s);
-      if (this.inBounds(tx, ty)) this.blocked[ty * MAP_W + tx] = 1;
-    }
   }
 
   /** The river's moving decks are walkable wherever they are. */

@@ -10,8 +10,8 @@ their checkerboard baked in: cut out first (the light, grey ground flood-filled 
 - the anchor on the ground under the middle: a quarter of the width above the lowest point (the 2:1 diamond)
 - no lava in the rock (the falls carry it): the sheets' glowing veins filled with the colour of the rock round them,
   the rock an ash grey with a trace of warmth
-- names rk<sheet>_<n> with a class in the JSON (land / wall / crag / pile); worldgen.js picks by distance from the
-  rock's edge (the big ones deep in the mountain, the piles at its rim)
+- names rk<sheet>_<n> with a class in the JSON (land / wall / crag / pile); the map (public/maps/mustafar.json) has
+  them by distance from the rock's edge (the big ones deep in the mountain, the piles at its rim)
 """
 import json
 from collections import deque

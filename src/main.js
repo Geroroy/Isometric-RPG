@@ -6,9 +6,10 @@ import { applySkin } from './ui/skin.js';
 import { bakeAssets, bakeDuelAssets, bakeSkin, bakeCharacter, CHARACTERS } from './gfx/assets.js';
 import { setRemasterAllowed } from './gfx/remaster.js';
 import { loadSheets } from './gfx/sheet.js';
-import { prune as pruneFiles, stats as fileStats } from './gfx/fileCache.js';
+import { prune as pruneFiles, stats as fileStats, cachedJSON } from './gfx/fileCache.js';
 import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
+import { setMustafarMap } from './world/worldgen.js';
 import { setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture } from './gfx/terrain.js';
 import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid, loadCargo, loadRocks } from './gfx/mustafarFloor.js';
 import { savedLook } from './ui/appearance.js';
@@ -98,6 +99,8 @@ async function boot() {
     if (droid) assets.sprites.collector = droid;
     const platform = await loadMustafarDroid('mfPlatform').catch((e) => console.warn('무스타파 플랫폼: ' + e.message));
     if (platform) assets.sprites.platform = platform;
+    // the map: its file (the map editor's), laid out by worldgen.js MustafarArena
+    setMustafarMap(await cachedJSON(import.meta.env.BASE_URL + 'maps/mustafar.json'));
   }
   // the cargo containers, in every mode (they stand in for the old model crates: worldgen.js CARGO_SWAP)
   assets.city = { ...(assets.city || {}), ...(await loadCargo()) };
