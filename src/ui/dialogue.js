@@ -117,12 +117,14 @@ export class DialogueUI {
     }
     const s = worldToScreen(n.x, n.y);
     // keep the crop on the game canvas so the edges never show black
-    const x = Math.max(0, Math.min(r.canvas.width - w, Math.round(s.x - r.cam.x - w / 2)));
-    const y = Math.max(0, Math.min(r.canvas.height - h, Math.round(s.y - r.cam.y - h / 2 - (n.sprite === 'r2' ? 14 : 30))));
+    // (in game pixels; the canvas holds res × as many when remastered: gfx/remaster.js)
+    const x = Math.max(0, Math.min(r.w - w, Math.round(s.x - r.cam.x - w / 2)));
+    const y = Math.max(0, Math.min(r.h - h, Math.round(s.y - r.cam.y - h / 2 - (n.sprite === 'r2' ? 14 : 30))));
+    const q = r.res || 1;
     const g = this.fctx;
-    g.imageSmoothingEnabled = false;
+    g.imageSmoothingEnabled = q > 1;
     g.fillStyle = '#071019';
     g.fillRect(0, 0, w, h);
-    g.drawImage(r.canvas, x, y, w, h, 0, 0, w, h);
+    g.drawImage(r.canvas, x * q, y * q, w * q, h * q, 0, 0, w, h);
   }
 }

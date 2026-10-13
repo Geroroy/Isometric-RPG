@@ -6,6 +6,7 @@
 //   WASD walk · X saber on/off · E talk · P Star Cards · Q bacta · K skill tree · C character · Tab automap · M mute · H help · F1 hide/show all UI
 import { SKILLS } from '../game/skills.js';
 import { toggleUI } from '../ui/uiHidden.js';
+import { remaster, setRemaster } from '../gfx/remaster.js';
 import { dist } from '../core/math.js';
 import { screenVecToWorldAngle } from '../core/iso.js';
 
@@ -186,6 +187,14 @@ export class Input {
       // ring) for a clean view of the game — in a cutscene too; again to bring it back
       e.preventDefault();
       toggleUI(g);
+      return;
+    }
+    if (k === 'f5') {
+      // classic ⇄ remastered graphics, at once (as StarCraft: Remastered's F5; gfx/remaster.js) — not a reload
+      e.preventDefault();
+      const on = !remaster.on;
+      setRemaster(on);
+      g.emit('log', on ? '그래픽: 리마스터' : '그래픽: 클래식', 'sys');
       return;
     }
     if (g.cinema) {

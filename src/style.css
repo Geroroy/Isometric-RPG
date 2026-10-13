@@ -46,6 +46,11 @@ body {
 canvas {
   image-rendering: pixelated;
 }
+/* remastered graphics (gfx/remaster.js): the world drawn at a finer resolution, scaled to the screen smoothly */
+body.remaster #world,
+body.remaster #post {
+  image-rendering: auto;
+}
 button {
   font-family: inherit;
 }

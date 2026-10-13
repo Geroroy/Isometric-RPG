@@ -5,6 +5,7 @@
 // readouts. Full-screen panels (skills, info, map, settings, Star Cards,
 // appearances) use the same hull frame, holo screens and datapads.
 import { SKILLS, TREES, TIER_LEVELS, canLearn, isActive } from '../game/skills.js';
+import { remaster, setRemaster, onRemaster } from '../gfx/remaster.js';
 import { iconURL } from './icons.js';
 import { dist } from '../core/math.js';
 import { StarCardsUI } from './starCards.js';
@@ -424,6 +425,11 @@ export class HUD {
         <p class="set-note">이 기기에 저장됩니다. 대사 음성·효과음 파일을 직접 넣는 방법은 <code>public/audio/README.md</code>를 참고하세요.</p>
       </section>
       <section class="set-card">
+        <h4>그래픽</h4>
+        <label class="set-toggle"><input type="checkbox" id="remasterOn"> 리마스터 그래픽 <kbd>F5</kbd></label>
+        <p class="set-note">스타크래프트 리마스터처럼 같은 화면을 더 높은 해상도로 그립니다: 바닥·세트·광선검·빛이 촘촘하고 매끄럽게. 끄면 클래식(굵은 픽셀). 게임 중에도 바로 바뀌고, 이 기기에 저장됩니다.</p>
+      </section>
+      <section class="set-card">
         <h4>화면 효과</h4>
         <label class="set-toggle"><input type="checkbox" data-post="grade"> 행성별 색 보정 (LUT)</label>
         <label class="set-toggle"><input type="checkbox" data-post="bloom"> 빛 번짐 (블룸)</label>
@@ -486,6 +492,10 @@ export class HUD {
         show();
       });
     });
+    const rm = $('#remasterOn');
+    rm.checked = remaster.on;
+    rm.addEventListener('change', () => setRemaster(rm.checked));
+    onRemaster((on) => (rm.checked = on));
     const post = this.renderer.post;
     o.querySelectorAll('[data-post]').forEach((cb) => {
       cb.checked = !!post.opts[cb.dataset.post];

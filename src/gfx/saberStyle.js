@@ -270,9 +270,10 @@ export function drawBlade(ctx, x1, y1, x2, y2, pal, k, time, ign = null) {
   const s = dy / len;
   ctx.globalCompositeOperation = 'screen';
   ctx.globalAlpha = Math.min(1, st.glowA * k * fl * (SABER.glow || 1));
-  ctx.setTransform(c, s, -s, c, x1, y1);
+  const m0 = ctx.getTransform(); // (on top of the canvas's own: the remaster's resolution scale)
+  ctx.transform(c, s, -s, c, x1, y1);
   ctx.drawImage(glowSprite(pal, SABER.trail), -w / 2, -w / 2, len + w, w);
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.setTransform(m0);
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
   ctx.strokeStyle = pal.rim;

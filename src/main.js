@@ -3,7 +3,8 @@ import './style.css';
 import './ui/theme.css'; // the UI design system (docs/UI_SYSTEM.md): restyles what style.css lays out
 import { fontsReady } from './ui/fonts.js'; // the HUD's fonts (Orbitron, Share Tech Mono, Rajdhani…), bundled
 import { applySkin } from './ui/skin.js';
-import { bakeAssets, bakeDuelAssets, bakeSkin, bakeCharacter, CHARACTERS } from './gfx/assets.js';
+import { bakeAssets, bakeDuelAssets, bakeSkin, bakeCharacter, CHARACTERS, loadAssetsHD, bakeAssetsHD } from './gfx/assets.js';
+import { remaster, onRemaster } from './gfx/remaster.js';
 import { loadSheets } from './gfx/sheet.js';
 import { prune as pruneFiles, stats as fileStats } from './gfx/fileCache.js';
 import { loadCitySprites } from './gfx/citySprites.js';
@@ -70,6 +71,7 @@ async function boot() {
   };
   await fontsReady(); // the HUD's fonts in before the first frame (canvas text keeps what it is drawn with)
   const assets = await bakeAssets(onProgress);
+  const coreSprites = { ...assets.sprites }; // (the baked characters the remastered bundle can stand in for)
   // characters rendered in Blender: sprite sheet + frame JSON (after the bake
   // has been cached — the cache stores baked canvases only)
   Object.assign(assets.sprites, await loadSheets(Object.keys(CHARACTERS), onProgress));
@@ -130,6 +132,27 @@ async function boot() {
   const overlay = document.getElementById('overlay');
   const renderer = (game.renderer = new Renderer(game, assets, canvas, overlay));
   const post = (renderer.post = new Post(canvas, game)); // LUT, bloom, vignette, grain (options)
+  // remastered graphics (gfx/remaster.js): the props, the LAAT and the baked characters swapped for their 2× bake
+  // (assets.js loadAssetsHD, shipped pre-baked) when it is there; the classic ones again in classic
+  const classicSet = { props: assets.props, laatFly: assets.laatFly };
+  let hdSet = null;
+  const swapAssets = async (on) => {
+    if (on && hdSet === null) hdSet = (await loadAssetsHD().catch(() => null)) || false;
+    if (on !== remaster.on) return; // (switched back meanwhile)
+    const use = on && hdSet;
+    for (const [k, v] of Object.entries(hdSet ? hdSet.sprites : {})) {
+      const cur = assets.sprites[k];
+      if (cur !== coreSprites[k] && cur !== v) continue; // (replaced by a duel's or a sheet's own)
+      assets.sprites[k] = use ? v : coreSprites[k];
+    }
+    assets.props = use ? hdSet.props : classicSet.props;
+    assets.laatFly = use ? hdSet.laatFly : classicSet.laatFly;
+    renderer.prepareProps();
+  };
+  onRemaster(swapAssets);
+  if (remaster.on) swapAssets(true);
+  // tools/bake_core.mjs core_hd: the page opened with ?bakehd bakes the remastered bundle on request
+  if (/[?&]bakehd\b/.test(location.search)) window.__bakeHD = () => bakeAssetsHD().then(() => true);
   const portrait = new Portrait();
   const photo = new PortraitPhoto(portrait);
   await photo.init();

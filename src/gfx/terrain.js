@@ -1,10 +1,11 @@
 // Chunked per-pixel terrain renderer. Ground colors are blended smoothly
 // between tiles (no diamond seams), then textured with grain / pebbles,
 // paving patterns, roads and craters and finally ordered-dithered to a
-// reduced palette for an old-school look. Remaster graphics (density 2) build
-// chunks at twice the pixel density in full colour with a finer grain.
+// reduced palette for an old-school look. Remastered graphics (gfx/remaster.js) build
+// chunks at 2-3× the pixel density in full colour with a finer grain, in workers
+// (gfx/terrainWorker.js) while the classic chunks stand in.
 import { HALF_W, HALF_H, Z_PX } from '../core/iso.js';
-import { BIOME } from '../world/worldgen.js';
+import { BIOME } from '../world/biome.js';
 import { valueNoise, hash2, clamp } from '../core/math.js';
 import { BUILDING_PROTO } from './buildingBackdrop.js';
 
@@ -44,8 +45,21 @@ let FLOOR = null;
 // sampled in world space per biome: a list of variants per biome, picked per cell, `tiles`
 // world tiles per repeat
 let GROUND = null;
+// what the setters were given, for the terrain workers to be set up the same (gfx/terrainPool.js)
+export const TEXTURE_INPUTS = {};
+/** A canvas here or in a worker (OffscreenCanvas). */
+const makeCanvas = (w, h) => {
+  if (typeof document !== 'undefined') {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    return c;
+  }
+  return new OffscreenCanvas(w, h);
+};
 export function setGroundTextures(g) {
   if (!g) return;
+  TEXTURE_INPUTS.ground = g;
   // variants with weights (the plain plate carries most of the floor; grates, vents and the
   // lettered plate are accents), the cell size in tiles; every cell also turns, mirrors and
   // shifts its tone by its own hash, so no two neighbours read the same
@@ -69,12 +83,14 @@ export function setGroundTextures(g) {
 }
 export function setFloorTexture(f) {
   if (!f) return;
+  TEXTURE_INPUTS.floor = f;
   FLOOR = f;
 }
 // the Mustafar facility's floor tiles (gfx/mustafarFloor.js: { field, edge, corner, trim }, ImageData each, from the
 // set's texture sheets), laid out per room by the world's floorPlan (worldgen.js MustafarArena)
 let FACILITY = null;
 export function setFacilityFloor(t) {
+  TEXTURE_INPUTS.facility = t || null;
   FACILITY = t || null;
 }
 // The landing platform and the outside decks (the facility's floor outside its rooms): big irregular plates cut by
@@ -173,6 +189,7 @@ function plateFloor(fx, fy, o) {
 // world space at two scales mixed by a slow noise so the repeat does not read
 let LAVA_TEX = null;
 export function setLavaTexture(t) {
+  TEXTURE_INPUTS.lava = t || null;
   LAVA_TEX = t || null;
 }
 const lavaA = [0, 0, 0];
@@ -336,13 +353,42 @@ export class Terrain {
     this.warm = null; // view rectangles (world-screen px) to make ready ahead (renderer.warmTerrain)
     this.warmHurry = false; // a bigger budget a frame (a lift's doors are closing)
     this.S = 1; // pixels per game pixel
+    this.low = new Map(); // at a finer density (remastered): the classic chunks shown while the fine ones are built
+    this.pool = null; // remastered: the workers building the fine chunks (terrainPool.js; set by the renderer)
   }
 
+  /**
+   * The ground's pixels per game pixel (gfx/remaster.js). Going finer, the classic chunks are kept to stand in
+   * (draw) while the fine ones are built a few ms a frame — the switch is at once, the detail arrives over a
+   * moment; going back, they are the cache again.
+   */
   setDensity(S) {
     if (S === this.S) return;
+    for (const c of S === 1 ? this.cache.values() : []) if (c.canvas.close) c.canvas.close();
+    if (this.S === 1) this.low = this.cache;
+    else if (S === 1) this.cache = this.low;
+    if (S === 1) this.low = new Map();
+    else this.cache = new Map();
     this.S = S;
-    this.cache.clear();
     this.job = null;
+  }
+
+  /** The classic (1×) chunk, built at once if need be (cheap): the stand-in for a fine one not built yet. */
+  lowChunk(cx, cy) {
+    const key = cx + ',' + cy;
+    let c = this.low.get(key);
+    if (!c) {
+      c = this.buildChunk(cx, cy, 1);
+      this.low.set(key, c);
+      if (this.low.size > 48) {
+        let oldK = null;
+        let oldT = Infinity;
+        for (const [k, v] of this.low) if (v.used < oldT) [oldT, oldK] = [v.used, k];
+        this.low.delete(oldK);
+      }
+    }
+    c.used = this.frame;
+    return c;
   }
 
   sample(arr, u, v) {
@@ -363,8 +409,8 @@ export class Terrain {
     return (a + (b - a) * tx) * (1 - ty) + (c + (d - c) * tx) * ty;
   }
 
-  buildChunk(cx, cy) {
-    const gen = this.buildGen(cx, cy);
+  buildChunk(cx, cy, S = this.S) {
+    const gen = this.buildGen(cx, cy, S);
     let r;
     while (!(r = gen.next()).done);
     return r.value;
@@ -547,14 +593,11 @@ export class Terrain {
   }
 
   /** Builds a chunk, yielding every few rows (prefetch spreads it over frames). */
-  *buildGen(cx, cy) {
-    const S = this.S;
+  *buildGen(cx, cy, S = this.S) {
     const hd = S > 1;
     const PW = CW * S;
     const PH = CHH * S;
-    const canvas = document.createElement('canvas');
-    canvas.width = PW;
-    canvas.height = PH;
+    const canvas = makeCanvas(PW, PH);
     const ctx = canvas.getContext('2d');
     const img = ctx.createImageData(PW, PH);
     const d = img.data;
@@ -909,6 +952,8 @@ export class Terrain {
             oldK = k;
           }
         }
+        const old = this.cache.get(oldK);
+        if (old.canvas.close) old.canvas.close(); // (a worker's ImageBitmap: its memory now)
         this.cache.delete(oldK);
       }
     }
@@ -930,6 +975,7 @@ export class Terrain {
     const minY = Math.floor(Math.min(...corners.map((c) => c[1])) / CH) - 1;
     const maxY = Math.floor(Math.max(...corners.map((c) => c[1])) / CH) + 1;
     let built = 0;
+    const missing = []; // (finer density) chunks in view shown by their classic stand-ins this frame
     const visible = (cx, cy) => {
       const sx0 = (cx * CH - (cy * CH + CH)) * HALF_W;
       const sy0 = (cx * CH + cy * CH) * HALF_H;
@@ -941,16 +987,45 @@ export class Terrain {
         const sy0 = (cx * CH + cy * CH) * HALF_H;
         if (sx0 > vx + vw || sx0 + CW < vx || sy0 > vy + vh || sy0 + CHH < vy) continue;
         const key = cx + ',' + cy;
-        if (!this.cache.has(key)) built++;
-        const c = this.getChunk(cx, cy);
+        let c = this.cache.get(key);
+        if (c) c.used = this.frame;
+        else if (this.S > 1) {
+          c = this.lowChunk(cx, cy);
+          missing.push([cx, cy]);
+        } else {
+          built++;
+          c = this.getChunk(cx, cy);
+        }
         ctx.drawImage(c.canvas, Math.round(c.sx - vx), Math.round(c.sy - vy), CW, CHH);
       }
     }
     // Prefetch a chunk a few ms per frame so walking never stalls on building one: those just outside
     // the view, then those of the views asked for ahead (warm: a lift's far end, the next zoom step out)
+    if (!built && this.S > 1 && this.pool && !this.pool.failed) {
+      // remastered, in workers (terrainPool.js): those in view, then those round it and those of the views
+      // asked for ahead — no more than the cache holds
+      const extra = [];
+      for (let cy = Math.max(0, minY - 1); cy <= Math.min(nC - 1, maxY + 1); cy++)
+        for (let cx = Math.max(0, minX - 1); cx <= Math.min(nC - 1, maxX + 1); cx++) if (!visible(cx, cy) && !this.cache.has(cx + ',' + cy)) extra.push([cx, cy]);
+      for (const [wx, wy, ww, wh] of this.warm || [])
+        for (let cy = 0; cy < nC; cy++)
+          for (let cx = 0; cx < nC; cx++) {
+            const sx0 = (cx * CH - (cy * CH + CH)) * HALF_W;
+            const sy0 = (cx * CH + cy * CH) * HALF_H;
+            if (sx0 > wx + ww || sx0 + CW < wx || sy0 > wy + wh || sy0 + CHH < wy) continue;
+            const c = this.cache.get(cx + ',' + cy);
+            if (c) c.used = this.frame;
+            else extra.push([cx, cy]);
+          }
+      const room = Math.max(0, this.maxChunks - 2 - this.cache.size - missing.length);
+      this.pool.want(missing.concat(extra.slice(0, room)), this.S);
+      return built;
+    }
     if (!built) {
       const fresh = (cx, cy) => this.cache.has(cx + ',' + cy);
       const start = (cx, cy) => (this.job = { key: cx + ',' + cy, gen: this.buildGen(cx, cy) });
+      // the fine chunks in view first (their stand-ins showing meanwhile), in a bigger budget
+      if (!this.job && missing.length) start(...missing[0]);
       if (!this.job) {
         for (let cy = Math.max(0, minY - 1); cy <= Math.min(nC - 1, maxY + 1) && !this.job; cy++) {
           for (let cx = Math.max(0, minX - 1); cx <= Math.min(nC - 1, maxX + 1); cx++) {
@@ -978,7 +1053,7 @@ export class Terrain {
             }
       }
       if (this.job) {
-        const end = performance.now() + (this.warmHurry ? 8 : 4);
+        const end = performance.now() + (this.warmHurry || missing.length ? 8 : 4);
         let r;
         do r = this.job.gen.next();
         while (!r.done && performance.now() < end);

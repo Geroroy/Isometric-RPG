@@ -1,5 +1,5 @@
 // World renderer: low-resolution canvas (scaled up with nearest-neighbour for
-// chunky pixels), depth-sorted sprites, Diablo-style light map and additive
+// chunky pixels; remastered: the same at a finer resolution, gfx/remaster.js), depth-sorted sprites, Diablo-style light map and additive
 // glow pass for sabers, blaster bolts and Force effects. Characters with a
 // Blender sprite sheet (gfx/sheet.js) cast their own rendered shadow.
 import { worldToScreen, screenToWorld, PX_PER_UNIT, Z_PX, HALF_W, HALF_H } from '../core/iso.js';
@@ -20,6 +20,8 @@ import { LaneTraffic } from './skylineTraffic.js';
 const LANE_TRAFFIC = false;
 import { SABER, PALETTES, trailWindow, paletteFor, flickerAt, ignition, drawBlade, drawSpark, drawTrail, drawClash, record } from './saberStyle.js';
 import { preset, tintFor, drawLight, drawGround, drawGroundTint, sweepOf, lightCharacter } from './saberLight.js';
+import { remaster, remasterRes, onRemaster } from './remaster.js';
+import { TerrainPool } from './terrainPool.js';
 
 const AMBIENT = [150, 146, 178];
 const byDepth = (a, b) => a.depth - b.depth;
@@ -56,14 +58,21 @@ export class Renderer {
     this.time = 0;
     this.zoom = 1;
     this.touchMode = false;
+    this.res = 1; // canvas pixels a game pixel: 1 classic, 2-3 remastered (gfx/remaster.js remasterRes)
     this.prepareProps();
     this.resize();
+    onRemaster(() => this.resize());
   }
 
   /** Another place (the city hub ⇄ Christophsis): new ground, props, map. */
   setWorld() {
     const w = this.game.world;
+    if (this.terrain && this.terrain.pool) {
+      this.terrain.pool.close(); // (the place left: its workers go; coming back makes new ones)
+      this.terrain.pool = null;
+    }
     this.terrain = w.terrain ||= new Terrain(w); // each place keeps its built ground
+    this.setDensity();
     this.prepareProps();
   }
 
@@ -94,7 +103,8 @@ export class Renderer {
       const s = worldToScreen(p.x, p.y);
       p.sx = s.x;
       p.sy = s.y;
-      p.rect = [s.x - p.frame.ox, s.y - p.frame.oy, p.frame.w, p.frame.h];
+      const k = p.frame.k || 1; // (a remastered bake: finer pixels, k < 1)
+      p.rect = [s.x - p.frame.ox * k, s.y - p.frame.oy * k, p.frame.w * k, p.frame.h * k];
       // big structures sort by their front-most footprint corner minus a bit
       const def = PROPS[p.type];
       const rect = def.rectByAngle ? def.rectByAngle[p.angleIdx] : def.rect;
@@ -199,12 +209,16 @@ export class Renderer {
     this.scale = devScale / dpr;
     this.w = Math.ceil((W * dpr) / devScale);
     this.h = Math.ceil((H * dpr) / devScale);
-    this.canvas.width = this.w;
-    this.canvas.height = this.h;
+    // remastered: the canvas (and the light map) at `res` × the game's pixels, drawn through a scale of `res`
+    // (render) — the game's coordinates, view and layout stay the same; never past the screen's own pixels
+    this.res = remaster.on ? remasterRes(devScale) : 1;
+    this.canvas.width = this.w * this.res;
+    this.canvas.height = this.h * this.res;
     this.canvas.style.width = this.w * this.scale + 'px';
     this.canvas.style.height = this.h * this.scale + 'px';
-    this.light.width = this.w;
-    this.light.height = this.h;
+    this.light.width = this.w * this.res;
+    this.light.height = this.h * this.res;
+    this.setDensity();
     // labels and numbers: at most 1.5× CSS px — still sharp text, a quarter of the pixels of 3×
     this.odpr = Math.min(dpr, 1.5);
     this.overlay.width = Math.round(W * this.odpr);
@@ -213,9 +227,28 @@ export class Renderer {
     this.overlay.style.width = W + 'px';
     this.overlay.style.height = H + 'px';
     this.ctx.imageSmoothingEnabled = false;
+    this.ctx.imageSmoothingQuality = 'high';
     // the view one zoom step out (game px), its terrain made ahead (warmTerrain); none at the widest
     const s2 = devScale - 1;
     this.wideView = !this.shot && this.scaleAllowed(s2) ? [Math.ceil((W * dpr) / s2), Math.ceil((H * dpr) / s2)] : null;
+  }
+
+  /**
+   * The ground built finer when remastered (no dither), its cache sized to about the same memory. Its density is
+   * the remastered resolution at zoom 1 — a zoom step or a cutscene's framing changes the canvas, not the ground.
+   */
+  setDensity() {
+    const t = this.terrain;
+    if (!t) return;
+    const d = remaster.on ? remasterRes(this.scaleFor(1)) : 1;
+    t.setDensity(d);
+    t.maxChunks = [96, 96, 32, 18][d]; // (0.8 MB a chunk classic, 3.3 MB at 2×, 7.4 MB at 3×)
+    // the fine chunks built in workers (terrainPool.js), the classic ones standing in meanwhile
+    if (d > 1 && !t.pool && TerrainPool.supported()) t.pool = new TerrainPool(t);
+    else if (d === 1 && t.pool) {
+      t.pool.close();
+      t.pool = null;
+    }
   }
 
   /**
@@ -300,7 +333,7 @@ export class Renderer {
     // its head in view); above, little — a sprite is drawn up from its feet
     g.viewRect = [cam.x - 90, cam.y - 24, cam.x + W + 90, cam.y + H + 260];
 
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.setTransform(this.res, 0, 0, this.res, 0, 0); // (remastered: the game's pixels drawn at res × the canvas's)
     this.smooth(false);
     const mode = p.y > 90 ? 'low' : 'up';
     // the city beyond the rims, its sky traffic: only over the part of the screen where the drop shows
@@ -407,6 +440,7 @@ export class Renderer {
     // (drawWindowed): wholly clear inside, a few px of feather at the rim — he is seen whole, never
     // blended into the wall (no fade, no ghost silhouette); its neon layer takes the same window
     const pf = !p.dead && !p.hidden ? p.frame() : null;
+    const pfH = pf ? pf.h * (pf.k || 1) : 0; // (his height in game pixels)
     const pp = worldToScreen(p.x, p.y, p.z); // (ps above is the camera's focus: clamped at a level's edge)
     for (const d of standing) {
       if (d.prop) {
@@ -432,8 +466,8 @@ export class Renderer {
             continue;
           }
         }
-        if (pf && d.depth > pDepth && r[3] > 30 && pp.x + 8 > r[0] && pp.x - 8 < r[0] + r[2] && pp.y > r[1] + 8 && pp.y - pf.h < r[1] + r[3] && this.coversPlayer(pr, pp, pf)) {
-          pr.window = { x: pp.x - cam.x, y: pp.y - pf.h * 0.5 - cam.y, r: Math.max(30, pf.h * 0.8) };
+        if (pf && d.depth > pDepth && r[3] > 30 && pp.x + 8 > r[0] && pp.x - 8 < r[0] + r[2] && pp.y > r[1] + 8 && pp.y - pfH < r[1] + r[3] && this.coversPlayer(pr, pp, pfH)) {
+          pr.window = { x: pp.x - cam.x, y: pp.y - pfH * 0.5 - cam.y, r: Math.max(30, pfH * 0.8) };
           this.drawWindowed(pr.frame, pr.sx, pr.sy + bob, pr.window);
         } else this.drawFrame(pr.frame, pr.sx, pr.sy + bob);
       } else if (d.unit) {
@@ -541,7 +575,7 @@ export class Renderer {
   }
 
   /** Whether a prop's opaque pixels cover the player's body (3 columns across him, 4 points down). */
-  coversPlayer(pr, ps, pf) {
+  coversPlayer(pr, ps, pfH) {
     const f = pr.frame;
     const data = (f.alphaData ||= alphaOf(f));
     if (!data) return true;
@@ -550,7 +584,7 @@ export class Renderer {
     for (const dx of [-6, 0, 6])
       for (const t of [0.2, 0.45, 0.7, 0.9]) {
         const x = Math.round((ps.x + dx - (pr.sx - f.ox * k)) / k);
-        const y = Math.round((ps.y - pf.h * t - (pr.sy - f.oy * k)) / k);
+        const y = Math.round((ps.y - pfH * t - (pr.sy - f.oy * k)) / k);
         if (x >= 0 && y >= 0 && x < f.w && y < f.h && data[y * f.w + x] > 128) hit++;
       }
     return hit >= 3;
@@ -602,6 +636,8 @@ export class Renderer {
   }
 
   smooth(on) {
+    // (remastered too: a sprite in game pixels — the characters' sheets — stays crisp, its pixels whole; what was
+    // baked finer (the sets, k < 1) is drawn smooth at its own detail)
     if (this.ctx.imageSmoothingEnabled !== on) this.ctx.imageSmoothingEnabled = on;
   }
 
@@ -700,9 +736,12 @@ export class Renderer {
       // with post-processing the shader bends the picture on the GPU (post.js, same maths);
       // reading pixels back to the CPU stalls the GPU, so this loop is only the fallback
       if (gpu) {
-        if (gpu.length < 4) gpu.push([cx, cy, R, band, amp, k, ca, r.ang !== null ? r.half : -1]);
+        // (in the canvas's pixels: remastered, res × the game's)
+        const q = this.res;
+        if (gpu.length < 4) gpu.push([cx * q, cy * q, R * q, band * q, amp * q, k, ca, r.ang !== null ? r.half : -1]);
         continue;
       }
+      if (this.res > 1) continue; // (the CPU fallback works in the game's pixels: classic only)
       const img = ctx.getImageData(x0, y0, w, h);
       // a copy of the untouched pixels to pull from, in a buffer kept between frames
       if (!this.ripSrc || this.ripSrc.length < img.data.length) this.ripSrc = new Uint8ClampedArray(img.data.length * 2);
@@ -908,6 +947,7 @@ export class Renderer {
     const l = this.lctx;
     const W = this.w;
     const H = this.h;
+    l.setTransform(this.res, 0, 0, this.res, 0, 0); // (the light map at the canvas's resolution)
     l.globalCompositeOperation = 'source-over';
     const amb = g.world.ambient || AMBIENT;
     l.fillStyle = `rgb(${amb[0]},${amb[1]},${amb[2]})`;
@@ -973,8 +1013,8 @@ export class Renderer {
     // composite
     const ctx = this.ctx;
     ctx.globalCompositeOperation = 'multiply';
-    this.smooth(false);
-    ctx.drawImage(this.light, 0, 0);
+    this.smooth(false); // (1:1: the light map is at the canvas's resolution)
+    ctx.drawImage(this.light, 0, 0, W, H);
     ctx.globalCompositeOperation = 'source-over';
   }
 

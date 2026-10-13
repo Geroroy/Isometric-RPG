@@ -32,7 +32,7 @@ function load() {
     .then((m) => Promise.all(Object.entries(m.modes).map(([mode, md]) => cachedImage(BASE + 'sprites/backdrop/' + md.atlas).then((i) => (atlas[mode] = i)))).then(() => (meta = m))) // kept on the device (fileCache.js)
     .catch((e) => console.warn('backdrop buildings: none', e));
 }
-if (BUILDING_PROTO) load();
+if (BUILDING_PROTO && typeof document !== 'undefined') load(); // (not in the terrain worker: gfx/terrainWorker.js imports this for the flag only)
 
 const tiles = new Map();
 /** One layer's tileable canvas for a mode (built on first use). */

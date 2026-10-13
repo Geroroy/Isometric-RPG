@@ -9,6 +9,7 @@ import { SHEET_PROPS, cityFootprint, citySize, inPoly } from './cityProps.js';
 import UNDERCITY_V1 from '../data/undercity.json';
 import UNDERCITY_V2 from '../data/undercity_v2.json';
 import { MAP_V2 } from './mapVersion.js';
+import { BIOME } from './biome.js';
 // the rebuilt city (?map=v2, docs/CORUSCANT_REBUILD.md) has its own layout
 const UNDERCITY = MAP_V2 ? UNDERCITY_V2 : UNDERCITY_V1;
 if (typeof window !== 'undefined') window.__undercity = UNDERCITY; // QA (tools/qa/undercity_ascii.mjs)
@@ -16,27 +17,7 @@ if (typeof window !== 'undefined') window.__undercity = UNDERCITY; // QA (tools/
 export const MAP_W = 192;
 export const MAP_H = 192;
 
-export const BIOME = {
-  DUST: 0,
-  ROCK: 1,
-  CRYSTAL: 2,
-  SCORCH: 3,
-  RUIN: 4,
-  BASE: 5,
-  GRASS: 6,
-  HANGAR: 7,
-  MUSTAFAR: 8, // the mining facility's metal decks
-  LAVA: 9,
-  ASH: 10, // black volcanic sand
-  CITY_UP: 11, // the city hub's upper level: polished stone
-  CITY_LOW: 12, // the lower level: grimy duracrete
-  VOID: 13, // the drop between the levels / off the platforms
-  CITY_MOSAIC: 14, // the undercity plaza's pavement: cracked mosaic with neon veins
-  CITY_MUD: 15, // the undercity's wet alleys: mud over conduits, puddles (slow)
-  CITY_SWAMP: 16, // the undercity's sump: standing water and moss (slow)
-  CITY_DIRT: 17, // the undercity's packed dirt (the residential court)
-  GRATE: 18, // Mustafar catwalk grating
-};
+export { BIOME }; // (its own module, src/world/biome.js: the terrain worker imports it without the rest)
 
 export const BIOME_NAMES = {
   0: '먼지 평원',

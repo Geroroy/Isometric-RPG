@@ -109,9 +109,10 @@ export function drawLight(ctx, x, y, t, p, a, sx = 1, sy = 1, rot = 0) {
   const R = p.r0 * p.reach;
   ctx.globalAlpha = Math.min(1, a);
   if (rot || sx !== 1 || sy !== 1) {
-    ctx.setTransform(Math.cos(rot) * sx, Math.sin(rot) * sx, -Math.sin(rot) * sy, Math.cos(rot) * sy, x, y);
+    const m0 = ctx.getTransform(); // (on top of the canvas's own: the remaster's resolution scale)
+    ctx.transform(Math.cos(rot) * sx, Math.sin(rot) * sx, -Math.sin(rot) * sy, Math.cos(rot) * sy, x, y);
     ctx.drawImage(lightSprite(t, p), -R, -R, R * 2, R * 2);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.setTransform(m0);
   } else ctx.drawImage(lightSprite(t, p), x - R, y - R, R * 2, R * 2);
   ctx.globalAlpha = 1;
 }
@@ -125,9 +126,10 @@ function drawLightIso(ctx, x, y, t, p, a, along, across, ang) {
   const c = Math.cos(ang);
   const s = Math.sin(ang);
   ctx.globalAlpha = Math.min(1, a);
-  ctx.setTransform(c * along, 0.5 * s * along, -s * across, 0.5 * c * across, x, y);
+  const m0 = ctx.getTransform();
+  ctx.transform(c * along, 0.5 * s * along, -s * across, 0.5 * c * across, x, y);
   ctx.drawImage(lightSprite(t, p), -R, -R, R * 2, R * 2);
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.setTransform(m0);
   ctx.globalAlpha = 1;
 }
 
