@@ -103,7 +103,7 @@ const settle = (page) => page.waitForFunction(() => { const t = window.__rendere
     await page.waitForTimeout(300);
     const e = await ev(page, () => { const g = window.__game; const p = g.player; return { p: [p.x, p.y], blocked: g.world.isBlocked(p.x, p.y) }; });
     const inside = e.p[0] >= st.pad[0] && e.p[0] <= st.pad[2] && e.p[1] >= st.pad[1] && e.p[1] <= st.pad[3];
-    const atEdge = Math.min(Math.abs(e.p[0] - st.pad[cx ? 2 : 0]), Math.abs(e.p[1] - st.pad[cy ? 3 : 1])) < 1;
+    const atEdge = Math.min(Math.abs(e.p[0] - st.pad[cx ? 2 : 0]), Math.abs(e.p[1] - st.pad[cy ? 3 : 1])) < 1.5; // (a railing on the rim stops him ~1.3 m in)
     check(`edge ${label}: reaches the edge, stays on the pad`, inside && atEdge && !e.blocked, JSON.stringify(e.p.map((v) => +v.toFixed(2))));
     if (label === '+x+y corner') {
       await settle(page);
@@ -177,6 +177,28 @@ const settle = (page) => page.waitForFunction(() => { const t = window.__rendere
     const stop = await ev(page, () => { const g = window.__game; const p = g.player; return { p: [p.x, p.y], blocked: g.world.isBlocked(p.x, p.y) }; });
     check('ship: walking into the hull stops at it', !stop.blocked, JSON.stringify(stop.p.map((v) => +v.toFixed(2))));
     await page.screenshot({ path: `${out}/11_at_ship.png` });
+  }
+  // the entry corridor (once delivered): walk in from the pad toward the door (W + A: along −x)
+  const corr = await ev(page, () => window.__game.world.props.filter((q) => /corridor_wall/.test(q.sheet)).length);
+  if (corr) {
+    check('corridor: its three walls stand', corr === 3, String(corr));
+    await ev(page, () => { const p = window.__game.player; p.x = 77; p.y = 98; p.path = null; window.__renderer.setZoom(1, true); });
+    await page.waitForTimeout(300);
+    await page.keyboard.down('w');
+    await page.keyboard.down('a');
+    await page.waitForTimeout(6000);
+    await page.keyboard.up('w');
+    await page.keyboard.up('a');
+    await settle(page);
+    await page.waitForTimeout(500);
+    const cp = await ev(page, () => { const g = window.__game; const p = g.player; return { p: [p.x, p.y], blocked: g.world.isBlocked(p.x, p.y) }; });
+    check('corridor: walks in to the door end', cp.p[0] < 64 && !cp.blocked && cp.p[1] > 95.5 && cp.p[1] < 100.5, JSON.stringify(cp.p.map((v) => +v.toFixed(2))));
+    await page.screenshot({ path: `${out}/12_corridor.png` });
+    await ev(page, () => { const p = window.__game.player; p.x = 70; p.y = 99.4; window.__renderer.setZoom(0.75, true); });
+    await page.waitForTimeout(400);
+    await settle(page);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${out}/13_corridor_wide.png` });
   }
   const perf = await ev(page, () => new Promise((res) => { let n = 0; const t0 = performance.now(); const f = () => (++n < 120 ? requestAnimationFrame(f) : res(((performance.now() - t0) / n).toFixed(1))); requestAnimationFrame(f); }));
   console.log('frame ms (headless, software GL):', perf);

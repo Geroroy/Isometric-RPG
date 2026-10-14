@@ -35,7 +35,9 @@ export class MustafarStage extends World {
     this.padFloors = [];
     this.backdrop = null;
     for (const f of z.floor) {
+      if (f.kind === 'texturedRect' && !art[f.asset]) continue; // (a corridor's floor: only once its picture is here)
       if (f.kind === 'landingPad') this.padFloors.push({ ...f, bays: [...f.bays] });
+      else if (f.kind === 'texturedRect') this.padFloors.push({ ...f }); // (one picture over the rectangle)
       else if (f.kind === 'groundImage' && art[f.asset] && !this.backdrop) this.backdrop = groundBackdrop(art[f.asset], f.at.x, f.at.y);
       if (f.x1 !== undefined) this.rect(f.x0, f.y0, f.x1, f.y1, (i) => (this.biome[i] = BIOME.MUSTAFAR));
     }

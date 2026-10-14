@@ -52,6 +52,12 @@ export const padHasArt = (F) => !!(F.asset && SETS[F.asset]);
 export function padAt(F, fx, fy, o) {
   if (fx < F.x0 || fy < F.y0 || fx >= F.x1 || fy >= F.y1) return false;
   const set = F.asset && SETS[F.asset];
+  // a single picture over the whole rectangle (a corridor's floor: its image columns along +x, rows along +y)
+  if (F.kind === 'texturedRect') {
+    if (!set) return debugGrid({ ...F, rim: 0, bay: 1e9 }, fx - F.x0, fy - F.y0, Infinity, Infinity, o);
+    texel(set.tiles[F.tile || 'floor'], (fx - F.x0) / (F.x1 - F.x0), (fy - F.y0) / (F.y1 - F.y0), o);
+    return true;
+  }
   const lx = fx - F.x0;
   const ly = fy - F.y0;
   const W = F.x1 - F.x0;
@@ -113,6 +119,7 @@ function debugGrid(F, lx, ly, dx, dy, o) {
  * (or the pad has no side texture: then the lava shows to the edge).
  */
 export function padSide(F, sx, sy, o) {
+  if (F.kind !== 'landingPad') return false;
   const set = F.asset && SETS[F.asset];
   const T = set && set.tiles.side;
   if (!T) return false;

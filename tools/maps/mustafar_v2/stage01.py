@@ -28,6 +28,7 @@ The pad's size (44 × 38 m) is a design assumption sized for Padmé's ship and a
 measured against the film. Its place in the 192 × 192 world map is arbitrary (away from the map's edges).
 """
 import json
+import math
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -54,7 +55,7 @@ assert len(BAYS) * BAY == Y1 - Y0 - 2 * RIM and all(len(r) * BAY == X1 - X0 - 2 
 CX, CY = (X0 + X1) / 2, (Y0 + Y1) / 2
 # the entry corridor: off the pad's −x edge, 6 m wide (one railing run left out), 10 m long, toward the facility
 DOOR_Y0, DOOR_Y1 = 95, 101
-CORR_X0 = X0 - 10
+CORR_X0 = X0 - 13.1  # (13.1 m: the delivered pictures' own proportions at 6 m wide)
 # Padmé's ship on the tie-down clamps (the E bays), nose to +x
 SHIP = (96, 95)
 
@@ -71,9 +72,14 @@ def structures():
         out.append({'asset': 'mf.landing.rail_y', 'x': X1 - 0.5, 'y': y})
     for x, y in ((X0 + 0.5, Y0 + 0.5), (X1 - 0.5, Y0 + 0.5), (X0 + 0.5, Y1 - 0.5), (X1 - 0.5, Y1 - 0.5)):
         out.append({'asset': 'mf.landing.rail_corner', 'x': x, 'y': y})
-    # the corridor: its floor (flat) and its walls (standing), one anchor
-    my = (DOOR_Y0 + DOOR_Y1) / 2
-    out += [{'asset': 'mf.landing.corridor_floor', 'x': X0, 'y': my}, {'asset': 'mf.landing.corridor', 'x': X0, 'y': my}]
+    # the corridor's walls (flat pictures stood up on their base lines: the back one along −y, the low front one along
+    # +y, the end one with the door across the far end); its floor is a `floor` entry
+    mx = (CORR_X0 + X0) / 2
+    out += [
+        {'asset': 'mf.landing.corridor_wall_back', 'x': mx, 'y': DOOR_Y0},
+        {'asset': 'mf.landing.corridor_wall_front', 'x': mx, 'y': DOOR_Y1},
+        {'asset': 'mf.landing.corridor_wall_end', 'x': CORR_X0, 'y': (DOOR_Y0 + DOOR_Y1) / 2},
+    ]
     out.append({'asset': 'mf.landing.ship', 'x': SHIP[0], 'y': SHIP[1], 'block': True})
     return out
 
@@ -110,11 +116,13 @@ def main():
                 'bay': BAY,
                 'bays': BAYS,
                 'asset': 'mf.landing.floor',  # its textures (docs/asset_requests/mf.landing.floor.md)
-            }
+            },
+            # the entry corridor's floor: one top-down picture over its rectangle (once delivered)
+            {'id': 'corridor', 'kind': 'texturedRect', 'x0': CORR_X0, 'y0': DOOR_Y0, 'x1': X0, 'y1': DOOR_Y1, 'asset': 'mf.landing.corridor_floor'}
         ],
         'walk': [
             {'id': 'pad', 'rect': [X0, Y0, X1, Y1]},
-            {'id': 'corridor', 'rect': [CORR_X0 + 1, DOOR_Y0 + 1, X0, DOOR_Y1 - 1], 'needs': ['mf.landing.corridor_floor', 'mf.landing.corridor']},
+            {'id': 'corridor', 'rect': [math.ceil(CORR_X0) + 1, DOOR_Y0 + 1, X0, DOOR_Y1 - 1], 'needs': ['mf.landing.corridor_floor']},
         ],
         # the rim under the railings (only once they stand there)
         'collision': [
@@ -132,7 +140,7 @@ def main():
             'anakin': {'x': CX + 2.5, 'y': CY + 6.5, 'faceTo': {'x': CX, 'y': CY}},
         },
         'triggers': [],
-        'camera': {'x0': X0 - 3, 'y0': Y0 - 3, 'x1': X1 + 3, 'y1': Y1 + 3},
+        'camera': {'x0': math.floor(CORR_X0) - 2, 'y0': Y0 - 3, 'x1': X1 + 3, 'y1': Y1 + 3},  # (the corridor too)
         'lights': lights(),
         'regions': [{'x': CX, 'y': CY, 'r': 40, 'name': '무스타파 · 착륙장'}],
     }

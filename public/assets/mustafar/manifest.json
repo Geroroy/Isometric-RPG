@@ -154,17 +154,17 @@
    "id": "mf.landing.rail_y",
    "name": "착륙장 난간 (y 방향 6 m)",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/mf.landing.railings.md",
    "file": "landing/rail_y.png",
    "size": [
-    288,
-    216
+    655,
+    470
    ],
-   "density": 2,
+   "density": 5.08,
    "anchor": [
-    142,
-    133
+    334,
+    303
    ],
    "layer": "standing",
    "footprint": [],
@@ -173,7 +173,8 @@
     "height": 1.1
    },
    "collision": "zone",
-   "note": "second pass delivered a second railing in the same direction as rail_x: still waiting for one along y"
+   "note": "third pass: slope −0.526, the mirror of rail_x; 6 m run, about 1.0 m tall",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v3.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py"
   },
   {
    "id": "mf.landing.rail_corner",
@@ -200,52 +201,6 @@
    "collision": "zone",
    "note": "second pass; base about 1.3 m square",
    "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v2.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py"
-  },
-  {
-   "id": "mf.landing.corridor_floor",
-   "name": "진입 통로 바닥",
-   "kind": "sprite",
-   "status": "requested",
-   "request": "docs/asset_requests/chatgpt_stage01_pass3.md",
-   "file": "corridors/landing_corridor_floor.png",
-   "size": [
-    672,
-    504
-   ],
-   "density": 2,
-   "anchor": [
-    536,
-    423
-   ],
-   "layer": "flat",
-   "footprint": [],
-   "collision": "zone: walk rect corridor",
-   "note": "two passes received, neither at the 2:1 projection (long edges slope ~0.75-1.0 against 0.5): not used; re-requested as flat textures (top-down floor, straight-on wall elevations) for the engine to project"
-  },
-  {
-   "id": "mf.landing.corridor",
-   "name": "진입 통로 벽·문",
-   "kind": "sprite",
-   "status": "requested",
-   "request": "docs/asset_requests/chatgpt_stage01_pass3.md",
-   "file": "corridors/landing_corridor.png",
-   "size": [
-    672,
-    504
-   ],
-   "density": 2,
-   "anchor": [
-    536,
-    423
-   ],
-   "layer": "standing",
-   "footprint": [],
-   "occlusion": {
-    "fadeOverActors": true,
-    "height": 3.0
-   },
-   "collision": "zone: walk rect corridor (the walls are its sides)",
-   "note": "two passes received, neither at the 2:1 projection (long edges slope ~0.75-1.0 against 0.5): not used; re-requested as flat textures (top-down floor, straight-on wall elevations) for the engine to project"
   },
   {
    "id": "mf.landing.ship",
@@ -288,6 +243,95 @@
    },
    "note": "drawn at its own heading (axis slope ~0.38 on screen: nose toward +x and a little −y); density from ~29 m nose to tail; anchor between the rear and nose landing feet; footprint = the hull between the feet",
    "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py"
+  },
+  {
+   "id": "mf.landing.corridor_floor",
+   "name": "진입 통로 바닥 (위에서 본 평면)",
+   "kind": "groundTiles",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage01_pass3.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v3.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py",
+   "tiles": {
+    "floor": {
+     "file": "corridors/landing_corridor_floor.png",
+     "size": [
+      805,
+      368
+     ],
+     "metres": [
+      13.1,
+      6
+     ]
+    }
+   },
+   "layer": "ground",
+   "note": "image columns along +x (left = the door end), rows along +y; 13.1 m from its proportions at 6 m wide"
+  },
+  {
+   "id": "mf.landing.corridor_wall_back",
+   "name": "진입 통로 뒷벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage01_pass3.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v3.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py",
+   "file": "corridors/landing_corridor_wall_back.png",
+   "size": [
+    1046,
+    283
+   ],
+   "metres": [
+    13.1,
+    3.55
+   ],
+   "along": "x",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
+  },
+  {
+   "id": "mf.landing.corridor_wall_end",
+   "name": "진입 통로 끝벽과 문 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage01_pass3.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v3.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py",
+   "file": "corridors/landing_corridor_wall_end.png",
+   "size": [
+    416,
+    249
+   ],
+   "metres": [
+    6,
+    3.59
+   ],
+   "along": "y",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
+  },
+  {
+   "id": "mf.landing.corridor_wall_front",
+   "name": "진입 통로 낮은 앞벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage01_pass3.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v3.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py",
+   "file": "corridors/landing_corridor_wall_front.png",
+   "size": [
+    1505,
+    119
+   ],
+   "metres": [
+    13.1,
+    1.04
+   ],
+   "along": "x",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
   }
  ]
 }
