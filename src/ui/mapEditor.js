@@ -42,7 +42,7 @@ import { PROPS } from '../gfx/models/props.js';
 import { worldToScreen } from '../core/iso.js';
 import { setUIHidden } from './uiHidden.js';
 import { dist } from '../core/math.js';
-import { saveLocal, clearLocal, hasLocal } from '../world/mapStore.js';
+import { saveLocal, clearLocal, hasLocal, mapName } from '../world/mapStore.js';
 
 const MIRROR = MUSTAFAR_SHEETS.mirror;
 // the keys by where they are on the keyboard (e.code), so they work in Korean input too (R comes as 'ㄱ', or as
@@ -1272,10 +1272,10 @@ export class MapEditor {
     const kept = saveLocal(text);
     // `npm run dev`: straight over public/maps/mustafar.json as well (vite.config.js mapSave)
     if (import.meta.env.DEV) {
-      fetch('/__map/mustafar', { method: 'POST', body: text })
+      fetch('/__map/' + mapName(), { method: 'POST', body: text })
         .then((r) => {
           if (!r.ok) throw new Error(r.status);
-          this.say('저장됨 — public/maps/mustafar.json 에 바로 반영');
+          this.say(`저장됨 — public/maps/${mapName()}.json 에 바로 반영`);
           this.status();
         })
         .catch(() => {

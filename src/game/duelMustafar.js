@@ -76,7 +76,7 @@ const scoreAt = (t) => SCORE.find((c) => t < c.end) || SCORE[SCORE.length - 1];
 
 // ----------------------------------------------------------------------------
 
-class ObiWan extends Dooku {
+export class ObiWan extends Dooku {
   constructor(game, x, y) {
     super(game, x, y, 'obiwan3');
     this.name = '오비완 케노비';

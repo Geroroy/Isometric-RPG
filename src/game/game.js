@@ -14,6 +14,7 @@ import { CityLife } from './cityLife.js';
 import { Duel } from './duel.js';
 import { Cinema } from './cinema.js';
 import { MustafarDuel } from './duelMustafar.js';
+import { ArtDuel } from './duelArt.js';
 
 const ELITE_NAMES = ['OOM 지휘관 드로이드', '전투 드로이드 분대장', '전술 사령 드로이드 T-7', '돌격 지휘 드로이드'];
 
@@ -24,7 +25,7 @@ export class Game {
     this.mode = mode;
     // the campaign has two places: the city hub (where it starts) and
     // Christophsis, reached by starfighter; each keeps its own state
-    this.world = mode !== 'duel' ? new CityHub(9) : duel === 'mustafar' ? new MustafarArena(66) : new Arena(77);
+    this.world = mode !== 'duel' ? new CityHub(9) : duel === 'mustafar' || duel === 'mustafarArt' ? new MustafarArena(66) : new Arena(77);
     this.pathfinder = new PathFinder(this.world);
     this.fx = new Effects();
     this.units = [];
@@ -49,6 +50,12 @@ export class Game {
     this.audio.listener = this.player;
     this.quests = new QuestLog(this);
     this.talkingTo = null;
+    if (mode === 'duel' && duel === 'mustafarArt') {
+      // the painted map (tools/maps/mustafar_art_build.py): a free duel with Obi-Wan on it
+      this.duel = new ArtDuel(this);
+      this.updateActive();
+      return;
+    }
     if (mode === 'duel' && duel === 'mustafar') {
       this.duel = new MustafarDuel(this);
       this.updateActive();

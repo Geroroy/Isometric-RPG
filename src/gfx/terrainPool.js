@@ -18,7 +18,7 @@ export class TerrainPool {
     this.failed = false;
     this.inflight = new Set(); // 'cx,cy@S'
     const w = terrain.world;
-    const world = { w: w.w, h: w.h, biome: w.biome, blocked: w.blocked, road: w.road, floorPlan: w.floorPlan || null, craters: w.craters || [], city: !!w.city, ashLit: w.ashLit || null, upper: w.upper || null, cliff: w.cliff || 0 };
+    const world = { w: w.w, h: w.h, biome: w.biome, blocked: w.blocked, road: w.road, floorPlan: w.floorPlan || null, craters: w.craters || [], city: !!w.city, ashLit: w.ashLit || null, upper: w.upper || null, cliff: w.cliff || 0, backdrop: w.backdrop ? { ...w.backdrop, img: null } : null };
     const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
     this.workers = [];
     try {

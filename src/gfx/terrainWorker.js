@@ -4,6 +4,7 @@
 import { Terrain, setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture } from './terrain.js';
 
 let T = null;
+let ready = Promise.resolve(); // (a painted ground: its picture fetched before the first chunk)
 
 self.onmessage = (e) => {
   const m = e.data;
@@ -13,10 +14,16 @@ self.onmessage = (e) => {
     if (t.ground) setGroundTextures(t.ground);
     setFacilityFloor(t.facility || null);
     setLavaTexture(t.lava || null);
-    T = new Terrain(m.world);
+    const bg = m.world.backdrop;
+    ready = bg && bg.url ? fetch(bg.url).then((r) => r.blob()).then((b) => createImageBitmap(b)).then((img) => (bg.img = img)).catch((err) => console.warn('지형 워커: 배경 그림 ' + err.message)) : Promise.resolve();
+    ready = ready.then(() => (T = new Terrain(m.world)));
     return;
   }
-  if (m.type === 'build') {
+  if (m.type === 'build') ready.then(() => build(m));
+};
+
+function build(m) {
+  {
     const key = m.cx + ',' + m.cy;
     try {
       const c = T.buildChunk(m.cx, m.cy, m.S);
@@ -26,4 +33,4 @@ self.onmessage = (e) => {
       self.postMessage({ key, gen: m.gen, S: m.S, error: String((err && err.message) || err) });
     }
   }
-};
+}

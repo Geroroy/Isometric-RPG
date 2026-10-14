@@ -2,7 +2,15 @@
 // touching the map file (public/maps/mustafar.json) — in a build (the artifact) and under `npm run dev` alike.
 // The copy remembers which file it was edited from (a hash of the file's text): a newer file (the edits merged into
 // the repository, a later build) wins over it, so a stale copy never shadows a changed map.
-const KEY = 'mustafarMap';
+let KEY = 'mustafarMap';
+let NAME = 'mustafar'; // the map file's name (public/maps/<name>.json)
+
+/** The map this session plays (its file's name): the browser's copy and the dev save go by it. */
+export function setMapName(name) {
+  NAME = name;
+  KEY = name === 'mustafar' ? 'mustafarMap' : name + 'Map';
+}
+export const mapName = () => NAME;
 
 let base = ''; // the hash of the map file this session loaded
 

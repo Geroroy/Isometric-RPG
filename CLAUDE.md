@@ -35,6 +35,7 @@
   렌더에서 잰 꼭짓점·발 위치를 게임 투영 좌표에 최소제곱으로 맞춘다(`tools/sprites/mustafar_set/bake.py`의 `corners`; 축을 따라
   1 m = 20 px, 위로 Z_PX 24.5 px). 발광부(화면·등·홀로)는 네온 레이어, 바닥에 닿는 큰 것은 주광(왼쪽 위) 반대로 그림자를 굽는다.
   배치는 맵 파일 `public/maps/mustafar.json`(월드 좌표: 소품·조명 한 줄에 하나, 바닥 `biome`·길 `blocked`는 타일 한 칸에 한 글자)에서 한다.
+  **그림 맵(`#duel-mustafar-art`, `public/maps/mustafar_art.json`)은 `tools/maps/mustafar_art_build.py`가 짓는다**: 배경 그림(`reference/mustafar_set/backdrop.png` → `public/sprites/mustafar/backdrop.webp`)을 땅으로 그대로 깔고(맵의 `backdrop`, 그림 픽셀 좌표에 SCALE배), 걷는 데크는 그림 픽셀 좌표의 다각형(`POLYS`)으로 타일에 올린다 — 그림의 시점이 게임의 2:1과 달라 그림을 격자에 맞춰 비틀지 않는다.
   **맵 파일은 생성기 `tools/maps/mustafar_build.py`가 짓는다**(영화 세트의 레고 모형 `reference/mustafar_set/lego` 배치): 구조를 바꿀 땐 생성기를 고쳐 다시 실행하고, 에디터로 손본 자잘한 배치는 생성기에 옮겨 적는다. 전체 맵 그림은 `node tools/qa/mapshot.mjs` + `python3 tools/qa/mapstitch.py`(결투를 멈추고 카메라를 훑어 이어 붙임).
   `src/world/worldgen.js` `MustafarArena`는 이 파일을 읽어 깔기만 한다(반전 짝 스프라이트는 `MIRROR_SHEET`, 세트 상자는 `MUSTAFAR`).
   게임 안 맵 에디터(결투 중 F2, `src/ui/mapEditor.js`; P 플레이 테스트)로 소품·길·조명을 고치고 `저장`(Ctrl+S)한다 — 그 브라우저가 맵을 기억해(`src/world/mapStore.js`, localStorage) 다시 열어도 편집한 맵이 나오고(빌드·아티팩트에서도), `npm run dev`에선 이 경로에도 바로 써진다(`vite.config.js` `mapSave`). 저장소에 넣을 땐 `파일 받기`로 받은 파일을 이 경로에 덮어쓴다(맵 파일이 바뀌면 브라우저 저장본보다 파일이 우선).

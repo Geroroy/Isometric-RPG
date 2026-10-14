@@ -419,6 +419,8 @@ export class Terrain {
     // the ash left lit (not faded to black): the map's box [x0, y0, x1, y1] (the river bank), else x > 140
     const lit = world.ashLit;
     this.litAsh = lit ? (x, y) => x >= lit[0] && x < lit[2] && y >= lit[1] && y < lit[3] : (x) => x >= 140;
+    // a painted picture as the ground (worldgen.js backdrop): drawn over the tiles' ground in every chunk it covers
+    this.bg = world.backdrop && world.backdrop.img ? world.backdrop : null;
     // the bench up on the cliff (cliffFace): the tiles in the map's `upper` boxes that are not lava
     this.up = null;
     this.cliffH = world.cliff || 0;
@@ -1091,6 +1093,14 @@ export class Terrain {
     ctx.lineTo((x0 + CH - y0) * HALF_W - sx0, CH * HALF_H);
     ctx.lineTo((x0 + CH - y0 - CH) * HALF_W - sx0, CHH);
     ctx.lineTo((x0 - y0 - CH) * HALF_W - sx0, CH * HALF_H);
+    if (this.bg) {
+      // the picture, as it is, scaled: its top-left pixel at the world point (x, y). Over the whole canvas, not
+      // the chunk's diamond: a clipped edge would leave part-covered pixels along it (a seam between chunks),
+      // and where the canvases overlap the picture's pixels are the same
+      const B = this.bg;
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(B.img, 0, 0, B.w, B.h, (B.x - B.y) * HALF_W - sx0, (B.x + B.y) * HALF_H - sy0, B.w * B.scale, B.h * B.scale);
+    }
     ctx.closePath();
     ctx.clip();
     for (const c of this.world.craters) {

@@ -6,11 +6,11 @@ import { applySkin } from './ui/skin.js';
 import { bakeAssets, bakeDuelAssets, bakeSkin, bakeCharacter, CHARACTERS } from './gfx/assets.js';
 import { setRemasterAllowed } from './gfx/remaster.js';
 import { loadSheets } from './gfx/sheet.js';
-import { prune as pruneFiles, stats as fileStats, cachedJSON, cachedBlob } from './gfx/fileCache.js';
+import { prune as pruneFiles, stats as fileStats, cachedJSON, cachedBlob, cachedImage } from './gfx/fileCache.js';
 import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
 import { setMustafarMap } from './world/worldgen.js';
-import { pickMap } from './world/mapStore.js';
+import { pickMap, setMapName } from './world/mapStore.js';
 import { setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture } from './gfx/terrain.js';
 import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid, loadCargo, loadRocks, loadWalls, addMirror, MIRROR_SUFFIX } from './gfx/mustafarFloor.js';
 import { savedLook } from './ui/appearance.js';
@@ -43,21 +43,25 @@ const loading = document.getElementById('loading');
 const bar = document.querySelector('#loading .bar div');
 const label = document.querySelector('#loading .label');
 
-// '#duel' / '#duel-mustafar' select a Movie Duel (a hash works on any host); switching reloads
-const DUEL = location.hash === '#duel' ? 'geonosis' : location.hash === '#duel-mustafar' ? 'mustafar' : null;
+// '#duel' / '#duel-mustafar' / '#duel-mustafar-art' select a Movie Duel (a hash works on any host); switching reloads
+const DUEL = location.hash === '#duel' ? 'geonosis' : location.hash === '#duel-mustafar' ? 'mustafar' : location.hash === '#duel-mustafar-art' ? 'mustafarArt' : null;
 const MODE = DUEL ? 'duel' : 'campaign';
-setRemasterAllowed(DUEL === 'mustafar'); // the remastered graphics: the Mustafar duel only (gfx/remaster.js)
+// Mustafar: the film's map, or the painted lava fortress (the same set, sprites and editor; its own map file)
+const MUSTAFAR = DUEL === 'mustafar' || DUEL === 'mustafarArt';
+const MAP_NAME = DUEL === 'mustafarArt' ? 'mustafar_art' : 'mustafar';
+setRemasterAllowed(MUSTAFAR); // the remastered graphics: the Mustafar duels only (gfx/remaster.js)
 window.addEventListener('hashchange', () => location.reload());
 
 const DUEL_TITLES = {
   geonosis: ['#duel', '지오노시스의 결투', 'MOVIE DUEL · EPISODE II — 지오노시스의 결투 · 두쿠 백작의 비밀 격납고', '지오노시스 격납고 준비 중…'],
   mustafar: ['#duel-mustafar', '무스타파의 결투', 'MOVIE DUEL · EPISODE III — 무스타파의 결투 · 아나킨 vs 오비완', '무스타파 채굴 시설 준비 중…'],
+  mustafarArt: ['#duel-mustafar-art', '무스타파 용암 요새', 'MOVIE DUEL · EPISODE III — 무스타파 용암 요새 · 아나킨 vs 오비완', '용암 요새 준비 중…'],
 };
 const duelMenu = (d) => {
-  const other = d === 'geonosis' ? 'mustafar' : 'geonosis';
+  const others = Object.keys(DUEL_TITLES).filter((k) => k !== d);
   return `
   <button id="startBtn" class="tm-item sel" type="button"><span>결투 시작</span></button>
-  <a class="tm-item" href="${DUEL_TITLES[other][0]}"><span>다른 결투</span><small>${DUEL_TITLES[other][1]}</small></a>
+  ${others.map((o) => `<a class="tm-item" href="${DUEL_TITLES[o][0]}"><span>다른 결투</span><small>${DUEL_TITLES[o][1]}</small></a>`).join('')}
   <a id="modeLink" class="tm-item" href="#campaign"><span>캠페인으로</span><small>크리스토프시스 외곽</small></a>
   <button id="controlsBtn" class="tm-item" type="button"><span>조작법</span></button>`;
 };
@@ -86,14 +90,14 @@ async function boot() {
     setFloorTexture(assets.city.floor);
     setGroundTextures(assets.city.ground);
   }
-  if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, DUEL)).sprites);
+  if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, MUSTAFAR ? 'mustafar' : DUEL)).sprites);
   // Mustafar: Anakin in the campaign's own Blender outfits — the cloak with the hood up, hood down, the tunic
-  if (DUEL === 'mustafar') Object.assign(assets.sprites, await loadSheets(['anakin_vader', 'anakin_robe', 'anakin_tunic'], onProgress));
+  if (MUSTAFAR) Object.assign(assets.sprites, await loadSheets(['anakin_vader', 'anakin_robe', 'anakin_tunic'], onProgress));
   // and the facility's floor, the film's (terrain.js lays it out per room)
-  if (DUEL === 'mustafar') setFacilityFloor(await loadMustafarFloor().catch((e) => console.warn('무스타파 바닥: ' + e.message)));
-  if (DUEL === 'mustafar') setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
+  if (MUSTAFAR) setFacilityFloor(await loadMustafarFloor().catch((e) => console.warn('무스타파 바닥: ' + e.message)));
+  if (MUSTAFAR) setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
   // and its wall consoles, placed as the city's sheet sprites are (worldgen.js addSheetProp)
-  if (DUEL === 'mustafar') {
+  if (MUSTAFAR) {
     // (with the rooms' near walls and the parts cut from the set: one atlas, tools/sprites/mustafar_set/lowwall.py + parts.py)
     assets.city = { ...(await loadMustafarConsoles()), ...(await loadRocks()), ...(await loadWalls()) };
     setCityFootprints(assets.city);
@@ -104,9 +108,15 @@ async function boot() {
     if (platform) assets.sprites.platform = platform;
     // the map: its file (the map editor's), laid out by worldgen.js MustafarArena — or the editor's save kept in
     // this browser when it was made from this file (world/mapStore.js)
-    const picked = pickMap(await (await cachedBlob(import.meta.env.BASE_URL + 'maps/mustafar.json')).text());
+    setMapName(MAP_NAME);
+    const picked = pickMap(await (await cachedBlob(import.meta.env.BASE_URL + `maps/${MAP_NAME}.json`)).text());
     const map = picked.map;
     if (picked.local) console.info('무스타파 맵: 맵 에디터의 브라우저 저장본을 씁니다');
+    // a painted ground (the lava fortress): its picture, for the terrain (and its URL, for the terrain workers)
+    if (map.backdrop) {
+      map.backdropImage = await cachedImage(import.meta.env.BASE_URL + map.backdrop.image).catch((e) => (console.warn('배경 그림: ' + e.message), null));
+      map.backdrop.url = new URL(import.meta.env.BASE_URL + map.backdrop.image, location.href).href;
+    }
     setMustafarMap(map);
     mustafarMirrors = map.props.filter((e) => e.sheet && e.sheet.endsWith(MIRROR_SUFFIX)).map((e) => e.sheet.slice(0, -MIRROR_SUFFIX.length));
   }
@@ -161,7 +171,7 @@ async function boot() {
   const zoom = new ZoomControl(renderer, touch);
   input.onZoom = (dir) => (dir === 0 ? zoom.reset() : zoom.step(dir));
   // the map editor (F2): the Mustafar duel's map, edited in place (ui/mapEditor.js)
-  const editor = DUEL === 'mustafar' ? new MapEditor({ game, renderer, assets, onExit: () => zoom.restore() }) : null;
+  const editor = MUSTAFAR ? new MapEditor({ game, renderer, assets, onExit: () => zoom.restore() }) : null;
   touch.onEnable = () => zoom.restore();
 
   const measure = () => {
