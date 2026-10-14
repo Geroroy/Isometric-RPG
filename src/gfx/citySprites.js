@@ -58,12 +58,13 @@ const loadImg = (src) => cachedImage(src).catch(() => Promise.reject(new Error('
 
 async function loadOne(base, file) {
   const meta = await cachedJSON(base + file).catch(() => Promise.reject(new Error('도시 스프라이트 JSON을 불러오지 못했습니다: ' + file)));
-  const [body, neon, reflect] = await Promise.all(['body', 'neon', 'reflect'].map((k) => loadImg(base + meta.layers[k])));
+  // (a glow layer the sprite has none of is simply absent from its JSON: the same as an empty one)
+  const [body, neon, reflect] = await Promise.all(['body', 'neon', 'reflect'].map((k) => (meta.layers[k] ? loadImg(base + meta.layers[k]) : null)));
   const k = meta.k !== 1 ? meta.k : undefined;
   // frames in the shape the renderer draws: the anchor is the model's ground centre
   const frame = (page) => ({ page, sx: 0, sy: 0, w: page.width, h: page.height, ox: meta.anchor[0], oy: meta.anchor[1], k });
   // a glow layer is drawn additively at its full size every frame: an empty one is dropped (null)
-  return { meta, body: frame(body), neon: lit(neon) && frame(neon), reflect: lit(reflect) && frame(reflect) };
+  return { meta, body: frame(body), neon: neon && lit(neon) && frame(neon), reflect: reflect && lit(reflect) && frame(reflect) };
 }
 
 /** Whether an image has any visible pixel (once, at load). */

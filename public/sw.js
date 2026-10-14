@@ -124,7 +124,8 @@ self.addEventListener('fetch', (e) => {
     return;
   }
   const rel = rel0;
-  if (rel && rel.startsWith('assets/')) {
+  if (rel && /^assets\/[^/]+$/.test(rel)) {
+    // (Vite's hashed build files; external art in assets/<set>/ keeps its names: cached by content, below)
     e.respondWith(
       caches
         .open(STATIC)

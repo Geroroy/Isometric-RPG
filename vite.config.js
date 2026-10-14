@@ -25,7 +25,9 @@ function assetManifest() {
           const p = path.join(d, e.name);
           const rel = path.relative(outDir, p).split(path.sep).join('/');
           if (e.isDirectory()) walk(p);
-          else if (rel.startsWith('assets/')) assets.push(rel);
+          // (Vite's own hashed files sit directly in assets/; a subfolder there is external art — public/assets/<set>,
+          // docs/ASSETS.md — whose names stay between builds, so it is hashed by content like the rest)
+          else if (/^assets\/[^/]+$/.test(rel)) assets.push(rel);
           else if (!skip.has(rel)) {
             files[rel] = crypto.createHash('sha1').update(fs.readFileSync(p)).digest('hex').slice(0, 12);
           }
