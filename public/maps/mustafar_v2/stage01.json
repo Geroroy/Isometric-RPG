@@ -59,7 +59,7 @@
   ],
   "decor": [],
   "backdrop": null,
-  "actors": {"anakin": {"x": 98.5, "y": 101.5, "faceTo": {"x": 96.0, "y": 95.0}}},
+  "actors": {"anakin": {"x": 77, "y": 98.5, "faceTo": {"x": 90.8, "y": 100.6}}, "anakinMeet": {"x": 87, "y": 102.5}, "padme": {"x": 90.8, "y": 100.6}, "obiwanRamp": {"x": 93.2, "y": 97.4}, "obiwan": {"x": 94, "y": 99.2}, "door": {"x": 64, "y": 98}},
   "triggers": [],
   "camera": {"x0": 58, "y0": 73, "x1": 121, "y1": 117},
   "lights": [

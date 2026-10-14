@@ -39,6 +39,14 @@ const settle = (page) => page.waitForFunction(() => { const t = window.__rendere
   await page.screenshot({ path: `${out}/01_title.png` });
   await page.click('#startBtn');
   await page.waitForTimeout(1500);
+  // (the opening's cutscenes skipped — tools/qa/mfstage01_story.mjs plays them; Obi-Wan held aside, so these
+  // checks test the place: walking, edges, the ship, the corridor, Anakin's own moves)
+  for (let i = 0; i < 10 && (await ev(page, () => !!window.__game.cinema || window.__game.duel.part !== 'pad')); i++) {
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(700);
+  }
+  await ev(page, () => { const g = window.__game; const ob = g.duel.foe; ob.scripted = true; ob.hidden = true; ob.x = 116; ob.y = 112; g.cheats.god = true; g.duel.started = false; const p = g.player; p.x = 98.5; p.y = 104.5; p.path = null; });
+  await page.waitForTimeout(300);
   const st = await ev(page, () => {
     const g = window.__game;
     const w = g.world;
@@ -49,7 +57,7 @@ const settle = (page) => page.waitForFunction(() => { const t = window.__rendere
   check('zone stage01 loaded', st.zone === 'stage01', JSON.stringify(st.pad));
   check('terrain paints the pad', st.terrainPad);
   check('Anakin starts on walkable pad', !st.blockedHere && st.p[0] > st.pad[0] && st.p[0] < st.pad[2] && st.p[1] > st.pad[1] && st.p[1] < st.pad[3], JSON.stringify(st.p));
-  check('no boss bar without a foe', st.bossShown === 'none');
+  check('Obi-Wan\'s bar shown in the duel', st.bossShown !== 'none');
   // the floor's art is external (CLAUDE.md): until it is delivered the pad is a debug grid, and the screen says so
   const ph = await ev(page, () => { const b = document.querySelector('.placeholder-badge'); return { badge: b && b.textContent, missing: window.__game.world.zone.missingArt }; });
   check('placeholder announced while the floor art is missing', !ph.missing.length || (ph.badge && ph.missing.every((m) => ph.badge.includes(m.id))), ph.badge || 'all art delivered');

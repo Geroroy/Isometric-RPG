@@ -135,9 +135,14 @@ def main():
         'structures': structures(),
         'decor': [],
         'backdrop': None,
+        # the opening's places (src/game/mustafar/director.js), all clear of the ship's hull on the camera's side
         'actors': {
-            # provisional: the stage's opening (step 6, 7) decides where everyone stands
-            'anakin': {'x': CX + 2.5, 'y': CY + 6.5, 'faceTo': {'x': CX, 'y': CY}},
+            'anakin': {'x': 77, 'y': 98.5, 'faceTo': {'x': 90.8, 'y': 100.6}},  # out of the corridor's mouth
+            'anakinMeet': {'x': 87, 'y': 102.5},  # where he stops before Padmé (his backflip lands clear of the hull)
+            'padme': {'x': 90.8, 'y': 100.6},  # at the foot of her ship's ramp
+            'obiwanRamp': {'x': 93.2, 'y': 97.4},  # Obi-Wan appears on the ramp
+            'obiwan': {'x': 94, 'y': 99.2},  # and steps down off it
+            'door': {'x': 64, 'y': 98},  # the corridor's far end, at the facility door (STAGE 02 beyond)
         },
         'triggers': [],
         'camera': {'x0': math.floor(CORR_X0) - 2, 'y0': Y0 - 3, 'x1': X1 + 3, 'y1': Y1 + 3},  # (the corridor too)
