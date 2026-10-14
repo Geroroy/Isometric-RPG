@@ -332,6 +332,285 @@
    "occlusion": {
     "fadeOverActors": true
    }
+  },
+  {
+   "id": "mf.room.floor",
+   "name": "분리주의 회의실 바닥 (위에서 본 평면)",
+   "kind": "groundTiles",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "tiles": {
+    "floor": {
+     "file": "interiors/conf_floor.png",
+     "size": [
+      1024,
+      768
+     ],
+     "metres": [
+      16,
+      12
+     ]
+    }
+   },
+   "layer": "ground",
+   "note": "image top = the window wall (−y), right = the door (+x)"
+  },
+  {
+   "id": "mf.room.wall_window",
+   "name": "회의실 창문 벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_wall_window.png",
+   "size": [
+    1024,
+    256
+   ],
+   "metres": [
+    16,
+    4
+   ],
+   "along": "x",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
+  },
+  {
+   "id": "mf.room.wall_side",
+   "name": "회의실 콘솔 벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_wall_side.png",
+   "size": [
+    768,
+    256
+   ],
+   "metres": [
+    12,
+    4
+   ],
+   "along": "y",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
+  },
+  {
+   "id": "mf.room.wall_front_low",
+   "name": "회의실 낮은 앞벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_wall_front_low.png",
+   "size": [
+    1024,
+    64
+   ],
+   "metres": [
+    16,
+    1
+   ],
+   "along": "x",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
+  },
+  {
+   "id": "mf.room.wall_door_low",
+   "name": "회의실 낮은 문 쪽 벽 (정면도, 4 m 문틈)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_wall_door_low.png",
+   "size": [
+    768,
+    64
+   ],
+   "metres": [
+    12,
+    1
+   ],
+   "along": "y",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
+  },
+  {
+   "id": "mf.room.table",
+   "name": "회의 탁자",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_table.png",
+   "size": [
+    352,
+    232
+   ],
+   "density": 2,
+   "anchor": [
+    176,
+    135
+   ],
+   "footprint": [
+    [
+     -3,
+     -1
+    ],
+    [
+     3,
+     -1
+    ],
+    [
+     3,
+     1
+    ],
+    [
+     -3,
+     1
+    ]
+   ],
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 0.8
+   },
+   "note": "drawn on its projection guide (anchor = the guide's)"
+  },
+  {
+   "id": "mf.room.chair_a",
+   "name": "의장 의자 (+y를 봄)",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_chair_a.png",
+   "size": [
+    88,
+    120
+   ],
+   "density": 2,
+   "anchor": [
+    44,
+    84
+   ],
+   "footprint": [
+    [
+     -0.35,
+     -0.35
+    ],
+    [
+     0.35,
+     -0.35
+    ],
+    [
+     0.35,
+     0.35
+    ],
+    [
+     -0.35,
+     0.35
+    ]
+   ],
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 1.1
+   },
+   "note": "drawn on its projection guide (anchor = the guide's)"
+  },
+  {
+   "id": "mf.room.chair_b",
+   "name": "의장 의자 (−y를 봄)",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_chair_b.png",
+   "size": [
+    88,
+    120
+   ],
+   "density": 2,
+   "anchor": [
+    44,
+    84
+   ],
+   "footprint": [
+    [
+     -0.35,
+     -0.35
+    ],
+    [
+     0.35,
+     -0.35
+    ],
+    [
+     0.35,
+     0.35
+    ],
+    [
+     -0.35,
+     0.35
+    ]
+   ],
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 1.1
+   },
+   "note": "drawn on its projection guide (anchor = the guide's)"
+  },
+  {
+   "id": "mf.room.console",
+   "name": "독립형 콘솔",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_console.png",
+   "size": [
+    168,
+    184
+   ],
+   "density": 2,
+   "anchor": [
+    84,
+    128
+   ],
+   "footprint": [
+    [
+     -1.2,
+     -0.5
+    ],
+    [
+     1.2,
+     -0.5
+    ],
+    [
+     1.2,
+     0.5
+    ],
+    [
+     -1.2,
+     0.5
+    ]
+   ],
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 1.6
+   },
+   "note": "drawn on its projection guide (anchor = the guide's)"
   }
  ]
 }

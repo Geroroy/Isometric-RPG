@@ -45,23 +45,38 @@ export class MustafarStage extends World {
     // assets are delivered (a corridor's floor, the railings standing on the rim: no invisible ground or walls before)
     const has = (e) => !e.needs || e.needs.every((id) => art[id]);
     for (const a of z.walk) if (has(a)) this.rect(...a.rect, (i) => (this.blocked[i] = 0));
-    for (const c of z.collision) if (has(c)) this.rect(...c.rect, (i) => (this.blocked[i] = 1));
+    this.doors = {}; // (a collision with `door`: shut until open(id))
+    for (const c of z.collision)
+      if (has(c)) {
+        this.rect(...c.rect, (i) => (this.blocked[i] = 1));
+        if (c.door) this.doors[c.id] = c.rect;
+      }
     // who starts where (only Anakin in this step)
     const an = z.actors.anakin;
     this.spawn = { x: an.x, y: an.y };
     this.spawnFace = an.faceTo ? { ...an.faceTo } : null;
-    this.camRegions = [{ ...z.camera }]; // the view held over the zone (renderer.js camRegion)
+    this.camRegions = (z.cameras || [z.camera]).map((c) => ({ ...c })); // the view held over each zone (renderer.js camRegion: the nearest)
     for (const l of z.lights) this.lights.push({ ...l });
     for (const r of z.regions) this.pois.push({ ...r });
     this.triggers = z.triggers.map((t) => ({ ...t }));
     // structures and dressing: sprite assets where they stand (an asset not delivered yet is left out — its
     // placeholder is the zone's walk/collision data, which holds without it)
+    this.named = {}; // (structures with an `id`: the director's to show, hide or move — a door that opens)
     for (const e of [...z.structures, ...z.decor]) {
       const a = art[e.asset];
       const p = a ? this.addSheetProp(e.asset, e.x, e.y, { noBlock: !e.block, flat: a.meta.flat }) : null;
+      if (p && e.id) this.named[e.id] = p;
       if (p && a.meta.top) p.top = true; // (drawn over everyone: renderer.js)
       if (p && a.meta.order) p.order = a.meta.order; // (its depth point moved: metres farther along x + y)
     }
+  }
+
+  /** A door's way through opened (its collision rectangle walkable from now on). */
+  open(id) {
+    const r = this.doors[id];
+    if (!r) return;
+    this.rect(...r, (i) => (this.blocked[i] = 0));
+    delete this.doors[id];
   }
 
   /** Every tile whose centre lies in the world rectangle [x0, x1) × [y0, y1). */

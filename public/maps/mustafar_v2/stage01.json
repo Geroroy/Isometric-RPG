@@ -54,7 +54,7 @@
     {"asset": "mf.landing.rail_corner", "x": 117.5, "y": 113.5},
     {"asset": "mf.landing.corridor_wall_back", "x": 67.45, "y": 95},
     {"asset": "mf.landing.corridor_wall_front", "x": 67.45, "y": 101},
-    {"asset": "mf.landing.corridor_wall_end", "x": 60.9, "y": 98.0},
+    {"asset": "mf.landing.corridor_wall_end", "x": 60.9, "y": 98.0, "id": "facilityDoor"},
     {"asset": "mf.landing.ship", "x": 96, "y": 95, "block": true}
   ],
   "decor": [],
@@ -91,6 +91,7 @@
     {"x": 119.5, "y": 109, "z": 0.2, "r": 255, "g": 108, "b": 40, "rad": 160, "flicker": 0.1}
   ],
   "regions": [
-    {"x": 96.0, "y": 95.0, "r": 40, "name": "무스타파 · 착륙장"}
+    {"x": 67.45, "y": 98.0, "r": 7, "name": "무스타파 · 입구 복도"},
+    {"x": 96.0, "y": 95.0, "r": 28, "name": "무스타파 · 착륙장"}
   ]
 }

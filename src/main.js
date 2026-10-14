@@ -57,7 +57,7 @@ const MUSTAFAR = DUEL === 'mustafarLegacy' || DUEL === 'mustafarArt';
 const MAP_NAME = DUEL === 'mustafarArt' ? 'mustafar_art' : 'mustafar';
 // the rebuild's zone (world/mustafarStage.js; one zone in this step)
 const MUSTAFAR_V2 = DUEL === 'mustafar';
-const ZONE = 'stage01';
+const ZONES = ['stage01', 'stage02']; // (the film's places built so far, in order)
 setRemasterAllowed(MUSTAFAR || MUSTAFAR_V2); // the remastered graphics: the Mustafar duels only (gfx/remaster.js)
 window.addEventListener('hashchange', () => location.reload());
 
@@ -108,7 +108,10 @@ async function boot() {
   // ground tiles to the terrain, sprites with the sheet sprites; what is not delivered yet shows as a placeholder.
   // The lava round it is the old Mustafar's texture, kept as a placeholder until the stage's own lava arrives
   if (MUSTAFAR_V2) {
-    const zone = await cachedJSON(import.meta.env.BASE_URL + `maps/mustafar_v2/${ZONE}.json`);
+    // the stages' zones, laid into one world (each zone's layers appended; the camera keeps a box per zone)
+    const zones = await Promise.all(ZONES.map((id) => cachedJSON(import.meta.env.BASE_URL + `maps/mustafar_v2/${id}.json`)));
+    const zone = { ...zones[0], cameras: zones.map((z) => z.camera), actors: Object.assign({}, ...zones.map((z) => z.actors)) };
+    for (const k of ['floor', 'walk', 'collision', 'structures', 'decor', 'lights', 'regions', 'triggers']) zone[k] = zones.flatMap((z) => z[k] || []);
     const man = await loadManifest('assets/mustafar/manifest.json');
     zone.art = {};
     zone.missingArt = [];

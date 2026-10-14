@@ -208,6 +208,25 @@ const settle = (page) => page.waitForFunction(() => { const t = window.__rendere
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${out}/13_corridor_wide.png` });
   }
+  // STAGE 02's conference room (once delivered): walls, table, chairs, consoles; the doorway walkable; the table blocks
+  const room = await ev(page, () => {
+    const g = window.__game;
+    const w = g.world;
+    const n = (re) => w.props.filter((q) => re.test(q.sheet)).length;
+    const shut = w.isBlocked(61, 98.5);
+    if (w.open) w.open('facilityDoor');
+    return { walls: n(/mf\.room\.wall/), table: n(/mf\.room\.table/), chairs: n(/mf\.room\.chair/), consoles: n(/mf\.room\.console/), doorShut: shut, doorway: !w.isBlocked(61, 98.5), roomFree: !w.isBlocked(57.5, 102), tableBlocked: w.isBlocked(52.9, 98.2) };
+  });
+  if (room.walls) {
+    check('room: 4 walls, table, 6 chairs, 2 consoles', room.walls === 4 && room.table === 1 && room.chairs === 6 && room.consoles === 2, JSON.stringify(room));
+    check('room: the door shut until opened, then walkable; the table blocks', room.doorShut && room.doorway && room.roomFree && room.tableBlocked, JSON.stringify(room));
+    await ev(page, () => { const g = window.__game; const d = g.world.named.facilityDoor; if (d) d.hidden = true; const p = g.player; p.x = 57.5; p.y = 101.8; p.path = null; window.__renderer.setZoom(0.8, true); });
+    await page.waitForTimeout(400);
+    await settle(page);
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: `${out}/14_room.png` });
+    await ev(page, () => { const g = window.__game; const d = g.world.named.facilityDoor; if (d) d.hidden = false; });
+  }
   const perf = await ev(page, () => new Promise((res) => { let n = 0; const t0 = performance.now(); const f = () => (++n < 120 ? requestAnimationFrame(f) : res(((performance.now() - t0) / n).toFixed(1))); requestAnimationFrame(f); }));
   console.log('frame ms (headless, software GL):', perf);
 }

@@ -78,7 +78,7 @@ def structures():
     out += [
         {'asset': 'mf.landing.corridor_wall_back', 'x': mx, 'y': DOOR_Y0},
         {'asset': 'mf.landing.corridor_wall_front', 'x': mx, 'y': DOOR_Y1},
-        {'asset': 'mf.landing.corridor_wall_end', 'x': CORR_X0, 'y': (DOOR_Y0 + DOOR_Y1) / 2},
+        {'asset': 'mf.landing.corridor_wall_end', 'x': CORR_X0, 'y': (DOOR_Y0 + DOOR_Y1) / 2, 'id': 'facilityDoor'},  # (STAGE 02: it opens)
     ]
     out.append({'asset': 'mf.landing.ship', 'x': SHIP[0], 'y': SHIP[1], 'block': True})
     return out
@@ -147,7 +147,8 @@ def main():
         'triggers': [],
         'camera': {'x0': math.floor(CORR_X0) - 2, 'y0': Y0 - 3, 'x1': X1 + 3, 'y1': Y1 + 3},  # (the corridor too)
         'lights': lights(),
-        'regions': [{'x': CX, 'y': CY, 'r': 40, 'name': '무스타파 · 착륙장'}],
+        # (the first a point is inside names it: the corridor, then the pad — not reaching into STAGE 02's room)
+        'regions': [{'x': (CORR_X0 + X0) / 2, 'y': (DOOR_Y0 + DOOR_Y1) / 2, 'r': 7, 'name': '무스타파 · 입구 복도'}, {'x': CX, 'y': CY, 'r': 28, 'name': '무스타파 · 착륙장'}],
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     one = lambda v: json.dumps(v, ensure_ascii=False)  # noqa: E731
