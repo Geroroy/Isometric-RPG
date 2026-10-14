@@ -629,17 +629,17 @@ export class MustafarDuel extends Duel {
     this.scene(34, 5.8, cues).then(() => this.enterSet(1));
   }
 
-  // 1:02 — into the conference room
+  // 1:02 — into the conference room (through the control room and the junction west of it)
   sceneHall() {
     const g = this.game;
     const p = g.player;
     const ob = this.foe;
-    const x = M.hall.x;
-    const y1 = M.hall.y + M.hall.hh; // the room's south wall: the corridor comes in through it
+    const y = M.hall.y;
+    const x1 = M.hall.x + M.hall.hw; // the room's east wall: the junction comes in through it
     const cues = [
-      { t: 0, do: (c) => this.travel(c, { x, y: y1 + 7.5 }, { x, y: y1 + 5.5 }, 1.4), cam: { follow: p, zoom: 1.3, dur: 0.8 } },
+      { t: 0, do: (c) => this.travel(c, { x: x1 + 7.5, y }, { x: x1 + 5.5, y }, 1.4), cam: { follow: p, zoom: 1.3, dur: 0.8 } },
       { t: 1.0, do: (c) => this.clash(c) },
-      { t: 1.5, do: (c) => (this.travel(c, { x: x + 0.4, y: y1 + 3.5 }, { x: x - 1.2, y: y1 - 1.5 }, 1.8), this.card('분리주의 회의실')) },
+      { t: 1.5, do: (c) => (this.travel(c, { x: x1 + 3.5, y: y + 0.4 }, { x: x1 - 1.5, y: y - 1.2 }, 1.8), this.card('분리주의 회의실')) },
       { t: 3.3, do: (c) => (this.clash(c, p), p.setAnim('idle'), ob.setAnim('idle')) },
     ];
     this.scene(62, 3.8, cues).then(() => this.enterSet(2));
@@ -651,11 +651,12 @@ export class MustafarDuel extends Duel {
     const p = g.player;
     const ob = this.foe;
     const J = M.junction;
+    const d = Math.sign(M.hall.x - M.control.x); // along x from the control room towards the hall
     const cues = [
-      { t: 0, do: (c) => this.travel(c, { x: J.x + 7, y: J.y }, { x: J.x + 4, y: J.y }, 1.8), cam: { follow: p, zoom: 1.35, dur: 0.8 } },
+      { t: 0, do: (c) => this.travel(c, { x: J.x + 7 * d, y: J.y }, { x: J.x + 4 * d, y: J.y }, 1.8), cam: { follow: p, zoom: 1.35, dur: 0.8 } },
       { t: 1.2, do: (c) => this.clash(c) },
-      { t: 1.8, do: (c) => this.travel(c, { x: J.x + 2.4, y: J.y }, { x: J.x - 0.6, y: J.y }, 1.2) },
-      { t: 3.1, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)), cam: { x: J.x + 1, y: J.y, dur: 0.6 } },
+      { t: 1.8, do: (c) => this.travel(c, { x: J.x + 2.4 * d, y: J.y }, { x: J.x - 0.6 * d, y: J.y }, 1.2) },
+      { t: 3.1, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)), cam: { x: J.x + d, y: J.y, dur: 0.6 } },
       { t: 3.4, do: () => (p.setAnim('cast', 1, true), ob.setAnim('cast', 1, true)) },
       {
         t: 3.85,
@@ -669,15 +670,15 @@ export class MustafarDuel extends Duel {
           g.audio.play('push', ob);
           p.setAnim('hurt', 0.5, true);
           ob.setAnim('hurt', 0.5, true);
-          c.move(p, J.x + 7.2, J.y, 0.55);
-          c.move(ob, J.x - 5.6, J.y, 0.55);
+          c.move(p, J.x + 7.2 * d, J.y, 0.55);
+          c.move(ob, J.x - 5.6 * d, J.y, 0.55);
         },
       },
       { t: 4.4, do: () => (g.fx.dust(p.x, p.y, 8), g.fx.dust(ob.x, ob.y, 8), g.audio.play('slam', p)) },
       { t: 4.5, do: () => (p.setAnim('death', 0.9, true), ob.setAnim('death', 0.9, true)) },
       { t: 6.6, do: () => (p.setAnim('idle', 1, true), ob.setAnim('idle', 1, true)) },
-      { t: 7.4, do: (c) => (ob.setAnim('walk'), ob.faceTo(J.x - 9, J.y), c.move(ob, M.control.x + 3.5, M.control.y + 2, 2.6), this.card('제어실')) },
-      { t: 8.2, do: (c) => (p.setAnim('run'), p.faceTo(J.x - 9, J.y), c.move(p, M.control.x + 6, J.y, 2.2)), cam: { follow: p, dur: 0.5 } },
+      { t: 7.4, do: (c) => (ob.setAnim('walk'), ob.faceTo(J.x - 9 * d, J.y), c.move(ob, M.control.x - 3.5 * d, M.control.y + 2, 2.6), this.card('제어실')) },
+      { t: 8.2, do: (c) => (p.setAnim('run'), p.faceTo(J.x - 9 * d, J.y), c.move(p, M.control.x - 6 * d, J.y, 2.2)), cam: { follow: p, dur: 0.5 } },
       { t: 10.4, do: () => (p.setAnim('idle'), ob.setAnim('idle'), ob.faceTo(p.x, p.y), p.faceTo(ob.x, ob.y)) },
     ];
     this.scene(82, 10.8, cues).then(() => this.enterSet(3));
@@ -688,7 +689,7 @@ export class MustafarDuel extends Duel {
     const g = this.game;
     const p = g.player;
     const ob = this.foe;
-    const core = { x: M.control.x - 4, y: M.control.y - 3.5 };
+    const core = { x: M.control.x - M.control.hw + 1.6, y: M.control.y - 3.5 }; // the shield core: the red console on the west wall
     const w = g.world;
     const cues = [
       { t: 0, do: (c) => this.travel(c, { x: core.x + 2.9, y: core.y + 0.8 }, { x: core.x + 1.6, y: core.y + 1.6 }, 1.6), cam: { x: core.x + 2, y: core.y + 1, zoom: 1.35, dur: 0.8 } },
@@ -713,9 +714,9 @@ export class MustafarDuel extends Duel {
       { t: 2.9, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
       { t: 3.4, do: (c) => this.clash(c) },
       // out through the east door onto the balcony
-      { t: 4.2, do: (c) => this.travel(c, { x: M.door4.x, y: M.door4.y - 2.2 }, { x: M.door4.x, y: M.door4.y + 0.6 }, 2.2), cam: { follow: p, dur: 0.6 } },
+      { t: 4.2, do: (c) => this.travel(c, { x: M.door4.x - 2.2, y: M.door4.y }, { x: M.door4.x + 0.6, y: M.door4.y }, 2.2), cam: { follow: p, dur: 0.6 } },
       { t: 5.6, do: (c) => this.clash(c, p) },
-      { t: 6.4, do: (c) => (this.travel(c, { x: M.door4.x, y: M.door4.y + 1.6 }, { x: M.door4.x, y: M.door4.y + 4.8 }, 2.0), this.card('외부 발코니')) },
+      { t: 6.4, do: (c) => (this.travel(c, { x: M.door4.x + 1.4, y: M.door4.y + 0.3 }, { x: M.door4.x + 3.6, y: M.door4.y - 0.6 }, 2.0), this.card('외부 발코니')) },
       { t: 8.4, do: (c) => (c.onFrame = null, p.setAnim('idle'), ob.setAnim('idle')) },
     ];
     this.scene(148, 8.8, cues).then(() => this.enterSet(4));

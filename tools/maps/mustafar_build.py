@@ -1,30 +1,32 @@
-"""The Mustafar duel map, built as the 2005 Battlefront II "Mustafar: Refinery" lays it out (the reference video,
-reference/mustafar_set/Rapid421_-_2005_Mustafar_in_Battlefront_II_2017___WIP.mp4, walked in order), out of the
-film's set pieces (public/sprites/mustafar) and the parts cut from them (tools/sprites/mustafar_set/parts.py, in the near walls' atlas).
+"""The Mustafar duel map, built as the LEGO model of the film's facility lays it out (reference/mustafar_set/lego:
+the landing pad, the gate and its corridor, the big octagonal room with the holo-tables, the conference room with
+the long table behind it, the colonnaded balcony along the front), out of the film's set pieces
+(public/sprites/mustafar) and the parts cut from them (tools/sprites/mustafar_set/parts.py, in the near walls' atlas).
 
     python3 tools/maps/mustafar_build.py -> public/maps/mustafar.json
 
-The route, in world coordinates (x to the screen's lower right, y to its lower left; 1 tile = 1 m):
+The layout, in world coordinates (x to the screen's lower right, y to its lower left; 1 tile = 1 m):
 
-  landing pad   the rock shelf by the river, Padmé's skiff (x 118, y 118), the facility's facade behind it
-  gate          the covered portal in the facade (118, 100), into
-  corridor      the entry corridor north, 22 m (x 118, y 78–100): windows on its west wall, low walls east
-  conference    the Separatist conference room (118, 70), 16 m square, the table and chairs, consoles, the cut
-                far corner; a covered connector east out of it
-  lava hall     the refinery's bridge room (x 132–162, y 64–76): a grated catwalk down the middle over two lava
-                pools, pillars and rails along it, tall ribbed walls on the far sides — the Force-push beat
-  control room  (176, 70): the holo-tables, the screens, the shield core (the red console), its cut corner; a
-                covered passage south out of it
-  terrace       the exterior walkway along the facility's south face (x 156–190, y 84–92) over the lava, pillars
-                and a lit edge wall; from its west end the grated catwalk south (x 160, y 92–118) to the lifting
-                arm, over the river
+  landing pad   the plate deck on the rock shelf by the river (118, 118), Padmé's skiff on it, the lamps round
+                its rim, the hazard-striped crates by the gate
+  gate          the covered portal in the facade (118, 100), its box's east face with the octagonal lava window
+  corridor      north, 11 m (x 118, y 89–100): the ribbed wall west, the octagon window east (the LEGO's)
+  control room  the big room (118, 80), 18 m square with its far corner cut: the two holo-tables, the screens,
+                the lava windows on its far walls, the shield core (the red console) on the west wall, the floor
+                stepped up at the back; doors south (the corridor), west (the junction), east (the balcony)
+  junction      the short covered passage west (106, 80) into
+  conference    the conference room (96, 80), 14 × 12 m: the long table and the council's chairs, the lava
+                windows all round
+  balcony       the colonnade along the control room's east face (x 127–132, y 66–94) over the river: pillars,
+                the rail, the roof lamps; from its south end the steps down and the grated catwalk east over the
+                river (y 96, x 132–158) to the lifting arm
   river         the lava river (x 134–148, y 82–134) with the collector arm standing in it (141, 101–123), the
-                service pipe over it (145.5, 96–110), lava falls pouring in from its west bank; the black-sand
-                bank east of it (152, 112) — the high ground
+                service pipe over it (145.5, 96–110), the falls at its head; the black-sand bank east of it
+                (152, 112) — the high ground
   mountain      rock along the north and west, the lava sea everywhere else
 
 The map file's keys and what reads them: src/world/worldgen.js MustafarArena (the ground, the way, the props, the
-lights, the rooms' floor plan, the raised tops) — see that file's generate(). The duel's set boxes (MUSTAFAR_D there)
+lights, the rooms' floor plan, the raised tops) — see that file's generate(). The duel's set boxes (MUSTAFAR there)
 and src/game/duelMustafar.js PIPE are kept in step with this file by hand: the constants at the top here.
 """
 import json
@@ -39,14 +41,14 @@ W = H = 192
 
 # ------------------------------------------------------------------------------------------------ the layout
 DECK = (118, 118)
-CORRIDOR = dict(x=118, y0=78, y1=100)  # x 116.5–119.5
 GATE_Y = 100
-HALL = dict(x=118, y=70, hw=8, hh=8)
-LAVA_HALL = dict(x0=132, x1=162, y0=64, y1=76, walk=(68, 72))  # the catwalk's rows
-CONTROL = dict(x=176, y=70, hw=8, hh=8)
-TERRACE = dict(x0=156, x1=190, y0=84, y1=92)
-DOOR4 = (176, 84)
-CATWALK = dict(x=160, y0=92, y1=118)
+CORRIDOR = dict(x=118, y0=89, y1=100)  # x 116.5–119.5
+CONTROL = dict(x=118, y=80, hw=9, hh=9)
+JUNCTION = dict(x=106, y=80, hw=3, hh=2)
+HALL = dict(x=96, y=80, hw=7, hh=6)
+DOOR4 = (127, 86)
+COLONNADE = dict(x0=127, x1=132, y0=66, y1=94)
+CATWALK = dict(y=96, x0=132, x1=158)
 RIVER = dict(x0=134, x1=148, y0=82, y1=134)
 ARM = dict(x=141, y=112, hh=11)
 PIPE = dict(x=145.5, y0=96, y1=110.5)
@@ -202,12 +204,10 @@ def rail_run(axis, at, a0, a1, pillars=True):
 
 # ---------------------------------------------------------------------------------------------- the ground
 def ground():
-    # the rock bench the facility stands on, the shelf by the river, the terrace's bench
-    fill(100, 54, 192, 100, ':')
-    fill(96, 96, 140, 136, ':')
-    fill(148, 78, 192, 100, ':')
-    fill(148, 100, 162, 128, ':')
-    # the landing pad: the current map's plate deck (x 107–125, y 109–127), kept as it was laid
+    # the rock bench the facility stands on, the shelf by the river, the far bank
+    fill(84, 58, 134, 134, ':')
+    fill(148, 78, 164, 130, ':')
+    # the landing pad: the plate deck (x 107–125, y 109–127), as laid before
     deck = [
         (109, 115, 121), (110, 114, 122), (111, 113, 123), (112, 107, 112), (112, 113, 123), (113, 107, 124), (114, 107, 124),
         (115, 107, 124), (116, 107, 124), (117, 107, 124), (118, 107, 124), (119, 107, 124), (120, 107, 124), (121, 107, 124),
@@ -215,42 +215,39 @@ def ground():
     ]
     for y, x0, x1 in deck:
         fill(x0, y, x1, y + 1, 'M', True)
-    # the river, its basin
+    # the river, its banks wandering
     fill(RIVER['x0'], RIVER['y0'], RIVER['x1'], RIVER['y1'], '~')
-    for y in range(RIVER['y0'], RIVER['y1']):  # the banks wander
+    for y in range(RIVER['y0'], RIVER['y1']):
         w = 1 + int(1.5 + 1.5 * math.sin(y * 0.37) + math.sin(y * 0.11))
-        fill(RIVER['x0'] - w, y, RIVER['x0'], y + 1, '~')
+        fill(RIVER['x0'] - min(w, 1), y, RIVER['x0'], y + 1, '~')
         fill(RIVER['x1'], y, RIVER['x1'] + max(0, w - 1), y + 1, '~')
     fill(134, 134, 160, 192, '~')
     # the bank: black sand, walked on (the ending's high ground)
     fill(149, 104, 158, 124, ':', True)
     # the collector arm's deck in the river
     fill(ARM['x'] - 2, ARM['y'] - ARM['hh'], ARM['x'] + 2, ARM['y'] + ARM['hh'], '#', True)
-    # the corridor
-    fill(CORRIDOR['x'] - 1.5, CORRIDOR['y0'], CORRIDOR['x'] + 1.5, CORRIDOR['y1'] + 8, 'M', True)
-    plan.append({'x': CORRIDOR['x'], 'y': (CORRIDOR['y0'] + CORRIDOR['y1'] + 8) / 2, 'hw': 1.5, 'hh': (CORRIDOR['y1'] + 8 - CORRIDOR['y0']) / 2, 'axis': 'y', 'runner': True})
+    # the corridor and the gate's covered walk down to the pad
+    C = CORRIDOR
+    fill(C['x'] - 1.5, C['y0'], C['x'] + 1.5, C['y1'] + 7, 'M', True)
+    plan.append({'x': C['x'], 'y': (C['y0'] + C['y1'] + 7) / 2, 'hw': 1.5, 'hh': (C['y1'] + 7 - C['y0']) / 2, 'axis': 'y', 'runner': True})
     # the rooms: the floor out to the far walls' consoles (pad), blocked under them
     for R, extra in ((HALL, {}), (CONTROL, {'pit': 2.6})):
         x0, y0, x1, y1 = R['x'] - R['hw'], R['y'] - R['hh'], R['x'] + R['hw'], R['y'] + R['hh']
         fill(x0 - 1, y0 - 1, x1, y1, 'M')
         fill(x0, y0, x1, y1, 'M', True)
         plan.append({'x': R['x'], 'y': R['y'], 'hw': R['hw'], 'hh': R['hh'], 'axis': 'y', 'edge': 2, 'cell': 4.5, 'cut': 2.12, 'pad': 1, **extra})
-    # the lava hall: pools either side of the grated catwalk
-    L = LAVA_HALL
-    fill(L['x0'], L['y0'], L['x1'], L['y1'], '~')
-    fill(L['x0'], L['walk'][0], L['x1'], L['walk'][1], '#', True)
-    # the connectors (covered corridors, 4 m wide) either side of it, and out of the control room
-    for cx in (L['x0'] - 3, L['x1'] + 3):
-        fill(cx - 3, 68, cx + 3, 72, 'M', True)
-        plan.append({'x': cx, 'y': 70, 'hw': 3, 'hh': 2, 'axis': 'x', 'runner': True})
-    fill(DOOR4[0] - 2, CONTROL['y'] + CONTROL['hh'], DOOR4[0] + 2, DOOR4[1], 'M', True)
-    plan.append({'x': DOOR4[0], 'y': (CONTROL['y'] + CONTROL['hh'] + DOOR4[1]) / 2, 'hw': 2, 'hh': (DOOR4[1] - CONTROL['y'] - CONTROL['hh']) / 2, 'axis': 'y', 'runner': True})
-    # the terrace: plate floor
-    T = TERRACE
-    fill(T['x0'], T['y0'], T['x1'], T['y1'], 'M', True)
-    # the catwalk south over the lava, and the lava under and round it
-    fill(CATWALK['x'] - 4, CATWALK['y0'], CATWALK['x'] + 6, 140, '~')
-    fill(CATWALK['x'] - 1, CATWALK['y0'], CATWALK['x'] + 1, CATWALK['y1'], '#', True)
+    # the junction (a covered passage 4 m wide) between them
+    J = JUNCTION
+    fill(J['x'] - J['hw'], J['y'] - J['hh'], J['x'] + J['hw'], J['y'] + J['hh'], 'M', True)
+    plan.append({'x': J['x'], 'y': J['y'], 'hw': J['hw'], 'hh': J['hh'], 'axis': 'x', 'runner': True})
+    # the colonnade: plate floor, and the landing at its south end
+    K = COLONNADE
+    fill(K['x0'], K['y0'], K['x1'], K['y1'] + 4, 'M', True)
+    # the catwalk east over the river, the lava under and round it
+    W_ = CATWALK
+    fill(W_['x0'], W_['y'] - 4, W_['x1'] + 6, W_['y'] + 4, '~')
+    fill(W_['x0'], W_['y'] - 1, W_['x1'], W_['y'] + 1, '#', True)
+    fill(RIVER['x0'] - 2, RIVER['y0'] - 4, RIVER['x1'] + 2, RIVER['y0'], ':')  # the river's head: rock under the falls
 
 
 # ------------------------------------------------------------------------------------------------- the sets
@@ -262,160 +259,130 @@ def landing_pad():
     prop('cgCube', 123.4, 122.1, block=True)
     props.append({'type': 'cloakPile', 'x': 119.6, 'y': 115.8, 'variant': 0, 'angleIdx': 0, 'flat': True, 'id': 'cloak', 'hidden': True})
     props.append({'type': 'robePile', 'x': 116.2, 'y': 121.4, 'variant': 0, 'angleIdx': 0, 'flat': True, 'id': 'robe', 'hidden': True})
-    # the pad's lamps, a ring of them (as before)
+    # the pad's rim lamps (the LEGO's white blocks with amber lights), a ring of them
     for i in range(14):
         a = i / 14 * 2 * math.pi
         light(DECK[0] + 9 * math.cos(a), DECK[1] + 12 * math.sin(a), 0.2, 255, 120, 40, 150, 0.12)
-    # the facility's facade behind the pad: tall ribbed wall either side of the gate
-    tall_run('x', GATE_Y, 104, CORRIDOR['x'] - 2)
-    tall_run('x', GATE_Y, CORRIDOR['x'] + 2, 132)
+    # the facade behind the pad: tall ribbed wall either side of the gate, the gate box's east face with the
+    # octagonal lava window (the LEGO model's)
+    tall_run('x', GATE_Y, 108, CORRIDOR['x'] - 2)
+    prop('mfTallWin4', CORRIDOR['x'] + 4, GATE_Y)
+    tall_run('x', GATE_Y, CORRIDOR['x'] + 6, 128)
     prop('mfCorridor', CORRIDOR['x'], GATE_Y)  # the gate: a covered portal facing the pad
     prop('mfPassageS', CORRIDOR['x'], GATE_Y - 3, flat=True)
     light(CORRIDOR['x'], GATE_Y + 1.5, 1.5, 255, 160, 80, 150, 0.08)
+    light(CORRIDOR['x'] + 4, GATE_Y + 1.2, 1.7, 255, 140, 50, 130, 0.08)
+    # the hazard-striped crates flanking the gate (the LEGO's)
+    prop('cgCrateS', CORRIDOR['x'] - 4.2, GATE_Y + 1.6, block=True)
+    prop('cgCrateS', CORRIDOR['x'] + 4.6, GATE_Y + 2.4, block=True)
+    prop('cgCube', CORRIDOR['x'] - 5.4, GATE_Y + 2.9, block=True)
 
 
 def corridor():
     C = CORRIDOR
     x = C['x']
     cut = [x - 1.5, C['y0'], x + 1.5, C['y1']]
-    # the west wall: two window walls looking out on the lava, low wall between and beyond
-    for wy in (84, 90):
-        prop('mfWindow_r', x - 2, wy)
-    low_run('y', x - 2, C['y0'] + 0.25, 81.25, None)
-    prop('mfWall1_y', x - 2, 87)
-    low_run('y', x - 2, 92.75, C['y1'] - 6, None)
-    # the east wall: low walls, cut away while someone is inside
-    low_run('y', x + 2.25, C['y0'] + 0.25, C['y1'] - 6, cut)
-    for wy in (81, 87, 93):
+    # the west wall: the facility's ribbed wall (the LEGO's buttressed pillars)
+    tall_run('y', x - 2, C['y0'] - 0.3, C['y1'] - 6)
+    # the east wall: ribbed wall with the octagonal lava window in its middle, cut away while someone is inside
+    tall_run('y', x + 2.25, C['y0'] + 0.25, 92.25, cut)
+    prop('mfTallWin4_y', x + 2.25, 94.25, cut=cut)
+    for wy in (91, 97):
         light(x, wy, 2.6, 255, 170, 100, 110, 0.03)
+    light(x + 3.2, 94.25, 1.7, 255, 140, 50, 120, 0.08)
 
 
 def conference():
     R = HALL
     x0, y0, x1, y1 = R['x'] - R['hw'], R['y'] - R['hh'], R['x'] + R['hw'], R['y'] + R['hh']
-    # the far walls: the cut corner's head-on screen console, consoles along the north and the west
+    # the far walls: lava windows all round (the LEGO's), the cut corner's screen console
     prop('mfConsoleD', x0 + 0.73, y0 + 0.73)
-    for i in range(4):
-        prop('mfConsole', x0 + 3.6 + i * 3.3, y0 - 0.3)
-    for i in range(4):
-        prop('mfConsole_r', x0 - 0.3, y0 + 3.6 + i * 3.3)
-    # the table down the room, the council's chairs along its west side and at its head
-    tx, ty = R['x'], R['y'] + 1
+    prop('mfWindow', x0 + 5.0, y0 - 0.3)
+    prop('mfWindow', x0 + 11.0, y0 - 0.3)
+    prop('mfWindow_r', x0 - 0.3, y0 + 5.0)
+    prop('mfWindow_r', x0 - 0.3, y0 + 9.5)
+    low_run('y', x0 - 0.3, y0 + 12.25, y1 - 0.25, None)
+    # the table down the room (along y), the council's chairs along its west side and at its head
+    tx, ty = R['x'] + 0.5, R['y']
     prop('mfTable_y', tx, ty, flat=True)
     surfaces.append({'x0': tx - 0.8, 'y0': ty - 4, 'x1': tx + 0.8, 'y1': ty + 4, 'z': 0.78})
     prop('mfChair', tx, ty - 4.7, flat=True)
     for i in range(5):
         prop('mfChair_x', tx - 1.35, ty - 3.2 + i * 1.5, flat=True)
-    # the near walls: the doorway south (the corridor), east (the connector to the lava hall)
-    cx = CORRIDOR['x']
-    near_walls(x0, y0, x1, y1, gaps_x=[(cx - 1.9, cx + 1.9)], gaps_y=[(68, 72)])
+    # the near walls: the doorway east (the junction)
+    near_walls(x0, y0, x1, y1, gaps_y=[(JUNCTION['y'] - 1.9, JUNCTION['y'] + 1.9)])
     light(R['x'], R['y'], 2.5, 255, 150, 90, 220, 0.03)
-    light(R['x'] - 4, R['y'] - 4, 3.2, 235, 240, 255, 130, 0.02)
-    light(R['x'] + 3, R['y'] + 3, 3.2, 235, 240, 255, 130, 0.02)
-
-
-def lava_hall():
-    L = LAVA_HALL
-    x0, x1, y0, y1 = L['x0'], L['x1'], L['y0'], L['y1']
-    w0, w1 = L['walk']
-    cut = [x0, y0, x1, y1]
-    # the connectors: the covered corridor in from the conference room, and out to the control room (their open
-    # insides under them, seen while someone is in them)
-    for cx in (x0, x1 + 6):
-        prop('mfCorridor_r', cx, 70)
-        prop('mfPassageS_x', cx - 3, 70, flat=True)
-        light(cx - 3, 70, 1.6, 255, 160, 80, 110, 0.05)
-    # the far walls: tall ribbed wall north, and west of the pools either side of the connector
-    tall_run('x', y0 - 0.3, x0, x1)
-    tall_run('y', x0 - 0.3, y0, 68)
-    tall_run('y', x0 - 0.3, 72, y1)
-    # the near walls: low walls south and east, the east one open where the connector leaves
-    wy = y1 - 0.25
-    wx = x1 - 0.25
-    prop('mfWallEnd', x0 + 0.4625, wy, cut=cut)
-    low_run('x', wy, x0 + 1.625, wx - 0.95, cut)
-    low_run('y', wx, y0 + 0.25, 68, cut)
-    low_run('y', wx, 72, wy - 0.95, cut)
-    prop('mfWallCorner', wx, wy, cut=cut)
-    # the catwalk's rails and pillars along both edges
-    rail_run('x', w0 - 0.4, x0 + 0.6, x1 - 0.6)
-    rail_run('x', w1 + 0.4, x0 + 0.6, x1 - 0.6)
-    # the lava's glow from both pools, the lamps over the walk
-    for x in range(x0 + 2, x1, 4):
-        light(x, y0 + 2, 0.2, 255, 120, 40, 140, 0.15)
-        light(x, y1 - 2, 0.2, 255, 120, 40, 140, 0.15)
-    for x in range(x0 + 3, x1, 6):
-        light(x, 70, 3.2, 255, 190, 120, 130, 0.03)
-        light(x, y0 + 0.5, 1.6, 255, 170, 100, 120, 0.04)
+    light(R['x'] - 4, R['y'] - 3, 3.2, 255, 200, 140, 130, 0.02)
+    light(R['x'] + 3, R['y'] + 3, 3.2, 255, 200, 140, 130, 0.02)
+    # the junction: the covered passage in from the control room, its open inside under it
+    J = JUNCTION
+    prop('mfCorridor_r', J['x'] + J['hw'], J['y'])
+    prop('mfPassageS_x', J['x'], J['y'], flat=True)
+    light(J['x'], J['y'], 1.6, 255, 160, 80, 110, 0.05)
 
 
 def control_room():
     R = CONTROL
     x0, y0, x1, y1 = R['x'] - R['hw'], R['y'] - R['hh'], R['x'] + R['hw'], R['y'] + R['hh']
+    # the far walls: the lava windows with screens between (the LEGO's), the cut corner's head-on console
     prop('mfConsoleD', x0 + 0.73, y0 + 0.73)
-    for i in range(4):
-        prop('mfConsole', x0 + 3.6 + i * 3.3, y0 - 0.3)
-    # the west wall: the shield core (red) by the far corner, the screens south of the doorway
+    prop('mfWindow', x0 + 5.5, y0 - 0.3)
+    prop('mfConsole', x0 + 9.9, y0 - 0.3)
+    prop('mfWindow', x0 + 14.5, y0 - 0.3)
+    low_run('x', y0 - 0.3, x0 + 17.25, x1 - 0.25, None)
+    # the west wall: the shield core (the red console) by the far corner, the doorway to the junction in its
+    # middle, a lava window south of it
     prop('mfConsoleRed_r', x0 - 0.3, y0 + 4.5)
-    prop('mfConsole_r', x0 - 0.3, y0 + 11.6)
-    prop('mfConsole_r', x0 - 0.3, y0 + 14.9)
-    low_run('y', x0 - 0.3, y0 + 6.2, 68 - 0.4, None)
+    prop('mfWindow_r', x0 - 0.3, y0 + 14.5)
+    low_run('y', x0 - 0.3, y0 + 17.25, y1 - 0.25, None)
     # the two holo-tables, walked over
-    for dy in (-3.2, 1.4):
-        hx, hy = R['x'] - 1.3, R['y'] + dy
+    for dx, dy in ((-2.2, -2.0), (2.2, 2.6)):
+        hx, hy = R['x'] + dx, R['y'] + dy
         prop('mfHoloX', hx, hy, flat=True)
         surfaces.append({'x0': hx - 2.2, 'y0': hy - 0.9, 'x1': hx + 2.2, 'y1': hy + 0.9, 'z': 1})
         light(hx, hy, 0.1, 90, 210, 255, 110, 0.05)
-    # the near walls: the doorway south to the terrace passage
-    near_walls(x0, y0, x1, y1, gaps_x=[(DOOR4[0] - 2.1, DOOR4[0] + 2.1)], end_y=True)
+    # the near walls: the doorway south (the corridor) and east (the balcony)
+    cx = CORRIDOR['x']
+    near_walls(x0, y0, x1, y1, gaps_x=[(cx - 1.9, cx + 1.9)], gaps_y=[(DOOR4[1] - 2.0, DOOR4[1] + 2.0)])
     light(R['x'], R['y'], 2.5, 255, 150, 90, 220, 0.03)
-    light(R['x'], R['y'], 2.5, 255, 40, 30, 0, 0.5, id='alarm')
+    light(R['x'] - 7.4, R['y'] - 3.5, 2.5, 255, 40, 30, 0, 0.5, id='alarm')
     for dx, dy in ((-3, -3), (3, 3), (-4, 4), (4, -4)):
-        light(R['x'] + dx, R['y'] + dy, 3.2, 235, 240, 255, 150, 0.02)
-    # the passage south out of it
-    prop('mfCorridor', DOOR4[0], DOOR4[1])
-    prop('mfPassageS', DOOR4[0], DOOR4[1] - 3, flat=True)
+        light(R['x'] + dx, R['y'] + dy, 3.2, 255, 220, 170, 150, 0.02)
 
 
-def terrace():
-    T = TERRACE
-    x0, x1, y0, y1 = T['x0'], T['x1'], T['y0'], T['y1']
-    # the facility's south face: tall wall either side of the passage
-    tall_run('x', y0 - 0.3, x0, DOOR4[0] - 2)
-    tall_run('x', y0 - 0.3, DOOR4[0] + 2, x1)
-    # the edges over the lava: the lit edge wall, open where the catwalk leaves
-    cw = CATWALK['x']
-    ledge_run('x', y1 - 0.2, x0, cw - 1.5)
-    ledge_run('x', y1 - 0.2, cw + 1.5, x1)
-    ledge_run('y', x1 - 0.2, y0, y1 - 0.2)
-    ledge_run('y', x0 + 0.2, y0, y1 - 0.2)
-    # the colonnade along the edge
-    for x in range(x0 + 7, x1 - 1, 6):
-        prop('mfPillar', x, y1 - 0.9)
-    for x in range(x0 + 2, x1 - 1, 6):
-        if abs(x - DOOR4[0]) > 3:
-            light(x, y0 + 1, 2.8, 255, 180, 110, 150, 0.03)
-    for x in range(x0 + 4, x1 - 1, 6):
-        light(x, (y0 + y1) / 2, 0.3, 255, 150, 90, 120, 0.03)
-    for x in range(x0 + 3, x1, 4):
-        light(x, y1 + 1.5, 0.2, 255, 120, 40, 120, 0.12)
-    # the catwalk out over the lava to the lifting arm
-    C = CATWALK
-    prop('mfCatwalkL_y', C['x'], (C['y0'] + C['y1']) / 2, flat=True)
-    prop('mfLift_y', C['x'], C['y1'], flat=True)
-    for y in range(C['y0'] + 2, C['y1'], 4):
-        light(C['x'] - 3, y, 0.2, 255, 120, 40, 130, 0.12)
-        light(C['x'] + 3, y, 0.2, 255, 120, 40, 130, 0.12)
+def colonnade():
+    """The balcony along the control room's east face (the LEGO's colonnade): pillars with lamps, the rail along
+    the edge, the roof's lamps; the steps down at its south end to the catwalk out over the river."""
+    K = COLONNADE
+    x0, x1, y0, y1 = K['x0'], K['x1'], K['y0'], K['y1']
+    # the control room's east wall seen from outside, north of the door: the ribbed facade; the end wall north
+    tall_run('x', y0 - 0.3, x0, x1)
+    # the rail along the edge over the river, open where the steps go down; a pillar at each post
+    rail_run('y', x1 - 0.3, y0 + 0.5, y1 - 0.5)
+    for y in range(y0 + 2, y1, 4):
+        light(x1 - 0.6, y, 2.2, 255, 200, 120, 90, 0.04)  # the pillars' lamps
+        light(x0 + 1.5, y, 3.0, 255, 190, 110, 110, 0.03)  # the roof's lamps
+    for y in range(y0 + 1, y1, 4):
+        light(x1 + 2.5, y, 0.2, 255, 120, 40, 130, 0.12)  # the lava below
+    # the steps down at the south end, onto the landing and the catwalk
+    prop('mfStairs', (x0 + x1) / 2, y1 - 0.5, flat=True)
+    prop('mfLedge4', (x0 + x1) / 2, y1 + 3.8)
+    W_ = CATWALK
+    prop('mfCatwalkL', (W_['x0'] + W_['x1']) / 2, W_['y'], flat=True)
+    prop('mfLift', W_['x1'], W_['y'], flat=True)
+    for x in range(W_['x0'] + 2, W_['x1'], 4):
+        light(x, W_['y'] - 3, 0.2, 255, 120, 40, 130, 0.12)
+        light(x, W_['y'] + 3, 0.2, 255, 120, 40, 130, 0.12)
 
 
 def river():
-    # the collector arm standing in the river (its tower at the +y end), the lava falls on the west bank
+    # the collector arm standing in the river (its tower at the +y end), the falls at the river's head
     prop('mfArm_y', ARM['x'], ARM['y'], flat=True)
-    for fy in (92, 102, 112):
-        prop('mfFall', RIVER['x0'] - 1.6, fy)
+    for fx in (137, 144):
+        prop('mfFall~m', fx, RIVER['y0'] - 1.6)
     for y in range(RIVER['y0'] + 4, RIVER['y1'], 6):
         light(ARM['x'] + 3, y, 0.2, 255, 110, 30, 150, 0.12)
-    for y in range(96, 112, 5):
+    for y in range(98, 112, 5):
         light(PIPE['x'] - 2, y, 0.2, 255, 130, 40, 120, 0.12)
 
 
@@ -431,32 +398,33 @@ def mountain():
     crag = [f'rk2_{i}' for i in range(8)]
     pile = [f'rk3_{i}' for i in range(6)]
     # north: the back row of the big ones, then the wall-sized ones, then crags at the bench's edge
-    row([(x, 40) for x in range(94, 192, 7)], big, 2)
-    row([(x, 47) for x in range(90, 192, 5)], wall, 1.5)
-    row([(x, 53) for x in range(92, 192, 4)], wall + crag, 1.2)
-    row([(x, 58) for x in range(104, 128, 3)] + [(x, 58) for x in range(132, 164, 3)] + [(x, 58) for x in range(172, 192, 3)], crag + pile, 0.8)
+    row([(x, 46) for x in range(80, 150, 7)], big, 2)
+    row([(x, 53) for x in range(78, 150, 5)], wall, 1.5)
+    row([(x, 59) for x in range(82, 150, 4)], wall + crag, 1.2)
+    row([(x, 64) for x in range(84, 134, 3)], crag + pile, 0.8)
     # west: down the bench's edge to the landing pad, and the pad's own rock shoulder
-    row([(90, y) for y in range(44, 100, 6)], big, 2)
-    row([(96, y) for y in range(52, 100, 4)], wall, 1.2)
-    row([(102, y) for y in range(60, 98, 3)], crag + pile, 0.8)
-    row([(96, y) for y in range(100, 136, 5)], wall + big, 1.5)
-    row([(103, y) for y in range(104, 134, 4)], crag + pile, 0.8)
+    row([(78, y) for y in range(44, 110, 6)], big, 2)
+    row([(83, y) for y in range(52, 110, 4)], wall, 1.2)
+    row([(87, y) for y in range(62, 104, 3)], crag + pile, 0.8)
+    row([(94, y) for y in range(100, 134, 5)], wall + big, 1.5)
+    row([(101, y) for y in range(106, 134, 4)], crag + pile, 0.8)
     row([(x, 134) for x in range(100, 126, 5)], crag + pile, 1)
-    # the river's head, and the crags on its far bank and the lava sea's shore
-    row([(x, 77) for x in range(134, 150, 3)], crag + pile, 0.8)
-    row([(128, y) for y in range(84, 134, 5)], pile + crag, 1)
-    row([(130, 138), (140, 140), (152, 136), (164, 134), (168, 126), (172, 118), (186, 100), (186, 110)], crag + pile, 1)
+    # the river's head, the crags on its far bank and the lava sea's shore
+    row([(x, 72) for x in range(134, 152, 4)], crag + wall, 1)
+    row([(x, 66) for x in range(136, 156, 5)], wall + big, 1.5)
+    row([(156, y) for y in range(70, 100, 5)], wall + crag, 1)
+    row([(152, 134), (160, 130), (164, 118), (166, 104), (130, 138), (140, 140)], crag + pile, 1)
 
 
 def pois():
     return [
         {'x': DECK[0], 'y': DECK[1], 'r': 13, 'name': '무스타파 · 착륙장'},
-        {'x': CORRIDOR['x'], 'y': 89, 'r': 9, 'name': '무스타파 · 입구 복도'},
-        {'x': HALL['x'], 'y': HALL['y'], 'r': 10, 'name': '무스타파 · 분리주의 회의실'},
-        {'x': (LAVA_HALL['x0'] + LAVA_HALL['x1']) / 2, 'y': 70, 'r': 14, 'name': '무스타파 · 용암 다리'},
+        {'x': CORRIDOR['x'], 'y': 95, 'r': 6, 'name': '무스타파 · 입구 복도'},
         {'x': CONTROL['x'], 'y': CONTROL['y'], 'r': 10, 'name': '무스타파 · 제어실'},
-        {'x': (TERRACE['x0'] + TERRACE['x1']) / 2, 'y': 88, 'r': 12, 'name': '무스타파 · 외부 발코니'},
-        {'x': CATWALK['x'], 'y': 108, 'r': 8, 'name': '무스타파 · 외부 발코니'},
+        {'x': JUNCTION['x'], 'y': JUNCTION['y'], 'r': 3.5, 'name': '무스타파 · 연결 통로'},
+        {'x': HALL['x'], 'y': HALL['y'], 'r': 9, 'name': '무스타파 · 분리주의 회의실'},
+        {'x': (COLONNADE['x0'] + COLONNADE['x1']) / 2, 'y': 80, 'r': 15, 'name': '무스타파 · 외부 발코니'},
+        {'x': (CATWALK['x0'] + CATWALK['x1']) / 2, 'y': CATWALK['y'], 'r': 13, 'name': '무스타파 · 외부 발코니'},
         {'x': ARM['x'], 'y': ARM['y'], 'r': 13, 'name': '무스타파 · 집하기 팔'},
         {'x': BANK[0], 'y': BANK[1], 'r': 9, 'name': '무스타파 · 용암 강'},
     ]
@@ -467,9 +435,8 @@ def main():
     landing_pad()
     corridor()
     conference()
-    lava_hall()
     control_room()
-    terrace()
+    colonnade()
     river()
     mountain()
     # the way: a prop that blocks marks its footprint's tiles (the cargo, the skiff — the set's walls stand on
@@ -483,7 +450,10 @@ def main():
         if not e.get('block') or 'sheet' not in e:
             continue
         s = e['sheet']
-        q = fp.get(s) or [[y, x] for x, y in fp[s[:-2] if s.endswith('_y') else s + '_y']]
+        base = s[:-2] if s.endswith('~m') else s
+        q = fp.get(base) or [[y, x] for x, y in fp[base[:-2] if base.endswith('_y') else base + '_y']]
+        if s.endswith('~m'):
+            q = [[y, x] for x, y in q]
         xs = [e['x'] + p[0] for p in q]
         ys = [e['y'] + p[1] for p in q]
         for y in range(math.floor(min(ys)), math.ceil(max(ys))):

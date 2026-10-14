@@ -37,9 +37,9 @@ const check = (name, ok) => (console.log((ok ? 'ok   ' : 'FAIL ') + name), ok ||
 await page.keyboard.press('Digit4');
 await page.waitForTimeout(200);
 check('4 opens the tile mode', await page.evaluate(() => window.__editor.mode === 'tile' && !document.querySelector('#mapEditor .me-tile').classList.contains('hidden')));
-// the view on the control room; its floor's tile at (176, 70)
+// the view on the control room; its floor's tile at (118, 80)
 await page.evaluate(() => {
-  window.__game.camFocus = { x: 176, y: 70 };
+  window.__game.camFocus = { x: 118, y: 80 };
   window.__renderer.setZoom(2);
 });
 await page.waitForTimeout(600);
@@ -48,17 +48,17 @@ const B = await page.evaluate(() => ({ lava: 1, floor: 1 }) && null);
 const names = await page.evaluate(() => [...document.querySelectorAll('#mapEditor .me-tiles button')].map((b) => [b.textContent, +b.dataset.tile]));
 const LAVA = names.find(([n]) => n.includes('용암'))[1];
 const FLOOR = names.find(([n]) => n.includes('시설'))[1];
-const before = await tileAt(176, 70);
+const before = await tileAt(118, 80);
 check('the control room floor is the facility tile, walkable', before.b === FLOOR && before.blocked === 0);
 const terrain0 = await page.evaluate(() => (window.__t0 = window.__game.world.terrain, true));
 // pick the lava, a 3-tile brush, click the floor's middle
 await page.click(`#mapEditor .me-tiles button[data-tile="${LAVA}"]`);
 await page.keyboard.press('BracketRight');
 await page.keyboard.press('BracketRight');
-const pt = await page.evaluate(() => { const r = window.__renderer; const s = { x: (176.5 - 70.5) * 20, y: (176.5 + 70.5) * 10 }; return { x: (s.x - r.cam.x) * r.scale, y: (s.y - r.cam.y) * r.scale }; });
+const pt = await page.evaluate(() => { const r = window.__renderer; const s = { x: (118.5 - 80.5) * 20, y: (118.5 + 80.5) * 10 }; return { x: (s.x - r.cam.x) * r.scale, y: (s.y - r.cam.y) * r.scale }; });
 await page.mouse.click(pt.x, pt.y);
 await page.waitForTimeout(600);
-const after = await tileAt(176, 70);
+const after = await tileAt(118, 80);
 const corner = await tileAt(89, 75);
 const outside = await tileAt(88, 76);
 check('lava painted on the 3x3 under the brush, the way blocked by the ground', after.b === LAVA && after.blocked === 2 && corner.b === LAVA && corner.blocked === 2);
@@ -66,11 +66,11 @@ check('the tile beyond the brush untouched', outside.b === FLOOR);
 check('the ground rebuilt (a new Terrain)', await page.evaluate(() => window.__game.world.terrain !== window.__t0 && window.__renderer.terrain === window.__game.world.terrain));
 await page.waitForTimeout(1200);
 await page.screenshot({ path: path.join(out, 'lava.png') });
-const txt = await page.evaluate(() => window.__game.world.toMap().biome[70][176]);
+const txt = await page.evaluate(() => window.__game.world.toMap().biome[80][118]);
 check('the map text has the lava there', txt === '~');
 await page.keyboard.press('Control+z');
 await page.waitForTimeout(600);
-const undone = await tileAt(176, 70);
+const undone = await tileAt(118, 80);
 check('undo brings the floor back, walkable, the ground rebuilt', undone.b === FLOOR && undone.blocked === 0 && (await page.evaluate(() => window.__renderer.terrain === window.__game.world.terrain)));
 // the floor painted over the lava outside the deck opens the way
 const lavaSpot = await page.evaluate(() => { const w = window.__game.world; for (let y = 60; y < 120; y++) for (let x = 60; x < 140; x++) if (w.blocked[y * w.w + x] === 2 && w.biome[y * w.w + x] === +document.querySelector('#mapEditor .me-tiles button:last-child').dataset.tile) return [x, y]; return null; });

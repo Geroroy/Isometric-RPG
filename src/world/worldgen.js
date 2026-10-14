@@ -506,37 +506,31 @@ export class Arena extends World {
 //   river       the lava river: the collector droid and the repulsor platform
 //   bank        the black sand slope south of it — the high ground
 
-// The facility's sets, in design coordinates: the sets in the film's order along −x (deck → corridor → hall), north
-// (junction → control room), east (the balcony), the arm far west, the river south; transposed into the world
-// (x ↔ y) so that on screen it reads as the film's wide shot and the concept art (reference/color_rots): the landing
-// platform on the left, the collector arms on the right. The map itself is its file (public/maps/mustafar.json):
-// these are the sets' boxes the duel works in (MUSTAFAR)
-const MUSTAFAR_D = {
+// The facility's sets, in world coordinates (x to the screen's lower right, y to its lower left), as the LEGO
+// model of the film's facility lays them out (reference/mustafar_set/lego): the landing pad at the near end, the
+// gate and the entry corridor north out of it into the big octagonal control room (the holo-tables, the shield
+// core), the conference room (the long table) west of it through a short covered junction, the colonnaded balcony
+// along the control room's east face over the lava river, the catwalk from its south end out to the lifting arm,
+// the collector arm standing in the river. The map itself is its file (public/maps/mustafar.json, built by
+// tools/maps/mustafar_build.py — these boxes are kept in step with it by hand): these are the sets' boxes the duel
+// works in (MUSTAFAR)
+export const MUSTAFAR = {
   deck: { x: 118, y: 118, rx: 9.5, ry: 6.5 },
-  pad: { x: 117, y: 109.5, hw: 4.5, hh: 2.5 }, // the skiff's parking apron
-  walk: { x: 104.5, y: 118, hw: 4.5, hh: 1.5 },
-  door1: { x: 100, y: 118 }, // the facade's gate
-  corridor: { x: 89, y: 118, hw: 11, hh: 1.5 },
-  door2: { x: 78, y: 118 },
-  hall: { x: 70, y: 118, hw: 8, hh: 8 },
-  junction: { x: 70, y: 147, hw: 2, hh: 15 }, // the lava hall's catwalk — where the pushes meet
-  control: { x: 70, y: 176, hw: 8, hh: 8 },
-  door4: { x: 84, y: 176 },
-  balcony: { x: 105, y: 160, hw: 13, hh: 1 }, // the catwalk south from the terrace (out to the lifting arm at its end, y 118)
-  terrace: { x: 88, y: 173, hw: 4, hh: 17 },
-  arm: { x: 112, y: 141, hw: 11, hh: 1.5 },
-  armTower: { x: 125, y: 141 },
-  river: { x: 106, y: 141, hw: 24, hh: 4 },
-  bank: { x: 112, y: 152 },
+  pad: { x: 109.5, y: 117, hw: 2.5, hh: 4.5 }, // the skiff's parking apron
+  walk: { x: 118, y: 104.5, hw: 1.5, hh: 4.5 },
+  door1: { x: 118, y: 100 }, // the gate in the facade
+  corridor: { x: 118, y: 94.5, hw: 1.5, hh: 5.5 },
+  door2: { x: 118, y: 89 },
+  control: { x: 118, y: 80, hw: 9, hh: 9 }, // the big room: the holo-tables, the shield core
+  junction: { x: 106, y: 80, hw: 3, hh: 2 }, // the covered junction west out of it — where the pushes meet
+  hall: { x: 96, y: 80, hw: 7, hh: 6 }, // the conference room: the long table
+  door4: { x: 127, y: 86 }, // the control room's east door, onto the balcony
+  balcony: { x: 129.5, y: 80, hw: 2.5, hh: 14 }, // the colonnade over the river (the catwalk out from its south end, to x 158)
+  arm: { x: 141, y: 112, hw: 1.5, hh: 11 },
+  armTower: { x: 141, y: 125 },
+  river: { x: 141, y: 106, hw: 4, hh: 24 },
+  bank: { x: 152, y: 112 },
 };
-const tpRect = (r) => {
-  const o = { ...r, x: r.y, y: r.x };
-  if ('hw' in r) [o.hw, o.hh] = [r.hh, r.hw];
-  if ('rx' in r) [o.rx, o.ry] = [r.ry, r.rx];
-  return o;
-};
-/** The facility as it lies in the world (design coordinates transposed): what the duel works in. */
-export const MUSTAFAR = Object.fromEntries(Object.entries(MUSTAFAR_D).map(([k, v]) => [k, Array.isArray(v) ? v.map(([x, y]) => [y, x]) : tpRect(v)]));
 // the rooms' near walls' bay lengths, pillar to pillar (tools/sprites/mustafar_set/lowwall.py LENGTHS)
 const WALL_BAYS = [1, 2.5, 3, 3.5, 4, 4.5, 5];
 // the set sprites' mirrored twins (a sprite flipped left-right is its transpose: the same piece the other way round)
@@ -568,6 +562,8 @@ const MIRROR_SHEET = {
   mfStairs_y: 'mfStairs',
   // the parts cut from the set pieces (tools/sprites/mustafar_set/parts.py: both ways round in their atlas)
   ...Object.fromEntries([2, 3, 4, 4.5, 5, 6].flatMap((L) => [[`mfTall${L}`, `mfTall${L}_y`], [`mfTall${L}_y`, `mfTall${L}`]])),
+  mfTallWin4: 'mfTallWin4_y',
+  mfTallWin4_y: 'mfTallWin4',
   ...Object.fromEntries([3, 4.5, 6].flatMap((L) => [[`mfRail${L}`, `mfRail${L}_y`], [`mfRail${L}_y`, `mfRail${L}`]])),
   ...Object.fromEntries([2, 4, 6].flatMap((L) => [[`mfLedge${L}`, `mfLedge${L}_y`], [`mfLedge${L}_y`, `mfLedge${L}`]])),
   // the near walls' bays (lowwall.py: both ways round in the atlas)

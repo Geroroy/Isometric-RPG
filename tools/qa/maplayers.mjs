@@ -38,9 +38,9 @@ const check = (name, ok) => (console.log((ok ? 'ok   ' : 'FAIL ') + name), ok ||
 check('no `over` flags after load', await page.evaluate(() => !window.__game.world.props.some((p) => p.over)));
 await page.evaluate(() => {
   const w = window.__game.world;
-  window.__editor.select(w.props.find((p) => p.sheet === 'mfCatwalkL_y'));
+  window.__editor.select(w.props.find((p) => p.sheet === 'mfCatwalkL'));
   window.__renderer.setZoom(2.2);
-  window.__game.camFocus = { x: 160, y: 100 };
+  window.__game.camFocus = { x: 145, y: 96 };
 });
 await page.waitForTimeout(500);
 const info = () => page.evaluate(() => {
@@ -65,9 +65,9 @@ await page.waitForTimeout(300);
 s = await info();
 check('Shift+. to the top layer', s.tier === 'top');
 await shot('top');
-const m = await page.evaluate(() => window.__game.world.toMap().props.find((p) => p.sheet === 'mfCatwalkL_y'));
+const m = await page.evaluate(() => window.__game.world.toMap().props.find((p) => p.sheet === 'mfCatwalkL'));
 check('the map text has top: true and no order', m.top === true && m.order === undefined);
-check('the hit test finds the top piece first', (await page.evaluate(() => { const p = window.__editor.sel; return window.__editor.propAt(p.sx, p.sy - 10)?.sheet; })) === 'mfCatwalkL_y');
+check('the hit test finds the top piece first', (await page.evaluate(() => { const p = window.__editor.sel; return window.__editor.propAt(p.sx, p.sy - 10)?.sheet; })) === 'mfCatwalkL');
 for (let i = 0; i < 3; i++) await page.keyboard.press('Control+z');
 await page.waitForTimeout(300);
 s = await info();
@@ -84,13 +84,13 @@ await page.keyboard.press('KeyP');
 await page.waitForTimeout(1500);
 await page.evaluate(() => {
   const g = window.__game;
-  g.player.x = 160;
-  g.player.y = 105;
+  g.player.x = 140;
+  g.player.y = 96;
   g.camFocus = null;
 });
 await page.waitForTimeout(800);
 await shot('play_top');
-check('the top piece covering the player is translucent', await page.evaluate(() => { const p = window.__game.world.props.find((q) => q.sheet === 'mfCatwalkL_y'); return p.coverAlpha != null && p.coverAlpha < 1; }));
+check('the top piece covering the player is translucent', await page.evaluate(() => { const p = window.__game.world.props.find((q) => q.sheet === 'mfCatwalkL'); return p.coverAlpha != null && p.coverAlpha < 1; }));
 console.log('errors', errs);
 if (errs.length) fails++;
 await browser.close();

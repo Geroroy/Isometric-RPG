@@ -44,15 +44,15 @@ check('5 opens the room mode', await page.evaluate(() => window.__editor.mode ==
 await page.evaluate(() => { window.__game.camFocus = { x: 90, y: 76 }; window.__renderer.setZoom(1.2); });
 await page.waitForTimeout(500);
 const n0 = await page.evaluate(() => window.__game.world.floorPlan.length);
-let p = await at(176, 70);
+let p = await at(118, 80);
 await page.mouse.click(p.x, p.y);
 await page.waitForTimeout(200);
 let R = await sel();
-check('a click selects the control room (176, 70)', R && R.x === 176 && R.y === 70);
+check('a click selects the control room (118, 80)', R && R.x === 118 && R.y === 80);
 await shot('selected');
 // drag it a tile to +x (half-tile snap)
 const t0 = await page.evaluate(() => (window.__t0 = window.__game.world.terrain, true));
-p = await at(176, 70);
+p = await at(118, 80);
 const q = await at(91, 76);
 await page.mouse.move(p.x, p.y);
 await page.mouse.down();
@@ -86,7 +86,7 @@ await page.press('#mapEditor .me-redge', 'Enter');
 await page.waitForTimeout(400);
 R = await sel();
 check('typed: the pit dropped, the edge 3', R.pit === undefined && R.edge === 3);
-check('the map text carries it', await page.evaluate(() => { const r = window.__game.world.toMap().floorPlan.find((q) => q.x === 176 && q.y === 70); return r.edge === 3 && !('pit' in r); }));
+check('the map text carries it', await page.evaluate(() => { const r = window.__game.world.toMap().floorPlan.find((q) => q.x === 118 && q.y === 80); return r.edge === 3 && !('pit' in r); }));
 await page.keyboard.press('Control+z');
 await page.keyboard.press('Control+z');
 await page.waitForTimeout(400);

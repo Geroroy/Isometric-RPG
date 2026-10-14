@@ -12,6 +12,7 @@ Run again after lowwall.py (which writes the bays alone); the parts rows are rep
   foot line up), a run of L metres taken from the strip's middle (whole ribs: the strip's rib period), then sheared
   back onto the 2:1 slope. The slits (the pale strips on the ribs) go to the glow page. For the lava hall's far
   walls and the facility's outer wall.
+- `mfTallWin4` / `_y`: a tall bay with the octagonal lava window (the LEGO model's corridor and gate box)
 - `mfRail<L>` / `_y`: a catwalk rail bay, L metres along x at the anchor's y (posts 1.1 m, two bars), facing +y
   (seen from the near side); drawn (not rendered): dark steel, the bars' tops lit from the upper left. Its twin
   along y. Flat sprites (walked past, drawn with the ground): thin, so a unit draws over it where they overlap.
@@ -106,6 +107,33 @@ def tall_wall(L, strip, period):
     body[..., :3] *= (1 - glow[..., None] * 0.35) * 1.9
     anchor = [w / 2, H + n / 4]  # the foot line's middle (its y from the left foot at row H)
     return body, neon, anchor
+
+
+def window_wall(body, neon, L):
+    """A tall bay with the facility's octagonal lava window cut in its middle (the LEGO model's corridor and gate
+    box: an orange octagon in the dark wall): the frame dark, the pane orange with the lava's vertical bars, the
+    pane on the glow layer too. The wall is along x, its foot's middle at the anchor; a point (dx, z) on its face
+    is at (dx PXM, dx PXM / 2 − z ZPX) from the anchor."""
+    body = body.copy()
+    neon = neon.copy()
+    d = ImageDraw.Draw(body)
+    dn = ImageDraw.Draw(neon)
+    ax, ay = L / 2 * PXM, body.height - L / 2 * PXM / 2  # the anchor (the foot line's middle)
+    ax, ay = L * PXM / 2, int(round(3.0 * ZPX)) + L * PXM / 4  # (tall_wall's anchor)
+    cz, hw, hh, ch = 1.7, 0.95, 0.75, 0.38  # centre height, half width, half height, the corner cut
+    pts = [(-hw + ch, hh), (hw - ch, hh), (hw, hh - ch), (hw, -hh + ch), (hw - ch, -hh), (-hw + ch, -hh), (-hw, -hh + ch), (-hw, hh - ch)]
+    P = lambda dx, dz, g=0: (ax + dx * PXM, ay + dx * PXM / 2 - (cz + dz) * ZPX)  # noqa: E731
+    d.polygon([P(x * 1.12, z * 1.12) for x, z in pts], fill=(28, 25, 22, 255))
+    d.polygon([P(x, z) for x, z in pts], fill=(255, 140, 30, 255))
+    dn.polygon([P(x, z) for x, z in pts], fill=(255, 150, 40, 255))
+    for k in (-0.55, -0.18, 0.2, 0.58):
+        for dr, col in ((d, (210, 70, 10, 255)), (dn, (255, 90, 20, 255))):
+            dr.polygon([P(k - 0.04, -hh), P(k + 0.04, -hh), P(k + 0.04, hh), P(k - 0.04, hh)], fill=col)
+    # the sill lamps under it (the LEGO's row of amber studs)
+    for k in range(-3, 4):
+        for dr, col in ((d, (255, 200, 90, 255)), (dn, (255, 190, 80, 255))):
+            dr.polygon([P(k * 0.25 - 0.08, -hh - 0.22), P(k * 0.25 + 0.08, -hh - 0.22), P(k * 0.25 + 0.08, -hh - 0.12), P(k * 0.25 - 0.08, -hh - 0.12)], fill=col)
+    return body, neon.filter(ImageFilter.GaussianBlur(1.0))
 
 
 # ---------------------------------------------------------------------------------------------------- drawing
@@ -225,6 +253,9 @@ def main():
     for L in LENGTHS:
         body, neon, anc = tall_wall(L, strip, period)
         twin(f'mfTall{L:g}', to_im(body), to_im(neon), anc, [[-L / 2, -0.5], [L / 2, -0.5], [L / 2, 0], [-L / 2, 0]], half=L / 2, along='x', pillars=[0, 0])
+    body, neon, anc = tall_wall(4, strip, period)
+    wb, wn = window_wall(to_im(body), to_im(neon), 4)
+    twin('mfTallWin4', wb, wn, anc, [[-2, -0.5], [2, -0.5], [2, 0], [-2, 0]], half=2, along='x', pillars=[0, 0])
     for L in (3, 4.5, 6):
         im, anc = rail(L)
         twin(f'mfRail{L:g}', im, None, anc, [[-L / 2, -0.15], [L / 2, -0.15], [L / 2, 0.15], [-L / 2, 0.15]])
