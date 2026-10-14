@@ -36,7 +36,7 @@
   ],
   "decor": [],
   "blockout": [
-    {"x": 29.9, "y": 90.5, "w": 18.0, "d": 5, "h": 0.6, "kind": "deck", "label": "상부 회랑 +0.6 m", "flat": true, "art": "mf.control.gallery_edge"},
+    {"x": 29.9, "y": 92.95, "w": 18.0, "d": 0.1, "h": 0.6, "kind": "deck", "label": "상부 회랑 가장자리 +0.6 m", "flat": true, "art": "mf.control.gallery_edge"},
     {"x": 29.9, "y": 93.5, "w": 4.0, "d": 1, "h": 0.4, "kind": "deck", "label": "", "flat": true, "art": "mf.control.ctl_stairs"},
     {"x": 29.9, "y": 94.5, "w": 4.0, "d": 1, "h": 0.2, "kind": "deck", "label": "", "flat": true, "art": "mf.control.ctl_stairs"},
     {"x": 29.9, "y": 87.8, "w": 18.0, "d": 0.4, "h": 4.0, "kind": "wall", "label": "제어실 창 (용암 쪽)", "art": "mf.control.wall_window"},

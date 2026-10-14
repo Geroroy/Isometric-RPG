@@ -126,4 +126,7 @@
 - 그림 연결 완료: 요청서 `docs/asset_requests/chatgpt_stage03_control.md`의 14장은 각자 자리(존 `structures`·`floor`)가 정해져
   있어, 매니페스트에서 `delivered`가 되면 회색 상자(`blockout`의 `art`)가 빠지고 그림이 선다. 회랑 바닥은 0.6 m 높이에 그린다
   (`padFloor.js` 높은 바닥), 회랑 위 콘솔은 회의실 콘솔 재사용(`z` 0.6). 대역 그림으로 자리 확인: `tools/qa/mfstage03_art.mjs`.
-- **시각적으로 완성 아님**: 14장 도착 전까지 회색 상자(화면 배지에 표시).
+- 받음: `ctl_floor`, `ctl_gallery_floor`(그대로 사용, 회랑 바닥은 0.6 m 높이). 회랑 앞 가장자리는 얇은 회색 면이 대신한다(그림이
+  오면 빠짐). 나머지 12장 대기 — 요청서의 노트(`docs/asset_requests/delivered/mustafar_control_notes.md`)에 14장이 모두 적혀 있으나
+  파일은 2장만 받음.
+- **시각적으로 완성 아님**: 나머지 그림이 올 때까지 회색 상자(화면 배지에 표시).

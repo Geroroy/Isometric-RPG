@@ -36,8 +36,10 @@ CONSOLES = [(25, Y0 + 1.6), (34.5, Y0 + 1.6)]  # on the gallery
 
 def blockout():
     """The grey boxes standing in for the art until it is delivered (each names its `art`: the box goes when that comes)."""
-    g_box, g_surf = deck(X0, GALLERY[0], X1, GALLERY[1], GALLERY[2], '상부 회랑 +0.6 m')
-    g_box['art'] = 'mf.control.gallery_edge'
+    # the gallery: its floor is a picture drawn 0.6 m up (the zone's `floor`); until its front edge comes, a thin grey
+    # face stands in for that edge only (not a box over the whole gallery: it would hide the floor's picture)
+    _, g_surf = deck(X0, GALLERY[0], X1, GALLERY[1], GALLERY[2])
+    g_box = box(CX, GALLERY[1] - 0.05, X1 - X0, 0.1, GALLERY[2], 'deck', '상부 회랑 가장자리 +0.6 m', flat=True, art='mf.control.gallery_edge')
     s1, s1s = deck(STAIRS[0], GALLERY[1], STAIRS[1], GALLERY[1] + 1, 0.4)
     s2, s2s = deck(STAIRS[0], GALLERY[1] + 1, STAIRS[1], GALLERY[1] + 2, 0.2)
     s1['art'] = s2['art'] = 'mf.control.ctl_stairs'

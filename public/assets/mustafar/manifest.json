@@ -994,7 +994,7 @@
   {
    "id": "mf.control.floor",
    "kind": "groundTiles",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "tiles": {
     "floor": {
@@ -1008,12 +1008,13 @@
       13
      ]
     }
-   }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_control_notes.md"
   },
   {
    "id": "mf.control.gallery_floor",
    "kind": "groundTiles",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "tiles": {
     "floor": {
@@ -1027,7 +1028,8 @@
       5
      ]
     }
-   }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_control_notes.md"
   },
   {
    "id": "mf.passage.floor",
