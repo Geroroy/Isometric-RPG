@@ -56,8 +56,8 @@
   매니페스트 `outer: "bottom"`), 띠 아래쪽의 트러스 면은 가까운 두 변 아래의 옆면(`side`, 깊이 약 0.57 m)으로 쓴다. 모서리 조각은
   탑다운이 아니라 쓰지 않고, 띠를 대각선으로 맞대어 잇는다. 베이는 약 66 px/m(요청 96)지만 승인 기준을 만족해 그대로 쓴다.
 - 주변 용암: 이전 무스타파의 용암 텍스처를 임시로 사용(존 파일 `surround.placeholder`).
-- 요청 중 (`docs/asset_requests/`): 난간 `mf.landing.railings`(rail_x · rail_y · rail_corner), 진입 통로
-  `mf.landing.corridor`(바닥 + 벽, −x 변 가운데에서 10 m), 파드메의 우주선 `mf.landing.ship`(가운데 클램프 위, 기수 +x).
-  존 파일에 이미 배치되어 있어 받는 대로 나타난다; 난간 아래 테두리 막기와 통로 바닥 걷기는 `needs`로 그 에셋이 온 뒤에만.
-  캔버스 크기·앵커 계산: `python3 tools/assets/mustafar/canvas.py`.
+- 착륙장 에셋 모두 받음: 난간(네 변, `rail_x` · `rail_y` · 모서리 기둥), 파드메의 우주선(가운데 클램프 위, 선체가 막음),
+  진입 통로(−x 변 가운데에서 13.1 m, 위에서 본 바닥 + 정면도 벽 3장을 엔진이 세움: `wallElevation`). 시트는
+  `tools/assets/mustafar/src/`, 자르기·배경 제거는 `tools/assets/mustafar/slice_landing_structures.py`(`key_checker.py`).
+  QA `tools/qa/mfstage01.mjs` 23항목.
 - 그다음: 캐릭터 배치(파드메, 오비완) → 대면 컷신과 결투 시작 → STAGE 01 승인.

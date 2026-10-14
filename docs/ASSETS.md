@@ -66,6 +66,13 @@ public/assets/mustafar/
   `footprint`, `layer`, `sortOffset`(깊이 기준점을 x+y로 m만큼 옮김), `lighting.emissive`. 기존 시트 스프라이트로 바뀌어
   렌더러의 깊이 정렬·조명·그림자 규칙을 그대로 탄다. 존 파일 `structures`/`decor`에 `{ asset, x, y, block }`로 놓는다.
 
+- **`wallElevation`** — 벽을 **정면에서 똑바로 본 평면 그림**(각도 없음, 투명 배경). `metres: [길이, 높이]`, `along: "x" | "y"`.
+  로더가 게임의 투영으로 그 벽을 밑변 위에 세워(아핀 변환, 밀도 2) 보통 스프라이트로 만든다 — 각도가 어긋날 수 없다.
+  `along: "x"`면 그림 왼쪽 = −x 끝, `"y"`면 그림 왼쪽 = +y 끝(화면에서 같은 쪽으로 읽힘). 발자국은 밑변 양쪽 0.4 m 띠.
+  바닥 한 장(위에서 본 그림)은 `groundTiles`의 타일 하나를 존 파일 `floor`의 `texturedRect`(사각형 전체에 한 장)로 깐다.
+  **건축물(벽·복도·바닥)은 이 평면 방식으로 요청하는 것을 기본으로 한다** — 이미지 생성기가 아이소 각도를 정확히 지키지
+  못해도 결과가 맞는다(STAGE 01에서 아이소 각도로 그린 복도는 두 번 다 각도가 틀렸고, 평면 그림은 한 번에 맞았다).
+
 로더: `src/gfx/assetManifest.js` (`loadManifest`, `loadAsset`, `groundBackdrop`). 검증: `node tools/qa/assets_manifest.mjs`
 (저장소의 기존 이미지를 임시 대역으로 세 종류와 거부 경우를 확인 — 아무것도 저장하지 않음).
 
