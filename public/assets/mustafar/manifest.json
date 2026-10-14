@@ -206,7 +206,7 @@
    "name": "진입 통로 바닥",
    "kind": "sprite",
    "status": "requested",
-   "request": "docs/asset_requests/mf.landing.corridor.md",
+   "request": "docs/asset_requests/chatgpt_stage01_pass3.md",
    "file": "corridors/landing_corridor_floor.png",
    "size": [
     672,
@@ -220,14 +220,14 @@
    "layer": "flat",
    "footprint": [],
    "collision": "zone: walk rect corridor",
-   "note": "two passes received, neither at the 2:1 projection (long edges slope ~0.75-1.0 against 0.5): not used"
+   "note": "two passes received, neither at the 2:1 projection (long edges slope ~0.75-1.0 against 0.5): not used; re-requested as flat textures (top-down floor, straight-on wall elevations) for the engine to project"
   },
   {
    "id": "mf.landing.corridor",
    "name": "진입 통로 벽·문",
    "kind": "sprite",
    "status": "requested",
-   "request": "docs/asset_requests/mf.landing.corridor.md",
+   "request": "docs/asset_requests/chatgpt_stage01_pass3.md",
    "file": "corridors/landing_corridor.png",
    "size": [
     672,
@@ -245,7 +245,7 @@
     "height": 3.0
    },
    "collision": "zone: walk rect corridor (the walls are its sides)",
-   "note": "two passes received, neither at the 2:1 projection (long edges slope ~0.75-1.0 against 0.5): not used"
+   "note": "two passes received, neither at the 2:1 projection (long edges slope ~0.75-1.0 against 0.5): not used; re-requested as flat textures (top-down floor, straight-on wall elevations) for the engine to project"
   },
   {
    "id": "mf.landing.ship",
