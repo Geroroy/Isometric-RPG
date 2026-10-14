@@ -153,6 +153,31 @@ const settle = (page) => page.waitForFunction(() => { const t = window.__rendere
   await settle(page);
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${out}/08_close.png` });
+  // the ship (once delivered): it stands on the clamps, its hull blocks, Anakin behind it shows through it
+  const ship = await ev(page, () => {
+    const g = window.__game;
+    const w = g.world;
+    const sh = w.props.find((q) => q.sheet === 'mf.landing.ship');
+    return sh ? { at: [sh.x, sh.y], hullBlocked: w.isBlocked(sh.x + 0.5, sh.y + 0.5), clearBeside: !w.isBlocked(sh.x, sh.y + 8) } : null;
+  });
+  if (ship) {
+    check('ship: on the pad, its hull blocks, free round it', ship.hullBlocked && ship.clearBeside, JSON.stringify(ship));
+    await ev(page, () => { const g = window.__game; const p = g.player; p.x = 96; p.y = 90.2; p.path = null; window.__renderer.setZoom(1, true); });
+    await page.waitForTimeout(400);
+    await settle(page);
+    await page.waitForTimeout(600);
+    const fade = await ev(page, () => { const sh = window.__game.world.props.find((q) => q.sheet === 'mf.landing.ship'); return sh.coverAlpha; });
+    check('ship: Anakin behind it shows through', fade !== null && fade < 1, String(fade));
+    await page.screenshot({ path: `${out}/10_behind_ship.png` });
+    // walking into the hull stops at it
+    await ev(page, () => { const p = window.__game.player; p.x = 96; p.y = 101; p.path = null; });
+    await page.keyboard.down('w');
+    await page.waitForTimeout(2500);
+    await page.keyboard.up('w');
+    const stop = await ev(page, () => { const g = window.__game; const p = g.player; return { p: [p.x, p.y], blocked: g.world.isBlocked(p.x, p.y) }; });
+    check('ship: walking into the hull stops at it', !stop.blocked, JSON.stringify(stop.p.map((v) => +v.toFixed(2))));
+    await page.screenshot({ path: `${out}/11_at_ship.png` });
+  }
   const perf = await ev(page, () => new Promise((res) => { let n = 0; const t0 = performance.now(); const f = () => (++n < 120 ? requestAnimationFrame(f) : res(((performance.now() - t0) / n).toFixed(1))); requestAnimationFrame(f); }));
   console.log('frame ms (headless, software GL):', perf);
 }

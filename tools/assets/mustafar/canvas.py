@@ -29,6 +29,36 @@ def canvas(box, anchor, density=2, margin=16, points=None):
     return out
 
 
+def guide(path, box, anchor, density=2, margin=16, grid=True):
+    """A projection guide for an asset request (a development aid, not game art): the canvas at its exact size, the
+    world box as a wireframe (ground edges cyan, top edges orange, verticals grey), a 1 m grid on the ground under
+    it, the anchor as a red cross. The artist draws the piece inside the wireframe, then removes the guide."""
+    from PIL import Image, ImageDraw
+
+    c = canvas(box, anchor, density, margin)
+    x0, y0, z0, x1, y1, z1 = box
+    pts = [screen(x, y, z) for x in (x0, x1) for y in (y0, y1) for z in (z0, z1)]
+    lo = (min(p[0] for p in pts) - margin / density, min(p[1] for p in pts) - margin / density)
+    P = lambda x, y, z=0.0: ((screen(x, y, z)[0] - lo[0]) * density, (screen(x, y, z)[1] - lo[1]) * density)  # noqa: E731
+    im = Image.new('RGBA', tuple(c['size']), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    if grid:
+        for gx in range(math.floor(x0) - 1, math.ceil(x1) + 2):
+            d.line([P(gx, y0 - 1), P(gx, y1 + 1)], fill=(120, 120, 120, 110), width=1)
+        for gy in range(math.floor(y0) - 1, math.ceil(y1) + 2):
+            d.line([P(x0 - 1, gy), P(x1 + 1, gy)], fill=(120, 120, 120, 110), width=1)
+    for z, col in ((z0, (0, 220, 255, 255)), (z1, (255, 160, 40, 255))):
+        d.line([P(x0, y0, z), P(x1, y0, z), P(x1, y1, z), P(x0, y1, z), P(x0, y0, z)], fill=col, width=2)
+    for x in (x0, x1):
+        for y in (y0, y1):
+            d.line([P(x, y, z0), P(x, y, z1)], fill=(200, 200, 200, 255), width=1)
+    ax, ay = c['anchor']
+    d.line([(ax - 8, ay), (ax + 8, ay)], fill=(255, 40, 40, 255), width=2)
+    d.line([(ax, ay - 8), (ax, ay + 8)], fill=(255, 40, 40, 255), width=2)
+    im.save(path)
+    return c
+
+
 if __name__ == '__main__':
     import json
 

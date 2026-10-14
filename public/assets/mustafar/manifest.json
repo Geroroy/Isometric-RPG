@@ -146,7 +146,8 @@
     "fadeOverActors": true,
     "height": 1.1
    },
-   "collision": "zone: the rim under it (stage01.json collision rail_*)"
+   "collision": "zone: the rim under it (stage01.json collision rail_*)",
+   "note": "v1 received in tools/assets/mustafar/src/landing_structures_sheet.png but not at the game projection (long edges slope ~0.63 railings, ~1.0 corridor; 2:1 needs 0.5): not used — awaiting a corrected version or approval to fit it"
   },
   {
    "id": "mf.landing.rail_y",
@@ -170,7 +171,8 @@
     "fadeOverActors": true,
     "height": 1.1
    },
-   "collision": "zone"
+   "collision": "zone",
+   "note": "v1 received in tools/assets/mustafar/src/landing_structures_sheet.png but not at the game projection (long edges slope ~0.63 railings, ~1.0 corridor; 2:1 needs 0.5): not used — awaiting a corrected version or approval to fit it"
   },
   {
    "id": "mf.landing.rail_corner",
@@ -194,7 +196,8 @@
     "fadeOverActors": true,
     "height": 1.3
    },
-   "collision": "zone"
+   "collision": "zone",
+   "note": "v1 received in tools/assets/mustafar/src/landing_structures_sheet.png but not at the game projection (long edges slope ~0.63 railings, ~1.0 corridor; 2:1 needs 0.5): not used — awaiting a corrected version or approval to fit it"
   },
   {
    "id": "mf.landing.corridor_floor",
@@ -214,7 +217,8 @@
    ],
    "layer": "flat",
    "footprint": [],
-   "collision": "zone: walk rect corridor"
+   "collision": "zone: walk rect corridor",
+   "note": "v1 received in tools/assets/mustafar/src/landing_structures_sheet.png but not at the game projection (long edges slope ~0.63 railings, ~1.0 corridor; 2:1 needs 0.5): not used — awaiting a corrected version or approval to fit it"
   },
   {
    "id": "mf.landing.corridor",
@@ -238,52 +242,50 @@
     "fadeOverActors": true,
     "height": 3.0
    },
-   "collision": "zone: walk rect corridor (the walls are its sides)"
+   "collision": "zone: walk rect corridor (the walls are its sides)",
+   "note": "v1 received in tools/assets/mustafar/src/landing_structures_sheet.png but not at the game projection (long edges slope ~0.63 railings, ~1.0 corridor; 2:1 needs 0.5): not used — awaiting a corrected version or approval to fit it"
   },
   {
    "id": "mf.landing.ship",
    "name": "파드메의 나부 스타 스키프 (착륙, 램프 내림)",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/mf.landing.ship.md",
    "file": "props/padme_skiff.png",
    "size": [
-    1592,
-    1112
+    1438,
+    704
    ],
-   "density": 2,
+   "density": 2.16,
    "anchor": [
-    796,
-    700
+    800,
+    589
    ],
    "layer": "standing",
    "footprint": [
     [
-     -13.5,
-     -1.8
+     -8.9,
+     1.85
     ],
     [
-     13.5,
-     -1.8
+     7.8,
+     -4.65
     ],
     [
-     14.5,
-     0
+     8.9,
+     -1.85
     ],
     [
-     13.5,
-     1.8
-    ],
-    [
-     -13.5,
-     1.8
+     -7.8,
+     4.65
     ]
    ],
    "occlusion": {
     "fadeOverActors": true,
     "height": 6.0
    },
-   "note": "footprint: the hull on its gear (provisional, refit to the delivered image)"
+   "note": "drawn at its own heading (axis slope ~0.38 on screen: nose toward +x and a little −y); density from ~29 m nose to tail; anchor between the rear and nose landing feet; footprint = the hull between the feet",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py"
   }
  ]
 }
