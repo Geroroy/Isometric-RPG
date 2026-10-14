@@ -337,6 +337,9 @@ const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => 
 export class Terrain {
   constructor(world) {
     this.world = world;
+    // the ash left lit (not faded to black): the map's box [x0, y0, x1, y1] (the river bank), else x > 140
+    const lit = world.ashLit;
+    this.litAsh = lit ? (x, y) => x >= lit[0] && x < lit[2] && y >= lit[1] && y < lit[3] : (x) => x >= 140;
     const n = world.w * world.h;
     this.R = new Float32Array(n);
     this.G = new Float32Array(n);
@@ -894,8 +897,8 @@ export class Terrain {
         }
         // Mustafar's rock (ASH) away from the facility's floors fades to near black, so the lit floors stand out as
         // plates over the dark; near the lava it keeps the lava's red (the light map adds the glow). The river
-        // bank (x > 140), where the ending is played, stays as it is
-        if (this.Df && fx < 140 && this.world.biome[Math.floor(fy) * this.world.w + Math.floor(fx)] === BIOME.ASH) {
+        // bank (the map's `ashLit` box), where the ending is played, stays as it is
+        if (this.Df && !this.litAsh(fx, fy) && this.world.biome[Math.floor(fy) * this.world.w + Math.floor(fx)] === BIOME.ASH) {
           const df = this.sample(this.Df, u, v);
           const dl = this.sample(this.Dl, u, v);
           const f = Math.max(clamp(1 - (df - 1.5) / 7, 0.07, 1), 0.9 * clamp(1 - (dl - 1.5) / 4, 0, 1));

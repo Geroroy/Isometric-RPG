@@ -515,18 +515,19 @@ const MUSTAFAR_D = {
   deck: { x: 118, y: 118, rx: 9.5, ry: 6.5 },
   pad: { x: 117, y: 109.5, hw: 4.5, hh: 2.5 }, // the skiff's parking apron
   walk: { x: 104.5, y: 118, hw: 4.5, hh: 1.5 },
-  door1: { x: 100, y: 118 },
-  corridor: { x: 91.5, y: 118, hw: 8.5, hh: 1.5 },
-  door2: { x: 83, y: 118 },
-  hall: { x: 74, y: 118, hw: 9, hh: 6 },
-  junction: { x: 79, y: 104.5, hw: 1.5, hh: 7.5 },
-  control: { x: 76, y: 90, hw: 8, hh: 7 },
-  door4: { x: 84, y: 94 },
-  balcony: { x: 97, y: 94, hw: 13, hh: 1 }, // (out to the lifting arm at its end, x 110)
-  arm: { x: 40, y: 104, hw: 11, hh: 1.5 },
-  armTower: { x: 53, y: 104 },
-  river: { x: 106, y: 142, hw: 24, hh: 4 },
-  bank: { x: 112, y: 150 },
+  door1: { x: 100, y: 118 }, // the facade's gate
+  corridor: { x: 89, y: 118, hw: 11, hh: 1.5 },
+  door2: { x: 78, y: 118 },
+  hall: { x: 70, y: 118, hw: 8, hh: 8 },
+  junction: { x: 70, y: 147, hw: 2, hh: 15 }, // the lava hall's catwalk — where the pushes meet
+  control: { x: 70, y: 176, hw: 8, hh: 8 },
+  door4: { x: 84, y: 176 },
+  balcony: { x: 105, y: 160, hw: 13, hh: 1 }, // the catwalk south from the terrace (out to the lifting arm at its end, y 118)
+  terrace: { x: 88, y: 173, hw: 4, hh: 17 },
+  arm: { x: 112, y: 141, hw: 11, hh: 1.5 },
+  armTower: { x: 125, y: 141 },
+  river: { x: 106, y: 141, hw: 24, hh: 4 },
+  bank: { x: 112, y: 152 },
 };
 const tpRect = (r) => {
   const o = { ...r, x: r.y, y: r.x };
@@ -562,6 +563,13 @@ const MIRROR_SHEET = {
   mfFall_x: 'mfFall',
   mfWallEnd_y: 'mfWallEnd',
   mfWallEnd: 'mfWallEnd_y',
+  mfPassageS: 'mfPassageS_x',
+  mfStairs: 'mfStairs_y',
+  mfStairs_y: 'mfStairs',
+  // the parts cut from the set pieces (tools/sprites/mustafar_set/parts.py: both ways round in their atlas)
+  ...Object.fromEntries([2, 3, 4, 4.5, 5, 6].flatMap((L) => [[`mfTall${L}`, `mfTall${L}_y`], [`mfTall${L}_y`, `mfTall${L}`]])),
+  ...Object.fromEntries([3, 4.5, 6].flatMap((L) => [[`mfRail${L}`, `mfRail${L}_y`], [`mfRail${L}_y`, `mfRail${L}`]])),
+  ...Object.fromEntries([2, 4, 6].flatMap((L) => [[`mfLedge${L}`, `mfLedge${L}_y`], [`mfLedge${L}_y`, `mfLedge${L}`]])),
   // the near walls' bays (lowwall.py: both ways round in the atlas)
   ...Object.fromEntries(WALL_BAYS.flatMap((L) => [[`mfWall${L}`, `mfWall${L}_y`], [`mfWall${L}_y`, `mfWall${L}`]])),
 };
@@ -616,6 +624,7 @@ export class MustafarArena extends World {
     this.rng = new RNG(this.seed);
     this.ambient = [...m.ambient];
     this.grade = m.grade; // post.js colour grade
+    this.ashLit = m.ashLit ? [...m.ashLit] : null; // terrain.js: the rock left lit (the river bank)
     this.floats = []; // moving decks on the lava river: { x, y, r } (the duel's)
     this.strips = []; // walkable lines over the lava: { x0, y0, x1, y1, r } (a service pipe, the fallen arm adrift)
     this.pipes = []; // service pipes drawn over the lava: { x0, y0, x1, y1, z, r } (renderer.js drawPipes)
@@ -624,7 +633,7 @@ export class MustafarArena extends World {
     this.pois = m.pois.map((q) => ({ ...q }));
     // the interior's floor laid out of the set's floor tiles per room (terrain.js facilityFloor)
     this.floorPlan = m.floorPlan.map((r) => ({ ...r }));
-    this.surfaces = m.surfaces.map((t) => ({ ...t })); // raised tops walked on (the tables)
+    this.surfaces = m.surfaces.map((t) => ({ ...t, map: true })); // raised tops walked on (the tables; `map`: the file's, written back — the duel's are not)
     // the ground and the way, a character a tile (the way as laid: a prop's footprint, the chairs', the door jambs')
     const bk = Object.fromEntries(Object.entries(m.biomeKey).map(([c, n]) => [c, BIOME[n]]));
     const wk = Object.fromEntries(BLOCKED_CHAR.map((c, i) => [c, i]));
@@ -788,9 +797,10 @@ export class MustafarArena extends World {
       ambient: this.ambient,
       grade: this.grade,
       spawn: { x: n6(this.spawn.x), y: n6(this.spawn.y) },
+      ...(this.ashLit ? { ashLit: this.ashLit.map(n6) } : {}),
       pois: this.pois.map((q) => ({ ...q, x: n6(q.x), y: n6(q.y) })),
       floorPlan: this.floorPlan.map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, typeof v === 'number' ? n6(v) : v]))),
-      surfaces: this.surfaces.map((t) => Object.fromEntries(Object.entries(t).map(([k, v]) => [k, n6(v)]))),
+      surfaces: this.surfaces.filter((t) => t.map).map((t) => Object.fromEntries(Object.entries(t).filter(([k]) => k !== 'map').map(([k, v]) => [k, n6(v)]))),
       biomeKey: Object.fromEntries(used.map((b) => [BIOME_CHAR[names[b]], names[b]])),
       biome: rows(this.biome, (b) => BIOME_CHAR[names[b]]),
       blockedKey: BLOCKED_KEY,

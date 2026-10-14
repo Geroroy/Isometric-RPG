@@ -891,7 +891,8 @@ export class MapEditor {
   /** A room's near wall fades while the fight is inside (renderer.js `cut`): its room's box, if it stands on one. */
   recut(p) {
     if (!p.sheet || !p.sheet.startsWith('mfWall')) return;
-    const r = [MUSTAFAR.hall, MUSTAFAR.control].find((q) => Math.abs(p.x - q.x) <= q.hw + 0.6 && Math.abs(p.y - q.y) <= q.hh + 0.6);
+    const rooms = [...this.world.floorPlan.filter((q) => !q.runner), MUSTAFAR.junction];
+    const r = rooms.find((q) => Math.abs(p.x - q.x) <= q.hw + 0.6 && Math.abs(p.y - q.y) <= q.hh + 0.6);
     p.cut = r ? [r.x - r.hw, r.y - r.hh, r.x + r.hw, r.y + r.hh] : undefined;
   }
 

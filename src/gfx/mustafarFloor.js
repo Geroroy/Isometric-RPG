@@ -114,20 +114,32 @@ export async function loadCargo(file = 'cargo.json') {
   return out;
 }
 
-/** Mustafar's rock (tools/sprites/mustafar_rocks: one atlas; no lava in it, the falls carry that). */
-export async function loadRocks() {
+/** An atlas with a glow layer (tools/sprites/mustafar_rocks; mustafar_set/lowwall.py + parts.py): `page`, and either a
+ * `neon` page (every sprite's glow at its own place on it) or `glowShift` rows down the same page (the sprites
+ * marked `glow` have one there), drawn after the light map with `neonLevel` as a sheet's `neon`; `sprites`
+ * {name: {rect, anchor, k, footprint, lights, ...}}. */
+export async function loadAtlas(file, label) {
   const base = import.meta.env.BASE_URL + 'sprites/mustafar/';
   const out = {};
   try {
-    const atlas = await cachedJSON(base + 'rocks.json');
+    const atlas = await cachedJSON(base + file);
     const [page, npage] = await Promise.all([cachedImage(base + atlas.page), atlas.neon ? cachedImage(base + atlas.neon) : null]);
     for (const [name, m] of Object.entries(atlas.sprites)) {
       const [sx, sy, w, h] = m.rect;
-      const f = (pg) => ({ page: pg, sx, sy, w, h, ox: m.anchor[0], oy: m.anchor[1], k: m.k });
-      out[name] = { meta: m, body: f(page), neon: npage && f(npage), reflect: null };
+      const f = (pg, dy = 0) => ({ page: pg, sx, sy: sy + dy, w, h, ox: m.anchor[0], oy: m.anchor[1], k: m.k });
+      const neon = npage ? f(npage) : atlas.glowShift && m.glow ? f(page, atlas.glowShift) : null;
+      const meta = atlas.neonLevel && neon ? { ...m, neon: atlas.neonLevel } : m;
+      out[name] = { meta, body: f(page), neon, reflect: null };
     }
   } catch (e) {
-    console.warn('무스타파 바위: ' + e.message); // the model rocks stay
+    console.warn(label + ': ' + e.message); // (the rocks: the model rocks stay; the walls: left out)
   }
   return out;
 }
+
+/** Mustafar's rock (tools/sprites/mustafar_rocks: one atlas; no lava in it, the falls carry that). */
+export const loadRocks = () => loadAtlas('rocks.json', '무스타파 바위');
+
+/** The rooms' near walls (tools/sprites/mustafar_set/lowwall.py) and, under them, the parts cut from the set pieces
+ * (parts.py: tall walls, rails, pillars, ledges, stairs — the lit ones with a glow layer). */
+export const loadWalls = () => loadAtlas('lowwall.json', '무스타파 벽');

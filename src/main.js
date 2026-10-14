@@ -12,7 +12,7 @@ import { setCityFootprints } from './world/cityProps.js';
 import { setMustafarMap } from './world/worldgen.js';
 import { pickMap } from './world/mapStore.js';
 import { setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture } from './gfx/terrain.js';
-import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid, loadCargo, loadRocks, addMirror, MIRROR_SUFFIX } from './gfx/mustafarFloor.js';
+import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid, loadCargo, loadRocks, loadWalls, addMirror, MIRROR_SUFFIX } from './gfx/mustafarFloor.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
 import { DuelHUD } from './ui/duelHud.js';
@@ -94,8 +94,8 @@ async function boot() {
   if (DUEL === 'mustafar') setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
   // and its wall consoles, placed as the city's sheet sprites are (worldgen.js addSheetProp)
   if (DUEL === 'mustafar') {
-    // (with the rooms' near walls: an atlas of bays, tools/sprites/mustafar_set/lowwall.py)
-    assets.city = { ...(await loadMustafarConsoles()), ...(await loadRocks()), ...(await loadCargo('lowwall.json')) };
+    // (with the rooms' near walls and the parts cut from the set: one atlas, tools/sprites/mustafar_set/lowwall.py + parts.py)
+    assets.city = { ...(await loadMustafarConsoles()), ...(await loadRocks()), ...(await loadWalls()) };
     setCityFootprints(assets.city);
     // the river droid and Obi-Wan's platform: the film's, in place of the models baked with the duel
     const droid = await loadMustafarDroid().catch((e) => console.warn('무스타파 드로이드: ' + e.message));

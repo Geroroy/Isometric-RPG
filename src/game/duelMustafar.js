@@ -69,9 +69,9 @@ const SCORE = [
   { sit: 'mustafarC', start: 311, end: 348 }, // Battle of the Heroes 3:04– : "I have failed you", the bind
   { sit: 'mustafarD', start: 348, end: FIGHT_LENGTH + 2 }, // Battle of the Heroes 2:30– : the tower, the arm adrift, the decks
 ];
-// the service pipe the cables drop them onto (world coordinates: over the lava east of the arm, its
-// south end at the rock under the collector tower); the cable hook hangs over it
-const PIPE = { x: 109.5, y0: 30, y1: 44.5, z: 0.35, r: 0.45 };
+// the service pipe the cables drop them onto (world coordinates: over the river east of the collector arm,
+// tools/maps/mustafar_build.py PIPE); the cable hook hangs over it
+const PIPE = { x: 145.5, y0: 96, y1: 110.5, z: 0.35, r: 0.45 };
 const scoreAt = (t) => SCORE.find((c) => t < c.end) || SCORE[SCORE.length - 1];
 
 // ----------------------------------------------------------------------------
@@ -635,10 +635,11 @@ export class MustafarDuel extends Duel {
     const p = g.player;
     const ob = this.foe;
     const x = M.hall.x;
+    const y1 = M.hall.y + M.hall.hh; // the room's south wall: the corridor comes in through it
     const cues = [
-      { t: 0, do: (c) => this.travel(c, { x, y: 85.5 }, { x, y: 83.5 }, 1.4), cam: { follow: p, zoom: 1.3, dur: 0.8 } },
+      { t: 0, do: (c) => this.travel(c, { x, y: y1 + 7.5 }, { x, y: y1 + 5.5 }, 1.4), cam: { follow: p, zoom: 1.3, dur: 0.8 } },
       { t: 1.0, do: (c) => this.clash(c) },
-      { t: 1.5, do: (c) => (this.travel(c, { x: x + 0.4, y: 81.5 }, { x: x - 1.2, y: 78.5 }, 1.8), this.card('분리주의 회의실')) },
+      { t: 1.5, do: (c) => (this.travel(c, { x: x + 0.4, y: y1 + 3.5 }, { x: x - 1.2, y: y1 - 1.5 }, 1.8), this.card('분리주의 회의실')) },
       { t: 3.3, do: (c) => (this.clash(c, p), p.setAnim('idle'), ob.setAnim('idle')) },
     ];
     this.scene(62, 3.8, cues).then(() => this.enterSet(2));
@@ -725,17 +726,18 @@ export class MustafarDuel extends Duel {
     const g = this.game;
     const p = g.player;
     const ob = this.foe;
-    const B = M.balcony;
+    const B = { x: (p.x + ob.x) / 2, y: (p.y + ob.y) / 2, hh: 3 }; // round the two of them, on the terrace or the catwalk
     const cues = [
       { t: 0, do: () => (p.setAnim('idle'), ob.setAnim('idle')), cam: { x: B.x - 4, y: B.y + 2, zoom: 1.1, dur: 1.0 } },
       {
         t: 0.8,
         do: (c) => {
-          g.fx.explosion(95, 88, 2.2);
-          g.fx.explosion(102, 89, 1.6);
+          // the lava falls across the river burst (the river's west bank, west of the catwalk)
+          g.fx.explosion(M.river.x - 7, B.y - 10, 2.2);
+          g.fx.explosion(M.river.x - 6, B.y - 2, 1.6);
           g.audio.play('explode', p);
           g.fx.shake(14);
-          g.world.lights.push({ x: 88, y: 97, z: 2, r: 255, g: 150, b: 60, rad: 320, flicker: 0.25 });
+          g.world.lights.push({ x: M.river.x - 5, y: B.y - 5, z: 2, r: 255, g: 150, b: 60, rad: 320, flicker: 0.25 });
           c.onFrame = () => {
             if (Math.random() < 0.8) g.fx.lavaSplash(B.x + rand(-2.5, 2.5), B.y + rand(-B.hh, B.hh), 0.6);
           };
@@ -749,18 +751,22 @@ export class MustafarDuel extends Duel {
     this.scene(209, 6.2, cues);
   }
 
-  /** Lava raining on the balcony: a glow, then a splash that burns whoever stands in it. */
+  /** Lava raining on the balcony: a glow, then a splash that burns whoever stands in it — round the two of them,
+   * wherever on the terrace and the catwalk they have got to. */
   updateRain(dt) {
     const g = this.game;
-    const B = M.balcony;
+    const p = g.player;
+    const ob = this.foe;
+    const mx = (p.x + ob.x) / 2;
+    const my = (p.y + ob.y) / 2;
     this.rainT = (this.rainT || 0) - dt;
     if (this.rainT <= 0) {
       this.rainT = rand(0.35, 0.7);
-      const d = { x: B.x + rand(-0.8, 0.8), y: B.y + rand(-B.hh, B.hh + 2), t: 0 };
+      const d = { x: mx + rand(-2.5, 2.5), y: my + rand(-3, 3), t: 0 };
       this.drops.push(d);
       g.fx.ring(d.x, d.y, 0.55, '#ff8a30', 0.65);
     }
-    if (Math.random() < 0.5) g.fx.sparks(B.x + rand(-3, 3), B.y + rand(-B.hh - 2, B.hh + 3), 2.4 + Math.random() * 1.5, '#ff7a30', 1, 1.5);
+    if (Math.random() < 0.5) g.fx.sparks(mx + rand(-4, 4), my + rand(-4, 4), 2.4 + Math.random() * 1.5, '#ff7a30', 1, 1.5);
     for (const d of this.drops) {
       d.t += dt;
       if (d.t < 0.65) continue;
@@ -786,8 +792,8 @@ export class MustafarDuel extends Duel {
     const p = g.player;
     const ob = this.foe;
     const cx = PIPE.x + 0.2; // the cables hang over the pipe
-    const cab = { p: 40.5, ob: 33.5 };
-    const hook = { ax: cx, ay: 37, az: 8.5 }; // the crane hook high above: both cables come down from it
+    const cab = { p: PIPE.y0 + 10.5, ob: PIPE.y0 + 3.5 }; // where each hangs, along the pipe
+    const hook = { ax: cx, ay: PIPE.y0 + 7, az: 8.5 }; // the crane hook high above: both cables come down from it
     const cues = [
       { t: 0, do: () => (g.fx.shake(10), g.audio.play('explode', p), p.setAnim('hurt', 0.6, true), ob.setAnim('hurt', 0.6, true)), cam: { follow: p, zoom: 1.2, dur: 0.4 } },
       { t: 0.6, do: (c) => (c.onFrame = () => (g.fx.shake(4), Math.random() < 0.6 && g.fx.sparks(p.x + rand(-2, 2), p.y + rand(-3, 3), 0.3, '#ffb040', 3, 4)), g.fx.text(p.x, p.y, '발코니가 무너진다!', '#ff9a50', 1.2, 2.6)) },

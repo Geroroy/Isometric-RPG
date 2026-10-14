@@ -40,7 +40,7 @@ await page.evaluate(() => {
   const w = window.__game.world;
   window.__editor.select(w.props.find((p) => p.sheet === 'mfCatwalkL_y'));
   window.__renderer.setZoom(2.2);
-  window.__game.camFocus = { x: 94, y: 91 };
+  window.__game.camFocus = { x: 160, y: 100 };
 });
 await page.waitForTimeout(500);
 const info = () => page.evaluate(() => {
@@ -84,8 +84,8 @@ await page.keyboard.press('KeyP');
 await page.waitForTimeout(1500);
 await page.evaluate(() => {
   const g = window.__game;
-  g.player.x = 94;
-  g.player.y = 97;
+  g.player.x = 160;
+  g.player.y = 105;
   g.camFocus = null;
 });
 await page.waitForTimeout(800);
