@@ -1,1 +1,1 @@
-{"anchor": [397.0, 551.0], "k": 0.25, "layers": {"body": "mfSkiff_y_body.png"}, "footprint": [[-1.2, -4.4], [-1.2, 4.6], [1.2, 4.6], [1.2, -4.4]], "lights": [], "flat": false}
+{"anchor": [411.0, 361.0], "k": 0.25, "layers": {"body": "mfSkiff_y_body.png"}, "footprint": [[-1.4, -2.2], [-1.4, 4.4], [1.4, 4.4], [1.4, -2.2]], "lights": [], "flat": false}

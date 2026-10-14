@@ -17,7 +17,8 @@ chair) is cut out first: the light grey ground flood-filled from the borders.
 - `mfFall`: a lava fall (image_21: a rock cliff with three falls pouring into a cracked lava pool), the cliff along
   y, the pool in front of it to +x; 7 m of cliff, the pool 1.6 m deep, fitted on the pool's four corners (the cliff's
   height follows the render); the lava glowing; `mfFall_x` its twin (cliff along x, pool to +y)
-- `mfSkiff`: Padmé's chrome star skiff (image_22), on its landing gear; 9 m nose to tail, 8.8 m across the wings,
+- `mfSkiff`: Padmé's ship, a chrome flying wing (image_35: winglets, two engine pods, a long canopy), on its gear;
+  6.6 m nose to tail, 11.6 m across the wings,
   fitted on its three wheels, its nose and its wing tips; its shadow baked on the deck under it. Shipped as
   `mfSkiff_y` (nose to +y: along the landing apron)
 - `mfChair`: faces +y (mirrored from the render, which faces +x: `mfChair_x`), 1.5 m tall
@@ -129,18 +130,23 @@ PIECES = {
     ),
     'mfSkiff': dict(
         over=4,
-        src='image_22.png',
-        corners=[
-            ((1278, 795), (2.4, 0, 0)),  # the nose wheel on the deck
-            ((1012, 668), (-0.6, -0.4, 0)),  # the main wheels
-            ((668, 712), (-1.2, 2.3, 0)),
-            ((1532, 780), (4.6, 0, 1.0)),  # the nose cone's tip
-            ((150, 602), (-2.4, 4.4, 1.15)),  # the wing tips' trailing roots
-            ((1602, 214), (-2.4, -4.4, 1.15)),
+        src='image_35.png',  # Padmé's ship: a chrome flying wing (winglets, two engine pods with needle spikes, a long
+        # canopy), on its gear; along x, the nose to +x, the wings along y; 6.6 m nose to tail, 11.6 m across
+        corners=[  # (at 0.85: 6.6 m nose to tail, 11.6 m across — what the apron has room for)
+            ((1275, 795), (2.7, 0, 0)),  # the nose wheel on the deck
+            ((1020, 660), (0.5, 1.2, 0)),  # the main wheel seen (the near side)
+            ((665, 718), (0.35, 3.05, 0)),  # the near engine pod's strut
+            ((1560, 800), (4.4, 0, 0.45)),  # the nose's tip
+            ((1280, 530), (1.95, 0, 1.25)),  # the canopy
+            # (the winglets are left to the fit: swept back and up, no point on them is sure)
+            ((890, 720), (2.2, 3.05, 0.3)),  # the engine spikes' tips
+            ((1640, 470), (2.2, -3.05, 0.3)),
         ],
-        footprint=[[-4.4, -1.2], [4.6, -1.2], [4.6, 1.2], [-4.4, 1.2]],
+        similar=True,  # (the render is seen about as the game sees it: scaled and placed, not warped)
+        footprint=[[-2.2, -1.4], [4.4, -1.4], [4.4, 1.4], [-2.2, 1.4]],
         shadow=1.0,
         gain=0.92,
+        opaque=True,
         mirror='mfSkiff_y',
         ship='mirror',  # (along the apron, y, in the world)
     ),
@@ -644,6 +650,14 @@ def bake_fit(name, P, body, neon):
     A = np.array([[sx, sy, 1] for (sx, sy), _ in P['corners']], float)
     T = np.array([screen(*w) for _, w in P['corners']], float)
     M = np.linalg.lstsq(A, T, rcond=None)[0].T  # 2x3, T = M @ [x y 1]
+    if P.get('similar'):
+        # one scale both ways and a shift only (a render already seen as the game sees it: no shear, no stretch)
+        n = len(P['corners'])
+        A2 = np.zeros((2 * n, 3))
+        A2[0::2, 0], A2[0::2, 1] = A[:, 0], 1
+        A2[1::2, 0], A2[1::2, 2] = A[:, 1], 1
+        s, tx, ty = np.linalg.lstsq(A2, T.reshape(-1), rcond=None)[0]
+        M = np.array([[s, 0, tx], [0, s, ty]])
     if P.get('vertical'):
         # screen x from the render's x alone (no shear of the verticals); y as fitted
         cx = np.linalg.lstsq(A[:, [0, 2]], T[:, 0], rcond=None)[0]

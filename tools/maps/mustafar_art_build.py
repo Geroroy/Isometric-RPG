@@ -32,21 +32,21 @@ IMAGE = 'sprites/mustafar/backdrop.webp'
 # the walkable decks, traced on the picture (u, v): the landing pad, the roof decks, the bridge, the catwalks out to
 # the collector arms and their top ledges
 POLYS = {
-    'pad': [(283, 470), (345, 420), (440, 398), (548, 440), (548, 522), (430, 550), (330, 552), (296, 522)],
+    'pad': [(276, 470), (322, 440), (430, 414), (548, 444), (548, 526), (440, 548), (330, 548), (296, 522)],
     # the walkway from the pad's left tip up to the lookout tower on the rock
-    'lookout_walk': [(246, 392), (292, 376), (352, 420), (330, 448), (283, 470)],
-    'lookout': [(236, 346), (292, 346), (296, 400), (240, 404)],
+    'lookout_walk': [(246, 400), (292, 384), (352, 428), (330, 452), (276, 470)],
+    'lookout': [(236, 350), (292, 350), (296, 404), (240, 408)],
     # the ramp under the pad's near edge and the catwalk down to the left arm
-    'pad_ramp': [(380, 548), (440, 540), (448, 598), (396, 604)],
+    'pad_ramp': [(380, 548), (440, 542), (448, 598), (396, 604)],
     'left_walk': [(396, 580), (446, 596), (262, 712), (228, 690)],
-    'left_arm': [(222, 652), (304, 652), (306, 706), (236, 712)],
+    'left_arm': [(216, 650), (300, 650), (302, 704), (230, 710)],
     # the roof deck east of the pad, to the bridge's foot
-    'roof': [(548, 440), (548, 418), (765, 382), (765, 414), (560, 452)],
+    'roof': [(548, 444), (548, 420), (748, 396), (748, 424), (560, 456)],
     # the bridge over the lava falls to the far tower
-    'bridge': [(765, 384), (1238, 338), (1240, 366), (765, 412)],
-    'tower_base': [(1196, 342), (1262, 338), (1266, 420), (1200, 426)],
+    'bridge': [(748, 398), (1250, 350), (1252, 378), (748, 426)],
+    'tower_base': [(1206, 352), (1270, 348), (1274, 428), (1210, 434)],
     # the refinery's upper deck, the tower's foot joined to it
-    'upper_deck': [(1200, 420), (1262, 414), (1300, 476), (1302, 562), (1208, 590), (1086, 566), (956, 474), (956, 430), (1140, 396)],
+    'upper_deck': [(1208, 426), (1272, 420), (1300, 476), (1302, 562), (1208, 590), (1086, 566), (956, 474), (956, 436), (1140, 402)],
     # down the refinery's east side to its lower deck
     'east_stair': [(1150, 562), (1206, 586), (1206, 702), (1150, 702)],
     'lower_deck': [(950, 642), (1160, 690), (1160, 730), (1000, 712), (950, 684)],
@@ -57,13 +57,13 @@ POLYS = {
     'low_walk': [(1160, 696), (1352, 742), (1352, 770), (1160, 728)],
     'low_arm': [(1338, 718), (1404, 712), (1406, 772), (1342, 778)],
 }
-SPAWN = (476, 506)  # Anakin on the pad, beside the skiff
-FOE = (514, 474)  # Obi-Wan in the lit doorway behind the pad
+SPAWN = (400, 505)  # Anakin on the pad, before the skiff
+FOE = (452, 466)  # Obi-Wan in the lit doorway behind the pad
 POIS = [
-    ((420, 480), 12, '무스타파 · 착륙장'),
-    ((266, 372), 6, '무스타파 · 전망탑'),
-    ((262, 684), 7, '무스타파 · 서쪽 집하기 팔'),
-    ((940, 376), 10, '무스타파 · 용암 폭포 다리'),
+    ((410, 480), 12, '무스타파 · 착륙장'),
+    ((266, 376), 6, '무스타파 · 전망탑'),
+    ((258, 680), 7, '무스타파 · 서쪽 집하기 팔'),
+    ((960, 388), 10, '무스타파 · 용암 폭포 다리'),
     ((1120, 480), 12, '무스타파 · 정제소 상부 데크'),
     ((1060, 690), 8, '무스타파 · 정제소 하부 데크'),
     ((1494, 608), 6, '무스타파 · 동쪽 집하기 팔'),
@@ -71,14 +71,14 @@ POIS = [
 ]
 # the lava's glow where it meets the structures (the light map lights the characters there), the pad's lamps
 LIGHTS = [
-    ((820, 790), 0.3, (255, 120, 40), 260, 0.14),  # the falls' foot
+    ((830, 790), 0.3, (255, 120, 40), 260, 0.14),  # the falls' foot
     ((1000, 860), 0.3, (255, 100, 30), 200, 0.12),
     ((250, 830), 0.3, (255, 110, 30), 220, 0.14),  # under the west arm
     ((1400, 870), 0.3, (255, 110, 30), 200, 0.12),  # under the south arm
     ((1560, 700), 0.3, (255, 100, 30), 200, 0.12),  # under the east arm
-    ((780, 430), 1.0, (255, 150, 60), 180, 0.1),  # the falls beside the bridge
+    ((790, 440), 1.0, (255, 150, 60), 180, 0.1),  # the falls beside the bridge
     ((330, 520), 2.0, (255, 200, 150), 110, 0.03),  # the pad's lamps
-    ((515, 470), 1.6, (255, 190, 120), 100, 0.03),  # the doorway
+    ((452, 462), 1.6, (255, 190, 120), 100, 0.03),  # the doorway
     ((1240, 400), 2.0, (255, 210, 160), 110, 0.03),  # the far tower's foot
 ]
 

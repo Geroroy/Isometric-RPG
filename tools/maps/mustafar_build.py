@@ -261,7 +261,7 @@ def ground():
 
 # ------------------------------------------------------------------------------------------------- the sets
 def landing_pad():
-    prop('mfSkiff_y', 109, 116.5, block=True)
+    prop('mfSkiff_y', 110.5, 117, block=True)
     prop('cgCanister', 120.8, 111.9, block=True)
     prop('cgDrum', 112.7, 122.6, block=True)
     prop('cgCrateL', 121.5, 123.2, block=True)
