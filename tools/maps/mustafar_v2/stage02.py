@@ -62,9 +62,15 @@ def main():
             # (0.9 m in from the walls; the door's gap through the +x wall to STAGE 01's corridor)
             {'id': 'room', 'rect': [round(X0 + 1.1), Y0 + 1, round(X1 - 0.9), Y1 - 1], 'needs': ['mf.room.floor']},
             {'id': 'doorway', 'rect': [round(X1 - 0.9), 96, 62, 100], 'needs': ['mf.room.floor']},
+            # the way on to the control room (STAGE 03, blockout): a door in the −x wall (BLOCKOUT FINDING: the delivered
+            # wall_side picture has no door — its door version goes into the art requests at the polish step)
+            {'id': 'westDoorway', 'rect': [44, 96, round(X0 + 1.1), 100]},
         ],
         # the facility door, shut until the director opens it (the fight reaches it: STAGE 01's corridor end)
-        'collision': [{'id': 'facilityDoor', 'rect': [round(X1 - 0.9), 96, 62, 100], 'door': True}],
+        'collision': [
+            {'id': 'facilityDoor', 'rect': [round(X1 - 0.9), 96, 62, 100], 'door': True},
+            {'id': 'confWestDoor', 'rect': [44, 96, round(X0 + 1.1), 100], 'door': True},  # (opened after the push)
+        ],
         'structures': structures(),
         'decor': [],
         # the scene's places (src/game/mustafar/director.js): through the door, then the lane south of the table
@@ -75,6 +81,7 @@ def main():
             'pushObiwan': {'x': 53.4, 'y': 101.8},
             'pushAnakinTo': {'x': 59.4, 'y': 101.8},
             'pushObiwanTo': {'x': 47.2, 'y': 101.8},
+            'confWestDoor': {'x': 45.4, 'y': 98},  # the way out to the control room (STAGE 03)
         },
         'triggers': [],
         'camera': {'x0': X0 - 2, 'y0': Y0 - 3, 'x1': X1 + 2, 'y1': Y1 + 2},

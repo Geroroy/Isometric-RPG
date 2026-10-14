@@ -1,0 +1,65 @@
+{
+  "format": "mustafar-zone",
+  "version": 1,
+  "id": "stage03",
+  "stage": 3,
+  "title": "무스타파 · 제어실",
+  "blockoutNote": "BLOCKOUT: grey boxes stand in for the art (not requested yet)",
+  "floor": [
+    {"id": "passage", "kind": "blockout", "x0": 38.9, "y0": 96, "x1": 44.9, "y1": 100},
+    {"id": "control", "kind": "blockout", "x0": 20.9, "y0": 88, "x1": 38.9, "y1": 106}
+  ],
+  "walk": [
+    {"id": "passage", "rect": [38, 96, 45, 100]},
+    {"id": "control", "rect": [22, 89, 38, 105]},
+    {"id": "balconyDoorway", "rect": [27.9, 105, 31.9, 107]}
+  ],
+  "collision": [
+    {"id": "galleryRailW", "rect": [22, 92, 27.9, 93]},
+    {"id": "galleryRailE", "rect": [31.9, 92, 38, 93]},
+    {"id": "balconyDoor", "rect": [27.9, 105, 31.9, 107], "door": true}
+  ],
+  "structures": [],
+  "decor": [],
+  "blockout": [
+    {"x": 29.9, "y": 90.5, "w": 18.0, "d": 5, "h": 0.6, "kind": "deck", "label": "상부 회랑 +0.6 m", "flat": true},
+    {"x": 29.9, "y": 93.5, "w": 4.0, "d": 1, "h": 0.4, "kind": "deck", "label": "", "flat": true},
+    {"x": 29.9, "y": 94.5, "w": 4.0, "d": 1, "h": 0.2, "kind": "deck", "label": "", "flat": true},
+    {"x": 29.9, "y": 87.8, "w": 18.0, "d": 0.4, "h": 4.0, "kind": "wall", "label": "제어실 창 (용암 쪽)"},
+    {"x": 20.7, "y": 97.0, "w": 0.4, "d": 18, "h": 4.0, "kind": "wall", "label": "제어실 벽"},
+    {"x": 24.4, "y": 106.2, "w": 7.0, "d": 0.4, "h": 1.0, "kind": "wall", "label": ""},
+    {"x": 35.4, "y": 106.2, "w": 7.0, "d": 0.4, "h": 1.0, "kind": "wall", "label": ""},
+    {"x": 29.9, "y": 106.2, "w": 4.0, "d": 0.3, "h": 1.0, "kind": "story", "label": "발코니 문", "id": "balconyDoorLeaf"},
+    {"x": 39.1, "y": 92.0, "w": 0.4, "d": 8, "h": 1.0, "kind": "wall", "label": ""},
+    {"x": 39.1, "y": 103.0, "w": 0.4, "d": 6, "h": 1.0, "kind": "wall", "label": ""},
+    {"x": 41.9, "y": 95.8, "w": 6.0, "d": 0.4, "h": 3.5, "kind": "wall", "label": "연결 통로"},
+    {"x": 41.9, "y": 100.2, "w": 6.0, "d": 0.4, "h": 1.0, "kind": "wall", "label": ""},
+    {"x": 22.0, "y": 99, "w": 1.4, "d": 2.8, "h": 1.8, "kind": "story", "label": "방어막 발생기", "block": true, "id": "shieldCore"},
+    {"x": 28.5, "y": 99.5, "w": 1.6, "d": 1.6, "h": 0.9, "kind": "furniture", "label": "홀로 테이블", "block": true},
+    {"x": 33.5, "y": 99.5, "w": 1.6, "d": 1.6, "h": 0.9, "kind": "furniture", "label": "홀로 테이블", "block": true},
+    {"x": 25, "y": 89.3, "w": 2.4, "d": 0.8, "h": 1.1, "kind": "furniture", "label": "콘솔", "block": true, "z": 0.6},
+    {"x": 34.5, "y": 89.3, "w": 2.4, "d": 0.8, "h": 1.1, "kind": "furniture", "label": "콘솔", "block": true, "z": 0.6}
+  ],
+  "surfaces": [
+    {"x0": 20.9, "y0": 88, "x1": 38.9, "y1": 93, "z": 0.6},
+    {"x0": 27.9, "y0": 93, "x1": 31.9, "y1": 94, "z": 0.4},
+    {"x0": 27.9, "y0": 94, "x1": 31.9, "y1": 95, "z": 0.2}
+  ],
+  "actors": {"ctlAnakin": {"x": 35.5, "y": 102.5}, "ctlObiwan": {"x": 31.0, "y": 103.0}, "core": {"x": 22.0, "y": 99}, "balconyDoor": {"x": 29.9, "y": 105.4}},
+  "triggers": [],
+  "camera": {"x0": 18.9, "y0": 85, "x1": 46.9, "y1": 108},
+  "lights": [
+    {"x": 23.9, "y": 87.0, "z": 1.5, "r": 255, "g": 110, "b": 40, "rad": 180, "flicker": 0.1},
+    {"x": 29.9, "y": 87.0, "z": 1.5, "r": 255, "g": 110, "b": 40, "rad": 180, "flicker": 0.1},
+    {"x": 35.9, "y": 87.0, "z": 1.5, "r": 255, "g": 110, "b": 40, "rad": 180, "flicker": 0.1},
+    {"x": 22.5, "y": 99, "z": 1.2, "r": 255, "g": 70, "b": 50, "rad": 120, "flicker": 0.08},
+    {"x": 28.5, "y": 99.5, "z": 1.4, "r": 120, "g": 200, "b": 255, "rad": 90, "flicker": 0.06},
+    {"x": 33.5, "y": 99.5, "z": 1.4, "r": 120, "g": 200, "b": 255, "rad": 90, "flicker": 0.06},
+    {"x": 29.9, "y": 97, "z": 3.0, "r": 220, "g": 170, "b": 120, "rad": 170, "flicker": 0.02},
+    {"x": 41.9, "y": 98, "z": 2.5, "r": 220, "g": 170, "b": 120, "rad": 90, "flicker": 0.02}
+  ],
+  "regions": [
+    {"x": 41.9, "y": 98, "r": 3, "name": "무스타파 · 연결 통로"},
+    {"x": 29.9, "y": 97, "r": 10, "name": "무스타파 · 제어실"}
+  ]
+}

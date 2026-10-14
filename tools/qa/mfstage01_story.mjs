@@ -136,10 +136,11 @@ async function open(tag) {
   await page.screenshot({ path: `${out}/f2_push.png` });
   await page.waitForFunction(() => window.__game.cinema && window.__game.cinema.t >= 5.0, null, { timeout: 20000 }).catch(() => {});
   await page.screenshot({ path: `${out}/f3_thrown.png` });
-  const endOn = await page.waitForFunction(() => { const r = document.querySelector('.duel-result'); return r && !r.classList.contains('hidden'); }, null, { timeout: 20000 }).then(() => true, () => false);
-  const endText = await page.evaluate(() => document.querySelector('.duel-result') && document.querySelector('.duel-result').innerText.slice(0, 160));
-  check('end: the stage-complete screen', endOn && /STAGE 02/.test(endText || ''), (endText || '').replace(/\n/g, ' | '));
-  await page.screenshot({ path: `${out}/e2_end.png` });
+  // (STAGE 03 follows: the push hands the fight on to the control room — tools/qa/mfroute.mjs tests the rest of the route)
+  const ctl = await waitPart(page, 'control', 60000);
+  const sK = await state(page);
+  check('push: the fight goes on into the control room (STAGE 03)', ctl && sK.p[0] < 39 && sK.ob[0] < 39 && !sK.pBlocked && !sK.obBlocked, JSON.stringify({ p: sK.p, ob: sK.ob }));
+  await page.screenshot({ path: `${out}/g1_control.png` });
   check('run 1: no errors', errs.length === 0, errs.slice(0, 4).join(' || '));
   await page.close();
 }
@@ -166,11 +167,11 @@ async function open(tag) {
   check('mark: the corridor\'s mark (or time) takes the fight to the room', room);
   await waitPart(page, 'room', 60000);
   const t2 = await page.evaluate(() => window.__game.time);
-  const done = await page.waitForFunction(() => ['push', 'done'].includes(window.__game.duel.part), null, { timeout: 120000 }).then(() => true, () => false);
+  const done = await page.waitForFunction(() => ['push', 'toControl', 'control'].includes(window.__game.duel.part), null, { timeout: 120000 }).then(() => true, () => false);
   const t3 = await page.evaluate(() => window.__game.time);
   check('time: the room moves on to the push by itself', done && t3 - t2 >= 27, `after ${(t3 - t2).toFixed(1)} s of play`);
-  const end = await page.waitForFunction(() => window.__game.duel.part === 'done', null, { timeout: 40000 }).then(() => true, () => false);
-  check('end: the push ends STAGE 02', end);
+  const end = await page.waitForFunction(() => window.__game.duel.part === 'control', null, { timeout: 60000 }).then(() => true, () => false);
+  check('end: the push hands STAGE 02 on to the control room', end);
   check('run 2: no errors', errs.length === 0, errs.slice(0, 4).join(' || '));
   await page.close();
 }

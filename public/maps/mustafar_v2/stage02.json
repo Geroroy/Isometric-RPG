@@ -9,10 +9,12 @@
   ],
   "walk": [
     {"id": "room", "rect": [46, 93, 60, 103], "needs": ["mf.room.floor"]},
-    {"id": "doorway", "rect": [60, 96, 62, 100], "needs": ["mf.room.floor"]}
+    {"id": "doorway", "rect": [60, 96, 62, 100], "needs": ["mf.room.floor"]},
+    {"id": "westDoorway", "rect": [44, 96, 46, 100]}
   ],
   "collision": [
-    {"id": "facilityDoor", "rect": [60, 96, 62, 100], "door": true}
+    {"id": "facilityDoor", "rect": [60, 96, 62, 100], "door": true},
+    {"id": "confWestDoor", "rect": [44, 96, 46, 100], "door": true}
   ],
   "structures": [
     {"asset": "mf.room.wall_window", "x": 52.9, "y": 92},
@@ -30,7 +32,7 @@
     {"asset": "mf.room.chair_b", "x": 55.4, "y": 99.6, "block": true}
   ],
   "decor": [],
-  "actors": {"roomAnakin": {"x": 59.2, "y": 98.2}, "roomObiwan": {"x": 57.3, "y": 101.6}, "pushAnakin": {"x": 57.6, "y": 101.8}, "pushObiwan": {"x": 53.4, "y": 101.8}, "pushAnakinTo": {"x": 59.4, "y": 101.8}, "pushObiwanTo": {"x": 47.2, "y": 101.8}},
+  "actors": {"roomAnakin": {"x": 59.2, "y": 98.2}, "roomObiwan": {"x": 57.3, "y": 101.6}, "pushAnakin": {"x": 57.6, "y": 101.8}, "pushObiwan": {"x": 53.4, "y": 101.8}, "pushAnakinTo": {"x": 59.4, "y": 101.8}, "pushObiwanTo": {"x": 47.2, "y": 101.8}, "confWestDoor": {"x": 45.4, "y": 98}},
   "triggers": [],
   "camera": {"x0": 42.9, "y0": 89, "x1": 62.9, "y1": 106},
   "lights": [

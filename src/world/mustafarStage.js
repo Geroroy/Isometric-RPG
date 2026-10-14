@@ -4,10 +4,11 @@
 // only reads them into what the engine uses: the tile maps (biome: what the ground is; blocked: where one may not
 // walk), the lights, the spawn, the camera box. The look of the floor is the terrain's (gfx/padFloor.js, from
 // `padFloors`); the walking is the tile maps', never the picture's.
-import { World } from './worldgen.js';
+import { World, segDist } from './worldgen.js';
 import { BIOME } from './biome.js';
-import { RNG } from '../core/math.js';
+import { RNG, dist } from '../core/math.js';
 import { groundBackdrop } from '../gfx/assetManifest.js';
+import { blockoutName } from '../gfx/blockout.js';
 
 // the zone's data (main.js loads it before the world is made: World's constructor calls generate()), with `art`: its
 // delivered external assets by manifest id (gfx/assetManifest.js loadAsset data) and `missingArt`: what it waits for
@@ -37,7 +38,7 @@ export class MustafarStage extends World {
     for (const f of z.floor) {
       if (f.kind === 'texturedRect' && !art[f.asset]) continue; // (a corridor's floor: only once its picture is here)
       if (f.kind === 'landingPad') this.padFloors.push({ ...f, bays: [...f.bays] });
-      else if (f.kind === 'texturedRect') this.padFloors.push({ ...f }); // (one picture over the rectangle)
+      else if (f.kind === 'texturedRect' || f.kind === 'blockout') this.padFloors.push({ ...f }); // (one picture over the rectangle; a blockout's: the grid)
       else if (f.kind === 'groundImage' && art[f.asset] && !this.backdrop) this.backdrop = groundBackdrop(art[f.asset], f.at.x, f.at.y);
       if (f.x1 !== undefined) this.rect(f.x0, f.y0, f.x1, f.y1, (i) => (this.biome[i] = BIOME.MUSTAFAR));
     }
@@ -62,6 +63,19 @@ export class MustafarStage extends World {
     // structures and dressing: sprite assets where they stand (an asset not delivered yet is left out — its
     // placeholder is the zone's walk/collision data, which holds without it)
     this.named = {}; // (structures with an `id`: the director's to show, hide or move — a door that opens)
+    // the blockout's raised tops (a gallery, a deck over the lava, the high ground): whoever stands there stands at z
+    this.surfaces = (z.surfaces || []).map((t) => ({ ...t }));
+    // the river's moving decks, walkable lines over the lava (the director's: duelMustafar.js Float, its pipe)
+    this.floats = [];
+    this.strips = (z.strips || []).map((q) => ({ ...q })); // (the service pipe: stage04)
+    this.pipes = [];
+    // the blockout (docs/MUSTAFAR_REBUILD.md "블록아웃"): grey boxes for the walls, furniture and set pieces of a stage
+    // whose art is not requested yet (gfx/blockout.js made their sprites: main.js)
+    for (const b of z.blockout || []) {
+      const p = this.addSheetProp(blockoutName(b), b.x, b.y, { noBlock: !b.block, flat: b.flat });
+      if (p && b.id) this.named[b.id] = p;
+      if (p && b.hidden) p.hidden = true; // (the director shows it: the fallen arm, a door)
+    }
     for (const e of [...z.structures, ...z.decor]) {
       const a = art[e.asset];
       const p = a ? this.addSheetProp(e.asset, e.x, e.y, { noBlock: !e.block, flat: a.meta.flat }) : null;
@@ -69,6 +83,13 @@ export class MustafarStage extends World {
       if (p && a.meta.top) p.top = true; // (drawn over everyone: renderer.js)
       if (p && a.meta.order) p.order = a.meta.order; // (its depth point moved: metres farther along x + y)
     }
+  }
+
+  /** The river's moving decks, and the strips (a pipe), are walkable wherever they are (worldgen.js MustafarArena's). */
+  isBlocked(x, y) {
+    for (const f of this.floats) if (dist(x, y, f.x, f.y) <= f.r) return false;
+    for (const q of this.strips) if (segDist(x, y, q) <= q.r) return false;
+    return super.isBlocked(x, y);
   }
 
   /** A door's way through opened (its collision rectangle walkable from now on). */

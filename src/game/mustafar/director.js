@@ -15,21 +15,27 @@
 // STAGE 02 — the Separatist conference room:
 //   the door    at the corridor's far door (or its mark, or its time) the facility door opens and they fight into the room
 //   the room    the duel round the council's table, his health held at the room's mark
-//   the push    at the mark (or the room's time) both reach for the Force at once and are thrown apart — STAGE 03 (the
-//               control room) is next, not built yet
+//   the push    at the mark (or the room's time) both reach for the Force at once and are thrown apart
+// STAGE 03–06 (BLOCKOUT — grey boxes, the art not requested yet): the control room, the walkway and the lava collector,
+// the river's moving decks, the high ground and the film's ending — their parts and scenes are in ./route.js.
 import { Duel, Extra } from '../duel.js';
 import { MustafarDuel, ObiWan } from '../duelMustafar.js';
 import { Cinema } from '../cinema.js';
+import { ROUTE, ROUTE_FIGHTS } from './route.js';
 
 /** The film's places, in order (each its zone file, public/maps/mustafar_v2/<zone>.json). */
 export const STAGES = [
   { id: 'stage01', zone: 'stage01', title: '무스타파 · 착륙장' },
   { id: 'stage02', zone: 'stage02', title: '무스타파 · 분리주의 회의실' },
+  { id: 'stage03', zone: 'stage03', title: '무스타파 · 제어실', blockout: true },
+  { id: 'stage04', zone: 'stage04', title: '무스타파 · 산업 보행로 · 용암 집하 시설', blockout: true },
+  { id: 'stage05', zone: 'stage05', title: '무스타파 · 용암 강 · 이동 플랫폼', blockout: true },
+  { id: 'stage06', zone: 'stage06', title: '무스타파 · 고지대', blockout: true },
 ];
 
 // the old duel's staging, borrowed as it is (it reads only this director's units and state)
 const FILM = MustafarDuel.prototype;
-const BORROW = ['intro', 'pose', 'hoodDown', 'ignite', 'travel', 'clash', 'lightning', 'filterHit', 'reachMark', 'card'];
+const BORROW = ['intro', 'pose', 'hoodDown', 'ignite', 'travel', 'clash', 'lightning', 'filterHit', 'reachMark', 'card', 'updateRain'];
 
 const LINES = {
   parry: [['obiwan', '그만둬, 아나킨!'], ['obiwan', '아직 늦지 않았다.'], ['obiwan', '분노로는 날 이길 수 없다.']],
@@ -45,13 +51,27 @@ const CORRIDOR = { floor: 0.84, time: 30 };
 // STAGE 02's: the conference room (the film's 1:02 – 1:22), then both reach for the Force at once
 const ROOM = { floor: 0.76, time: 28 };
 
+/**
+ * The playable parts in the film's order: Obi-Wan's health is held at the part's `floor` (the mark on his bar); the
+ * part ends at the mark, at its `time` (s of play: the film moves on), or when `reach` says the fight got there —
+ * then `next` (a scene) takes it on. `stage`: the zone the part is in; `score`: the film's music under it.
+ */
+const FIGHTS = {
+  pad: { stage: 1, floor: PAD.floor, time: PAD.filmT, next: 'toCorridor', score: 'mustafarA' },
+  corridor: { stage: 1, floor: CORRIDOR.floor, time: CORRIDOR.time, next: 'toRoom', score: 'mustafarA', reach: (d) => d.game.player.x < d.at.door.x + 0.5 },
+  room: { stage: 2, floor: ROOM.floor, time: ROOM.time, next: 'toPush', score: 'mustafarA' },
+  ...ROUTE_FIGHTS,
+};
+const ORDER = Object.keys(FIGHTS);
+
 export class MustafarDirector extends Duel {
   constructor(game) {
     super(game); // (equips Anakin, then setup())
     this.lines = LINES;
     this.speakers = SPEAKERS;
     this.stage = STAGES[0];
-    this.part = 'arrival'; // arrival -> choke -> pad -> toCorridor -> corridor -> toRoom -> room -> push -> done
+    this.part = 'arrival'; // arrival -> choke -> pad -> toCorridor -> corridor -> toRoom -> room -> push -> … (FIGHTS) -> ending -> done
+    this.fights = FIGHTS;
     this.setI = 0;
     this.floor = 1;
     this.pressed = [];
@@ -61,8 +81,8 @@ export class MustafarDirector extends Duel {
       title: '무스타파의 결투',
       name: '오비완 케노비',
       sub: '제다이 마스터 · 소레수',
-      marks: [PAD.floor, CORRIDOR.floor, ROOM.floor],
-      win: 'STAGE 02 분리주의 회의실 완료 — 두 사람의 포스가 맞부딪쳐 서로를 날려 보냈다. 다음 장소: 제어실 (STAGE 03, 개발 중).',
+      marks: ORDER.map((k) => FIGHTS[k].floor),
+      win: '오비완은 높은 곳에서 아나킨을 내려다보았다. 선택받은 자는 무스타파의 용암 강가에 쓰러졌고, 그 불길 속에서 다스 베이더가 태어난다.',
       lose: '아나킨은 쓰러졌다. 오비완은 쓰러진 제자를 뒤로하고 파드메에게 돌아간다.',
     };
   }
@@ -77,6 +97,7 @@ export class MustafarDirector extends Duel {
     const pt = (k) => ({ x: Z.actors[k].x, y: Z.actors[k].y });
     this.at = { anakin0: pt('anakin'), anakin: pt('anakinMeet'), padme: pt('padme'), obiwanRamp: pt('obiwanRamp'), obiwan: pt('obiwan'), door: pt('door') };
     for (const k of ['roomAnakin', 'roomObiwan', 'pushAnakin', 'pushObiwan', 'pushAnakinTo', 'pushObiwanTo']) this.at[k] = pt(k);
+    for (const [k, v] of Object.entries(Z.actors)) if (!this.at[k] && !(k in { anakin: 1, anakinMeet: 1 })) this.at[k] = { ...v }; // (STAGE 03–06's: route.js)
     p.sprite = 'anakin_vader'; // the film's arrival: the cloak, hood raised (the old duel's progression)
     p.saberLit = false;
     p.x = this.at.anakin0.x;
@@ -91,6 +112,7 @@ export class MustafarDirector extends Duel {
     pd.faceTo(p.x, p.y);
     ob.faceTo(p.x, p.y);
     g.units.push(ob, pd);
+    this.setupRoute(); // the river's decks (route.js)
   }
 
   // --- music: silence under the arrival (the lava's ambience), the film's tracks from the choke -----------------
@@ -98,12 +120,15 @@ export class MustafarDirector extends Duel {
     const g = this.game;
     if (g.cinema && g.cinema.track) return g.cinema.track;
     if (this.over) return 'silence';
-    if (['pad', 'toCorridor', 'corridor', 'toRoom', 'room', 'push', 'done'].includes(this.part)) return 'mustafarA'; // (Anakin vs. Obi-Wan, from the duel's start)
+    if (this.score) return this.score; // (the fight's: the part's, kept through the scene that leaves it)
     return this.started ? 'silence' : 'title';
   }
 
   start() {
     this.started = true;
+    // (QA, and testing a blockout: ?mfPart=<part> starts the fight there — route.js jumpTo)
+    const jump = new URLSearchParams(location.search).get('mfPart');
+    if (jump && FIGHTS[jump]) return this.jumpTo(jump);
     this.arrival()
       .then(() => ((this.part = 'choke'), this.intro()))
       .then(() => this.beginPad());
@@ -166,6 +191,7 @@ export class MustafarDirector extends Duel {
     this.partT = 0;
     this.setI = 0;
     this.floor = PAD.floor;
+    this.score = FIGHTS.pad.score;
     this.advanceAt = 0;
     this.card('착륙장');
     this.fight();
@@ -226,11 +252,22 @@ export class MustafarDirector extends Duel {
   enterPart(part, floor, prevFloor) {
     const p = this.game.player;
     const ob = this.foe;
+    const F = FIGHTS[part];
+    floor ??= F.floor;
+    prevFloor ??= FIGHTS[ORDER[ORDER.indexOf(part) - 1]]?.floor ?? 1;
     if (ob.hp > prevFloor * ob.maxHp) ob.hp = prevFloor * ob.maxHp; // (the film moved on: he is where the last place left him)
     this.part = part;
     this.partT = 0;
-    this.setI++;
+    this.setI = ORDER.indexOf(part);
     this.floor = floor;
+    this.score = F.score;
+    this.phase = this.setI >= 6 ? 3 : this.setI >= 3 ? 2 : 1; // Obi-Wan presses harder as the film goes on (duelMustafar.js)
+    // the place's hazards (route.js): the lava rain, the pipe's footing, the lava bombs
+    this.rain = !!F.rain;
+    this.footing = !!F.footing;
+    this.bombsOn = !!F.bombs;
+    this.bombT = 2.4;
+    this.beatDone = false;
     this.advanceAt = 0;
     this.unstick(p);
     this.unstick(ob);
@@ -275,32 +312,34 @@ export class MustafarDirector extends Duel {
       { t: 4.0, do: () => (g.fx.dust(p.x, p.y, 8), g.fx.dust(ob.x, ob.y, 8), g.audio.play('slam', p)) },
       { t: 4.1, do: () => (p.setAnim('death', 0.9, true), ob.setAnim('death', 0.9, true)) },
       { t: 6.2, do: () => (p.setAnim('idle', 1, true), ob.setAnim('idle', 1, true), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
-      { t: 6.8, fade: 1, fadeDur: 1.2 },
-      { t: 7.2, do: () => g.emit('place', '무스타파 · 제어실 — STAGE 03 (개발 중)') },
     ];
-    return new Cinema(g, { length: 8.2, cues })
-      .play()
-      .then(() => {
-        this.part = 'done';
-        g.emit('fade', 0, 0.8);
-        this.finish(true);
-      });
+    return new Cinema(g, { length: 6.8, cues }).play().then(() => this.toControl()); // (STAGE 03: route.js)
   }
 
-  /** Per frame: the duel's upkeep (duel.js), then how the stage moves on. */
+  /** Per frame: the duel's upkeep (duel.js), the places' own (route.js: the rain, the pipe, the decks), then how the fight moves on. */
   update(dt) {
     super.update(dt);
     const g = this.game;
-    if (this.over || g.cinema || this.lock || !this.started) return;
-    if (this.part !== 'pad' && this.part !== 'corridor' && this.part !== 'room') return;
+    if (this.over) return;
+    this.updateRoute(dt);
+    if (g.cinema || this.lock || !this.started) return;
+    const F = FIGHTS[this.part];
+    if (!F) return;
     this.partT += dt;
+    if (F.beat && !this.beatDone && this.partT >= F.beat.t) {
+      this.beatDone = true; // (a beat inside the part: the forced bind on the arm)
+      this[F.beat.run]();
+      return;
+    }
     const pressed = this.advanceAt && g.time >= this.advanceAt;
-    if (this.part === 'pad' && (pressed || this.partT >= PAD.filmT)) this.toCorridor();
-    else if (this.part === 'corridor' && (pressed || this.partT >= CORRIDOR.time || g.player.x < this.at.door.x + 0.5)) this.toRoom();
-    else if (this.part === 'room' && (pressed || this.partT >= ROOM.time)) this.toPush();
+    if (pressed || this.partT >= F.time || (F.reach && F.reach(this))) {
+      this.beatDone = false;
+      this[F.next]();
+    }
   }
 
   /** (The duel's phases by health are this stage's marks: the progression above.) */
   phases() {}
 }
 for (const k of BORROW) MustafarDirector.prototype[k] = FILM[k];
+Object.assign(MustafarDirector.prototype, ROUTE);

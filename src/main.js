@@ -14,6 +14,7 @@ import { pickMap, setMapName } from './world/mapStore.js';
 import { setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture, setPadFloor } from './gfx/terrain.js';
 import { loadManifest, loadAsset } from './gfx/assetManifest.js';
 import { placeholderBadge } from './ui/placeholderBadge.js';
+import { blockoutName, blockoutSprite } from './gfx/blockout.js';
 import { setMustafarZone } from './world/mustafarStage.js';
 import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid, loadCargo, loadRocks, loadWalls, addMirror, MIRROR_SUFFIX } from './gfx/mustafarFloor.js';
 import { savedLook } from './ui/appearance.js';
@@ -57,7 +58,7 @@ const MUSTAFAR = DUEL === 'mustafarLegacy' || DUEL === 'mustafarArt';
 const MAP_NAME = DUEL === 'mustafarArt' ? 'mustafar_art' : 'mustafar';
 // the rebuild's zone (world/mustafarStage.js; one zone in this step)
 const MUSTAFAR_V2 = DUEL === 'mustafar';
-const ZONES = ['stage01', 'stage02']; // (the film's places built so far, in order)
+const ZONES = ['stage01', 'stage02', 'stage03', 'stage04', 'stage05', 'stage06']; // (the film's places, in order: 03–06 in blockout)
 setRemasterAllowed(MUSTAFAR || MUSTAFAR_V2); // the remastered graphics: the Mustafar duels only (gfx/remaster.js)
 window.addEventListener('hashchange', () => location.reload());
 
@@ -110,8 +111,12 @@ async function boot() {
   if (MUSTAFAR_V2) {
     // the stages' zones, laid into one world (each zone's layers appended; the camera keeps a box per zone)
     const zones = await Promise.all(ZONES.map((id) => cachedJSON(import.meta.env.BASE_URL + `maps/mustafar_v2/${id}.json`)));
-    const zone = { ...zones[0], cameras: zones.map((z) => z.camera), actors: Object.assign({}, ...zones.map((z) => z.actors)) };
-    for (const k of ['floor', 'walk', 'collision', 'structures', 'decor', 'lights', 'regions', 'triggers']) zone[k] = zones.flatMap((z) => z[k] || []);
+    // (the camera boxes smallest first: a point inside several is held by the closest fit — renderer.js camRegion)
+    const area = (c) => (c.x1 - c.x0) * (c.y1 - c.y0);
+    const cameras = zones.flatMap((z) => z.cameras || [z.camera]).sort((a, b) => area(a) - area(b));
+    const zone = { ...zones[0], cameras, actors: Object.assign({}, ...zones.map((z) => z.actors)), river: zones.map((z) => z.river).find(Boolean) || null };
+    for (const k of ['floor', 'walk', 'collision', 'structures', 'decor', 'lights', 'regions', 'triggers', 'blockout', 'surfaces', 'strips']) zone[k] = zones.flatMap((z) => z[k] || []);
+    zone.blockoutStages = zones.filter((z) => z.blockout && z.blockout.length).map((z) => z.stage); // (the badge names them)
     const man = await loadManifest('assets/mustafar/manifest.json');
     zone.art = {};
     zone.missingArt = [];
@@ -123,6 +128,8 @@ async function boot() {
     }
     if (zone.missingArt.length) console.info('무스타파 에셋 대기: ' + zone.missingArt.map((m) => `${m.id} (${m.why})`).join(', '));
     assets.city = { ...(assets.city || {}), ...Object.fromEntries(Object.entries(zone.art).filter(([, d]) => d.meta)) };
+    // the blockout's grey boxes (gfx/blockout.js: placeholders the user asked for, plainly marked), one sprite a size
+    for (const b of zone.blockout) assets.city[blockoutName(b)] ||= blockoutSprite(b);
     setPadFloor(Object.fromEntries(Object.entries(zone.art).filter(([, d]) => d.tiles)));
     setMustafarZone(zone);
     setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
@@ -186,7 +193,7 @@ async function boot() {
     hud.onWorld();
   });
   if (look) game.player.sprite = look.sprite;
-  if (MUSTAFAR_V2) placeholderBadge(game.world.zone.missingArt); // (what the zone still waits for: never passed off as final)
+  if (MUSTAFAR_V2) placeholderBadge(game.world.zone.missingArt, game.world.zone.blockoutStages); // (what the zone still waits for: never passed off as final)
   const canvas = document.getElementById('world');
   const overlay = document.getElementById('overlay');
   const renderer = (game.renderer = new Renderer(game, assets, canvas, overlay));

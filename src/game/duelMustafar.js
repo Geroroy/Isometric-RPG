@@ -99,7 +99,7 @@ export class ObiWan extends Dooku {
 }
 
 /** A deck drifting on the lava river (the panning droid, the repulsor platform). */
-class Float extends Unit {
+export class Float extends Unit {
   constructor(game, kind, x, y, r) {
     super(game, kind, x, y);
     this.r = r; // walkable radius

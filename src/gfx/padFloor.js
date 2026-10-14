@@ -53,7 +53,8 @@ export function padAt(F, fx, fy, o) {
   if (fx < F.x0 || fy < F.y0 || fx >= F.x1 || fy >= F.y1) return false;
   const set = F.asset && SETS[F.asset];
   // a single picture over the whole rectangle (a corridor's floor: its image columns along +x, rows along +y)
-  if (F.kind === 'texturedRect') {
+  if (F.kind === 'texturedRect' || F.kind === 'blockout') {
+    // (a blockout floor: the debug grid until its stage's art is requested — docs/MUSTAFAR_REBUILD.md "블록아웃")
     if (!set) return debugGrid({ ...F, rim: 0, bay: 1e9 }, fx - F.x0, fy - F.y0, Infinity, Infinity, o);
     texel(set.tiles[F.tile || 'floor'], (fx - F.x0) / (F.x1 - F.x0), (fy - F.y0) / (F.y1 - F.y0), o);
     return true;

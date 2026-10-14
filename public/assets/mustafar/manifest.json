@@ -611,6 +611,478 @@
     "height": 1.6
    },
    "note": "drawn on its projection guide (anchor = the guide's)"
+  },
+  {
+   "id": "mf.landing.robe_obiwan",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "props/robe_obiwan.png",
+   "size": [
+    128,
+    96
+   ],
+   "density": 2,
+   "anchor": [
+    64,
+    52
+   ],
+   "guide": "docs/asset_requests/guides/robe_obiwan_guide.png",
+   "layer": "flat"
+  },
+  {
+   "id": "mf.landing.cloak_anakin",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "props/cloak_anakin.png",
+   "size": [
+    144,
+    104
+   ],
+   "density": 2,
+   "anchor": [
+    70,
+    55
+   ],
+   "guide": "docs/asset_requests/guides/cloak_anakin_guide.png",
+   "layer": "flat"
+  },
+  {
+   "id": "mf.control.ctl_stairs",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "interiors/ctl_stairs.png",
+   "size": [
+    272,
+    184
+   ],
+   "density": 2,
+   "anchor": [
+    136,
+    105
+   ],
+   "guide": "docs/asset_requests/guides/ctl_stairs_guide.png",
+   "layer": "flat"
+  },
+  {
+   "id": "mf.control.ctl_shield_generator",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "interiors/ctl_shield_generator.png",
+   "size": [
+    200,
+    208
+   ],
+   "density": 2,
+   "anchor": [
+    100,
+    146
+   ],
+   "guide": "docs/asset_requests/guides/ctl_shield_generator_guide.png"
+  },
+  {
+   "id": "mf.control.ctl_holo_table",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "interiors/ctl_holo_table.png",
+   "size": [
+    160,
+    144
+   ],
+   "density": 2,
+   "anchor": [
+    80,
+    92
+   ],
+   "guide": "docs/asset_requests/guides/ctl_holo_table_guide.png"
+  },
+  {
+   "id": "mf.walkway.catwalk_segment",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "industrial/catwalk_segment.png",
+   "size": [
+    352,
+    280
+   ],
+   "density": 2,
+   "anchor": [
+    176,
+    150
+   ],
+   "guide": "docs/asset_requests/guides/catwalk_segment_guide.png",
+   "layer": "flat"
+  },
+  {
+   "id": "mf.walkway.catwalk_broken",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "industrial/catwalk_broken.png",
+   "size": [
+    352,
+    280
+   ],
+   "density": 2,
+   "anchor": [
+    176,
+    150
+   ],
+   "guide": "docs/asset_requests/guides/catwalk_broken_guide.png",
+   "layer": "flat"
+  },
+  {
+   "id": "mf.walkway.lava_fall",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "industrial/lava_fall.png",
+   "size": [
+    312,
+    568
+   ],
+   "density": 2,
+   "anchor": [
+    156,
+    478
+   ],
+   "guide": "docs/asset_requests/guides/lava_fall_guide.png"
+  },
+  {
+   "id": "mf.collector.pipe_segment",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "industrial/pipe_segment.png",
+   "size": [
+    352,
+    232
+   ],
+   "density": 2,
+   "anchor": [
+    174,
+    112
+   ],
+   "guide": "docs/asset_requests/guides/pipe_segment_guide.png",
+   "layer": "flat"
+  },
+  {
+   "id": "mf.collector.collector_arm",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "industrial/collector_arm.png",
+   "size": [
+    1032,
+    576
+   ],
+   "density": 2,
+   "anchor": [
+    516,
+    281
+   ],
+   "guide": "docs/asset_requests/guides/collector_arm_guide.png",
+   "layer": "flat"
+  },
+  {
+   "id": "mf.collector.collector_tower",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "industrial/collector_tower.png",
+   "size": [
+    352,
+    584
+   ],
+   "density": 2,
+   "anchor": [
+    176,
+    488
+   ],
+   "guide": "docs/asset_requests/guides/collector_tower_guide.png"
+  },
+  {
+   "id": "mf.river.mining_droid",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "lava/mining_droid.png",
+   "size": [
+    192,
+    144
+   ],
+   "density": 2,
+   "anchor": [
+    96,
+    63
+   ],
+   "guide": "docs/asset_requests/guides/mining_droid_guide.png"
+  },
+  {
+   "id": "mf.river.repulsor_platform",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "lava/repulsor_platform.png",
+   "size": [
+    288,
+    240
+   ],
+   "density": 2,
+   "anchor": [
+    144,
+    139
+   ],
+   "guide": "docs/asset_requests/guides/repulsor_platform_guide.png"
+  },
+  {
+   "id": "mf.room.wall_door_side",
+   "kind": "wallElevation",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "interiors/conf_wall_door_side.png",
+   "size": [
+    768,
+    256
+   ],
+   "metres": [
+    12,
+    4
+   ],
+   "along": "y"
+  },
+  {
+   "id": "mf.control.wall_window",
+   "kind": "wallElevation",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "interiors/ctl_wall_window.png",
+   "size": [
+    1152,
+    256
+   ],
+   "metres": [
+    18,
+    4
+   ],
+   "along": "x"
+  },
+  {
+   "id": "mf.control.wall_side",
+   "kind": "wallElevation",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "interiors/ctl_wall_side.png",
+   "size": [
+    1152,
+    256
+   ],
+   "metres": [
+    18,
+    4
+   ],
+   "along": "y"
+  },
+  {
+   "id": "mf.control.wall_front_low",
+   "kind": "wallElevation",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "interiors/ctl_wall_front_low.png",
+   "size": [
+    1152,
+    64
+   ],
+   "metres": [
+    18,
+    1
+   ],
+   "along": "x"
+  },
+  {
+   "id": "mf.control.wall_entry_low",
+   "kind": "wallElevation",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "interiors/ctl_wall_entry_low.png",
+   "size": [
+    1152,
+    64
+   ],
+   "metres": [
+    18,
+    1
+   ],
+   "along": "y"
+  },
+  {
+   "id": "mf.control.gallery_edge",
+   "kind": "wallElevation",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "interiors/ctl_gallery_edge.png",
+   "size": [
+    1152,
+    104
+   ],
+   "metres": [
+    18,
+    1.625
+   ],
+   "along": "x"
+  },
+  {
+   "id": "mf.passage.wall_back",
+   "kind": "wallElevation",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "corridors/ps_wall_back.png",
+   "size": [
+    384,
+    224
+   ],
+   "metres": [
+    6,
+    3.5
+   ],
+   "along": "x"
+  },
+  {
+   "id": "mf.passage.wall_front_low",
+   "kind": "wallElevation",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "corridors/ps_wall_front_low.png",
+   "size": [
+    384,
+    64
+   ],
+   "metres": [
+    6,
+    1
+   ],
+   "along": "x"
+  },
+  {
+   "id": "mf.lava.surface",
+   "kind": "groundTiles",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "tiles": {
+    "floor": {
+     "file": "lava/lava_tile.png",
+     "size": [
+      512,
+      512
+     ],
+     "metres": [
+      8,
+      8
+     ]
+    }
+   }
+  },
+  {
+   "id": "mf.control.floor",
+   "kind": "groundTiles",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "tiles": {
+    "floor": {
+     "file": "interiors/ctl_floor.png",
+     "size": [
+      1152,
+      832
+     ],
+     "metres": [
+      18,
+      13
+     ]
+    }
+   }
+  },
+  {
+   "id": "mf.control.gallery_floor",
+   "kind": "groundTiles",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "tiles": {
+    "floor": {
+     "file": "interiors/ctl_gallery_floor.png",
+     "size": [
+      1152,
+      320
+     ],
+     "metres": [
+      18,
+      5
+     ]
+    }
+   }
+  },
+  {
+   "id": "mf.passage.floor",
+   "kind": "groundTiles",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "tiles": {
+    "floor": {
+     "file": "corridors/ps_floor.png",
+     "size": [
+      384,
+      256
+     ],
+     "metres": [
+      6,
+      4
+     ]
+    }
+   }
+  },
+  {
+   "id": "mf.walkway.terrace_floor",
+   "kind": "groundTiles",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "tiles": {
+    "floor": {
+     "file": "industrial/terrace_floor.png",
+     "size": [
+      1280,
+      320
+     ],
+     "metres": [
+      20,
+      5
+     ]
+    }
+   }
+  },
+  {
+   "id": "mf.highground.bank",
+   "kind": "groundImage",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "lava/highground_bank.png",
+   "size": [
+    1512,
+    992
+   ],
+   "density": 2,
+   "anchor": [
+    16,
+    492
+   ],
+   "anchorWorld": [
+    112,
+    147
+   ],
+   "guide": "docs/asset_requests/guides/highground_bank_guide.png"
   }
  ]
 }
