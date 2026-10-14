@@ -25,7 +25,9 @@ def structures():
     out = [
         # the walls, on their base lines
         {'asset': 'mf.room.wall_window', 'x': CX, 'y': Y0},
-        {'asset': 'mf.room.wall_side', 'x': X0, 'y': CY},
+        {'asset': 'mf.room.wall_side', 'x': X0, 'y': CY, 'id': 'confWestWall'},
+        # the same wall with its door open (requested: chatgpt_stage03_control.md §0) — the director swaps it in
+        {'asset': 'mf.room.wall_door_side', 'x': X0, 'y': CY, 'id': 'confWestDoorOpen', 'hidden': True},
         {'asset': 'mf.room.wall_front_low', 'x': CX, 'y': Y1},
         {'asset': 'mf.room.wall_door_low', 'x': X1, 'y': CY},
         # the council's table, its chairs either side (a: facing +y, on the far side; b: facing −y, the near side)

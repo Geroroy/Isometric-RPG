@@ -18,7 +18,8 @@
   ],
   "structures": [
     {"asset": "mf.room.wall_window", "x": 52.9, "y": 92},
-    {"asset": "mf.room.wall_side", "x": 44.9, "y": 98.0},
+    {"asset": "mf.room.wall_side", "x": 44.9, "y": 98.0, "id": "confWestWall"},
+    {"asset": "mf.room.wall_door_side", "x": 44.9, "y": 98.0, "id": "confWestDoorOpen", "hidden": true},
     {"asset": "mf.room.wall_front_low", "x": 52.9, "y": 104},
     {"asset": "mf.room.wall_door_low", "x": 60.9, "y": 98.0},
     {"asset": "mf.room.table", "x": 52.9, "y": 98.0, "block": true},

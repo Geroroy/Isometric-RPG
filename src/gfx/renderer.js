@@ -90,7 +90,7 @@ export class Renderer {
       const c = this.assets.city[p.sheet];
       p.frame = p.trim ? this.trimmed(c.body, p.trim) : c.body;
       p.layers = c;
-      const s = worldToScreen(p.x, p.y);
+      const s = worldToScreen(p.x, p.y, p.z || 0); // (a prop on a raised floor drawn up on it)
       p.sx = s.x;
       p.sy = s.y;
       const k = c.body.k || 1; // (a sheet drawn scaled: drawFrame)

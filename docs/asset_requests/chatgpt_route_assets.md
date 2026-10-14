@@ -13,8 +13,8 @@ anchor; delete the guide lines afterwards), density 2. Guides: `docs/asset_reque
 
 | Location | Prompt | Images |
 |---|---|---|
-| STAGE 01–02 additions + the lava | §1 | 4 |
-| STAGE 03 control room | §2 | 14 |
+| STAGE 01 additions + the lava | §1 | 3 |
+| STAGE 03 control room (+ the conference room's door wall) | §2 → **`chatgpt_stage03_control.md`** | 14 |
 | STAGE 04 walkway and lava collector | §3 | 7 |
 | STAGE 05 lava river | §4 | 2 |
 | STAGE 06 high ground | §5 | 1 |
@@ -34,12 +34,8 @@ Shared text for every prompt (put it first each time):
 
 ---
 
-## §1 STAGE 01–02 additions + the lava (attach `robe_obiwan_guide.png`, `cloak_anakin_guide.png`)
+## §1 STAGE 01 additions + the lava (attach `robe_obiwan_guide.png`, `cloak_anakin_guide.png`)
 
-1. `conf_wall_door_side.png`, **768 × 256**, transparent. Your `conf_wall_side.png` again, identical in design, but
-   with a doorway: a **4 m wide, 3 m tall opening in the exact middle** (pixels 256–512 across, from the bottom up to
-   row 64) left fully transparent, a door frame around it. (The duel leaves the conference room through it; the game
-   swaps this in for the plain wall when the door opens.)
 2. `robe_obiwan.png`, **128 × 96**, transparent, inside `robe_obiwan_guide.png` (anchor 64, 52): Obi-Wan's brown
    Jedi robe thrown down on the floor, a loose heap 1.4 × 1 m, isometric.
 3. `cloak_anakin.png`, **144 × 104**, transparent, inside `cloak_anakin_guide.png` (anchor 70, 55): Anakin's black
@@ -48,44 +44,10 @@ Shared text for every prompt (put it first each time):
    Mustafar's molten lava — a dark cooling crust broken by glowing orange-yellow cracks and slow molten channels.
    Not too bright overall (it surrounds every fight). It replaces the old lava texture everywhere, the river too.
 
-## §2 STAGE 03 control room (attach `ctl_stairs_guide.png`, `ctl_shield_generator_guide.png`, `ctl_holo_table_guide.png`)
+## §2 STAGE 03 control room
 
-The Separatist control room the duel fights through after the conference room (in the film: consoles, holo-tables,
-the shield generator Anakin's blade cuts open, big windows over the lava). An 18 × 18 m room with a raised gallery
-0.6 m up along its window wall, steps down from it in the middle; reached through a short passage from the
-conference room; a door out onto the balcony.
-
-Flat pictures (64 px a metre; floors seen straight from above with the top edge to the window wall; walls straight on):
-
-5. `ctl_floor.png`, **1152 × 832**, opaque: the lower floor, 18 m wide × 13 m deep. Top edge = the gallery's front,
-   left edge = the shield generator's wall, right edge = the passage entrance (3–7 m down from the top), bottom
-   edge = the balcony door (in the middle).
-6. `ctl_gallery_floor.png`, **1152 × 320**, opaque: the gallery's floor, 18 m × 5 m, from above (metal grating or
-   plates, consoles stand on it).
-7. `ctl_gallery_edge.png`, **1152 × 104**, transparent: the gallery's front edge seen straight on, 18 m long: a solid
-   0.6 m face at the bottom (rows 66–104) with a metal railing on top up to 1.6 m; a **4 m gap in the middle
-   (pixels 448–704) fully transparent** where the steps are.
-8. `ctl_wall_window.png`, **1152 × 256**, transparent: the window wall, 18 × 4 m, large windows (glass areas left
-   transparent: the lava shows behind), pillars between.
-9. `ctl_wall_side.png`, **1152 × 256**, transparent: the side wall, 18 × 4 m, wall panels and conduits (the shield
-   generator stands in front of it, separately).
-10. `ctl_wall_front_low.png`, **1152 × 64**, transparent: the near long wall cut down to 1 m, 18 m long, a **4 m gap in
-    the middle (pixels 448–704)** fully transparent — the balcony door.
-11. `ctl_wall_entry_low.png`, **1152 × 64**, transparent: the near short wall cut down to 1 m, 18 m long, a **4 m gap
-    at pixels 384–640** fully transparent — the passage entrance.
-12. `ps_floor.png`, **384 × 256**, opaque: the passage's floor, 6 m long (left–right) × 4 m wide, from above.
-13. `ps_wall_back.png`, **384 × 224**, transparent: the passage's far wall, 6 × 3.5 m, straight on.
-14. `ps_wall_front_low.png`, **384 × 64**, transparent: the passage's near wall cut down to 1 m, 6 m long.
-
-Isometric sprites, each inside its guide (the consoles on the gallery reuse your `conf_console.png`):
-
-15. `ctl_stairs.png`, **272 × 184** (`ctl_stairs_guide.png`, anchor 136, 105): metal steps 4 m wide, 2 m deep,
-    rising 0.6 m toward the guide's upper right (−y), three steps.
-16. `ctl_shield_generator.png`, **200 × 208** (`ctl_shield_generator_guide.png`, anchor 100, 146): the shield
-    generator console, 1.4 m deep × 2.8 m wide × 1.8 m tall, its front (panels, a warning light — amber, not red)
-    facing the guide's lower right (+x).
-17. `ctl_holo_table.png`, **160 × 144** (`ctl_holo_table_guide.png`, anchor 80, 92): a round holo-projector table,
-    1.6 m across, 0.9 m tall, its projector OFF (no hologram).
+Its own prompt, ready to send: `docs/asset_requests/chatgpt_stage03_control.md` (14 images, with the conference room's
+door wall).
 
 ## §3 STAGE 04 walkway and lava collector (attach `catwalk_segment_guide.png`, `lava_fall_guide.png`, `pipe_segment_guide.png`, `collector_arm_guide.png`, `collector_tower_guide.png`)
 

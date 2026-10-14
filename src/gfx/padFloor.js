@@ -50,6 +50,13 @@ export const padHasArt = (F) => !!(F.asset && SETS[F.asset]);
 
 /** The pad's top at world point (fx, fy), if it is on pad `F`: writes [r, g, b] to `o` and returns true. */
 export function padAt(F, fx, fy, o) {
+  // a raised floor (a gallery `z` m up): the screen pixel over ground point (fx, fy) shows its point farther along
+  // +x +y — (x + y) · HALF_H − z · Z_PX on screen is the same height as the ground point's
+  if (F.z) {
+    const d = (F.z * Z_PX) / (2 * HALF_H);
+    fx += d;
+    fy += d;
+  }
   if (fx < F.x0 || fy < F.y0 || fx >= F.x1 || fy >= F.y1) return false;
   const set = F.asset && SETS[F.asset];
   // a single picture over the whole rectangle (a corridor's floor: its image columns along +x, rows along +y)

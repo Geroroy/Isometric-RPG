@@ -652,7 +652,7 @@
    "id": "mf.control.ctl_stairs",
    "kind": "sprite",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_stairs.png",
    "size": [
     272,
@@ -670,7 +670,7 @@
    "id": "mf.control.ctl_shield_generator",
    "kind": "sprite",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_shield_generator.png",
    "size": [
     200,
@@ -687,7 +687,7 @@
    "id": "mf.control.ctl_holo_table",
    "kind": "sprite",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_holo_table.png",
    "size": [
     160,
@@ -844,7 +844,7 @@
    "id": "mf.room.wall_door_side",
    "kind": "wallElevation",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/conf_wall_door_side.png",
    "size": [
     768,
@@ -860,7 +860,7 @@
    "id": "mf.control.wall_window",
    "kind": "wallElevation",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_wall_window.png",
    "size": [
     1152,
@@ -876,7 +876,7 @@
    "id": "mf.control.wall_side",
    "kind": "wallElevation",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_wall_side.png",
    "size": [
     1152,
@@ -892,7 +892,7 @@
    "id": "mf.control.wall_front_low",
    "kind": "wallElevation",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_wall_front_low.png",
    "size": [
     1152,
@@ -908,7 +908,7 @@
    "id": "mf.control.wall_entry_low",
    "kind": "wallElevation",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_wall_entry_low.png",
    "size": [
     1152,
@@ -924,7 +924,7 @@
    "id": "mf.control.gallery_edge",
    "kind": "wallElevation",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_gallery_edge.png",
    "size": [
     1152,
@@ -940,7 +940,7 @@
    "id": "mf.passage.wall_back",
    "kind": "wallElevation",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "corridors/ps_wall_back.png",
    "size": [
     384,
@@ -956,7 +956,7 @@
    "id": "mf.passage.wall_front_low",
    "kind": "wallElevation",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "corridors/ps_wall_front_low.png",
    "size": [
     384,
@@ -991,7 +991,7 @@
    "id": "mf.control.floor",
    "kind": "groundTiles",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "tiles": {
     "floor": {
      "file": "interiors/ctl_floor.png",
@@ -1010,7 +1010,7 @@
    "id": "mf.control.gallery_floor",
    "kind": "groundTiles",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "tiles": {
     "floor": {
      "file": "interiors/ctl_gallery_floor.png",
@@ -1029,7 +1029,7 @@
    "id": "mf.passage.floor",
    "kind": "groundTiles",
    "status": "requested",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "tiles": {
     "floor": {
      "file": "corridors/ps_floor.png",

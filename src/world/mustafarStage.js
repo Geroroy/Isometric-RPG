@@ -36,12 +36,19 @@ export class MustafarStage extends World {
     this.padFloors = [];
     this.backdrop = null;
     for (const f of z.floor) {
-      if (f.kind === 'texturedRect' && !art[f.asset]) continue; // (a corridor's floor: only once its picture is here)
+      // a floor whose picture is not here yet: left out (STAGE 01's corridor), or the debug grid where the zone is in
+      // blockout (`fallback: "grid"`, docs/MUSTAFAR_REBUILD.md "블록아웃")
+      if (f.kind === 'texturedRect' && !art[f.asset]) {
+        if (f.fallback === 'grid') this.padFloors.push({ ...f, kind: 'blockout', asset: null });
+        if (f.x1 !== undefined && f.fallback === 'grid' && !f.z) this.rect(f.x0, f.y0, f.x1, f.y1, (i) => (this.biome[i] = BIOME.MUSTAFAR));
+        continue;
+      }
       if (f.kind === 'landingPad') this.padFloors.push({ ...f, bays: [...f.bays] });
       else if (f.kind === 'texturedRect' || f.kind === 'blockout') this.padFloors.push({ ...f }); // (one picture over the rectangle; a blockout's: the grid)
       else if (f.kind === 'groundImage' && art[f.asset] && !this.backdrop) this.backdrop = groundBackdrop(art[f.asset], f.at.x, f.at.y);
       if (f.x1 !== undefined) this.rect(f.x0, f.y0, f.x1, f.y1, (i) => (this.biome[i] = BIOME.MUSTAFAR));
     }
+    this.padFloors.sort((a, b) => (b.z || 0) - (a.z || 0)); // (a raised floor before the ground's: it hides what is behind it)
     // where one may walk, then what stands in the way inside it — an entry with `needs` (asset ids) only once those
     // assets are delivered (a corridor's floor, the railings standing on the rim: no invisible ground or walls before)
     const has = (e) => !e.needs || e.needs.every((id) => art[id]);
@@ -72,6 +79,7 @@ export class MustafarStage extends World {
     // the blockout (docs/MUSTAFAR_REBUILD.md "블록아웃"): grey boxes for the walls, furniture and set pieces of a stage
     // whose art is not requested yet (gfx/blockout.js made their sprites: main.js)
     for (const b of z.blockout || []) {
+      if (b.art && art[b.art]) continue; // (its art is here: the box it stood in for goes)
       const p = this.addSheetProp(blockoutName(b), b.x, b.y, { noBlock: !b.block, flat: b.flat });
       if (p && b.id) this.named[b.id] = p;
       if (p && b.hidden) p.hidden = true; // (the director shows it: the fallen arm, a door)
@@ -79,6 +87,8 @@ export class MustafarStage extends World {
     for (const e of [...z.structures, ...z.decor]) {
       const a = art[e.asset];
       const p = a ? this.addSheetProp(e.asset, e.x, e.y, { noBlock: !e.block, flat: a.meta.flat }) : null;
+      if (p && e.z) p.z = e.z; // (standing on a raised floor: a console on the gallery — renderer.js placeProp lifts it)
+      if (p && e.hidden) p.hidden = true; // (the director shows it: the conference room's wall with its door open)
       if (p && e.id) this.named[e.id] = p;
       if (p && a.meta.top) p.top = true; // (drawn over everyone: renderer.js)
       if (p && a.meta.order) p.order = a.meta.order; // (its depth point moved: metres farther along x + y)

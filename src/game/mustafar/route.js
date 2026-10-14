@@ -167,13 +167,24 @@ export const ROUTE = {
     const [pC, pT] = walk(p, [{ x: 48.5, y: 101.4 }, { x: W.x + 0.2, y: W.y + 0.3 }, { x: J.x, y: J.y + 0.2 }, A.ctlAnakin], 1.1, 4.6, 'run');
     const end = Math.max(obT, pT);
     const cues = [
-      { t: 0, do: () => (g.world.open('confWestDoor'), g.audio.play('click'), g.fx.dust(W.x - 0.6, W.y, 5)), cam: { follow: p, zoom: 1.25, dur: 0.8 } },
+      { t: 0, do: () => (this.openConfWest(), g.audio.play('click'), g.fx.dust(W.x - 0.6, W.y, 5)), cam: { follow: p, zoom: 1.25, dur: 0.8 } },
       ...obC,
       ...pC,
       { t: obT - 0.6, do: () => this.card('제어실') },
       { t: end, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
     ];
     return new Cinema(g, { length: end + 0.4, cues }).play().then(() => this.enterPart('control'));
+  },
+
+  /** The conference room's west door opens: its way through, and its wall picture with the door open (when delivered). */
+  openConfWest() {
+    const w = this.game.world;
+    w.open('confWestDoor');
+    const open = w.named.confWestDoorOpen;
+    if (open) {
+      open.hidden = false;
+      if (w.named.confWestWall) w.named.confWestWall.hidden = true;
+    }
   },
 
   /** The film's 2:28: Anakin's cut opens the shield generator (the alarm: the shields begin to fail); out onto the balcony. */
@@ -757,7 +768,7 @@ export const ROUTE = {
       if (w.named.facilityDoor) w.named.facilityDoor.hidden = true;
       w.open('facilityDoor');
     }
-    if (past('control')) w.open('confWestDoor');
+    if (past('control')) this.openConfWest();
     if (past('balcony')) this.openBalcony(), this.alarmOn();
     if (past('pipe')) this.collapseCatwalk();
     if (past('raft')) this.dropArm();
