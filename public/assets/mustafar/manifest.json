@@ -615,7 +615,7 @@
   {
    "id": "mf.landing.robe_obiwan",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_route_assets.md",
    "file": "props/robe_obiwan.png",
    "size": [
@@ -628,12 +628,13 @@
     52
    ],
    "guide": "docs/asset_requests/guides/robe_obiwan_guide.png",
-   "layer": "flat"
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_cloth_lava_notes.md"
   },
   {
    "id": "mf.landing.cloak_anakin",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_route_assets.md",
    "file": "props/cloak_anakin.png",
    "size": [
@@ -646,7 +647,8 @@
     55
    ],
    "guide": "docs/asset_requests/guides/cloak_anakin_guide.png",
-   "layer": "flat"
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_cloth_lava_notes.md"
   },
   {
    "id": "mf.control.ctl_stairs",
@@ -971,7 +973,7 @@
   {
    "id": "mf.lava.surface",
    "kind": "groundTiles",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_route_assets.md",
    "tiles": {
     "floor": {
@@ -983,9 +985,11 @@
      "metres": [
       8,
       8
-     ]
+     ],
+     "seamless": true
     }
-   }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_cloth_lava_notes.md"
   },
   {
    "id": "mf.control.floor",

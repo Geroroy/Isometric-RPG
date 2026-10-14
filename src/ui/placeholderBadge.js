@@ -12,7 +12,8 @@ export function placeholderBadge(missing, blockout) {
     'font:12px/1.4 "Share Tech Mono",monospace;color:#ffd0f4;background:rgba(40,0,36,.72);border:1px solid #e040c8;border-radius:3px;text-align:center';
   const parts = [];
   if (blockout.length) parts.push(`블록아웃(회색 상자): STAGE ${blockout.map((n) => String(n).padStart(2, '0')).join('·')}`);
-  if (missing.length) parts.push(`에셋 대기: ${missing.map((m) => m.id).join(', ')}`);
+  // (a count, not the names: a long list would cover the duel's health bar — the names are in the tooltip)
+  if (missing.length) parts.push(missing.length > 3 ? `에셋 대기 ${missing.length}장` : `에셋 대기: ${missing.map((m) => m.id).join(', ')}`);
   el.textContent = `임시 플레이스홀더 — 최종 그래픽 아님 · ${parts.join(' · ')}`;
   el.title = [...missing.map((m) => `${m.id}: ${m.why}`), ...(blockout.length ? ['블록아웃: 동선·충돌·전투 공간 시험용 회색 상자 (최종 그래픽 아님)'] : [])].join('\n');
   document.body.appendChild(el);

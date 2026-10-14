@@ -172,13 +172,22 @@ export class MustafarDirector extends Duel {
     return new Cinema(g, { length: 29.8, cues }).play();
   }
 
-  /** Robes off before the duel (the old map's discarded robes were set props; here they just come off). */
+  /** Robes off before the duel: the robe (the zone's hidden `robe` / `cloak` prop) lands on the deck behind him. */
   throwRobe(u) {
     const g = this.game;
     u.sprite = u === g.player ? 'anakin_tunic' : 'obiwan3';
     u.setAnim('idle', 1, true);
     u.saberLit = false;
-    g.fx.dust(u.x - Math.cos(u.facing) * 0.7, u.y - Math.sin(u.facing) * 0.7, 5);
+    const x = u.x - Math.cos(u.facing) * 0.7;
+    const y = u.y - Math.sin(u.facing) * 0.7;
+    const pile = g.world.named[u === g.player ? 'cloak' : 'robe'];
+    if (pile) {
+      pile.x = x;
+      pile.y = y;
+      if (g.renderer) g.renderer.placeProp(pile);
+      pile.hidden = false;
+    }
+    g.fx.dust(x, y, 5);
   }
 
   // --- 5: the playable duel on the pad -------------------------------------------------------------------------

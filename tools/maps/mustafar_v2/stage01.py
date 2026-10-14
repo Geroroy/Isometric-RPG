@@ -81,6 +81,11 @@ def structures():
         {'asset': 'mf.landing.corridor_wall_end', 'x': CORR_X0, 'y': (DOOR_Y0 + DOOR_Y1) / 2, 'id': 'facilityDoor'},  # (STAGE 02: it opens)
     ]
     out.append({'asset': 'mf.landing.ship', 'x': SHIP[0], 'y': SHIP[1], 'block': True})
+    # the robes thrown down before the duel: hidden until then (the director puts each where it falls)
+    out += [
+        {'asset': 'mf.landing.robe_obiwan', 'x': 94, 'y': 100, 'id': 'robe', 'hidden': True},
+        {'asset': 'mf.landing.cloak_anakin', 'x': 88, 'y': 102, 'id': 'cloak', 'hidden': True},
+    ]
     return out
 
 
@@ -106,7 +111,7 @@ def main():
         'title': '무스타파 · 착륙장',
         'ambient': [150, 86, 70],  # ART_GUIDE.md §4 Mustafar
         'grade': 'mustafar',
-        'surround': {'biome': 'LAVA', 'placeholder': True, 'note': 'temporary: the existing lava texture until the stage terrain is designed'},
+        'surround': {'biome': 'LAVA', 'asset': 'mf.lava.surface', 'note': 'the delivered lava tile (the old texture only while it is missing)'},
         'floor': [
             {
                 'id': 'pad',

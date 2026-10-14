@@ -63,6 +63,7 @@ const st = await page.evaluate(() => {
     backdrop: w.backdrop && { x: +w.backdrop.x.toFixed(2), y: +w.backdrop.y.toFixed(2), scale: w.backdrop.scale, img: !!w.backdrop.img },
     ship: ship && { x: ship.x, y: ship.y, blocked: w.isBlocked(96, 87) },
     badge: document.querySelector('.placeholder-badge') && document.querySelector('.placeholder-badge').textContent,
+    badgeTitle: document.querySelector('.placeholder-badge') && document.querySelector('.placeholder-badge').title,
   };
 });
 check('groundTiles loaded', st.tiles && st.tiles.length === 8, (st.tiles || []).join(','));
@@ -78,7 +79,7 @@ const why = Object.fromEntries(st.missing.map((m) => [m.id, m.why]));
 check('wrong pixel size refused', /100×100/.test(why['test.badsize'] || ''), why['test.badsize']);
 check('wrong proportions refused (not stretched)', /비율/.test(why['test.badratio'] || ''), why['test.badratio']);
 check('not delivered: waits, not loaded', /대기/.test(why['test.waiting'] || ''), why['test.waiting']);
-check('badge lists only what is missing', st.badge && !st.badge.includes('mf.landing.floor') && st.badge.includes('test.waiting'), st.badge);
+check('badge names only what is missing (its tooltip; the text a count when long)', st.badge && st.badge.includes('에셋 대기') && !st.badgeTitle.includes('mf.landing.floor:') && st.badgeTitle.includes('test.waiting'), st.badge);
 await page.waitForFunction(() => { const t = window.__renderer.terrain; return !t.pool || t.pool.inflight.size === 0; }, null, { timeout: 120000 }).catch(() => {});
 await page.evaluate(() => { const p = window.__game.player; p.x = 92; p.y = 98; window.__renderer.setZoom(0.75, true); });
 await page.waitForTimeout(2500);

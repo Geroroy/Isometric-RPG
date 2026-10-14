@@ -132,7 +132,13 @@ async function boot() {
     for (const b of zone.blockout) assets.city[blockoutName(b)] ||= blockoutSprite(b);
     setPadFloor(Object.fromEntries(Object.entries(zone.art).filter(([, d]) => d.tiles)));
     setMustafarZone(zone);
-    setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
+    // the lava: the delivered tile (8 × 8 m, seamless), else the old Mustafar's texture as a placeholder (on the badge)
+    const lava = await loadAsset(man, 'mf.lava.surface');
+    if (lava.data) setLavaTexture(lava.data.tiles.floor);
+    else {
+      zone.missingArt.push({ id: 'mf.lava.surface', why: lava.missing });
+      setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
+    }
   }
   // and the facility's floor, the film's (terrain.js lays it out per room)
   if (MUSTAFAR) setFacilityFloor(await loadMustafarFloor().catch((e) => console.warn('무스타파 바닥: ' + e.message)));
