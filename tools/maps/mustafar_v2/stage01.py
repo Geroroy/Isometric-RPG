@@ -11,8 +11,10 @@ iso.js), so later steps add to one layer without touching the others:
   surround    the ground round the zone (here a PLACEHOLDER: the existing lava texture, until the rock and the lava
               of the stage are designed)
   walk        where one may walk (rectangles); everything else is blocked
-  collision   blocked areas inside the walkable ones (rectangles) — none yet
-  structures  walls, railings, the entry corridor (step 3, 4): sprite assets placed { asset, x, y, block } — none yet
+  collision   blocked areas inside the walkable ones (rectangles)
+              (an entry with `needs` counts only once those assets are delivered: no invisible floor or walls)
+  structures  railings, the entry corridor, the ship: sprite assets placed { asset, x, y, block }
+              (docs/asset_requests/mf.landing.*.md; each appears when delivered)
   decor       loose dressing (later), as structures — none yet
   backdrop    a far background (later) — none
   actors      who starts where: Anakin (Padmé, Obi-Wan, the ship: steps 5, 6)
@@ -50,6 +52,30 @@ BAYS = [
 assert len(BAYS) * BAY == Y1 - Y0 - 2 * RIM and all(len(r) * BAY == X1 - X0 - 2 * RIM for r in BAYS)
 
 CX, CY = (X0 + X1) / 2, (Y0 + Y1) / 2
+# the entry corridor: off the pad's −x edge, 6 m wide (one railing run left out), 10 m long, toward the facility
+DOOR_Y0, DOOR_Y1 = 95, 101
+CORR_X0 = X0 - 10
+# Padmé's ship on the tie-down clamps (the E bays), nose to +x
+SHIP = (96, 95)
+
+
+def structures():
+    """The sprite assets standing on the pad (docs/asset_requests): drawn once delivered, left out before."""
+    out = []
+    # railings on the rim, 0.5 m in from the edge: 6 m runs over the interior, posts at the corners
+    for x in range(X0 + RIM + 3, X1 - RIM, 6):
+        out += [{'asset': 'mf.landing.rail_x', 'x': x, 'y': Y0 + 0.5}, {'asset': 'mf.landing.rail_x', 'x': x, 'y': Y1 - 0.5}]
+    for y in range(Y0 + RIM + 3, Y1 - RIM, 6):
+        if not (y - 3 >= DOOR_Y0 - 0.01 and y + 3 <= DOOR_Y1 + 0.01):  # (the corridor's mouth)
+            out.append({'asset': 'mf.landing.rail_y', 'x': X0 + 0.5, 'y': y})
+        out.append({'asset': 'mf.landing.rail_y', 'x': X1 - 0.5, 'y': y})
+    for x, y in ((X0 + 0.5, Y0 + 0.5), (X1 - 0.5, Y0 + 0.5), (X0 + 0.5, Y1 - 0.5), (X1 - 0.5, Y1 - 0.5)):
+        out.append({'asset': 'mf.landing.rail_corner', 'x': x, 'y': y})
+    # the corridor: its floor (flat) and its walls (standing), one anchor
+    my = (DOOR_Y0 + DOOR_Y1) / 2
+    out += [{'asset': 'mf.landing.corridor_floor', 'x': X0, 'y': my}, {'asset': 'mf.landing.corridor', 'x': X0, 'y': my}]
+    out.append({'asset': 'mf.landing.ship', 'x': SHIP[0], 'y': SHIP[1], 'block': True})
+    return out
 
 
 def lights():
@@ -86,9 +112,19 @@ def main():
                 'asset': 'mf.landing.floor',  # its textures (docs/asset_requests/mf.landing.floor.md)
             }
         ],
-        'walk': [{'id': 'pad', 'rect': [X0, Y0, X1, Y1]}],
-        'collision': [],
-        'structures': [],
+        'walk': [
+            {'id': 'pad', 'rect': [X0, Y0, X1, Y1]},
+            {'id': 'corridor', 'rect': [CORR_X0 + 1, DOOR_Y0 + 1, X0, DOOR_Y1 - 1], 'needs': ['mf.landing.corridor_floor', 'mf.landing.corridor']},
+        ],
+        # the rim under the railings (only once they stand there)
+        'collision': [
+            {'id': 'rail_y0', 'rect': [X0, Y0, X1, Y0 + RIM], 'needs': ['mf.landing.rail_x']},
+            {'id': 'rail_y1', 'rect': [X0, Y1 - RIM, X1, Y1], 'needs': ['mf.landing.rail_x']},
+            {'id': 'rail_x0a', 'rect': [X0, Y0, X0 + RIM, DOOR_Y0], 'needs': ['mf.landing.rail_y']},
+            {'id': 'rail_x0b', 'rect': [X0, DOOR_Y1, X0 + RIM, Y1], 'needs': ['mf.landing.rail_y']},
+            {'id': 'rail_x1', 'rect': [X1 - RIM, Y0, X1, Y1], 'needs': ['mf.landing.rail_y']},
+        ],
+        'structures': structures(),
         'decor': [],
         'backdrop': None,
         'actors': {

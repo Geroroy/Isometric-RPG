@@ -39,9 +39,11 @@ export class MustafarStage extends World {
       else if (f.kind === 'groundImage' && art[f.asset] && !this.backdrop) this.backdrop = groundBackdrop(art[f.asset], f.at.x, f.at.y);
       if (f.x1 !== undefined) this.rect(f.x0, f.y0, f.x1, f.y1, (i) => (this.biome[i] = BIOME.MUSTAFAR));
     }
-    // where one may walk, then what stands in the way inside it
-    for (const a of z.walk) this.rect(...a.rect, (i) => (this.blocked[i] = 0));
-    for (const c of z.collision) this.rect(...c.rect, (i) => (this.blocked[i] = 1));
+    // where one may walk, then what stands in the way inside it — an entry with `needs` (asset ids) only once those
+    // assets are delivered (a corridor's floor, the railings standing on the rim: no invisible ground or walls before)
+    const has = (e) => !e.needs || e.needs.every((id) => art[id]);
+    for (const a of z.walk) if (has(a)) this.rect(...a.rect, (i) => (this.blocked[i] = 0));
+    for (const c of z.collision) if (has(c)) this.rect(...c.rect, (i) => (this.blocked[i] = 1));
     // who starts where (only Anakin in this step)
     const an = z.actors.anakin;
     this.spawn = { x: an.x, y: an.y };
