@@ -210,7 +210,7 @@ if (sections.includes('C')) {
     const s = await state(page);
     seen.push(on ? part : `(${part}?)`);
     check(`C ${part}: reached with the scenes skipped, nobody stranded`, on && !s.pBlocked && !s.obBlocked && !s.air && !s.ropes, JSON.stringify({ p: s.p, ob: s.ob, air: s.air, ropes: s.ropes }));
-    if (part === 'pipe') check('C pipe: both on the pipe (z 0.35)', Math.abs(s.p[0] - 66) < 0.6 && Math.abs(s.ob[0] - 66) < 0.6, JSON.stringify({ p: s.p, ob: s.ob }));
+    if (part === 'pipe') check('C pipe: both on the pipe (z 0.35)', Math.abs(s.p[0] - 66) < 0.6 && Math.abs(s.ob[0] - 66) < 0.6 && Math.abs(s.p[2] - 0.35) < 0.06 && Math.abs(s.ob[2] - 0.35) < 0.06, JSON.stringify({ p: s.p, ob: s.ob }));
     if (part === 'arm') check('C arm: both on the arm', s.p[0] > 68.8 && s.p[0] < 72.2 && s.ob[0] > 68.8 && s.ob[0] < 72.2, JSON.stringify({ p: s.p, ob: s.ob }));
     await press(page);
     for (let i = 0; i < 12; i++) {

@@ -357,6 +357,7 @@ export const ROUTE = {
     return new Cinema(g, { length: T + 13.2, cues }).play().then(() => {
       this.ropes = null;
       p.airborne = ob.airborne = false;
+      p.z = ob.z = P.z; // (on the pipe, not settling down onto it from the cables' height when the scene was skipped)
       this.enterPart('pipe');
     });
   },
