@@ -19,7 +19,7 @@ const SHOTS = [
   { name: 'coruscant', go: (g) => ((g.player.x = g.world.spawn.x), (g.player.y = g.world.spawn.y)) },
   { name: 'undercity', go: (g) => ((g.player.x = 96), (g.player.y = 108)) },
   { name: 'geonosis', hash: '#duel' },
-  { name: 'mustafar', hash: '#duel-mustafar' },
+  { name: 'mustafar', hash: '#duel-mustafar-legacy' },
 ];
 
 function findChrome(dir) {

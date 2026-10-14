@@ -11,7 +11,10 @@ import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
 import { setMustafarMap } from './world/worldgen.js';
 import { pickMap, setMapName } from './world/mapStore.js';
-import { setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture } from './gfx/terrain.js';
+import { setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture, setPadFloor } from './gfx/terrain.js';
+import { loadManifest, loadAsset } from './gfx/assetManifest.js';
+import { placeholderBadge } from './ui/placeholderBadge.js';
+import { setMustafarZone } from './world/mustafarStage.js';
 import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid, loadCargo, loadRocks, loadWalls, addMirror, MIRROR_SUFFIX } from './gfx/mustafarFloor.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
@@ -43,22 +46,30 @@ const loading = document.getElementById('loading');
 const bar = document.querySelector('#loading .bar div');
 const label = document.querySelector('#loading .label');
 
-// '#duel' / '#duel-mustafar' / '#duel-mustafar-art' select a Movie Duel (a hash works on any host); switching reloads
-const DUEL = location.hash === '#duel' ? 'geonosis' : location.hash === '#duel-mustafar' ? 'mustafar' : location.hash === '#duel-mustafar-art' ? 'mustafarArt' : null;
+// '#duel' / '#duel-mustafar' select a Movie Duel (a hash works on any host); switching reloads. Mustafar is being
+// rebuilt (docs/MUSTAFAR_REBUILD.md): '#duel-mustafar' plays the rebuild's zones; the old maps stay reachable for
+// reference only, off the menu: '#duel-mustafar-legacy' (the film's facility) and '#duel-mustafar-art' (the painted
+// lava fortress)
+const DUEL = { '#duel': 'geonosis', '#duel-mustafar': 'mustafar', '#duel-mustafar-legacy': 'mustafarLegacy', '#duel-mustafar-art': 'mustafarArt' }[location.hash] || null;
 const MODE = DUEL ? 'duel' : 'campaign';
-// Mustafar: the film's map, or the painted lava fortress (the same set, sprites and editor; its own map file)
-const MUSTAFAR = DUEL === 'mustafar' || DUEL === 'mustafarArt';
+// the old Mustafar: the film's map, or the painted lava fortress (the same set, sprites and editor; its own map file)
+const MUSTAFAR = DUEL === 'mustafarLegacy' || DUEL === 'mustafarArt';
 const MAP_NAME = DUEL === 'mustafarArt' ? 'mustafar_art' : 'mustafar';
-setRemasterAllowed(MUSTAFAR); // the remastered graphics: the Mustafar duels only (gfx/remaster.js)
+// the rebuild's zone (world/mustafarStage.js; one zone in this step)
+const MUSTAFAR_V2 = DUEL === 'mustafar';
+const ZONE = 'stage01';
+setRemasterAllowed(MUSTAFAR || MUSTAFAR_V2); // the remastered graphics: the Mustafar duels only (gfx/remaster.js)
 window.addEventListener('hashchange', () => location.reload());
 
 const DUEL_TITLES = {
   geonosis: ['#duel', '지오노시스의 결투', 'MOVIE DUEL · EPISODE II — 지오노시스의 결투 · 두쿠 백작의 비밀 격납고', '지오노시스 격납고 준비 중…'],
-  mustafar: ['#duel-mustafar', '무스타파의 결투', 'MOVIE DUEL · EPISODE III — 무스타파의 결투 · 아나킨 vs 오비완', '무스타파 채굴 시설 준비 중…'],
+  mustafar: ['#duel-mustafar', '무스타파의 결투', 'MOVIE DUEL · EPISODE III — 무스타파의 결투 · 재개발 중: STAGE 01 착륙장', '무스타파 착륙장 준비 중…'],
+  mustafarLegacy: ['#duel-mustafar-legacy', '무스타파의 결투 (이전 버전)', 'MOVIE DUEL · EPISODE III — 무스타파의 결투 (이전 버전) · 아나킨 vs 오비완', '무스타파 채굴 시설 준비 중…'],
   mustafarArt: ['#duel-mustafar-art', '무스타파 용암 요새', 'MOVIE DUEL · EPISODE III — 무스타파 용암 요새 · 아나킨 vs 오비완', '용암 요새 준비 중…'],
 };
+const OFF_MENU = new Set(['mustafarLegacy', 'mustafarArt']); // (the old Mustafar maps: by their address only)
 const duelMenu = (d) => {
-  const others = Object.keys(DUEL_TITLES).filter((k) => k !== d);
+  const others = Object.keys(DUEL_TITLES).filter((k) => k !== d && !OFF_MENU.has(k));
   return `
   <button id="startBtn" class="tm-item sel" type="button"><span>결투 시작</span></button>
   ${others.map((o) => `<a class="tm-item" href="${DUEL_TITLES[o][0]}"><span>다른 결투</span><small>${DUEL_TITLES[o][1]}</small></a>`).join('')}
@@ -90,9 +101,29 @@ async function boot() {
     setFloorTexture(assets.city.floor);
     setGroundTextures(assets.city.ground);
   }
-  if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, MUSTAFAR ? 'mustafar' : DUEL)).sprites);
+  if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, MUSTAFAR || MUSTAFAR_V2 ? 'mustafar' : DUEL)).sprites);
   // Mustafar: Anakin in the campaign's own Blender outfits — the cloak with the hood up, hood down, the tunic
-  if (MUSTAFAR) Object.assign(assets.sprites, await loadSheets(['anakin_vader', 'anakin_robe', 'anakin_tunic'], onProgress));
+  if (MUSTAFAR || MUSTAFAR_V2) Object.assign(assets.sprites, await loadSheets(['anakin_vader', 'anakin_robe', 'anakin_tunic'], onProgress));
+  // the rebuild: its zone file and the external art it names (public/assets/mustafar/manifest.json, docs/ASSETS.md) —
+  // ground tiles to the terrain, sprites with the sheet sprites; what is not delivered yet shows as a placeholder.
+  // The lava round it is the old Mustafar's texture, kept as a placeholder until the stage's own lava arrives
+  if (MUSTAFAR_V2) {
+    const zone = await cachedJSON(import.meta.env.BASE_URL + `maps/mustafar_v2/${ZONE}.json`);
+    const man = await loadManifest('assets/mustafar/manifest.json');
+    zone.art = {};
+    zone.missingArt = [];
+    const ids = new Set([...zone.floor, ...zone.structures, ...zone.decor].map((e) => e.asset).filter(Boolean));
+    for (const id of ids) {
+      const a = await loadAsset(man, id);
+      if (a.data) zone.art[id] = a.data;
+      else zone.missingArt.push({ id, why: a.missing });
+    }
+    if (zone.missingArt.length) console.info('무스타파 에셋 대기: ' + zone.missingArt.map((m) => `${m.id} (${m.why})`).join(', '));
+    assets.city = { ...(assets.city || {}), ...Object.fromEntries(Object.entries(zone.art).filter(([, d]) => d.meta)) };
+    setPadFloor(Object.fromEntries(Object.entries(zone.art).filter(([, d]) => d.tiles)));
+    setMustafarZone(zone);
+    setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
+  }
   // and the facility's floor, the film's (terrain.js lays it out per room)
   if (MUSTAFAR) setFacilityFloor(await loadMustafarFloor().catch((e) => console.warn('무스타파 바닥: ' + e.message)));
   if (MUSTAFAR) setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
@@ -152,6 +183,7 @@ async function boot() {
     hud.onWorld();
   });
   if (look) game.player.sprite = look.sprite;
+  if (MUSTAFAR_V2) placeholderBadge(game.world.zone.missingArt); // (what the zone still waits for: never passed off as final)
   const canvas = document.getElementById('world');
   const overlay = document.getElementById('overlay');
   const renderer = (game.renderer = new Renderer(game, assets, canvas, overlay));

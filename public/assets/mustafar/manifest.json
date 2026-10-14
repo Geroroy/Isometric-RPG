@@ -1,0 +1,126 @@
+{
+ "format": "cw-assets",
+ "version": 1,
+ "set": "mustafar",
+ "projection": {
+  "view": "2:1 dimetric, orthographic, camera 30° up on the +x +y diagonal (src/core/iso.js, ART_GUIDE.md §1)",
+  "tile": "1 world unit = 1 tile = 1 m",
+  "screen_px_per_metre": {
+   "along_axis_x": 20,
+   "along_axis_y": 10,
+   "up": 24.49
+  },
+  "density": "image px per game px (1 = game pixels 1:1; 2 = the remastered 2x, drawn at half size)"
+ },
+ "assets": [
+  {
+   "id": "mf.landing.floor",
+   "name": "무스타파 착륙장 바닥 (STAGE 01)",
+   "kind": "groundTiles",
+   "status": "requested",
+   "request": "docs/asset_requests/mf.landing.floor.md",
+   "source": "external (ChatGPT)",
+   "view": "top-down, square-on (the engine projects it to 2:1)",
+   "px_per_metre": 96,
+   "tiles": {
+    "bay_A": {
+     "file": "landing/floor_bay_A.png",
+     "size": [
+      576,
+      576
+     ],
+     "metres": [
+      6,
+      6
+     ]
+    },
+    "bay_A2": {
+     "file": "landing/floor_bay_A2.png",
+     "size": [
+      576,
+      576
+     ],
+     "metres": [
+      6,
+      6
+     ]
+    },
+    "bay_B": {
+     "file": "landing/floor_bay_B.png",
+     "size": [
+      576,
+      576
+     ],
+     "metres": [
+      6,
+      6
+     ]
+    },
+    "bay_C": {
+     "file": "landing/floor_bay_C.png",
+     "size": [
+      576,
+      576
+     ],
+     "metres": [
+      6,
+      6
+     ]
+    },
+    "bay_D": {
+     "file": "landing/floor_bay_D.png",
+     "size": [
+      576,
+      576
+     ],
+     "metres": [
+      6,
+      6
+     ]
+    },
+    "bay_E": {
+     "file": "landing/floor_bay_E.png",
+     "size": [
+      576,
+      576
+     ],
+     "metres": [
+      6,
+      6
+     ]
+    },
+    "rim": {
+     "file": "landing/floor_rim.png",
+     "size": [
+      576,
+      96
+     ],
+     "metres": [
+      6,
+      1
+     ]
+    },
+    "corner": {
+     "file": "landing/floor_corner.png",
+     "size": [
+      96,
+      96
+     ],
+     "metres": [
+      1,
+      1
+     ]
+    }
+   },
+   "layer": "ground",
+   "sort": "ground: under every sprite and character",
+   "collision": "none in the image: the zone's walk / collision layers (public/maps/mustafar_v2/stage01.json)",
+   "occlusion": "none (ground)",
+   "lighting": {
+    "lightmap": true,
+    "bakedDirectionalLight": false,
+    "note": "the scene's ambient and the lava lights multiply over it in game"
+   }
+  }
+ ]
+}

@@ -44,6 +44,7 @@ export class DuelHUD {
        <div class="bb-name">${EMBLEM}<span>${c.name}</span>${EMBLEM.replace('bb-mark', 'bb-mark r')}</div>`,
     );
     this.boss.title = c.sub;
+    if (!game.duel.foe) this.boss.style.display = 'none'; // (a stage with nobody to fight yet: the Mustafar rebuild's first steps)
     this.comp = el('ps-comp', '<span>평정</span><div><i></i></div>');
     document.querySelector('.cn-stats').appendChild(this.comp); // the PC console (the phone plate has its own, ui/mobileHud.js)
     this.lockEl = el('lock-meter hidden', '<div class="lm-label">칼날 겨루기</div><div class="lm-bar"><i></i></div><div class="lm-hint"></div>');
@@ -60,6 +61,11 @@ export class DuelHUD {
     const d = this.game.duel;
     const dk = d.foe;
     const p = this.game.player;
+    if (!dk) {
+      this.comp.querySelector('i').style.width = Math.max(0, p.composure) + '%';
+      this.comp.classList.toggle('low', p.composure < 30);
+      return;
+    }
     const k = Math.max(0, dk.hp / dk.maxHp);
     this.chip = this.chip > k ? Math.max(k, this.chip - dt * 0.3) : k;
     this.boss.querySelector('.bb-fill').style.width = k * 100 + '%';

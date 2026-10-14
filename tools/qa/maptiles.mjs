@@ -22,7 +22,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errs = [];
 page.on('pageerror', (e) => errs.push(e.message));
 page.on('console', (m) => (m.type() === 'error' || m.type() === 'warning') && errs.push(m.text()));
-await page.goto(url + '#duel-mustafar');
+await page.goto(url + '#duel-mustafar-legacy');
 await page.waitForFunction(() => window.__ready, null, { timeout: 900000 });
 await page.click('#startBtn');
 await page.waitForTimeout(1500);

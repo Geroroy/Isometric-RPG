@@ -26,7 +26,7 @@ await page.addInitScript(() => {
   window.__stop = false;
   window.requestAnimationFrame = (cb) => raf((t) => (window.__stop ? raf(() => window.requestAnimationFrame(cb)) : cb(t)));
 });
-await page.goto(url + '#duel-mustafar');
+await page.goto(url + '#duel-mustafar-legacy');
 await page.waitForFunction(() => window.__ready, null, { timeout: 900000 });
 await page.click('#startBtn');
 await page.waitForTimeout(1500);

@@ -20,7 +20,7 @@ const page = await context.newPage();
 const logs = [];
 page.on('console', (m) => { if (['error', 'warning'].includes(m.type())) logs.push(m.type() + ': ' + m.text()); });
 page.on('pageerror', (e) => logs.push('pageerror: ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 4).join('\n')));
-const hash = mode === 'duel' ? '#duel' : mode === 'mustafar' ? '#duel-mustafar' : mode === 'art' ? '#duel-mustafar-art' : '';
+const hash = mode === 'duel' ? '#duel' : mode === 'mustafar' ? '#duel-mustafar-legacy' : mode === 'art' ? '#duel-mustafar-art' : '';
 await page.goto('http://127.0.0.1:5173/' + hash);
 await page.waitForFunction(() => window.__ready, null, { timeout: 600000 });
 if (mobile) await page.tap('#startBtn'); else await page.click('#startBtn');

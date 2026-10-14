@@ -36,7 +36,7 @@ function findChrome(dir) {
 const browser = await chromium.launch({ executablePath: exe, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 page.on('pageerror', (e) => console.log('pageerror', e.message));
-await page.goto(url + '#duel-mustafar');
+await page.goto(url + '#duel-mustafar-legacy');
 await page.waitForFunction(() => window.__ready, null, { timeout: 900000 });
 await page.click('#startBtn');
 await page.waitForTimeout(1500);

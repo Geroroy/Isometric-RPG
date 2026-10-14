@@ -1,7 +1,7 @@
 // A terrain worker (gfx/terrainPool.js): builds the remastered ground's chunks off the main thread. It is set up
 // with the place (its tile maps, rooms and craters) and the ground textures as the page has them, and builds the
 // same chunks the page would (gfx/terrain.js), handing each back as an ImageBitmap.
-import { Terrain, setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture } from './terrain.js';
+import { Terrain, setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture, setPadFloor } from './terrain.js';
 
 let T = null;
 let ready = Promise.resolve(); // (a painted ground: its picture fetched before the first chunk)
@@ -14,6 +14,7 @@ self.onmessage = (e) => {
     if (t.ground) setGroundTextures(t.ground);
     setFacilityFloor(t.facility || null);
     setLavaTexture(t.lava || null);
+    setPadFloor(t.pad || null);
     const bg = m.world.backdrop;
     ready = bg && bg.url ? fetch(bg.url).then((r) => r.blob()).then((b) => createImageBitmap(b)).then((img) => (bg.img = img)).catch((err) => console.warn('지형 워커: 배경 그림 ' + err.message)) : Promise.resolve();
     ready = ready.then(() => (T = new Terrain(m.world)));

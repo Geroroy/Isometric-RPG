@@ -15,6 +15,8 @@ import { Duel } from './duel.js';
 import { Cinema } from './cinema.js';
 import { MustafarDuel } from './duelMustafar.js';
 import { ArtDuel } from './duelArt.js';
+import { MustafarDirector } from './mustafar/director.js';
+import { MustafarStage } from '../world/mustafarStage.js';
 
 const ELITE_NAMES = ['OOM 지휘관 드로이드', '전투 드로이드 분대장', '전술 사령 드로이드 T-7', '돌격 지휘 드로이드'];
 
@@ -25,7 +27,9 @@ export class Game {
     this.mode = mode;
     // the campaign has two places: the city hub (where it starts) and
     // Christophsis, reached by starfighter; each keeps its own state
-    this.world = mode !== 'duel' ? new CityHub(9) : duel === 'mustafar' || duel === 'mustafarArt' ? new MustafarArena(66) : new Arena(77);
+    // (the Movie Duels: Geonosis; Mustafar — the rebuild's zones, docs/MUSTAFAR_REBUILD.md — and, kept for reference
+    // but off the menu, the old Mustafar maps: the film's facility and the painted lava fortress)
+    this.world = mode !== 'duel' ? new CityHub(9) : duel === 'mustafar' ? new MustafarStage(66) : duel === 'mustafarLegacy' || duel === 'mustafarArt' ? new MustafarArena(66) : new Arena(77);
     this.pathfinder = new PathFinder(this.world);
     this.fx = new Effects();
     this.units = [];
@@ -57,6 +61,12 @@ export class Game {
       return;
     }
     if (mode === 'duel' && duel === 'mustafar') {
+      // the rebuild: the film's places in order, its director on the duel's rules (game/mustafar/director.js)
+      this.duel = new MustafarDirector(this);
+      this.updateActive();
+      return;
+    }
+    if (mode === 'duel' && duel === 'mustafarLegacy') {
       this.duel = new MustafarDuel(this);
       this.updateActive();
       return;

@@ -8,6 +8,7 @@ import { HALF_W, HALF_H, Z_PX } from '../core/iso.js';
 import { BIOME } from '../world/biome.js';
 import { valueNoise, hash2, clamp } from '../core/math.js';
 import { BUILDING_PROTO } from './buildingBackdrop.js';
+import { setPadTextures, padAt } from './padFloor.js';
 
 const CH = 16; // tiles per chunk side
 const CW = CH * 2 * HALF_W; // chunk canvas width (640)
@@ -191,6 +192,12 @@ let LAVA_TEX = null;
 export function setLavaTexture(t) {
   TEXTURE_INPUTS.lava = t || null;
   LAVA_TEX = t || null;
+}
+// the Mustafar rebuild's landing pad: its external textures by manifest id (gfx/padFloor.js, gfx/assetManifest.js;
+// the zone file's `floor` entries are world.padFloors)
+export function setPadFloor(t) {
+  TEXTURE_INPUTS.pad = t || null;
+  setPadTextures(t);
 }
 const lavaA = [0, 0, 0];
 const lavaB = [0, 0, 0];
@@ -514,6 +521,7 @@ export class Terrain {
           this.room[y * world.w + x] = k;
         }
     }
+    this.pads = world.padFloors && world.padFloors.length ? world.padFloors : null; // (the rebuild's landing pad)
     this.cache = new Map();
     this.frame = 0;
     this.maxChunks = 96; // (0.8 MB each: the view, its edges, the next zoom step out and a lift's far end)
@@ -996,6 +1004,16 @@ export class Terrain {
             cliff = true;
           }
         }
+        // the Mustafar rebuild's landing pad (gfx/padFloor.js): its external textures, or the debug grid until they come
+        if (this.pads)
+          for (const F of this.pads)
+            if (padAt(F, fx, fy, fc)) {
+              r = fc[0];
+              g = fc[1];
+              b = fc[2];
+              texd = painted = true;
+              break;
+            }
         // Mustafar's rock (ASH) away from the facility's floors fades to near black, so the lit floors stand out as
         // plates over the dark; near the lava it keeps the lava's red (the light map adds the glow). The river
         // bank (the map's `ashLit` box), where the ending is played, stays as it is

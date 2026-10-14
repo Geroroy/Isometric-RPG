@@ -4,7 +4,7 @@
 import { chromium } from 'playwright-core';
 import fs from 'fs';
 import path from 'path';
-const url = process.argv[2] || 'http://127.0.0.1:4173/#duel-mustafar';
+const url = process.argv[2] || 'http://127.0.0.1:4173/#duel-mustafar-legacy';
 const out = process.argv[3] || 'tools/qa/out/director_mustafar';
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
