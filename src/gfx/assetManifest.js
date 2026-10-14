@@ -40,7 +40,7 @@ function imageData(img) {
 
 /**
  * One asset by id: { entry, data } when it is delivered and checks out, else { entry, missing: reason }.
- * data by kind — groundTiles: { tiles: { key: ImageData } }; groundImage: { img, url, w, h, density, anchor };
+ * data by kind — groundTiles: { tiles: { key: ImageData }, spec: { key: { metres, outer } } }; groundImage: { img, url, w, h, density, anchor };
  * sprite: a sheet sprite ({ meta, body, neon, reflect }) as the city's and the Mustafar set's are.
  */
 export async function loadAsset(man, id) {
@@ -57,7 +57,9 @@ export async function loadAsset(man, id) {
         if (Math.abs(img.width / img.height / want - 1) > RATIO_TOL) throw new Error(`${id}.${k}: 비율 ${img.width}:${img.height} ≠ ${t.metres[0]}:${t.metres[1]} m`);
         tiles[k] = imageData(img);
       }
-      return { entry: e, data: { tiles } };
+      // (each tile's layout facts, without its file: `metres`, `outer` — for the painter, gfx/padFloor.js)
+      const spec = Object.fromEntries(Object.entries(e.tiles).map(([k, t]) => [k, { metres: t.metres, outer: t.outer || 'top' }]));
+      return { entry: e, data: { tiles, spec } };
     }
     const img = await image(man, e.file, e.size, id);
     if (e.kind === 'groundImage') return { entry: e, data: { img, url: new URL(import.meta.env.BASE_URL + man.root + e.file, location.href).href, w: img.width, h: img.height, density: e.density || 1, anchor: e.anchor } };

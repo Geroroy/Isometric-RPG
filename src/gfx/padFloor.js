@@ -11,9 +11,12 @@
 //   asset               the manifest id of its textures
 // Texture orientation (the asset request, docs/asset_requests/mf.landing.floor.md): a bay's image columns run along
 // world +x, rows along +y, its top-left pixel the bay's −x −y corner; the rim strip's columns run along the edge, its
-// top row the outer (lava) edge; the corner's top and left edges are the outer ones.
+// outer (lava) edge at its top row, or at its bottom when the manifest says `outer: "bottom"`; the corner's top and left
+// edges are the outer ones (no corner piece: the strips are mitred); an optional `side` tile is the edge's front
+// elevation, drawn on the side faces below the near edges (padSide).
 // Without its textures (not delivered yet) the pad shows a DEBUG GRID — a placeholder, never the final look.
 import { clamp } from '../core/math.js';
+import { HALF_W, HALF_H, Z_PX } from '../core/iso.js';
 
 // { [asset id]: { tiles: { bay_A: ImageData, …, rim, corner } } } (gfx/assetManifest.js)
 let SETS = {};
@@ -60,9 +63,15 @@ export function padAt(F, fx, fy, o) {
   const dy = Math.min(ly, H - ly);
   if (!set) return debugGrid(F, lx, ly, dx, dy, o);
   const T = set.tiles;
-  if (dx < R && dy < R) texel(T.corner, dx / R, dy / R, o);
-  else if (dy < R) texel(T.rim, frac((lx - R) / B), dy / R, o); // (a side along x: its strip runs along x)
-  else if (dx < R) texel(T.rim, frac((ly - R) / B), dx / R, o); // (a side along y)
+  // the rim strip's v from the distance to the outer edge (its outer edge at the image's top, or at its bottom)
+  const rv = (d) => (set.spec && set.spec.rim && set.spec.rim.outer === 'bottom' ? 1 - d / R : d / R);
+  if (dx < R && dy < R) {
+    // a corner: its own piece when there is one, else the two sides' strips mitred along the diagonal
+    if (T.corner) texel(T.corner, dx / R, dy / R, o);
+    else if (dy <= dx) texel(T.rim, frac((lx - R) / B), rv(dy), o);
+    else texel(T.rim, frac((ly - R) / B), rv(dx), o);
+  } else if (dy < R) texel(T.rim, frac((lx - R) / B), rv(dy), o); // (a side along x: its strip runs along x)
+  else if (dx < R) texel(T.rim, frac((ly - R) / B), rv(dx), o); // (a side along y)
   else {
     const bx = Math.floor((lx - R) / B);
     const by = Math.floor((ly - R) / B);
@@ -93,5 +102,32 @@ function debugGrid(F, lx, ly, dx, dy, o) {
   o[0] = r;
   o[1] = g;
   o[2] = b;
+  return true;
+}
+
+/**
+ * The pad's side faces below its near edges (the camera looks from +x +y): the +y face (along x at y1) and the +x face
+ * (along y at x1), as deep as the side tile is tall (its `metres[1]`), drawn with the delivered side texture (a front
+ * elevation of the edge, its top row at the deck). A screen pixel (sx, sy) shows the +y face's point (x, y1, z) with
+ * x = sx / HALF_W + y1, and the +x face's likewise. Writes [r, g, b] to `o`; false when the pixel is on neither face
+ * (or the pad has no side texture: then the lava shows to the edge).
+ */
+export function padSide(F, sx, sy, o) {
+  const set = F.asset && SETS[F.asset];
+  const T = set && set.tiles.side;
+  if (!T) return false;
+  const D = set.spec.side.metres[1];
+  const L = set.spec.side.metres[0];
+  const x = sx / HALF_W + F.y1;
+  let z = ((x + F.y1) * HALF_H - sy) / Z_PX;
+  let along;
+  if (x >= F.x0 && x <= F.x1 && z <= 0 && z >= -D) along = x - F.x0;
+  else {
+    const y = F.x1 - sx / HALF_W;
+    z = ((F.x1 + y) * HALF_H - sy) / Z_PX;
+    if (!(y >= F.y0 && y <= F.y1 && z <= 0 && z >= -D)) return false;
+    along = y - F.y0;
+  }
+  texel(T, frac(along / L), -z / D, o);
   return true;
 }

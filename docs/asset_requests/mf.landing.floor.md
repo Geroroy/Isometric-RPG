@@ -1,5 +1,8 @@
 # ASSET REQUEST — mf.landing.floor
 
+> **상태: 받음, 통합됨** (`docs/MUSTAFAR_REBUILD.md` 현재 상태). 시트 한 장으로 와서 잘라 썼고, 모서리 조각은 탑다운이 아니라
+> 쓰지 않았다(띠를 대각선으로 이음). 재생성 요청 없음.
+
 ```
 ASSET REQUEST
 

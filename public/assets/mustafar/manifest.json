@@ -17,17 +17,16 @@
    "id": "mf.landing.floor",
    "name": "무스타파 착륙장 바닥 (STAGE 01)",
    "kind": "groundTiles",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/mf.landing.floor.md",
-   "source": "external (ChatGPT)",
-   "view": "top-down, square-on (the engine projects it to 2:1)",
-   "px_per_metre": 96,
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_floor_sheet.png, cut by tools/assets/mustafar/slice_landing_floor.py (crop only)",
+   "px_per_metre": "about 66 (bays), 158 (rim, side)",
    "tiles": {
     "bay_A": {
      "file": "landing/floor_bay_A.png",
      "size": [
-      576,
-      576
+      401,
+      396
      ],
      "metres": [
       6,
@@ -37,8 +36,8 @@
     "bay_A2": {
      "file": "landing/floor_bay_A2.png",
      "size": [
-      576,
-      576
+      401,
+      396
      ],
      "metres": [
       6,
@@ -48,8 +47,8 @@
     "bay_B": {
      "file": "landing/floor_bay_B.png",
      "size": [
-      576,
-      576
+      395,
+      394
      ],
      "metres": [
       6,
@@ -59,8 +58,8 @@
     "bay_C": {
      "file": "landing/floor_bay_C.png",
      "size": [
-      576,
-      576
+      400,
+      398
      ],
      "metres": [
       6,
@@ -70,8 +69,8 @@
     "bay_D": {
      "file": "landing/floor_bay_D.png",
      "size": [
-      576,
-      576
+      404,
+      398
      ],
      "metres": [
       6,
@@ -81,8 +80,8 @@
     "bay_E": {
      "file": "landing/floor_bay_E.png",
      "size": [
-      576,
-      576
+      396,
+      399
      ],
      "metres": [
       6,
@@ -92,24 +91,26 @@
     "rim": {
      "file": "landing/floor_rim.png",
      "size": [
-      576,
-      96
+      951,
+      158
      ],
      "metres": [
       6,
       1
-     ]
+     ],
+     "outer": "bottom"
     },
-    "corner": {
-     "file": "landing/floor_corner.png",
+    "side": {
+     "file": "landing/floor_side.png",
      "size": [
-      96,
-      96
+      951,
+      91
      ],
      "metres": [
-      1,
-      1
-     ]
+      6,
+      0.574
+     ],
+     "view": "front elevation of the pad edge (drawn on the near side faces)"
     }
    },
    "layer": "ground",
@@ -120,7 +121,8 @@
     "lightmap": true,
     "bakedDirectionalLight": false,
     "note": "the scene's ambient and the lava lights multiply over it in game"
-   }
+   },
+   "notes": "delivered as one sheet. The corner piece is drawn at an angle, not top-down: not used, the rim is mitred at the corners. The rim strip's lower part is the edge's side face (tile \"side\"), used below the near edges."
   }
  ]
 }

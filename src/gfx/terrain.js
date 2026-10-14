@@ -8,7 +8,7 @@ import { HALF_W, HALF_H, Z_PX } from '../core/iso.js';
 import { BIOME } from '../world/biome.js';
 import { valueNoise, hash2, clamp } from '../core/math.js';
 import { BUILDING_PROTO } from './buildingBackdrop.js';
-import { setPadTextures, padAt } from './padFloor.js';
+import { setPadTextures, padAt, padSide } from './padFloor.js';
 
 const CH = 16; // tiles per chunk side
 const CW = CH * 2 * HALF_W; // chunk canvas width (640)
@@ -1005,7 +1005,7 @@ export class Terrain {
           }
         }
         // the Mustafar rebuild's landing pad (gfx/padFloor.js): its external textures, or the debug grid until they come
-        if (this.pads)
+        if (this.pads) {
           for (const F of this.pads)
             if (padAt(F, fx, fy, fc)) {
               r = fc[0];
@@ -1014,6 +1014,17 @@ export class Terrain {
               texd = painted = true;
               break;
             }
+          // its side faces below the near edges, over the lava beyond (the delivered side texture)
+          if (!painted)
+            for (const F of this.pads)
+              if (padSide(F, sx, sy, fc)) {
+                r = fc[0];
+                g = fc[1];
+                b = fc[2];
+                texd = painted = true;
+                break;
+              }
+        }
         // Mustafar's rock (ASH) away from the facility's floors fades to near black, so the lit floors stand out as
         // plates over the dark; near the lava it keeps the lava's red (the light map adds the glow). The river
         // bank (the map's `ashLit` box), where the ending is played, stays as it is

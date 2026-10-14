@@ -51,6 +51,9 @@
 ## 현재 상태 (STAGE 01, 바닥 단계)
 
 - 착륙장 44 × 38 m(설계 가정, 영화 대비 미측정), 전체 걷기 가능, 용암 쪽은 막힘. 아나킨 혼자, 이동·공격·스킬·막기 동작 확인.
-- 바닥 그래픽: **에셋 대기** (`docs/asset_requests/mf.landing.floor.md`). 그동안 디버그 그리드 + 화면 상단 플레이스홀더 배지.
+- 바닥 그래픽: `mf.landing.floor` **받음**(외부 제작 시트 `tools/assets/mustafar/src/landing_floor_sheet.png`, 자르기만 하는
+  `tools/assets/mustafar/slice_landing_floor.py` → `public/assets/mustafar/landing/`). 베이 6종, 테두리 띠(바깥 가장자리가 아래쪽:
+  매니페스트 `outer: "bottom"`), 띠 아래쪽의 트러스 면은 가까운 두 변 아래의 옆면(`side`, 깊이 약 0.57 m)으로 쓴다. 모서리 조각은
+  탑다운이 아니라 쓰지 않고, 띠를 대각선으로 맞대어 잇는다. 베이는 약 66 px/m(요청 96)지만 승인 기준을 만족해 그대로 쓴다.
 - 주변 용암: 이전 무스타파의 용암 텍스처를 임시로 사용(존 파일 `surround.placeholder`).
 - 다음: 바닥 에셋을 받으면 통합·검증 → 사용자 승인 → 가장자리 구조물(에셋 요청부터).
