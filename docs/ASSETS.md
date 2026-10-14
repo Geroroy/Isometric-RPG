@@ -75,7 +75,17 @@ public/assets/mustafar/
 2. `manifest.json`의 해당 항목을 `"status": "delivered"`로 바꾼다(크기가 요청과 다르면 고치지 말고 사용자에게 알린다).
 3. 해당 스테이지 QA(`node tools/qa/mfstage01.mjs` 등)로 화면을 보고, 플레이스홀더 배지가 사라졌는지 확인한다.
 
-## 5. ASSET REQUEST 양식
+## 5. 전투 가독성 (모든 에셋 공통)
+
+이 게임은 실시간 광선검 액션 RPG다(`CLAUDE.md` "프로젝트 정체성"). 배경이 아무리 정교해도 전투를 읽고 조작하는 데 방해가 되면
+안 된다. 요청서마다 이 조건을 넣는다.
+
+- 바닥은 중간 이하 밝기·낮은 대비·낮은 채도: 캐릭터(키 50~57 px), 광선검 청·적색, 이펙트가 그 위에서 항상 또렷하다.
+- 바닥에 캐릭터 크기의 고대비 무늬, 광선검·블래스터와 비슷한 밝은 선이나 청·적색 발광을 넣지 않는다.
+- 걸을 수 있는 곳과 막힌 곳(벽·낭떠러지·용암)이 형태와 명암으로 한눈에 구분된다.
+- 세워진 스프라이트는 캐릭터를 가릴 수 있는 높이를 매니페스트 `occlusion`에 적는다(가리면 반투명 처리).
+
+## 6. ASSET REQUEST 양식
 
 ```
 ASSET REQUEST
@@ -94,4 +104,4 @@ ASSET REQUEST
 - 기타 기술적 요구사항:
 ```
 
-요청서는 `docs/asset_requests/<Asset ID>.md`. 첫 요청: `mf.landing.floor`.
+요청서는 `docs/asset_requests/<Asset ID>.md`. 기타 기술적 요구사항에 §5의 가독성 조건을 항상 넣는다. 첫 요청: `mf.landing.floor`.
