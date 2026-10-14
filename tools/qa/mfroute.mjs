@@ -8,7 +8,7 @@
 //      the music, the result screen
 //   C  the chain from the control room with every scene skipped (Esc): the same state as watched
 //   D  elevation and doors: the gallery's steps (the rail blocks, the steps lead up, z 0.6), the high ground's slope
-//      (up to 1.4 m), the conference room's west door and the balcony door shut until their scenes
+//      (up to 1.4 m), the conference room's west door shut until its scene, the balcony doorway open
 // Prints a table per part and ok/FAIL lines; frames in out_dir; exits 1 on a failure.
 //     node tools/qa/mfroute.mjs [base_url] [out_dir] [sections, e.g. ABCD]
 import { chromium } from 'playwright-core';
@@ -240,7 +240,7 @@ if (sections.includes('D')) {
     const { page, errs } = await open('D:control', 'control');
     await waitPart(page, 'control', 60000);
     const doors = await page.evaluate(() => ({ west: window.__game.world.isBlocked(45, 98), balcony: window.__game.world.isBlocked(29, 106) }));
-    check('D control: the west door open, the balcony door shut', !doors.west && doors.balcony, JSON.stringify(doors));
+    check('D control: the west door open, the balcony doorway an open gap (no invisible blocker)', !doors.west && !doors.balcony, JSON.stringify(doors));
     // hold the fight still (Obi-Wan aside, scripted) and walk Anakin up to the gallery from below its rail
     await page.evaluate(() => {
       const g = window.__game;
