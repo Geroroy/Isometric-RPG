@@ -186,9 +186,13 @@ if (sections.includes('B')) {
     await page.screenshot({ path: `${out}/B_${part}.png` });
     await press(page);
     // frames of the scene that follows
+    // (a frame at each moment the scene reaches — and no waiting past its end: a short scene must not leave the
+    // next part playing out unwatched while the test waits for a moment that never comes)
+    await page.waitForFunction(() => !!window.__game.cinema, null, { timeout: 30000 }).catch(() => {});
     for (const k of [1.5, 4.5, 9]) {
-      const got = await page.waitForFunction((tt) => window.__game.cinema && window.__game.cinema.t >= tt, k, { timeout: 30000 }).then(() => true, () => false);
-      if (got) await page.screenshot({ path: `${out}/B_${part}_to_${k}.png` });
+      const got = await page.waitForFunction((tt) => !window.__game.cinema || window.__game.cinema.t >= tt, k, { timeout: 30000 }).then(() => page.evaluate(() => !!window.__game.cinema), () => false);
+      if (!got) break;
+      await page.screenshot({ path: `${out}/B_${part}_to_${k}.png` });
     }
   }
   const endOn = await page.waitForFunction(() => { const r = document.querySelector('.duel-result'); return r && !r.classList.contains('hidden'); }, null, { timeout: 240000 }).then(() => true, () => false);
