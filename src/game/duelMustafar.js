@@ -71,7 +71,7 @@ const SCORE = [
 ];
 // the service pipe the cables drop them onto (world coordinates: over the river east of the collector arm,
 // tools/maps/mustafar_build.py PIPE); the cable hook hangs over it
-const PIPE = { x: 145.5, y0: 96, y1: 110.5, z: 0.35, r: 0.45 };
+const PIPE = { x: 157.5, y0: 96, y1: 110.5, z: 0.35, r: 0.45 };
 const scoreAt = (t) => SCORE.find((c) => t < c.end) || SCORE[SCORE.length - 1];
 
 // ----------------------------------------------------------------------------

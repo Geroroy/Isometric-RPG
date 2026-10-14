@@ -526,10 +526,10 @@ export const MUSTAFAR = {
   hall: { x: 96, y: 80, hw: 7, hh: 6 }, // the conference room: the long table
   door4: { x: 127, y: 86 }, // the control room's east door, onto the balcony
   balcony: { x: 129.5, y: 80, hw: 2.5, hh: 14 }, // the colonnade over the river (the catwalk out from its south end, to x 158)
-  arm: { x: 141, y: 112, hw: 1.5, hh: 11 },
-  armTower: { x: 141, y: 125 },
-  river: { x: 141, y: 106, hw: 4, hh: 24 },
-  bank: { x: 152, y: 112 },
+  arm: { x: 153, y: 112, hw: 1.5, hh: 11 },
+  armTower: { x: 153, y: 125 },
+  river: { x: 153, y: 106, hw: 4, hh: 24 },
+  bank: { x: 164, y: 112 },
 };
 // the rooms' near walls' bay lengths, pillar to pillar (tools/sprites/mustafar_set/lowwall.py LENGTHS)
 const WALL_BAYS = [1, 2.5, 3, 3.5, 4, 4.5, 5];
@@ -621,6 +621,8 @@ export class MustafarArena extends World {
     this.ambient = [...m.ambient];
     this.grade = m.grade; // post.js colour grade
     this.ashLit = m.ashLit ? [...m.ashLit] : null; // terrain.js: the rock left lit (the river bank)
+    this.upper = m.upper ? m.upper.map((b) => [...b]) : null; // terrain.js cliffFace: the bench up on the cliff
+    this.cliff = m.cliff || 0; // its faces' height (m)
     this.floats = []; // moving decks on the lava river: { x, y, r } (the duel's)
     this.strips = []; // walkable lines over the lava: { x0, y0, x1, y1, r } (a service pipe, the fallen arm adrift)
     this.pipes = []; // service pipes drawn over the lava: { x0, y0, x1, y1, z, r } (renderer.js drawPipes)
@@ -794,6 +796,7 @@ export class MustafarArena extends World {
       grade: this.grade,
       spawn: { x: n6(this.spawn.x), y: n6(this.spawn.y) },
       ...(this.ashLit ? { ashLit: this.ashLit.map(n6) } : {}),
+      ...(this.upper ? { upper: this.upper.map((b) => b.map(n6)), cliff: n6(this.cliff) } : {}),
       pois: this.pois.map((q) => ({ ...q, x: n6(q.x), y: n6(q.y) })),
       floorPlan: this.floorPlan.map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, typeof v === 'number' ? n6(v) : v]))),
       surfaces: this.surfaces.filter((t) => t.map).map((t) => Object.fromEntries(Object.entries(t).filter(([k]) => k !== 'map').map(([k, v]) => [k, n6(v)]))),

@@ -24,6 +24,8 @@ The layout, in world coordinates (x to the screen's lower right, y to its lower 
                 service pipe over it (145.5, 96–110), the falls at its head; the black-sand bank east of it
                 (152, 112) — the high ground
   mountain      rock along the north and west, the lava sea everywhere else
+  cliff         the bench (UPPER boxes) stands CLIFF m over the river and the sea: rock faces below its near edges
+                (terrain.js cliffFace), the lower level (the river, the arm, the bank) moved out past their foot
 
 The map file's keys and what reads them: src/world/worldgen.js MustafarArena (the ground, the way, the props, the
 lights, the rooms' floor plan, the raised tops) — see that file's generate(). The duel's set boxes (MUSTAFAR there)
@@ -48,11 +50,14 @@ JUNCTION = dict(x=106, y=80, hw=3, hh=2)
 HALL = dict(x=96, y=80, hw=7, hh=6)
 DOOR4 = (127, 86)
 COLONNADE = dict(x0=127, x1=132, y0=66, y1=94)
-CATWALK = dict(y=96, x0=132, x1=158)
-RIVER = dict(x0=134, x1=148, y0=82, y1=134)
-ARM = dict(x=141, y=112, hh=11)
-PIPE = dict(x=145.5, y0=96, y1=110.5)
-BANK = (152, 112)
+CATWALK = dict(y=96, x0=132, x1=158)  # out over the drop, its end over the river
+RIVER = dict(x0=146, x1=160, y0=82, y1=134)  # the lower level: beyond the cliff's foot (CLIFF m down)
+ARM = dict(x=153, y=112, hh=11)
+PIPE = dict(x=157.5, y0=96, y1=110.5)
+BANK = (164, 112)
+# the bench up on the cliff: the ground in these boxes (not lava) stands CLIFF m over the rest (terrain.js cliffFace)
+UPPER = [[76, 36, 134, 100], [100, 100, 130, 130], [126, 94, 134, 100]]
+CLIFF = 7
 SEED = 7
 
 BAYS = [1, 2.5, 3, 3.5, 4, 4.5, 5]
@@ -205,8 +210,12 @@ def rail_run(axis, at, a0, a1, pillars=True):
 # ---------------------------------------------------------------------------------------------- the ground
 def ground():
     # the rock bench the facility stands on, the shelf by the river, the far bank
-    fill(84, 58, 134, 134, ':')
-    fill(148, 78, 164, 130, ':')
+    fill(84, 56, 134, 100, ':')
+    fill(102, 100, 130, 130, ':')
+    fill(126, 94, 134, 100, ':')
+    # the lower level: the river's banks, far below
+    fill(134, 60, 146, 134, ':')
+    fill(160, 78, 178, 132, ':')
     # the landing pad: the plate deck (x 107–125, y 109–127), as laid before
     deck = [
         (109, 115, 121), (110, 114, 122), (111, 113, 123), (112, 107, 112), (112, 113, 123), (113, 107, 124), (114, 107, 124),
@@ -221,9 +230,9 @@ def ground():
         w = 1 + int(1.5 + 1.5 * math.sin(y * 0.37) + math.sin(y * 0.11))
         fill(RIVER['x0'] - min(w, 1), y, RIVER['x0'], y + 1, '~')
         fill(RIVER['x1'], y, RIVER['x1'] + max(0, w - 1), y + 1, '~')
-    fill(134, 134, 160, 192, '~')
+    fill(130, 134, 172, 192, '~')
     # the bank: black sand, walked on (the ending's high ground)
-    fill(149, 104, 158, 124, ':', True)
+    fill(161, 104, 170, 124, ':', True)
     # the collector arm's deck in the river
     fill(ARM['x'] - 2, ARM['y'] - ARM['hh'], ARM['x'] + 2, ARM['y'] + ARM['hh'], '#', True)
     # the corridor and the gate's covered walk down to the pad
@@ -245,7 +254,7 @@ def ground():
     fill(K['x0'], K['y0'], K['x1'], K['y1'] + 4, 'M', True)
     # the catwalk east over the river, the lava under and round it
     W_ = CATWALK
-    fill(W_['x0'], W_['y'] - 4, W_['x1'] + 6, W_['y'] + 4, '~')
+    fill(W_['x0'] + 2, W_['y'] - 4, W_['x1'] + 6, W_['y'] + 4, '~')
     fill(W_['x0'], W_['y'] - 1, W_['x1'], W_['y'] + 1, '#', True)
     fill(RIVER['x0'] - 2, RIVER['y0'] - 4, RIVER['x1'] + 2, RIVER['y0'], ':')  # the river's head: rock under the falls
 
@@ -378,8 +387,13 @@ def colonnade():
 def river():
     # the collector arm standing in the river (its tower at the +y end), the falls at the river's head
     prop('mfArm_y', ARM['x'], ARM['y'], flat=True)
-    for fx in (137, 144):
+    for fx in (149, 156):
         prop('mfFall~m', fx, RIVER['y0'] - 1.6)
+    # the lava's glow up the cliff's foot (the light map lights the faces)
+    for y in range(62, 130, 6):
+        light(135.5, y, 0.2, 255, 110, 30, 150, 0.12)
+    for x in range(104, 130, 6):
+        light(x, 131.5, 0.2, 255, 110, 30, 150, 0.12)
     for y in range(RIVER['y0'] + 4, RIVER['y1'], 6):
         light(ARM['x'] + 3, y, 0.2, 255, 110, 30, 150, 0.12)
     for y in range(98, 112, 5):
@@ -406,14 +420,13 @@ def mountain():
     row([(78, y) for y in range(44, 110, 6)], big, 2)
     row([(83, y) for y in range(52, 110, 4)], wall, 1.2)
     row([(87, y) for y in range(62, 104, 3)], crag + pile, 0.8)
-    row([(94, y) for y in range(100, 134, 5)], wall + big, 1.5)
-    row([(101, y) for y in range(106, 134, 4)], crag + pile, 0.8)
-    row([(x, 134) for x in range(100, 126, 5)], crag + pile, 1)
+    row([(96, y) for y in range(100, 130, 5)], wall + big, 1.5)
+    row([(103, y) for y in range(104, 128, 4)], crag + pile, 0.8)
     # the river's head, the crags on its far bank and the lava sea's shore
-    row([(x, 72) for x in range(134, 152, 4)], crag + wall, 1)
-    row([(x, 66) for x in range(136, 156, 5)], wall + big, 1.5)
-    row([(156, y) for y in range(70, 100, 5)], wall + crag, 1)
-    row([(152, 134), (160, 130), (164, 118), (166, 104), (130, 138), (140, 140)], crag + pile, 1)
+    row([(x, 72) for x in range(146, 164, 4)], crag + wall, 1)
+    row([(x, 66) for x in range(148, 168, 5)], wall + big, 1.5)
+    row([(170, y) for y in range(76, 104, 5)], wall + crag, 1)
+    row([(166, 134), (174, 128), (176, 116), (178, 104), (130, 138), (150, 140)], crag + pile, 1)
 
 
 def pois():
@@ -472,7 +485,9 @@ def main():
         'ambient': [150, 86, 70],
         'grade': 'mustafar',
         'spawn': {'x': 119.5, 'y': 116.5},
-        'ashLit': [148, 100, 160, 128],
+        'ashLit': [160, 100, 172, 128],
+        'upper': UPPER,
+        'cliff': CLIFF,
         'pois': pois(),
         'floorPlan': plan,
         'surfaces': surfaces,

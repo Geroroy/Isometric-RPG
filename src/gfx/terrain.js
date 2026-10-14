@@ -334,12 +334,100 @@ function slabSide(plan, fx, fy, o) {
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => v / 16 - 0.5);
 
+// Mustafar's facility stands on a cliff over the lava (reference/mustafar_set/cliff): the map's `upper` boxes say
+// which ground is the bench up top (any tile in them that is not lava); below an upper tile's near edges (+x, +y)
+// a rock face `cliff` m tall is drawn over the ground beyond, so what lies past the edge reads as far below. The
+// face: dark red-brown strata, a lit lip at the top, the lava's glow up its foot, lava streaks running down it
+// here and there. A screen pixel (sx, sy) is on the +x face of tile (X − 1, y) when sy is within the face's
+// height below the edge line 20 X − sx / 2 (and y = ⌊X − sx / 20⌋), on the +y face of (x, Y − 1) likewise below
+// 20 Y + sx / 2; the nearest such face (the largest x + y) is the one seen.
+const CLIFF_ROCK = [74, 34, 24];
+const CLIFF_LIP = [128, 78, 56];
+const CLIFF_GLOW = [190, 70, 22];
+const CLIFF_LAVA = [255, 150, 40];
+function cliffFace(T, sx, sy, fc) {
+  const Hpx = T.cliffH * Z_PX;
+  const w = T.world.w;
+  let best = -1;
+  let bd = 0;
+  let ba = 0;
+  let bk = 0;
+  // the +x faces
+  for (let X = Math.floor((sy + sx / 2) / HALF_W); X >= Math.ceil((sy - Hpx + sx / 2) / HALF_W); X--) {
+    const y = Math.floor(X - sx / HALF_W);
+    if (y < 0 || y >= T.world.h || X < 1 || X >= w) continue;
+    if (!T.up[y * w + X - 1] || T.up[y * w + X]) continue;
+    const d = sy - (HALF_W * X - sx / 2);
+    if (d < 0 || d > Hpx) continue;
+    if (X - 1 + y > best) [best, bd, ba, bk] = [X - 1 + y, d, X - sx / HALF_W + X * 7.3, 0];
+    break;
+  }
+  for (let Y = Math.floor((sy - sx / 2) / HALF_W); Y >= Math.ceil((sy - Hpx - sx / 2) / HALF_W); Y--) {
+    const x = Math.floor(Y + sx / HALF_W);
+    if (x < 0 || x >= w || Y < 1 || Y >= T.world.h) continue;
+    if (!T.up[(Y - 1) * w + x] || T.up[Y * w + x]) continue;
+    const d = sy - (HALF_W * Y + sx / 2);
+    if (d < 0 || d > Hpx) continue;
+    if (x + Y - 1 > best) [best, bd, ba, bk] = [x + Y - 1, d, Y + sx / HALF_W + Y * 7.3 + 1000, 1];
+    break;
+  }
+  if (best < 0) return false;
+  const t = bd / Hpx; // 0 at the lip
+  const zm = bd / Z_PX; // metres down
+  // the strata: bands across, broken by noise; the +y face (facing the key light's side) a little lighter
+  const band = 0.85 + 0.3 * valueNoise(ba * 0.9, zm * 2.2, 131) + 0.12 * Math.sin(zm * 9 + valueNoise(ba * 0.4, zm * 0.5, 132) * 6);
+  // the columns: the rock split into vertical ribs of their own tone, deep clefts between (basalt, as the film's)
+  const col = valueNoise(ba * 0.45, zm * 0.07, 138);
+  const cleft = Math.abs(valueNoise(ba * 1.3, zm * 0.12, 139) - 0.5) < 0.04 ? 0.55 : 1;
+  const hang = t < 0.2 ? 0.65 + 1.75 * t : 1; // the shadow under the lip's overhang
+  let k = band * (0.55 + 0.9 * col) * cleft * hang * (1 - t * 0.5) * (bk ? 1.08 : 0.92);
+  const glow = clamp((t - 0.45) / 0.55, 0, 1) ** 1.6; // the lava's light up the foot
+  let r = CLIFF_ROCK[0] * k;
+  let g = CLIFF_ROCK[1] * k;
+  let b = CLIFF_ROCK[2] * k;
+  r += (CLIFF_GLOW[0] - r) * glow * 0.8;
+  g += (CLIFF_GLOW[1] - g) * glow * 0.8;
+  b += (CLIFF_GLOW[2] - b) * glow * 0.8;
+  if (t < 0.045) [r, g, b] = [CLIFF_LIP[0] * band, CLIFF_LIP[1] * band, CLIFF_LIP[2] * band]; // the lit lip
+  // a lava streak down the face now and then: a bright run from the lip, widening and glowing as it goes
+  const cell = Math.floor(ba / 6);
+  if (hash2(cell, 133, 134) < 0.3) {
+    const c = (cell + 0.5 + (hash2(cell, 135, 136) - 0.5) * 0.6) * 6;
+    const dist = Math.abs(ba - c - 0.15 * Math.sin(zm * 3 + cell));
+    const wdt = 0.12 + t * 0.14;
+    if (dist < wdt) {
+      const m = 1 - dist / wdt;
+      r += (CLIFF_LAVA[0] - r) * m;
+      g += (CLIFF_LAVA[1] - g) * m;
+      b += (CLIFF_LAVA[2] - b) * m;
+    } else if (dist < wdt + 0.6) {
+      const m = (1 - (dist - wdt) / 0.6) * 0.5;
+      r += (CLIFF_GLOW[0] - r) * m;
+      g += (CLIFF_GLOW[1] - g) * m;
+    }
+  }
+  const grain = (hash2(Math.floor(ba * 10), Math.floor(zm * 10), 137) - 0.5) * 8;
+  fc[0] = r + grain;
+  fc[1] = g + grain;
+  fc[2] = b + grain;
+  return true;
+}
+
 export class Terrain {
   constructor(world) {
     this.world = world;
     // the ash left lit (not faded to black): the map's box [x0, y0, x1, y1] (the river bank), else x > 140
     const lit = world.ashLit;
     this.litAsh = lit ? (x, y) => x >= lit[0] && x < lit[2] && y >= lit[1] && y < lit[3] : (x) => x >= 140;
+    // the bench up on the cliff (cliffFace): the tiles in the map's `upper` boxes that are not lava
+    this.up = null;
+    this.cliffH = world.cliff || 0;
+    if (world.upper && this.cliffH > 0) {
+      this.up = new Uint8Array(world.w * world.h);
+      for (const [x0, y0, x1, y1] of world.upper)
+        for (let y = Math.max(0, y0); y < Math.min(world.h, y1); y++)
+          for (let x = Math.max(0, x0); x < Math.min(world.w, x1); x++) if (world.biome[y * world.w + x] !== BIOME.LAVA) this.up[y * world.w + x] = 1;
+    }
     const n = world.w * world.h;
     this.R = new Float32Array(n);
     this.G = new Float32Array(n);
@@ -836,7 +924,9 @@ export class Terrain {
         // the underworld's ground textures (the concept sheets' tiles), by the tile's biome:
         // the variant by cell, the texel by world position, shaded by the same blotches
         let texd = false;
-        let painted = false; // a painted set texture (the Mustafar facility floor): drawn smooth like the set sprites on it
+        let painted = false;
+        let cliff = false; // (on a cliff face: not faded as the rock below is)
+        // a painted set texture (the Mustafar facility floor): drawn smooth like the set sprites on it
         if (GROUND) {
           const bi = this.world.biome[Math.floor(fy) * this.world.w + Math.floor(fx)];
           const gt = GROUND[bi];
@@ -894,11 +984,20 @@ export class Terrain {
             texd = true;
             painted = true;
           }
+          // the cliff's faces below the bench's near edges, over whatever ground lies beyond (cliffFace)
+          if (this.up && !this.up[Math.floor(fy) * this.world.w + Math.floor(fx)] && cliffFace(this, sx, sy, fc)) {
+            r = fc[0];
+            g = fc[1];
+            b = fc[2];
+            texd = true;
+            painted = true;
+            cliff = true;
+          }
         }
         // Mustafar's rock (ASH) away from the facility's floors fades to near black, so the lit floors stand out as
         // plates over the dark; near the lava it keeps the lava's red (the light map adds the glow). The river
         // bank (the map's `ashLit` box), where the ending is played, stays as it is
-        if (this.Df && !this.litAsh(fx, fy) && this.world.biome[Math.floor(fy) * this.world.w + Math.floor(fx)] === BIOME.ASH) {
+        if (this.Df && !cliff && !this.litAsh(fx, fy) && this.world.biome[Math.floor(fy) * this.world.w + Math.floor(fx)] === BIOME.ASH) {
           const df = this.sample(this.Df, u, v);
           const dl = this.sample(this.Dl, u, v);
           const f = Math.max(clamp(1 - (df - 1.5) / 7, 0.07, 1), 0.9 * clamp(1 - (dl - 1.5) / 4, 0, 1));
