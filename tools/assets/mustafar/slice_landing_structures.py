@@ -7,6 +7,12 @@ Nothing is resampled or recoloured; the sheet's scale is taken into the manifest
 Measured on the sheet (screen slope of a piece's long ground edge; the game's 2:1 axes slope 0.5):
   railings ~0.63, corridor deck and walls ~1.0 -> not at the game's projection: NOT exported (they would not line up
   with the pad's edges or join end to end; fixing them means warping, which needs the user's approval)
+Second pass (src/landing_structures_sheet_v2.png, drawn over the projection guides):
+  railing 1: long edge slope 0.53 (2:1 is 0.5) — close: exported as rail_x, as delivered. Its near ground edge spans
+  557 px for 6 m -> density 4.64 (depth 0.37 m, height 1.1 m); anchor = that edge's middle moved half the depth back.
+  railing 2: slope 0.55, the same direction again (no rail_y yet): not used. Corner post: free-standing, exported at
+  the railing's density, anchor = its base's middle (the near base corner (1359, 372) moved up half the base).
+  corridor (floor; walls with floor): long edges slope ~0.75, still not 2:1: not used.
   ship: axis slope ~0.38 — a valid ground heading in 2:1 (nose toward +x, a little toward −y), nothing to line up:
   exported. Length along its axis 1512 px for about 29 m -> density 2.16; anchor = the midpoint of its rear and nose
   landing feet (322, 789) and (1325, 1009) on the sheet.
@@ -22,6 +28,7 @@ from key_checker import key_checker  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 SRC = ROOT / 'tools/assets/mustafar/src/landing_structures_sheet.png'
+SRC2 = ROOT / 'tools/assets/mustafar/src/landing_structures_sheet_v2.png'
 SHIP_BOX = (23, 310, 1461, 1014)  # (the ship's bounds on the sheet, 4 px of margin)
 FEET = ((322, 789), (1325, 1009))
 
@@ -64,3 +71,11 @@ if __name__ == '__main__':
     ax = round((FEET[0][0] + FEET[1][0]) / 2 - x0)
     ay = round((FEET[0][1] + FEET[1][1]) / 2 - y0)
     print(out, ship.size, 'anchor', (ax, ay))
+    # the second pass: railing 1 and the corner post
+    keyed2 = Image.fromarray(key_checker(np.asarray(Image.open(SRC2).convert('RGB'))), 'RGBA')
+    for name, box, anchor in (('landing/rail_x.png', (61, 15, 661, 430), (361, 268)), ('landing/rail_corner.png', (1234, 85, 1489, 377), (1359, 310))):
+        piece = keyed2.crop(box)
+        a = np.asarray(piece).copy()
+        a[..., 3] = np.where(largest(a[..., 3] > 0), a[..., 3], 0)
+        Image.fromarray(a, 'RGBA').save(ROOT / 'public/assets/mustafar' / name, optimize=True)
+        print(name, piece.size, 'anchor', (anchor[0] - box[0], anchor[1] - box[1]))

@@ -128,17 +128,17 @@
    "id": "mf.landing.rail_x",
    "name": "착륙장 난간 (x 방향 6 m)",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/mf.landing.railings.md",
    "file": "landing/rail_x.png",
    "size": [
-    288,
-    216
+    600,
+    415
    ],
-   "density": 2,
+   "density": 4.64,
    "anchor": [
-    142,
-    133
+    300,
+    253
    ],
    "layer": "standing",
    "footprint": [],
@@ -147,7 +147,8 @@
     "height": 1.1
    },
    "collision": "zone: the rim under it (stage01.json collision rail_*)",
-   "note": "v1 received in tools/assets/mustafar/src/landing_structures_sheet.png but not at the game projection (long edges slope ~0.63 railings, ~1.0 corridor; 2:1 needs 0.5): not used — awaiting a corrected version or approval to fit it"
+   "note": "second pass: long edge slope 0.53 against 2:1 0.5 (accepted as delivered: joins step about 4 game px); 6 m, 1.1 m tall, 0.37 m deep",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v2.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py"
   },
   {
    "id": "mf.landing.rail_y",
@@ -172,23 +173,23 @@
     "height": 1.1
    },
    "collision": "zone",
-   "note": "v1 received in tools/assets/mustafar/src/landing_structures_sheet.png but not at the game projection (long edges slope ~0.63 railings, ~1.0 corridor; 2:1 needs 0.5): not used — awaiting a corrected version or approval to fit it"
+   "note": "second pass delivered a second railing in the same direction as rail_x: still waiting for one along y"
   },
   {
    "id": "mf.landing.rail_corner",
    "name": "착륙장 난간 모서리 기둥",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/mf.landing.railings.md",
    "file": "landing/rail_corner.png",
    "size": [
-    128,
-    144
+    255,
+    292
    ],
-   "density": 2,
+   "density": 4.64,
    "anchor": [
-    64,
-    104
+    125,
+    225
    ],
    "layer": "standing",
    "footprint": [],
@@ -197,7 +198,8 @@
     "height": 1.3
    },
    "collision": "zone",
-   "note": "v1 received in tools/assets/mustafar/src/landing_structures_sheet.png but not at the game projection (long edges slope ~0.63 railings, ~1.0 corridor; 2:1 needs 0.5): not used — awaiting a corrected version or approval to fit it"
+   "note": "second pass; base about 1.3 m square",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v2.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py"
   },
   {
    "id": "mf.landing.corridor_floor",
@@ -218,7 +220,7 @@
    "layer": "flat",
    "footprint": [],
    "collision": "zone: walk rect corridor",
-   "note": "v1 received in tools/assets/mustafar/src/landing_structures_sheet.png but not at the game projection (long edges slope ~0.63 railings, ~1.0 corridor; 2:1 needs 0.5): not used — awaiting a corrected version or approval to fit it"
+   "note": "two passes received, neither at the 2:1 projection (long edges slope ~0.75-1.0 against 0.5): not used"
   },
   {
    "id": "mf.landing.corridor",
@@ -243,7 +245,7 @@
     "height": 3.0
    },
    "collision": "zone: walk rect corridor (the walls are its sides)",
-   "note": "v1 received in tools/assets/mustafar/src/landing_structures_sheet.png but not at the game projection (long edges slope ~0.63 railings, ~1.0 corridor; 2:1 needs 0.5): not used — awaiting a corrected version or approval to fit it"
+   "note": "two passes received, neither at the 2:1 projection (long edges slope ~0.75-1.0 against 0.5): not used"
   },
   {
    "id": "mf.landing.ship",
