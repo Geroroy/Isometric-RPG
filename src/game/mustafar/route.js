@@ -61,6 +61,10 @@ export const ROUTE = {
     if (!R) return;
     const S = g.assets.sprites;
     const flat = 0.15; // (decks at the lava's level: a thin box, its riders on top)
+    // the arm adrift: the collector arm's own picture once delivered (its deck 0.3 m up), else its blockout box
+    const arm = g.assets.city && g.assets.city['mf.collector.collector_arm'];
+    this.raftZ = arm ? 0.3 : 0;
+    if (arm) S.raftArm ||= { dirs: 1, anims: { idle: { frames: 1, fps: 1, loop: true, data: [[arm.body]] } }, markers: [] };
     S.boRaft ||= blockoutUnitSet({ w: R.raft.w, d: R.raft.d, h: flat, kind: 'float', label: '떠내려가는 집하기 팔' });
     S.boDroid ||= blockoutUnitSet({ w: R.droid.w, d: R.droid.d, h: flat, kind: 'hazard', label: '채굴 드로이드' });
     S.boPlatform ||= blockoutUnitSet({ w: R.platform.w, d: R.platform.d, h: flat, kind: 'float', label: '리펄서 플랫폼' });
@@ -70,7 +74,7 @@ export const ROUTE = {
       f.noShadow = true;
       return f;
     };
-    this.raft = deck('armRaft', 'boRaft', R.raft.r);
+    this.raft = deck('armRaft', arm ? 'raftArm' : 'boRaft', R.raft.r);
     this.raft.depthBias = -40; // (under everyone on the river)
     this.raft.half = R.raft.d / 2; // (the arm along y, as it stood)
     this.droid = deck('collector', 'boDroid', R.droid.r);
@@ -362,11 +366,16 @@ export const ROUTE = {
     });
   },
 
-  /** The catwalk's last stretch is gone (nobody walks back onto it). */
+  /** The catwalk's last section is torn off (its picture swapped for the broken one; nobody walks back onto it). */
   collapseCatwalk() {
     const w = this.game.world;
     const C = this.at.collapse;
-    w.rect(C.x - 4, C.y - 1, C.x + 4.5, C.y + 1, (i) => (w.blocked[i] = 1));
+    w.rect(C.x - 2, C.y - 1, C.x + 4.5, C.y + 1, (i) => (w.blocked[i] = 1));
+    const broken = w.named.catwalkBroken;
+    if (broken) {
+      broken.hidden = false;
+      if (w.named.catwalkEnd) w.named.catwalkEnd.hidden = true;
+    }
   },
 
   /** The film's 4:28: to the pipe's end, and a leap onto the collector arm (the lava bombs begin). */
@@ -487,6 +496,9 @@ export const ROUTE = {
     raft.x = R.raft.from.x;
     raft.y = R.raft.from.y;
     w.strips.push((this.raftStrip = { x0: raft.x, y0: raft.y - raft.half, x1: raft.x, y1: raft.y + raft.half, r: R.raft.r }));
+    // its deck's height (the arm's picture: 0.3 m up), following it down the river
+    if (this.raftZ) w.surfaces.push((this.raftSurf = { x0: 0, y0: 0, x1: 0, y1: 0, z: this.raftZ }));
+    this.placeRaftSurf();
     this.raftLights = [
       { x: raft.x, y: raft.y - 5, z: 0.2, r: 255, g: 140, b: 60, rad: 120, flicker: 0.12 },
       { x: raft.x, y: raft.y + 5, z: 0.2, r: 255, g: 140, b: 60, rad: 120, flicker: 0.12 },
@@ -503,6 +515,18 @@ export const ROUTE = {
     p.faceTo(ob.x, ob.y);
     ob.faceTo(p.x, p.y);
     g.updateActive();
+  },
+
+  /** The raft's deck top over where it is now (while it sinks it goes down with it). */
+  placeRaftSurf() {
+    const s = this.raftSurf;
+    if (!s) return;
+    const r = this.raft;
+    s.x0 = r.x - 1.5;
+    s.x1 = r.x + 1.5;
+    s.y0 = r.y - r.half;
+    s.y1 = r.y + r.half;
+    s.z = this.raftZ * (r.alpha ?? 1);
   },
 
   /** The arm drifts downstream, swaying; its riders go with it and never leave it (the lava is right there). */
@@ -523,6 +547,7 @@ export const ROUTE = {
         raft.hidden = true;
         this.onRaft = false;
         g.world.strips = g.world.strips.filter((q) => q !== this.raftStrip);
+        g.world.surfaces = g.world.surfaces.filter((q) => q !== this.raftSurf);
         return;
       }
     }
@@ -530,6 +555,7 @@ export const ROUTE = {
     st.x0 = st.x1 = raft.x;
     st.y0 = raft.y - raft.half;
     st.y1 = raft.y + raft.half;
+    this.placeRaftSurf();
     for (const u of [g.player, this.foe]) {
       if (u.deck && u.deck !== raft) continue; // (already leapt to a deck)
       u.x += raft.x - ox;
@@ -792,6 +818,7 @@ export const ROUTE = {
       this.raft.hidden = true;
       this.onRaft = false;
       w.strips = w.strips.filter((q) => q !== this.raftStrip);
+      w.surfaces = w.surfaces.filter((q) => q !== this.raftSurf);
       this.riverDecks();
       const pl = this.platform;
       p.x = pl.x + 0.6;

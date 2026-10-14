@@ -705,7 +705,7 @@
   {
    "id": "mf.walkway.catwalk_segment",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_route_assets.md",
    "file": "industrial/catwalk_segment.png",
    "size": [
@@ -718,12 +718,13 @@
     150
    ],
    "guide": "docs/asset_requests/guides/catwalk_segment_guide.png",
-   "layer": "flat"
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_exterior_notes.md"
   },
   {
    "id": "mf.walkway.catwalk_broken",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_route_assets.md",
    "file": "industrial/catwalk_broken.png",
    "size": [
@@ -736,12 +737,13 @@
     150
    ],
    "guide": "docs/asset_requests/guides/catwalk_broken_guide.png",
-   "layer": "flat"
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_exterior_notes.md"
   },
   {
    "id": "mf.walkway.lava_fall",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_route_assets.md",
    "file": "industrial/lava_fall.png",
    "size": [
@@ -753,7 +755,8 @@
     156,
     478
    ],
-   "guide": "docs/asset_requests/guides/lava_fall_guide.png"
+   "guide": "docs/asset_requests/guides/lava_fall_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_exterior_notes.md"
   },
   {
    "id": "mf.collector.pipe_segment",
@@ -776,7 +779,7 @@
   {
    "id": "mf.collector.collector_arm",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_route_assets.md",
    "file": "industrial/collector_arm.png",
    "size": [
@@ -789,7 +792,8 @@
     281
    ],
    "guide": "docs/asset_requests/guides/collector_arm_guide.png",
-   "layer": "flat"
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_exterior_notes.md"
   },
   {
    "id": "mf.collector.collector_tower",
@@ -1053,7 +1057,7 @@
   {
    "id": "mf.walkway.terrace_floor",
    "kind": "groundTiles",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_route_assets.md",
    "tiles": {
     "floor": {
@@ -1067,7 +1071,8 @@
       5
      ]
     }
-   }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_exterior_notes.md"
   },
   {
    "id": "mf.highground.bank",

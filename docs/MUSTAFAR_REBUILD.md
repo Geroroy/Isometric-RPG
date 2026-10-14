@@ -130,3 +130,12 @@
   오면 빠짐). 나머지 12장 대기 — 요청서의 노트(`docs/asset_requests/delivered/mustafar_control_notes.md`)에 14장이 모두 적혀 있으나
   파일은 2장만 받음.
 - **시각적으로 완성 아님**: 나머지 그림이 올 때까지 회색 상자(화면 배지에 표시).
+
+## STAGE 04 보행로·집하 시설 — 받은 그림 (`docs/asset_requests/delivered/mustafar_exterior_notes.md`)
+
+- 받음(그대로 사용): `terrace_floor`(테라스 20 × 5 m), `catwalk_segment` × 2 + 끝 칸, `catwalk_broken`(붕괴 때 끝 칸과 바뀜),
+  `lava_fall`(테라스 서쪽 끝 너머), `collector_arm`(집하기 팔, 0.3 m 데크 — 강에서는 같은 그림이 떠내려가는 팔이 됨, 그 위 0.3 m).
+  테라스 난간은 착륙장 난간(`rail_x`·`rail_y`) 재사용.
+- 그림에 맞춘 배치: 테라스 x 21..41(20 m), 보행로 18 m = 6 m 칸 세 개(x 41..59). 24 m였을 때 끝 칸이 집하기 탑 앞에 가려
+  붕괴 장면의 아나킨이 안 보였다 → 끝을 탑의 화면 영역 밖으로. 용암 폭포는 싸우는 곳 앞에 두면 가리므로 테라스 서쪽 끝 너머에 하나.
+- 대기: `pipe_segment`, `collector_tower`(노트에는 있으나 파일 미수신), STAGE 05의 드로이드·플랫폼, STAGE 06 둑.

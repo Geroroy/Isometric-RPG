@@ -36,6 +36,7 @@ export class MustafarStage extends World {
     this.padFloors = [];
     this.backdrop = null;
     for (const f of z.floor) {
+      if (f.art && art[f.art]) continue; // (a blockout floor whose art is here: the art's own deck, the lava under it)
       // a floor whose picture is not here yet: left out (STAGE 01's corridor), or the debug grid where the zone is in
       // blockout (`fallback: "grid"`, docs/MUSTAFAR_REBUILD.md "블록아웃")
       if (f.kind === 'texturedRect' && !art[f.asset]) {
