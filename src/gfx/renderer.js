@@ -906,20 +906,88 @@ export class Renderer {
       const L = pr.layers;
       if (!L.meta.neon) continue; // nothing of it glows (a Mustafar table or chair)
       const level = neonLevel(pr.neon, L.meta.neon, this.time, dt) * (pr.fade ?? 1) * (pr.coverAlpha ?? 1);
+      // a ground-layer piece (flat: a table, a catwalk) is under everyone: its glow too, cut where a character or
+      // a standing piece is drawn over it (maskedGlow)
+      const under = pr.flat && !pr.top ? this.coversOf(pr) : null;
       // (an empty layer is null: citySprites.js drops it at load)
       if (L.reflect) {
         ctx.globalAlpha = Math.min(1, level) * 0.85;
-        this.drawFrame(L.reflect, pr.sx, pr.sy);
+        if (under) this.maskedGlow(L.reflect, pr.sx, pr.sy, under);
+        else this.drawFrame(L.reflect, pr.sx, pr.sy);
       }
       if (L.neon) {
         ctx.globalAlpha = Math.min(1, level);
-        if (pr.window) this.drawWindowed(L.neon, pr.sx, pr.sy + (pr.bob || 0), pr.window);
+        if (under) this.maskedGlow(L.neon, pr.sx, pr.sy + (pr.bob || 0), under);
+        else if (pr.window) this.drawWindowed(L.neon, pr.sx, pr.sy + (pr.bob || 0), pr.window);
         else this.drawFrame(L.neon, pr.sx, pr.sy + (pr.bob || 0));
       }
       ctx.globalAlpha = 1;
       const holo = SHEET_PROPS[pr.sheet].holo;
       if (holo) this.drawHologram(ctx, cam, pr, holo, level);
     }
+  }
+
+  /**
+   * What is drawn over a ground-layer piece where its picture is: the characters standing on or round it and the
+   * standing and top-layer props overlapping it, as [frame, screen x, screen y]; null when nothing is.
+   */
+  coversOf(pr) {
+    const r = pr.rect;
+    const over = (x, y, w, h) => x < r[0] + r[2] && x + w > r[0] && y < r[1] + r[3] && y + h > r[1];
+    let out = null;
+    for (const u of this.game.activeUnits) {
+      if (u.dead || u.hidden || (u.alpha !== undefined && u.alpha < 0.5)) continue;
+      const f = u.frame();
+      if (!f) continue;
+      const s = worldToScreen(u.x, u.y, u.z);
+      const k = f.k || 1;
+      if (over(s.x - f.ox * k, s.y - f.oy * k, f.w * k, f.h * k)) (out ||= []).push([f, s.x, s.y]);
+    }
+    for (const q of this.game.world.props) {
+      if (q === pr || (q.flat && !q.top) || q.hidden || !q.rect || (q.fade ?? 1) < 0.5 || q.coverAlpha != null) continue;
+      if (over(q.rect[0], q.rect[1], q.rect[2], q.rect[3])) (out ||= []).push([q.frame, q.sx, q.sy + (q.bob || 0)]);
+    }
+    return out;
+  }
+
+  /**
+   * A glow frame drawn (in the current composite mode and alpha) with the given covers' silhouettes cut out of it:
+   * the frame on a scratch canvas at the screen's density, each cover drawn there `destination-out`, then the
+   * result put on the screen.
+   */
+  maskedGlow(f, x, y, covers) {
+    const ctx = this.ctx;
+    const k = f.k || 1;
+    const d = ctx.getTransform().a || 1; // (device px a game px: remastered draws finer)
+    const x0 = Math.round(x - f.ox * k - this.cam.x);
+    const y0 = Math.round(y - f.oy * k - this.cam.y);
+    const w = f.w * k; // (exact: the frame's size on screen, as drawFrame draws it)
+    const h = f.h * k;
+    const c = (this.glowMask ||= document.createElement('canvas'));
+    const W = Math.ceil(w * d);
+    const H = Math.ceil(h * d);
+    if (c.width < W || c.height < H) {
+      c.width = Math.max(c.width, W);
+      c.height = Math.max(c.height, H);
+    }
+    const m = c.getContext('2d');
+    m.setTransform(1, 0, 0, 1, 0, 0);
+    m.globalCompositeOperation = 'source-over';
+    m.clearRect(0, 0, W, H);
+    m.setTransform(d, 0, 0, d, 0, 0);
+    m.imageSmoothingQuality = ctx.imageSmoothingQuality; // (the screen's: a 4× bake's thin lines kept)
+    m.imageSmoothingEnabled = !!f.k;
+    m.drawImage(f.page, f.sx, f.sy, f.w, f.h, 0, 0, w, h);
+    m.globalCompositeOperation = 'destination-out';
+    for (const [g, gx, gy] of covers) {
+      const gk = g.k || 1;
+      m.imageSmoothingEnabled = !!g.k;
+      m.drawImage(g.page, g.sx, g.sy, g.w, g.h, Math.round(gx - g.ox * gk - this.cam.x) - x0, Math.round(gy - g.oy * gk - this.cam.y) - y0, g.w * gk, g.h * gk);
+    }
+    m.globalCompositeOperation = 'source-over';
+    // (back pixel for pixel: the scratch's W × H device px onto as many on the screen)
+    this.smooth(false);
+    ctx.drawImage(c, 0, 0, W, H, x0, y0, W / d, H / d);
   }
 
   /** A translucent hologram ad in a billboard's frame: a new one every few seconds, with a glitch between. */
