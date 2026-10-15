@@ -5,6 +5,12 @@ import { dirIndex } from '../core/iso.js';
 import { SKILLS, isActive } from './skills.js';
 import { StarCards } from './perks.js';
 
+// a step up bigger than HOP_MIN m (onto a table's top: worldgen.js surfaces) is a hop over HOP_T s, HOP_UP m
+// over the straight line at its middle (the gallery's and the high ground's steps, 0.2–0.35 m, stay slides)
+const HOP_MIN = 0.5;
+const HOP_T = 0.3;
+const HOP_UP = 0.35;
+
 // Signature Move timing (frames of gfx/models/anakinAnims.js 'sig'): bolts are turned through
 // the spin until the hit; swing sounds on the wind-up and the pass behind the back
 export const SIG = { spin: [8, 13], hit: 11, sounds: [[4, 'light'], [8, 'heavy']] };
@@ -194,7 +200,15 @@ export class Unit {
     } else if (!this.airborne) {
       // settle onto the ground under him: down to it, or up onto a raised top (worldgen.js surfaces) in a step
       const ground = this.game.world.groundAt ? this.game.world.groundAt(this.x, this.y) : 0;
-      if (this.z > ground) this.z = Math.max(ground, this.z - dt * 6);
+      // a big step up (onto a table's top) is a hop: an arc over HOP_T, not a slide (down, he drops: as before)
+      if (!this.hop && ground - this.z > HOP_MIN) this.hop = { z0: this.z, t: 0 };
+      if (this.hop) {
+        const h = this.hop;
+        h.t += dt;
+        const k = Math.min(1, h.t / HOP_T);
+        this.z = h.z0 + (ground - h.z0) * k + Math.sin(Math.PI * k) * HOP_UP; // (towards the ground under him now: he may turn back mid-hop)
+        if (k >= 1) (this.z = ground), (this.hop = null);
+      } else if (this.z > ground) this.z = Math.max(ground, this.z - dt * 6);
       else if (this.z < ground) this.z = Math.min(ground, this.z + dt * 8);
     }
   }

@@ -662,8 +662,14 @@ export class Renderer {
     for (const p of props) {
       const r = p.rect;
       if (sx + 14 < r[0] || sx - 14 > r[0] + r[2] || sy < r[1] || sy - 70 > r[1] + r[3]) continue;
-      const o = boxOrder(ub, p.box);
       const pd = p.drawDepth ?? p.sortDepth;
+      // standing on it (a table's top: worldgen.js surfaces): after it, whatever the boxes say
+      const top = p.layers?.meta?.occlusion?.height;
+      if (top !== undefined && u.z >= top - 0.05 && u.x > p.box[0] && u.x < p.box[2] && u.y > p.box[1] && u.y < p.box[3]) {
+        lo = Math.max(lo, pd);
+        continue;
+      }
+      const o = boxOrder(ub, p.box);
       if (o > 0) lo = Math.max(lo, pd);
       else if (o < 0) hi = Math.min(hi, pd);
     }

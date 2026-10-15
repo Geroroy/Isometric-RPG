@@ -12,7 +12,8 @@
   "walk": [
     {"id": "room", "rect": [43, 81, 57, 91], "needs": ["mf.room.floor"]},
     {"id": "doorway", "rect": [57, 84.0, 59, 88.0], "needs": ["mf.room.floor"]},
-    {"id": "sidePassage", "rect": [58, 84, 61, 96]}
+    {"id": "sidePassage", "rect": [58, 84, 61, 96]},
+    {"id": "tableTop", "rect": [44, 85, 56, 87]}
   ],
   "collision": [],
   "structures": [
@@ -20,9 +21,9 @@
     {"asset": "mf.room.wall_side", "x": 41.9, "y": 86.0},
     {"asset": "mf.room.wall_front_low", "x": 49.9, "y": 92},
     {"asset": "mf.room.wall_door_low", "x": 57.9, "y": 86.0},
-    {"asset": "mf.room.table", "x": 46.9, "y": 86.0, "block": true, "replacedBy": "mf.room.table_long"},
-    {"asset": "mf.room.table", "x": 52.9, "y": 86.0, "block": true, "replacedBy": "mf.room.table_long"},
-    {"asset": "mf.room.table_long", "x": 49.9, "y": 86.0, "block": true},
+    {"asset": "mf.room.table", "x": 46.9, "y": 86.0, "replacedBy": "mf.room.table_long"},
+    {"asset": "mf.room.table", "x": 52.9, "y": 86.0, "replacedBy": "mf.room.table_long"},
+    {"asset": "mf.room.table_long", "x": 49.9, "y": 86.0},
     {"asset": "mf.room.console", "x": 45.3, "y": 81.1, "block": true},
     {"asset": "mf.room.console", "x": 54.3, "y": 81.1, "block": true},
     {"asset": "mf.room.chair_a", "x": 44.4, "y": 84.4, "block": true},
@@ -59,8 +60,10 @@
     {"x": 61.1, "y": 90.0, "w": 0.4, "d": 12, "h": 1.0, "kind": "wall", "label": "", "art": "mf.corridor.side_wall_low"},
     {"x": 57.7, "y": 94.0, "w": 0.4, "d": 4, "h": 2.0, "kind": "wall", "label": "", "art": "mf.corridor.side_wall_corner"}
   ],
-  "reserved": {"tableTop": {"x0": 43.9, "y0": 85.0, "x1": 55.9, "y1": 87.0, "z": 0.8, "access": [{"x": 43.5, "y": 86.0}, {"x": 56.5, "y": 86.0}]}},
-  "actors": {"sideBottom": {"x": 59.4, "y": 95.2}, "sideTop": {"x": 59.4, "y": 86.0}, "confDoor": {"x": 57.3, "y": 86.0}, "roomAnakin": {"x": 56.5, "y": 85.2}, "roomObiwan": {"x": 53.8, "y": 89.4}, "pushAnakin": {"x": 51.0, "y": 89.6}, "pushObiwan": {"x": 55.2, "y": 89.6}, "pushAnakinTo": {"x": 44.8, "y": 89.6}, "pushObiwanTo": {"x": 56.4, "y": 89.6}},
+  "surfaces": [
+    {"x0": 43.9, "y0": 85.0, "x1": 55.9, "y1": 87.0, "z": 0.8}
+  ],
+  "actors": {"sideBottom": {"x": 59.4, "y": 95.2}, "sideTop": {"x": 59.4, "y": 86.0}, "confDoor": {"x": 57.3, "y": 86.0}, "roomAnakin": {"x": 56.5, "y": 85.2}, "roomObiwan": {"x": 53.8, "y": 89.4}, "pushAnakin": {"x": 51.0, "y": 89.6}, "pushObiwan": {"x": 55.2, "y": 89.6}, "pushAnakinTo": {"x": 44.8, "y": 89.6}, "pushObiwanTo": {"x": 56.4, "y": 89.6}, "tableObiwan": {"x": 48.6, "y": 86.0}, "tableAnakin": {"x": 51.2, "y": 86.0}, "tableEndW": {"x": 43.5, "y": 86.0}, "tableEndE": {"x": 56.5, "y": 86.0}, "tablePushAnakin": {"x": 48.4, "y": 86.0}, "tablePushObiwan": {"x": 52.4, "y": 86.0}, "tablePushAnakinTo": {"x": 44.6, "y": 86.0}, "tablePushObiwanTo": {"x": 55.4, "y": 86.0}},
   "triggers": [],
   "cameras": [
     {"x0": 39.9, "y0": 77, "x1": 61.9, "y1": 93}

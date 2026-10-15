@@ -57,7 +57,7 @@ const PAD = { floor: 0.9, filmT: 34 };
 const CORRIDOR = { floor: 0.84, time: 30 };
 const CONTROL = { floor: 0.76, time: 30 };
 // the conference room, then both reach for the Force at once
-const ROOM = { floor: 0.64, time: 36 };
+const ROOM = { floor: 0.64, time: 36, tableT: 9 }; // (tableT: s into it, both leap up onto the table — the film's 13142)
 const CONTROL2 = { floor: 0.6, time: 18 }; // (back in the control room: to the shield generator's cut)
 // How long a fight lasts when Anakin presses him the whole time: a part's stretch of Obi-Wan's bar (its floor up from the
 // last part's) is sized so that a player attacking non-stop (REF_DPS, measured: about 65 a second with clicks on him and
@@ -80,7 +80,7 @@ const FIGHTS = {
   pad: { stage: 1, floor: PAD.floor, time: PAD.filmT, next: 'toCorridor', score: 'mustafarA' },
   corridor: { stage: 3, floor: CORRIDOR.floor, time: CORRIDOR.time, next: 'toControl', score: 'mustafarA', reach: (d) => d.game.player.x < d.at.ctlEntry.x + 1 },
   control: { stage: 3, floor: CONTROL.floor, time: CONTROL.time, next: 'toRoom', score: 'mustafarA' },
-  room: { stage: 2, floor: ROOM.floor, time: ROOM.time, next: 'toPush', score: 'mustafarA' },
+  room: { stage: 2, floor: ROOM.floor, time: ROOM.time, next: 'toPush', score: 'mustafarA', beat: { t: ROOM.tableT, run: 'toTable' } },
   control2: { stage: 3, floor: CONTROL2.floor, time: CONTROL2.time, next: 'toConsole', score: 'mustafarA' },
   ...ROUTE_FIGHTS,
 };
@@ -352,6 +352,35 @@ export class MustafarDirector extends Duel {
   }
 
   /**
+   * The conference room's beat (its `tableT`): Obi-Wan leaps up onto the council's table over the chairs, Anakin after
+   * him, and the fight goes on up there (the film's 13142, 13148). Its top is walkable (stage02.py `surfaces`): either
+   * may jump down off its ends and back up (a hop: units.js).
+   */
+  toTable() {
+    const g = this.game;
+    const p = g.player;
+    const ob = this.foe;
+    const A = this.at;
+    this.hold();
+    ob.set('circle', 99);
+    let tP = 0;
+    const cues = [
+      { t: 0, cam: { follow: between(p, ob), zoom: 1.3, dur: 0.6 } },
+      { t: 0.2, do: (c) => this.leapOnto(c, ob, A.tableObiwan), cam: { follow: between(p, ob), dur: 0.4 } },
+      { t: 0.5, do: () => this.card('회의 테이블 위') },
+      { t: 0.9, do: (c) => (tP = this.leapOnto(c, p, A.tableAnakin)) },
+      { t: 2.4, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
+      { t: 2.6, do: (c) => this.clash(c) },
+    ];
+    return new Cinema(g, { length: 3.2, cues }).play().then(() => {
+      // (skipped: where the leaps land, on the top)
+      for (const [u, q] of [[ob, A.tableObiwan], [p, A.tableAnakin]])
+        if (u.leapArc || !this.onTop(u)) (u.x = q.x), (u.y = q.y), (u.leapArc = null), (u.airborne = false), (u.z = g.world.groundAt(q.x, q.y));
+      this.fight();
+    });
+  }
+
+  /**
    * The end of the conference room (the film's 1:22): both reach for the Force at once; the pushes meet and throw them
    * apart across the room (Obi-Wan toward its door) — then back to the control room (route.js toControl2). The staging is the old duel's
    * junction scene (duelMustafar.js scenePush) on this room's lane south of the table.
@@ -364,14 +393,21 @@ export class MustafarDirector extends Duel {
     this.part = 'push';
     this.hold();
     ob.set('circle', 99);
+    // up on the table (the film's: 13148 — they land on its top), or the lane south of it
+    const up = this.onTop(p) || this.onTop(ob);
+    const P = up
+      ? { a: A.tablePushAnakin, o: A.tablePushObiwan, aTo: A.tablePushAnakinTo, oTo: A.tablePushObiwanTo }
+      : { a: A.pushAnakin, o: A.pushObiwan, aTo: A.pushAnakinTo, oTo: A.pushObiwanTo };
+    const lift = up && (!this.onTop(p) || !this.onTop(ob)) ? 0.8 : 0; // (the one still on the floor leaps up first)
     const cues = [
-      { t: 0, do: (c) => this.travel(c, { x: A.pushAnakin.x + 1.2, y: A.pushAnakin.y }, { x: A.pushObiwan.x + 1.6, y: A.pushObiwan.y }, 1.6), cam: { follow: p, zoom: 1.35, dur: 0.8 } },
-      { t: 1.1, do: (c) => this.clash(c) },
-      { t: 1.6, do: (c) => this.travel(c, A.pushAnakin, A.pushObiwan, 1.0) },
-      { t: 2.7, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)), cam: { x: (A.pushAnakin.x + A.pushObiwan.x) / 2, y: A.pushAnakin.y, dur: 0.6 } },
-      { t: 3.0, do: () => (p.setAnim('cast', 1, true), ob.setAnim('cast', 1, true)) },
+      ...(lift ? [{ t: 0, do: (c) => { for (const u of [p, ob]) if (!this.onTop(u)) this.leapOnto(c, u, u === p ? P.a : P.o, 0.7); } }] : []),
+      { t: lift, do: (c) => this.travel(c, { x: P.a.x + 1.2, y: P.a.y }, { x: P.o.x + 1.6, y: P.o.y }, 1.6), cam: { follow: p, zoom: 1.35, dur: 0.8 } },
+      { t: lift + 1.1, do: (c) => this.clash(c) },
+      { t: lift + 1.6, do: (c) => this.travel(c, P.a, P.o, 1.0) },
+      { t: lift + 2.7, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)), cam: { x: (P.a.x + P.o.x) / 2, y: P.a.y, dur: 0.6 } },
+      { t: lift + 3.0, do: () => (p.setAnim('cast', 1, true), ob.setAnim('cast', 1, true)) },
       {
-        t: 3.45,
+        t: lift + 3.45,
         do: (c) => {
           const mx = (p.x + ob.x) / 2;
           const my = (p.y + ob.y) / 2;
@@ -382,15 +418,15 @@ export class MustafarDirector extends Duel {
           g.audio.play('push', ob);
           p.setAnim('hurt', 0.5, true);
           ob.setAnim('hurt', 0.5, true);
-          c.move(p, A.pushAnakinTo.x, A.pushAnakinTo.y, 0.55);
-          c.move(ob, A.pushObiwanTo.x, A.pushObiwanTo.y, 0.55);
+          c.move(p, P.aTo.x, P.aTo.y, 0.55);
+          c.move(ob, P.oTo.x, P.oTo.y, 0.55);
         },
       },
-      { t: 4.0, do: () => (g.fx.dust(p.x, p.y, 8), g.fx.dust(ob.x, ob.y, 8), g.audio.play('slam', p)) },
-      { t: 4.1, do: () => (p.setAnim('death', 0.9, true), ob.setAnim('death', 0.9, true)) },
-      { t: 6.2, do: () => (p.setAnim('idle', 1, true), ob.setAnim('idle', 1, true), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
+      { t: lift + 4.0, do: () => (g.fx.dust(p.x, p.y, 8), g.fx.dust(ob.x, ob.y, 8), g.audio.play('slam', p)) },
+      { t: lift + 4.1, do: () => (p.setAnim('death', 0.9, true), ob.setAnim('death', 0.9, true)) },
+      { t: lift + 6.2, do: () => (p.setAnim('idle', 1, true), ob.setAnim('idle', 1, true), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
     ];
-    return new Cinema(g, { length: 6.8, cues }).play().then(() => this.toControl2()); // (back to the control room: route.js)
+    return new Cinema(g, { length: lift + 6.8, cues }).play().then(() => this.toControl2()); // (back to the control room: route.js)
   }
 
   /** Per frame: the duel's upkeep (duel.js), the places' own (route.js: the rain, the pipe, the decks), then how the fight moves on. */

@@ -125,6 +125,40 @@ export const ROUTE = {
     if (this.onRaft) this.updateRaft(dt);
     if (this.onRiver) this.updateRiver(dt);
     this.updateBombs(dt);
+    this.updateLeaps();
+  },
+
+  /**
+   * A leap through the air to `to` (a scene's: over the conference room's chairs onto its table's top), landing at the
+   * height of the ground there; the move is the scene's (Cinema `c`), the arc here (updateLeaps).
+   */
+  leapOnto(c, u, to, d) {
+    const g = this.game;
+    d ??= Math.max(0.55, dist(u.x, u.y, to.x, to.y) / 6);
+    u.faceTo(to.x, to.y);
+    u.setAnim('leap', 1, true);
+    u.airborne = true;
+    u.hop = null;
+    g.audio.play('leap', u);
+    c.move(u, to.x, to.y, d);
+    u.leapArc = { z0: u.z, z1: g.world.groundAt(to.x, to.y), t0: g.time, d };
+    return d;
+  },
+
+  updateLeaps() {
+    const g = this.game;
+    for (const u of [g.player, this.foe]) {
+      const L = u && u.leapArc;
+      if (!L) continue;
+      const k = Math.min(1, (g.time - L.t0) / L.d);
+      u.z = L.z0 + (L.z1 - L.z0) * k + Math.sin(Math.PI * k) * 1.1;
+      if (k >= 1) (u.z = L.z1), (u.airborne = false), (u.leapArc = null), g.fx.dust(u.x, u.y, 3);
+    }
+  },
+
+  /** Whether `u` stands on a raised top (the conference room's table). */
+  onTop(u) {
+    return this.game.world.groundAt(u.x, u.y) >= 0.5;
   },
 
   /** On the pipe: both keep to its line (a step sideways is a step into the lava), within its ends. */
@@ -203,9 +237,12 @@ export const ROUTE = {
     this.part = 'toControl2';
     this.hold();
     ob.set('circle', 99);
-    const way = [{ x: 55.8, y: 88.4 }, A.confDoor, A.sideTop, A.sideBottom, { x: 58.6, y: 97.8 }, { x: 50, y: 98 }, A.ctlEntry];
+    const out = [A.confDoor, A.sideTop, A.sideBottom, { x: 58.6, y: 97.8 }, { x: 50, y: 98 }, A.ctlEntry];
+    // (off the table's east end when the push was up on it — along its top, down at its end — else out of the lane)
+    const up = this.onTop(p) || this.onTop(ob);
+    const way = up ? [{ x: 45.2, y: 86 }, A.tableEndE, ...out] : [{ x: 51, y: 89.6 }, { x: 55.8, y: 88.4 }, ...out];
     const [obC, obT] = walkRoute(ob, [...way, A.ctlObiwan], 0.3, 5.0, 'run');
-    const [pC, pT] = walkRoute(p, [{ x: 51, y: 89.6 }, ...way, A.ctlAnakin], 0.9, 5.4, 'run');
+    const [pC, pT] = walkRoute(p, [...way, A.ctlAnakin], 0.9, 5.4, 'run');
     const end = Math.max(obT, pT);
     const cues = [
       { t: 0, cam: { follow: between(p, ob), zoom: 1.2, dur: 0.8 } }, // (the push leaves them 12 m apart)

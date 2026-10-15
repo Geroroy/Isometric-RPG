@@ -21,8 +21,10 @@ the room's length — two figures lying end to end cover well under half of it �
 an unbroken row down each side, and only a narrow aisle between the chairs and the slanted window pillars. So the
 delivered table stands twice end to end (12 m: its single long version requested, docs/asset_requests/
 chatgpt_film_pass1.md), the chairs 1 m apart down its whole length (how many the film hides is not known: this is a
-row, not a count), the aisles what the room's walls leave. Its ends stay clear, the ways up onto its top
-(`reserved.tableTop`, for a later step — the duel does not use it yet).
+row, not a count), the aisles what the room's walls leave. TABLETOP FIGHTING (the film fights on it, 13142/13148):
+its top is a walkable surface 0.8 m up (`surfaces`), its tiles open (the table does not block them), the chair rows
+either side blocking — so the ways up are its two clear ends (a hop: units.js), and the director's scene puts the two
+on it mid-fight (director.js toTable).
 """
 from pathlib import Path
 from _zone import FAR_H, NEAR_H, box, light, wall_x, wall_y, write
@@ -50,8 +52,9 @@ def structures():
         {'asset': 'mf.room.wall_front_low', 'x': CX, 'y': Y1},
         {'asset': 'mf.room.wall_door_low', 'x': X1, 'y': CY},
         # the council's table, its chairs either side (a: facing +y, on the far side; b: facing −y, the near side)
-        *[{'asset': 'mf.room.table', 'x': TABLE[0] + dx, 'y': TABLE[1], 'block': True, 'replacedBy': 'mf.room.table_long'} for dx in PIECES],
-        {'asset': 'mf.room.table_long', 'x': TABLE[0], 'y': TABLE[1], 'block': True},  # (requested: once here, the two above go)
+        # (not blocking: its top is walked on — `surfaces`; the chairs either side close its long sides)
+        *[{'asset': 'mf.room.table', 'x': TABLE[0] + dx, 'y': TABLE[1], 'replacedBy': 'mf.room.table_long'} for dx in PIECES],
+        {'asset': 'mf.room.table_long', 'x': TABLE[0], 'y': TABLE[1]},  # (once here, the two above go)
         # two consoles along the window wall
         {'asset': 'mf.room.console', 'x': X0 + 3.4, 'y': Y0 + 1.1, 'block': True},
         {'asset': 'mf.room.console', 'x': X1 - 3.6, 'y': Y0 + 1.1, 'block': True},
@@ -106,14 +109,14 @@ def main():
             {'id': 'room', 'rect': [round(X0 + 1.1), Y0 + 1, round(X1 - 0.9), Y1 - 1], 'needs': ['mf.room.floor']},
             {'id': 'doorway', 'rect': [round(X1 - 0.9), CY - 2, round(SX0) + 1, CY + 2], 'needs': ['mf.room.floor']},
             {'id': 'sidePassage', 'rect': [round(SX0), SY0, round(SX1), SY1]},
+            {'id': 'tableTop', 'rect': [44, 85, 56, 87]},  # (its tiles: the table's top, 0.8 m up — `surfaces`)
         ],
         'collision': [],
         'structures': structures(),
         'decor': [],
         'blockout': blockout(),
-        # the table's top, for the film's fight on it (a later step: the duel does not use it yet) — its ends the ways up
-        'reserved': {'tableTop': {'x0': TABLE[0] - TABLE_HALF[0], 'y0': TABLE[1] - TABLE_HALF[1], 'x1': TABLE[0] + TABLE_HALF[0], 'y1': TABLE[1] + TABLE_HALF[1], 'z': 0.8,
-                                  'access': [{'x': 43.5, 'y': TABLE[1]}, {'x': 56.5, 'y': TABLE[1]}]}},
+        # the table's top: walked on, 0.8 m up (world/mustafarStage.js surfaces) — its ends the ways up
+        'surfaces': [{'x0': TABLE[0] - TABLE_HALF[0], 'y0': TABLE[1] - TABLE_HALF[1], 'x1': TABLE[0] + TABLE_HALF[0], 'y1': TABLE[1] + TABLE_HALF[1], 'z': 0.8}],
         # the scene's places (src/game/mustafar/director.js): in through the door, the lane south of the table, the push
         'actors': {
             'sideBottom': {'x': 59.4, 'y': 95.2},  # the side passage's foot, at the corridor
@@ -127,6 +130,15 @@ def main():
             'pushObiwan': {'x': 55.2, 'y': 89.6},
             'pushAnakinTo': {'x': 44.8, 'y': 89.6},
             'pushObiwanTo': {'x': 56.4, 'y': 89.6},
+            # the fight up on the table (director.js toTable) and the push when it is up there (the film's 13148)
+            'tableObiwan': {'x': 48.6, 'y': 86.0},
+            'tableAnakin': {'x': 51.2, 'y': 86.0},
+            'tableEndW': {'x': 43.5, 'y': 86.0},  # the floor at its ends (the ways up and down)
+            'tableEndE': {'x': 56.5, 'y': 86.0},
+            'tablePushAnakin': {'x': 48.4, 'y': 86.0},
+            'tablePushObiwan': {'x': 52.4, 'y': 86.0},
+            'tablePushAnakinTo': {'x': 44.6, 'y': 86.0},
+            'tablePushObiwanTo': {'x': 55.4, 'y': 86.0},
         },
         'triggers': [],
         'cameras': [{'x0': X0 - 2, 'y0': Y0 - 3, 'x1': SX1 + 1, 'y1': Y1 + 1}],

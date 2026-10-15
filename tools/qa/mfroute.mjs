@@ -9,7 +9,8 @@
 //   C  the same chain with every scene skipped (Esc): the same state as watched
 //   D  elevation and doors: the gallery's steps (the rail blocks, the steps lead up, z 0.6), the high ground's slope
 //      (up to 1.4 m), the facility door open once the fight is through it, the balcony doorway open, the way from the
-//      corridor up the side passage into the conference room walkable (and only through its doorways)
+//      corridor up the side passage into the conference room walkable (and only through its doorways), the council's
+//      table walked on (up at its ends, 0.8 m)
 // NOWEBGL=1: in a Chromium with its 3D APIs off (no WebGL: the game's no-WebGL path — tools/qa/nowebgl.mjs).
 // Prints a table per part and ok/FAIL lines; frames in out_dir; exits 1 on a failure.
 //     node tools/qa/mfroute.mjs [base_url] [out_dir] [sections, e.g. ABCD]
@@ -245,6 +246,7 @@ if (sections.includes('D')) {
           new Promise((res) => {
             const g = window.__game;
             const ob = g.duel.foe;
+            g.duel.beatDone = true; // (the room's table scene would take him mid-walk)
             ob.scripted = true;
             ob.x = 45;
             ob.y = 84;
@@ -271,6 +273,14 @@ if (sections.includes('D')) {
     check('D room: and back down to the control room', Math.hypot(back.end[0] - 37, back.end[1] - 98.5) < 0.6 && back.bad === 0, JSON.stringify(back));
     const wall = await page.evaluate(() => [[50, 93.5], [44, 94.5], [56, 95], [40, 90]].map(([x, y]) => window.__game.world.isBlocked(x, y)));
     check('D room: no way between the room and the corridor but the side passage (the wall between them)', wall.every(Boolean), JSON.stringify(wall));
+    // the council's table: its top walked on (0.8 m up), up and down at its ends only (the chair rows close its sides)
+    const zAfter = (from, to, sec) => walkTo(from, to, sec).then((r) => page.evaluate(() => +window.__game.player.z.toFixed(2)).then((z) => ({ ...r, z })));
+    const onto = await zAfter([43.5, 86], [49, 86], 15);
+    check('D room: up onto the table at its end, standing on its top (z 0.8)', Math.hypot(onto.end[0] - 49, onto.end[1] - 86) < 0.6 && Math.abs(onto.z - 0.8) < 0.05 && onto.bad === 0, JSON.stringify(onto));
+    const off = await zAfter([52, 86], [56.5, 89.5], 15);
+    check('D room: down off its east end to the lane (z 0)', Math.hypot(off.end[0] - 56.5, off.end[1] - 89.5) < 0.6 && off.z < 0.05 && off.bad === 0, JSON.stringify(off));
+    const sides = await page.evaluate(() => [[50, 84.5], [50, 87.5]].map(([x, y]) => window.__game.world.isBlocked(x, y)));
+    check('D room: the chair rows close the table\'s long sides', sides.every(Boolean), JSON.stringify(sides));
     await page.screenshot({ path: `${out}/D_link.png` });
     check('D room: no errors', errs.length === 0, errs.slice(0, 3).join(' || '));
     await page.close();
