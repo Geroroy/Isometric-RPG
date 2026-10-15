@@ -716,7 +716,7 @@ export class Game {
       for (let y = Math.floor(p.y - R); y <= p.y + R; y++)
         for (let x = Math.floor(p.x - R); x <= p.x + R; x++)
           if (w.inBounds(x, y) && (x - p.x) ** 2 + (y - p.y) ** 2 < R * R) w.explored[y * w.w + x] = 1;
-      const reg = w.regionName(p.x, p.y);
+      const reg = w.regionName(p.x, p.y, this.region);
       if (reg !== this.region) {
         this.region = reg;
         this.emit('region', reg);

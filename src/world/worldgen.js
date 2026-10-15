@@ -108,7 +108,10 @@ export class World {
     return this.biome[ty * MAP_W + tx];
   }
 
-  regionName(x, y) {
+  // keep: the region the player is in now — kept until he is 2 m past its edge (a fight on the line between two
+  // regions doesn't flash their banners back and forth)
+  regionName(x, y, keep) {
+    if (keep) for (const p of this.pois) if (p.name === keep && dist(x, y, p.x, p.y) < p.r + 2) return keep;
     for (const p of this.pois) if (dist(x, y, p.x, p.y) < p.r) return p.name;
     return BIOME_NAMES[this.biomeAt(x, y)];
   }
