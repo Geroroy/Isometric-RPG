@@ -1079,7 +1079,7 @@
   {
    "id": "mf.highground.bank",
    "kind": "groundImage",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_route_assets.md",
    "file": "lava/highground_bank.png",
    "size": [
@@ -1095,7 +1095,8 @@
     112,
     147
    ],
-   "guide": "docs/asset_requests/guides/highground_bank_guide.png"
+   "guide": "docs/asset_requests/guides/highground_bank_guide.png",
+   "delivered": "docs/asset_requests/delivered/highground_bank_notes.md"
   }
  ]
 }

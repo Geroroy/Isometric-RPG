@@ -6,7 +6,8 @@
   "title": "무스타파 · 고지대",
   "blockoutNote": "BLOCKOUT: grey boxes stand in for the art (not requested yet)",
   "floor": [
-    {"id": "bank", "kind": "blockout", "x0": 112, "y0": 134, "x1": 136, "y1": 147}
+    {"id": "bankArt", "kind": "groundImage", "asset": "mf.highground.bank", "at": {"x": 112, "y": 147}},
+    {"id": "bank", "kind": "blockout", "x0": 112, "y0": 134, "x1": 136, "y1": 147, "art": "mf.highground.bank"}
   ],
   "walk": [
     {"id": "bank", "rect": [113, 135, 135, 147]}
@@ -15,20 +16,28 @@
   "structures": [],
   "decor": [],
   "blockout": [
-    {"x": 124.0, "y": 137.5, "w": 24, "d": 7, "h": 1.4, "kind": "deck", "label": "고지대 +1.4 m", "flat": true},
-    {"x": 124.0, "y": 141.5, "w": 24, "d": 1, "h": 1.15, "kind": "deck", "label": "", "flat": true},
-    {"x": 124.0, "y": 142.5, "w": 24, "d": 1, "h": 0.9, "kind": "deck", "label": "경사", "flat": true},
-    {"x": 124.0, "y": 143.5, "w": 24, "d": 1, "h": 0.65, "kind": "deck", "label": "", "flat": true},
-    {"x": 124.0, "y": 144.5, "w": 24, "d": 1, "h": 0.4, "kind": "deck", "label": "", "flat": true},
-    {"x": 124.0, "y": 146.5, "w": 24, "d": 1, "h": 0.03, "kind": "hazard", "label": "용암 가장자리", "flat": true},
-    {"x": 124.0, "y": 133.8, "w": 24, "d": 0.4, "h": 3.0, "kind": "wall", "label": "바위 절벽"}
+    {"x": 124.0, "y": 137.5, "w": 24, "d": 7, "h": 1.4, "kind": "deck", "label": "고지대 +1.4 m", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 141.25, "w": 24, "d": 0.5, "h": 1.312, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 141.75, "w": 24, "d": 0.5, "h": 1.137, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 142.25, "w": 24, "d": 0.5, "h": 0.962, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 142.75, "w": 24, "d": 0.5, "h": 0.787, "kind": "deck", "label": "경사", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 143.25, "w": 24, "d": 0.5, "h": 0.612, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 143.75, "w": 24, "d": 0.5, "h": 0.438, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 144.25, "w": 24, "d": 0.5, "h": 0.262, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 144.75, "w": 24, "d": 0.5, "h": 0.087, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 146.5, "w": 24, "d": 1, "h": 0.03, "kind": "hazard", "label": "용암 가장자리", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 133.8, "w": 24, "d": 0.4, "h": 3.0, "kind": "wall", "label": "바위 절벽", "art": "mf.highground.bank"}
   ],
   "surfaces": [
     {"x0": 112, "y0": 134, "x1": 136, "y1": 141, "z": 1.4},
-    {"x0": 112, "y0": 141, "x1": 136, "y1": 142, "z": 1.15},
-    {"x0": 112, "y0": 142, "x1": 136, "y1": 143, "z": 0.9},
-    {"x0": 112, "y0": 143, "x1": 136, "y1": 144, "z": 0.65},
-    {"x0": 112, "y0": 144, "x1": 136, "y1": 145, "z": 0.4}
+    {"x0": 112, "y0": 141.0, "x1": 136, "y1": 141.5, "z": 1.312},
+    {"x0": 112, "y0": 141.5, "x1": 136, "y1": 142.0, "z": 1.137},
+    {"x0": 112, "y0": 142.0, "x1": 136, "y1": 142.5, "z": 0.962},
+    {"x0": 112, "y0": 142.5, "x1": 136, "y1": 143.0, "z": 0.787},
+    {"x0": 112, "y0": 143.0, "x1": 136, "y1": 143.5, "z": 0.612},
+    {"x0": 112, "y0": 143.5, "x1": 136, "y1": 144.0, "z": 0.438},
+    {"x0": 112, "y0": 144.0, "x1": 136, "y1": 144.5, "z": 0.262},
+    {"x0": 112, "y0": 144.5, "x1": 136, "y1": 145.0, "z": 0.087}
   ],
   "actors": {"highGround": {"x": 124.0, "y": 142.4}, "foot": {"x": 122.9, "y": 146.2}},
   "triggers": [],

@@ -707,8 +707,9 @@ export const ROUTE = {
     this.lock = null;
     g.emit('lock', false);
     this.hold();
-    this.onRiver = false;
     this.bombsOn = false;
+    this.platformAlongside(); // (a cut under the black: the fight may have ended before the platform got there)
+    this.onRiver = false;
     const bank = A.highGround;
     const foot = A.foot;
     const cues = [
@@ -728,7 +729,7 @@ export const ROUTE = {
       { t: 0.4, fade: 0, fadeDur: 1.4 },
       { t: 3.2, do: () => ob.faceTo(bank.x, bank.y) },
       { t: 4.4, do: (c) => (ob.setAnim('leap', 1, true), (ob.deck = null), c.move(ob, bank.x, bank.y, 0.8), g.audio.play('leap', ob)) },
-      { t: 5.2, do: () => (ob.setAnim('idle', 1, true), ob.faceTo(p.x, p.y), g.fx.dust(ob.x, ob.y, 6)) },
+      { t: 5.2, do: () => (ob.setAnim('idle', 1, true), (ob.z = g.world.groundAt(ob.x, ob.y)), ob.faceTo(p.x, p.y), g.fx.dust(ob.x, ob.y, 6)) }, // (up on the slope at once)
       say(8.0, 'obiwan', '끝났다, 아나킨!', 3.0),
       say(11.6, 'obiwan', '내가 더 높은 곳에 있다.', 3.0),
       say(16.4, 'anakin', '내 힘을 얕보지 마!', 2.4),
@@ -765,14 +766,14 @@ export const ROUTE = {
       { t: 39.6, do: () => g.fx.sparks(ob.x + 0.2, ob.y + 0.3, 0.3, '#c8d8ff', 4, 1.5) },
       { t: 40.0, do: () => this.pose(ob, 'grieve', 1) },
       say(43.0, 'obiwan', '넌 선택받은 자였다!', 2.8),
-      { t: 43.0, cam: { x: (foot.x + ob.x) / 2, y: (foot.y + ob.y) / 2, dur: 2 } },
+      { t: 43.0, cam: () => ({ x: (foot.x + ob.x) / 2, y: (foot.y + ob.y) / 2, dur: 2 }) }, // (where he is then)
       say(46.2, 'obiwan', '시스를 멸할 거라고 했지, 그들과 손잡는 게 아니라!', 4.2),
       say(52.4, 'obiwan', '포스에 균형을 가져오는 것이지… 어둠 속에 버려두는 게 아니라!', 4.6),
       { t: 60.0, do: () => this.pose(p, 'crawl', 1.3) },
       say(69.5, 'anakin', '당신이 미워!!', 2.6),
       { t: 69.5, do: () => this.pose(p, 'burn', 0.7), cam: { x: foot.x - 0.3, y: foot.y, dur: 0.4 } },
       say(73.4, 'obiwan', '넌 내 형제였다, 아나킨.', 2.8),
-      { t: 73.4, cam: { x: ob.x, y: ob.y, dur: 1.5 } },
+      { t: 73.4, cam: () => ({ x: ob.x, y: ob.y, dur: 1.5 }) },
       say(76.3, 'obiwan', '널 사랑했다.', 2.4),
       // the lava catches him; Obi-Wan turns away, up the slope
       {
@@ -796,6 +797,30 @@ export const ROUTE = {
       this.over = false; // finish() sets it again and reports
       this.finish(true);
     });
+  },
+
+  /** The platform at the bank (where the river's fight ends), its riders and the droid carried with it. */
+  platformAlongside() {
+    const R = this.river;
+    const pl = this.platform;
+    if (!R || !pl || pl.hidden || this.platformArrived) return;
+    const dx = R.end.x - pl.x;
+    const dy = R.end.y - pl.y;
+    const g = this.game;
+    for (const u of [pl, this.droid, g.player, this.foe]) {
+      if (u !== pl && u !== this.droid && u.deck !== pl && u.deck !== this.droid) continue;
+      u.x += dx;
+      u.y += dy;
+    }
+    this.platformArrived = true;
+    this.placeCraftSurfs();
+    if (this.floatLights) {
+      this.floatLights[0].x = pl.x;
+      this.floatLights[0].y = pl.y;
+      this.floatLights[1].x = this.droid.x;
+      this.floatLights[1].y = this.droid.y;
+    }
+    g.updateActive();
   },
 
   // --- testing a part on its own (?mfPart=<part>: QA, and playing a blockout without the film before it) ------------
