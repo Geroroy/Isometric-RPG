@@ -106,20 +106,20 @@ def main():
         'blockout': blockout(),
         # the table's top, for the film's fight on it (a later step: the duel does not use it yet) — its ends the ways up
         'reserved': {'tableTop': {'x0': TABLE[0] - TABLE_HALF[0], 'y0': TABLE[1] - TABLE_HALF[1], 'x1': TABLE[0] + TABLE_HALF[0], 'y1': TABLE[1] + TABLE_HALF[1], 'z': 0.8,
-                                  'access': [{'x': TABLE[0] - TABLE_HALF[0] - 0.6, 'y': TABLE[1]}, {'x': TABLE[0] + TABLE_HALF[0] + 0.6, 'y': TABLE[1]}]}},
+                                  'access': [{'x': 43.5, 'y': TABLE[1]}, {'x': 56.5, 'y': TABLE[1]}]}},
         # the scene's places (src/game/mustafar/director.js): in through the door, the lane south of the table, the push
         'actors': {
             'sideBottom': {'x': 59.4, 'y': 95.2},  # the side passage's foot, at the corridor
             'sideTop': {'x': 59.4, 'y': CY},  # its top, before the room's door
             'confDoor': {'x': X1 - 0.6, 'y': CY},
-            'roomAnakin': {'x': 56.0, 'y': 84.6},
+            'roomAnakin': {'x': 56.5, 'y': 85.2},  # (half a tile clear of the chairs' and the wall's tiles: a unit on a blocked tile's edge cannot move)
             'roomObiwan': {'x': 53.8, 'y': 89.4},
             # the push on the lane south of the table: Obi-Wan thrown toward the door (he is up first and out of it,
             # back to the control room), Anakin back along the lane
             'pushAnakin': {'x': 51.0, 'y': 89.6},
             'pushObiwan': {'x': 55.2, 'y': 89.6},
             'pushAnakinTo': {'x': 44.8, 'y': 89.6},
-            'pushObiwanTo': {'x': 56.9, 'y': 89.6},
+            'pushObiwanTo': {'x': 56.4, 'y': 89.6},
         },
         'triggers': [],
         'cameras': [{'x0': X0 - 2, 'y0': Y0 - 3, 'x1': SX1 + 1, 'y1': Y1 + 1}],

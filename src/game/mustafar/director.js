@@ -25,7 +25,7 @@
 import { Duel, Extra } from '../duel.js';
 import { MustafarDuel, ObiWan } from '../duelMustafar.js';
 import { Cinema } from '../cinema.js';
-import { ROUTE, ROUTE_FIGHTS, walkRoute } from './route.js';
+import { ROUTE, ROUTE_FIGHTS, walkRoute, between } from './route.js';
 import { BIOME } from '../../world/biome.js';
 import { dist } from '../../core/math.js';
 
@@ -312,7 +312,7 @@ export class MustafarDirector extends Duel {
     const [pC, pT] = walkRoute(p, [...way, A.roomAnakin], 1.0, 5.2, 'run');
     const end = Math.max(obT, pT);
     const cues = [
-      { t: 0, do: () => g.audio.play('click'), cam: { follow: p, zoom: 1.25, dur: 0.8 } },
+      { t: 0, do: () => g.audio.play('click'), cam: { follow: between(p, ob), zoom: 1.25, dur: 0.8 } },
       ...obC,
       ...pC,
       { t: obT - 0.6, do: () => this.card('분리주의 회의실') },

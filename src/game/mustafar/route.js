@@ -67,6 +67,16 @@ export function walkRoute(u, nodes, t0, speed, anim = 'walk') {
   return walk(u, nodes.slice(i), t0, speed, anim);
 }
 
+/** A camera target between the two (Cinema `follow`): a chase scene keeps both in the frame, not only Anakin. */
+export const between = (a, b) => ({
+  get x() {
+    return (a.x + b.x) / 2;
+  },
+  get y() {
+    return (a.y + b.y) / 2;
+  },
+});
+
 export const ROUTE = {
   /** The river's decks (STAGE 05): blockout boxes as units, hidden until the arm falls. */
   setupRoute() {
@@ -195,10 +205,10 @@ export const ROUTE = {
     ob.set('circle', 99);
     const way = [{ x: 55.8, y: 88.4 }, A.confDoor, A.sideTop, A.sideBottom, { x: 58.6, y: 97.8 }, { x: 50, y: 98 }, A.ctlEntry];
     const [obC, obT] = walkRoute(ob, [...way, A.ctlObiwan], 0.3, 5.0, 'run');
-    const [pC, pT] = walkRoute(p, [{ x: 51, y: 89.6 }, ...way, A.ctlAnakin], 1.4, 5.2, 'run');
+    const [pC, pT] = walkRoute(p, [{ x: 51, y: 89.6 }, ...way, A.ctlAnakin], 0.9, 5.4, 'run');
     const end = Math.max(obT, pT);
     const cues = [
-      { t: 0, cam: { follow: p, zoom: 1.25, dur: 0.8 } },
+      { t: 0, cam: { follow: between(p, ob), zoom: 1.2, dur: 0.8 } }, // (the push leaves them 12 m apart)
       ...obC,
       ...pC,
       { t: obT - 0.6, do: () => this.card('제어실') },
