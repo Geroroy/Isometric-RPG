@@ -139,3 +139,10 @@
 - 그림에 맞춘 배치: 테라스 x 21..41(20 m), 보행로 18 m = 6 m 칸 세 개(x 41..59). 24 m였을 때 끝 칸이 집하기 탑 앞에 가려
   붕괴 장면의 아나킨이 안 보였다 → 끝을 탑의 화면 영역 밖으로. 용암 폭포는 싸우는 곳 앞에 두면 가리므로 테라스 서쪽 끝 너머에 하나.
 - 대기: `pipe_segment`, `collector_tower`(노트에는 있으나 파일 미수신), STAGE 05의 드로이드·플랫폼, STAGE 06 둑.
+
+## STAGE 05 용암 강 — 받은 그림 (`docs/asset_requests/delivered/mustafar_river_notes.md`)
+
+- 받음(그대로 사용): `mining_droid`(채굴 드로이드, 덮개 위 0.12 m), `repulsor_platform`(리펄서 플랫폼 3.2 m, 데크는 용암 높이).
+  떠내려가는 팔은 STAGE 04의 `collector_arm`. 강의 탈것은 감독이 만드는 유닛이라 존 `river`의 `asset`으로 불러오고, 데크 높이는
+  탈것을 따라 움직이는 surface로 둔다.
+- 대기: STAGE 06 둑(`highground_bank`), STAGE 04 배관·탑, STAGE 03 나머지 12장.

@@ -15,7 +15,7 @@
     {"x": 100, "y": 164.0, "w": 5, "d": 1.2, "h": 0.03, "kind": "hazard", "label": "용암 강 · 흐름 →", "flat": true},
     {"x": 118, "y": 164.0, "w": 5, "d": 1.2, "h": 0.03, "kind": "hazard", "label": "용암 강 · 흐름 →", "flat": true}
   ],
-  "river": {"y0": 147, "y1": 172, "raft": {"w": 3, "d": 22, "h": 0.35, "r": 1.25, "from": {"x": 78, "y": 159.5}, "speed": 0.55}, "droid": {"w": 2, "d": 2, "h": 0.6, "r": 1.0}, "platform": {"w": 3.2, "d": 3.2, "h": 0.5, "r": 1.55, "speed": 0.7}, "end": {"x": 124, "y": 149.0}},
+  "river": {"y0": 147, "y1": 172, "raft": {"w": 3, "d": 22, "h": 0.35, "r": 1.25, "from": {"x": 78, "y": 159.5}, "speed": 0.55}, "droid": {"w": 2, "d": 2, "h": 0.6, "r": 1.0, "asset": "mf.river.mining_droid", "deckZ": 0.12}, "platform": {"w": 3.2, "d": 3.2, "h": 0.5, "r": 1.55, "speed": 0.7, "asset": "mf.river.repulsor_platform", "deckZ": 0}, "end": {"x": 124, "y": 149.0}},
   "actors": {},
   "triggers": [],
   "camera": {"x0": 70, "y0": 141, "x1": 140, "y1": 172},

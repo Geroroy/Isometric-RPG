@@ -120,7 +120,9 @@ async function boot() {
     const man = await loadManifest('assets/mustafar/manifest.json');
     zone.art = {};
     zone.missingArt = [];
-    const ids = new Set([...zone.floor, ...zone.structures, ...zone.decor].map((e) => e.asset).filter(Boolean));
+    // (and the river's craft: STAGE 05's moving decks, units the director makes — world/mustafarStage.js `river`)
+    const craft = zone.river ? [zone.river.droid, zone.river.platform] : [];
+    const ids = new Set([...zone.floor, ...zone.structures, ...zone.decor, ...craft].map((e) => e.asset).filter(Boolean));
     for (const id of ids) {
       const a = await loadAsset(man, id);
       if (a.data) zone.art[id] = a.data;

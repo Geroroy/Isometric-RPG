@@ -12,7 +12,8 @@ only the decks are walkable, wherever they drift (world/mustafarStage.js floats 
   the arm adrift   the collector arm, 3 × 22 m along y as it stood (a strip 1.25 m either side of its line)
   the droid        2 m (radius 1.0)
   the platform     3.2 m (radius 1.55: the route test found the film's ~2.4 m too cramped for the fight)
-Their sizes and paths are here (`river`); their blockout sprites are made by the director (gfx/blockout.js).
+Their sizes and paths are here (`river`); their pictures are the manifest's (`asset`: the droid, the platform; the arm adrift
+is the collector arm's), blockout boxes until delivered (gfx/blockout.js, made by the director).
 """
 from pathlib import Path
 from _zone import light, plate, write
@@ -44,8 +45,8 @@ def main():
             'y0': Y0,
             'y1': Y1,
             'raft': {'w': 3, 'd': 22, 'h': 0.35, 'r': 1.25, 'from': {'x': 78, 'y': MID}, 'speed': 0.55},  # the arm adrift: the collector arm itself, along y as it stood (its sprite: mf.collector.arm)
-            'droid': {'w': 2, 'd': 2, 'h': 0.6, 'r': 1.0},
-            'platform': {'w': 3.2, 'd': 3.2, 'h': 0.5, 'r': 1.55, 'speed': 0.7},  # (3.2 m, not the film's ~2.4: the route test found 2.4 too cramped to fight on)
+            'droid': {'w': 2, 'd': 2, 'h': 0.6, 'r': 1.0, 'asset': 'mf.river.mining_droid', 'deckZ': 0.12},  # (its cap's top: 0.12 m over the lava)
+            'platform': {'w': 3.2, 'd': 3.2, 'h': 0.5, 'r': 1.55, 'speed': 0.7, 'asset': 'mf.river.repulsor_platform', 'deckZ': 0},  # (3.2 m, not the film's ~2.4: the route test found 2.4 too cramped to fight on)
             'end': {'x': 124, 'y': 149.0},  # where the platform comes alongside the bank (STAGE 06)
         },
         'actors': {},

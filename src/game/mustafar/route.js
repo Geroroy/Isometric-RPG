@@ -66,8 +66,15 @@ export const ROUTE = {
     this.raftZ = arm ? 0.3 : 0;
     if (arm) S.raftArm ||= { dirs: 1, anims: { idle: { frames: 1, fps: 1, loop: true, data: [[arm.body]] } }, markers: [] };
     S.boRaft ||= blockoutUnitSet({ w: R.raft.w, d: R.raft.d, h: flat, kind: 'float', label: '떠내려가는 집하기 팔' });
-    S.boDroid ||= blockoutUnitSet({ w: R.droid.w, d: R.droid.d, h: flat, kind: 'hazard', label: '채굴 드로이드' });
-    S.boPlatform ||= blockoutUnitSet({ w: R.platform.w, d: R.platform.d, h: flat, kind: 'float', label: '리펄서 플랫폼' });
+    // the droid and the platform: their delivered pictures (one frame each), else blockout boxes
+    const craft = (c, name, kind, label) => {
+      const a = c.asset && g.assets.city && g.assets.city[c.asset];
+      if (a) return (S[name] ||= { dirs: 1, anims: { idle: { frames: 1, fps: 1, loop: true, data: [[a.body]] } }, markers: [] }) && name;
+      S['bo_' + name] ||= blockoutUnitSet({ w: c.w, d: c.d, h: flat, kind, label });
+      return 'bo_' + name;
+    };
+    const droidSprite = craft(R.droid, 'craftDroid', 'hazard', '채굴 드로이드');
+    const platformSprite = craft(R.platform, 'craftPlatform', 'float', '리펄서 플랫폼');
     const deck = (kind, sprite, r) => {
       const f = new Float(g, kind, R.raft.from.x, R.raft.from.y, r);
       f.sprite = sprite;
@@ -77,8 +84,10 @@ export const ROUTE = {
     this.raft = deck('armRaft', arm ? 'raftArm' : 'boRaft', R.raft.r);
     this.raft.depthBias = -40; // (under everyone on the river)
     this.raft.half = R.raft.d / 2; // (the arm along y, as it stood)
-    this.droid = deck('collector', 'boDroid', R.droid.r);
-    this.platform = deck('platform', 'boPlatform', R.platform.r);
+    this.droid = deck('collector', droidSprite, R.droid.r);
+    this.platform = deck('platform', platformSprite, R.platform.r);
+    // their decks' heights (the droid's cap a little over the lava), following them: surfaces the riders stand on
+    for (const [f, c] of [[this.droid, R.droid], [this.platform, R.platform]]) if (c.deckZ) f.surf = { x0: 0, y0: 0, x1: 0, y1: 0, z: c.deckZ };
     g.units.push(this.raft, this.droid, this.platform);
   },
 
@@ -517,6 +526,19 @@ export const ROUTE = {
     g.updateActive();
   },
 
+  /** The river craft's deck tops over where they are now (a square inside each one's round deck). */
+  placeCraftSurfs() {
+    for (const f of [this.platform, this.droid]) {
+      const s = f && f.surf;
+      if (!s) continue;
+      const h = f.r * 0.75;
+      s.x0 = f.x - h;
+      s.x1 = f.x + h;
+      s.y0 = f.y - h;
+      s.y1 = f.y + h;
+    }
+  },
+
   /** The raft's deck top over where it is now (while it sinks it goes down with it). */
   placeRaftSurf() {
     const s = this.raftSurf;
@@ -619,6 +641,8 @@ export const ROUTE = {
     this.platformArrived = false;
     this.riverT = 0;
     w.floats = [pl, dr];
+    for (const f of [pl, dr]) if (f.surf && !w.surfaces.includes(f.surf)) w.surfaces.push(f.surf);
+    this.placeCraftSurfs();
     this.floatLights = [
       { x: pl.x, y: pl.y, z: 0.2, r: 255, g: 140, b: 70, rad: 90, flicker: 0.08 },
       { x: dr.x, y: dr.y, z: 0.2, r: 255, g: 150, b: 60, rad: 90, flicker: 0.1 },
@@ -668,6 +692,7 @@ export const ROUTE = {
     this.floatLights[0].y = pl.y;
     this.floatLights[1].x = dr.x;
     this.floatLights[1].y = dr.y;
+    this.placeCraftSurfs();
   },
 
   // --- STAGE 06: the high ground and the ending (on the film's audio) -------------------------------------------

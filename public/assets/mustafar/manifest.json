@@ -815,7 +815,7 @@
   {
    "id": "mf.river.mining_droid",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_route_assets.md",
    "file": "lava/mining_droid.png",
    "size": [
@@ -827,12 +827,13 @@
     96,
     63
    ],
-   "guide": "docs/asset_requests/guides/mining_droid_guide.png"
+   "guide": "docs/asset_requests/guides/mining_droid_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_river_notes.md"
   },
   {
    "id": "mf.river.repulsor_platform",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_route_assets.md",
    "file": "lava/repulsor_platform.png",
    "size": [
@@ -844,7 +845,8 @@
     144,
     139
    ],
-   "guide": "docs/asset_requests/guides/repulsor_platform_guide.png"
+   "guide": "docs/asset_requests/guides/repulsor_platform_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_river_notes.md"
   },
   {
    "id": "mf.room.wall_door_side",

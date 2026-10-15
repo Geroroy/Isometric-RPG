@@ -1,8 +1,8 @@
-Same Mustafar game as before (Revenge of the Sith, the Anakin vs. Obi-Wan duel). Below are ALL the remaining images the map needs, grouped by location — 17 files. Please check the film for each place's look. Match the style of the landing pad, corridor and conference room you already made: dark grey worn metal, rust, dull brass trims, amber panel lights, soft even light from the upper left. Keep every surface lower-contrast than the characters so the duellists and their blue lightsabers stay readable — no blue or red glows on the set. Every image at exactly the size given; where transparency is asked, a real alpha channel (not a painted checkerboard). Use exactly the file names given.
+Same Mustafar game as before (Revenge of the Sith, the Anakin vs. Obi-Wan duel). Below are ALL the remaining images the map needs, grouped by location — 15 files. Please check the film for each place's look. Match the style of the landing pad, corridor and conference room you already made: dark grey worn metal, rust, dull brass trims, amber panel lights, soft even light from the upper left. Keep every surface lower-contrast than the characters so the duellists and their blue lightsabers stay readable — no blue or red glows on the set. Every image at exactly the size given; where transparency is asked, a real alpha channel (not a painted checkerboard). Use exactly the file names given.
 
 Two kinds of image:
 - FLAT pictures (no isometric angle; the game folds them into its view itself): 64 pixels = 1 m. Floors seen straight from above; walls seen straight-on like technical drawings; soft even lighting, no cast shadows.
-- ISOMETRIC sprites, each drawn inside its attached guide image (8 guides attached, named <file>_guide.png). The guide is the exact canvas: cyan = the bottom outline / footprint, orange = the top, red cross = the ground anchor (for things in the lava: the lava's surface); delete the guide lines afterwards. The guides' 2:1 isometric angle; light from the upper left, a soft shadow to the lower right (no cast shadow on lava, only a faint orange glow).
+- ISOMETRIC sprites, each drawn inside its attached guide image (6 guides attached, named <file>_guide.png). The guide is the exact canvas: cyan = the bottom outline / footprint, orange = the top, red cross = the ground anchor (for things in the lava: the lava's surface); delete the guide lines afterwards. The guides' 2:1 isometric angle; light from the upper left, a soft shadow to the lower right (no cast shadow on lava, only a faint orange glow).
 
 ==================================================
 LOCATION 1 — THE CONTROL ROOM (12 images)
@@ -31,19 +31,11 @@ Outside the control room: a balcony terrace, then a long open industrial catwalk
 14. collector_tower.png, 352 × 584, transparent, isometric, inside collector_tower_guide.png: the collector's tower the arm hangs from, 4 × 4 m, 8 m tall, a rusted cage of curved vanes, struts and pipes.
 
 ==================================================
-LOCATION 3 — THE LAVA RIVER (2 images)
+LOCATION 3 — THE HIGH GROUND (1 image)
 ==================================================
-After the collector arm falls in, Obi-Wan leaps onto a small repulsor platform and Anakin onto a hovering mining droid; they fight on these small craft as they drift.
-
-15. mining_droid.png, 192 × 144, transparent, isometric, inside mining_droid_guide.png: the panning/mining droid from the film — a small hovering droid about 2 m across with a flat top a person can stand on (top at the orange line), its underside low over the lava.
-16. repulsor_platform.png, 288 × 240, transparent, isometric, inside repulsor_platform_guide.png: the small repulsor platform Obi-Wan rides — a flat square deck 3.2 × 3.2 m with its top at the red cross's level, and a slim control post at one back corner reaching up to the orange line; its underside low over the lava.
+15. highground_bank.png, 1512 × 992, transparent everywhere outside the bank (the game's lava shows around it), isometric, drawn over highground_bank_guide.png: the black volcanic bank of the film's ending, black ash and rock lit orange from below by the lava. The guide shows the bank's footprint at the lava's level (cyan, 24 m long × 13 m deep), the flat top 1.4 m up (orange outline), the foot of the slope (grey line) and the crest of a rock face behind (top grey line); the red cross is the bank's near-left corner at the lava's level. From the near (lower) edge inward: 2 m of flat black sand at the lava's edge, then a slope rising 1.4 m over 4 m up to the orange outline, then the flat top, and behind it a rough black rock face rising up to the top grey line. Keep the walkable parts (sand, slope, top) fairly smooth and even so characters read clearly on them.
 
 ==================================================
-LOCATION 4 — THE HIGH GROUND (1 image)
+DELIVER (15 files)
 ==================================================
-17. highground_bank.png, 1512 × 992, transparent everywhere outside the bank (the game's lava shows around it), isometric, drawn over highground_bank_guide.png: the black volcanic bank of the film's ending, black ash and rock lit orange from below by the lava. The guide shows the bank's footprint at the lava's level (cyan, 24 m long × 13 m deep), the flat top 1.4 m up (orange outline), the foot of the slope (grey line) and the crest of a rock face behind (top grey line); the red cross is the bank's near-left corner at the lava's level. From the near (lower) edge inward: 2 m of flat black sand at the lava's edge, then a slope rising 1.4 m over 4 m up to the orange outline, then the flat top, and behind it a rough black rock face rising up to the top grey line. Keep the walkable parts (sand, slope, top) fairly smooth and even so characters read clearly on them.
-
-==================================================
-DELIVER (17 files)
-==================================================
-conf_wall_door_side.png, ctl_gallery_edge.png, ctl_wall_window.png, ctl_wall_side.png, ctl_wall_front_low.png, ctl_wall_entry_low.png, ps_floor.png, ps_wall_back.png, ps_wall_front_low.png, ctl_stairs.png, ctl_shield_generator.png, ctl_holo_table.png, pipe_segment.png, collector_tower.png, mining_droid.png, repulsor_platform.png, highground_bank.png.
+conf_wall_door_side.png, ctl_gallery_edge.png, ctl_wall_window.png, ctl_wall_side.png, ctl_wall_front_low.png, ctl_wall_entry_low.png, ps_floor.png, ps_wall_back.png, ps_wall_front_low.png, ctl_stairs.png, ctl_shield_generator.png, ctl_holo_table.png, pipe_segment.png, collector_tower.png, highground_bank.png.
