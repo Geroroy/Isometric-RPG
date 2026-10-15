@@ -1361,7 +1361,7 @@
    "id": "mf.corridor.junction_floor",
    "name": "입구 복도 문 쪽 4 m 바닥 (위에서 본 평면)",
    "kind": "groundTiles",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "tiles": {
     "floor": {
@@ -1375,13 +1375,15 @@
       4
      ]
     }
-   }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
   },
   {
    "id": "mf.corridor.side_floor",
    "name": "회의실 옆 통로 바닥 (위에서 본 평면)",
    "kind": "groundTiles",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "tiles": {
     "floor": {
@@ -1395,13 +1397,15 @@
       12
      ]
     }
-   }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
   },
   {
    "id": "mf.corridor.junction_pier",
    "name": "입구 복도 안쪽 벽 기둥 (정면도, 옆 통로 입구 옆)",
    "kind": "wallElevation",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "corridors/corr_junction_pier.png",
    "size": [
@@ -1412,13 +1416,15 @@
     1,
     3.5
    ],
-   "along": "x"
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
   },
   {
    "id": "mf.corridor.junction_wall_low",
    "name": "입구 복도 문 쪽 낮은 앞벽 (정면도)",
    "kind": "wallElevation",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "corridors/corr_junction_wall_low.png",
    "size": [
@@ -1429,13 +1435,15 @@
     4,
     1
    ],
-   "along": "x"
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
   },
   {
    "id": "mf.corridor.frame_far",
    "name": "입구 복도 기울어진 구조 프레임 (안쪽 벽, 전체 높이)",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "corridors/corr_frame_far.png",
    "size": [
@@ -1466,13 +1474,15 @@
      0.25
     ]
    ],
-   "layer": "standing"
+   "layer": "standing",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
   },
   {
    "id": "mf.corridor.frame_near",
    "name": "입구 복도 구조 프레임 밑동 (앞쪽, 잘린 높이)",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "corridors/corr_frame_near.png",
    "size": [
@@ -1503,13 +1513,15 @@
      0.25
     ]
    ],
-   "layer": "standing"
+   "layer": "standing",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
   },
   {
    "id": "mf.corridor.side_wall_end",
    "name": "회의실 옆 통로 끝벽 (정면도)",
    "kind": "wallElevation",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "corridors/corr_side_wall_end.png",
    "size": [
@@ -1520,13 +1532,15 @@
     3,
     2
    ],
-   "along": "x"
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
   },
   {
    "id": "mf.corridor.side_wall_low",
    "name": "회의실 옆 통로 낮은 바깥벽 (정면도)",
    "kind": "wallElevation",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "corridors/corr_side_wall_low.png",
    "size": [
@@ -1537,13 +1551,15 @@
     12,
     1
    ],
-   "along": "y"
+   "along": "y",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
   },
   {
    "id": "mf.corridor.side_wall_corner",
    "name": "회의실 모서리와 복도 사이 벽 (정면도)",
    "kind": "wallElevation",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "corridors/corr_side_wall_corner.png",
    "size": [
@@ -1554,13 +1570,15 @@
     4,
     2
    ],
-   "along": "y"
+   "along": "y",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
   },
   {
    "id": "mf.landing.guide_light",
    "name": "착륙장 유도등 (작은 발광 등)",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "landing/guide_light.png",
    "size": [
@@ -1591,13 +1609,15 @@
      0.2
     ]
    ],
-   "layer": "flat"
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
   },
   {
    "id": "mf.control.ctl_long_table",
    "name": "제어실 중앙 긴 홀로 테이블",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "interiors/ctl_long_table.png",
    "size": [
@@ -1632,13 +1652,15 @@
    "occlusion": {
     "fadeOverActors": true,
     "height": 1.0
-   }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
   },
   {
    "id": "mf.control.ctl_door_pillar",
    "name": "제어실 입구 사선 문틀 기둥 (잘린 높이)",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "interiors/ctl_door_pillar.png",
    "size": [
@@ -1669,13 +1691,15 @@
      0.45
     ]
    ],
-   "layer": "standing"
+   "layer": "standing",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
   },
   {
    "id": "mf.room.table_long",
    "name": "회의실 긴 테이블 (12 m 한 장)",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "interiors/conf_table_long.png",
    "size": [
@@ -1710,7 +1734,9 @@
    "occlusion": {
     "fadeOverActors": true,
     "height": 0.8
-   }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
   }
  ]
 }

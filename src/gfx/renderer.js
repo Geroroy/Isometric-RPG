@@ -601,7 +601,10 @@ export class Renderer {
     const ctx = this.ctx;
     const r = pr.rect;
     pr.coverAlpha = null;
-    if (pf && r[3] > 30 && pp.x + 8 > r[0] && pp.x - 8 < r[0] + r[2] && pp.y > r[1] + 8 && pp.y - pfH < r[1] + r[3] && this.coversPlayer(pr, pp, pfH)) {
+    // (low furniture — a table, its top ≤ 1 m: the manifest's occlusion height — stays solid: it hides only his feet,
+    // and a 12 m table gone see-through whenever he stood behind it read as no table at all)
+    const low = (pr.layers?.meta?.occlusion?.height ?? Infinity) <= 1.0;
+    if (pf && !low && r[3] > 30 && pp.x + 8 > r[0] && pp.x - 8 < r[0] + r[2] && pp.y > r[1] + 8 && pp.y - pfH < r[1] + r[3] && this.coversPlayer(pr, pp, pfH)) {
       if (pr.sheet && this.game.world.grade === 'mustafar') {
         pr.coverAlpha = COVER_ALPHA;
         ctx.globalAlpha = COVER_ALPHA;
