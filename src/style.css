@@ -2188,6 +2188,23 @@ body.duel .target-info {
   background: linear-gradient(180deg, #e27a76 0%, #d0625f 45%, #b84c4b 100%);
   box-shadow: inset 0 1px 0 rgba(255, 220, 210, 0.35);
 }
+/* the mark this fight presses him to (the Mustafar duels): a cream notch; lit gold once he is down to it */
+.bb-goal {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  margin-left: -1px;
+  background: #fff3dc;
+  box-shadow: 0 0 0 1px rgba(36, 20, 20, 0.85);
+}
+.bb-goal.reached {
+  background: #ffd36a;
+  box-shadow: 0 0 6px 1px rgba(255, 200, 90, 0.9);
+}
+.bb-goal.hidden {
+  display: none;
+}
 /* the composure (block meter): a thin gold line under the bar while it is not full */
 .bb-comp {
   height: 3px;

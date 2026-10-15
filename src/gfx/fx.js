@@ -96,6 +96,7 @@ export class Effects {
     this.ripples = []; // Force: a refraction ring that bends the picture behind it
     this.shakeAmt = 0;
     this.bombs = []; // lava bombs in flight (lavaBomb)
+    this.tells = []; // a coming blow's warning ring under the striker (tell)
   }
 
   update(dt) {
@@ -143,6 +144,8 @@ export class Effects {
     this.bolts = this.bolts.filter((w) => w.t < w.life);
     this.cones = this.cones.filter((w) => w.t < w.life);
     this.lights = this.lights.filter((w) => w.t < w.life);
+    for (const w of this.tells) w.t += dt;
+    if (this.tells.length) this.tells = this.tells.filter((w) => w.t < w.life && w.live());
     for (const d of this.decals) d.t += dt;
     this.decals = this.decals.filter((d) => d.t < d.life);
     this.shakeAmt = Math.max(0, this.shakeAmt - dt * 25);
@@ -271,6 +274,14 @@ export class Effects {
   shockwave(x, y, r, color = '#9fd0ff', life = 0.4) {
     this.waves.push({ x, y, r, color, t: 0, life });
     this.light(x, y, 0.3, [160, 200, 255], r * 30, life);
+  }
+
+  /**
+   * A blow coming (the duel's tell): a ring round the striker's feet that closes on him over `life` seconds — when it
+   * shuts, the blow lands; the moment to raise the guard for a perfect parry. `live()`: false drops it (the blow lost).
+   */
+  tell(u, life, rgb, live) {
+    this.tells.push({ u, t: 0, life, rgb, live });
   }
 
   ring(x, y, r, color, life = 0.5) {
@@ -439,6 +450,22 @@ export class Effects {
       ctx.drawImage(glowSprite([255, 140, 60]), s.x - cam.x - 4, s.y - cam.y - 4, 8, 8);
     }
     ctx.globalAlpha = 1;
+    for (const w of this.tells) {
+      const k = Math.min(1, w.t / w.life);
+      const s = worldToScreen(w.u.x, w.u.y, w.u.z || 0);
+      const [r, g, b] = w.rgb;
+      ctx.save();
+      ctx.translate(Math.round(s.x - cam.x), Math.round(s.y - cam.y));
+      ctx.scale(1, 0.5);
+      // closing in from 1.25 m to his feet, brightening as it goes
+      ctx.globalAlpha = 0.35 + 0.65 * k;
+      ctx.strokeStyle = `rgb(${r},${g},${b})`;
+      ctx.lineWidth = 1.5 + k * 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, (1.25 - 0.8 * k) * 28, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
     for (const w of this.waves) {
       const k = w.t / w.life;
       const s = worldToScreen(w.x, w.y);

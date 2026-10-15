@@ -39,7 +39,7 @@ export class DuelHUD {
     // while it is not full
     this.boss = el(
       'boss-bar',
-      `<div class="bb-hp"><i class="bb-chip"></i><i class="bb-fill"></i></div>
+      `<div class="bb-hp"><i class="bb-chip"></i><i class="bb-fill"></i><b class="bb-goal hidden"></b></div>
        <div class="bb-comp"><i></i></div>
        <div class="bb-name">${EMBLEM}<span>${c.name}</span>${EMBLEM.replace('bb-mark', 'bb-mark r')}</div>`,
     );
@@ -70,6 +70,14 @@ export class DuelHUD {
     this.chip = this.chip > k ? Math.max(k, this.chip - dt * 0.3) : k;
     this.boss.querySelector('.bb-fill').style.width = k * 100 + '%';
     this.boss.querySelector('.bb-chip').style.width = this.chip * 100 + '%';
+    // the mark this fight presses him to (the Mustafar duels' `floor`: reached, the film moves on)
+    const goal = this.boss.querySelector('.bb-goal');
+    const fl = typeof d.floor === 'number' && d.floor > 0 && d.floor < 1 && !this.game.cinema ? d.floor : null;
+    goal.classList.toggle('hidden', fl === null);
+    if (fl !== null) {
+      goal.style.left = fl * 100 + '%';
+      goal.classList.toggle('reached', k <= fl + 0.002);
+    }
     const bc = this.boss.querySelector('.bb-comp i');
     bc.style.width = Math.max(0, dk.composure) + '%';
     bc.parentElement.classList.toggle('broken', dk.state === 'broken');

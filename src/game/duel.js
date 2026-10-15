@@ -15,6 +15,7 @@ import { ARENA } from '../world/worldgen.js';
 import { Cinema } from './cinema.js';
 
 const PERFECT_WINDOW = 0.25;
+const WINDUP_FRAME = 2; // the frame of a strike held through its wind-up (the blade drawn back)
 
 /** Anakin's kit for the duel: level 12 with a fixed set of skills. */
 export function equip(p) {
@@ -56,12 +57,29 @@ export class Dooku extends Unit {
     this.stateT = t;
   }
 
-  /** Begin a strike; `n` = 1 lunge, 2 flick, 3 backhand. */
-  strike(n) {
-    this.set('attack', 0);
+  /**
+   * Begin a strike; `n` = 1 lunge, 2 flick, 3 backhand; `kind`: 'open' (a new exchange), 'follow' (the next blow of a
+   * combo), 'riposte' (after his parry). With `windup(n, kind)` (seconds; none for Dooku) he first holds the blade drawn
+   * back, a glint on it — the tell Anakin's guard reads — then swings.
+   */
+  strike(n, kind = 'open') {
     this.strikeN = n;
     this.struck = false;
     this.setAnim('attack' + n, 1, true);
+    const w = this.windup ? this.windup(n, kind) : 0;
+    if (w > 0) {
+      this.set('windup', w);
+      this.animT = WINDUP_FRAME / this.sprites.anims[this.anim].fps; // (held there: units.js animFreeze)
+      this.animFreeze = true;
+      const g = this.game;
+      const rgb = n === 3 ? [255, 196, 120] : [200, 226, 255]; // (the heavy backhand amber)
+      g.fx.flash(this.x - Math.cos(this.facing) * 0.2, this.y - Math.sin(this.facing) * 0.2, 1.7, rgb, n === 3 ? 20 : 14, 0.14);
+      // the ring that closes as the blow comes: shut at its hit frame
+      const a = this.sprites.anims[this.anim];
+      g.fx.tell(this, w + ((a.hit ?? a.frames / 2) - WINDUP_FRAME) / a.fps, rgb, () => this.state === 'windup' || (this.state === 'attack' && !this.struck));
+      return;
+    }
+    this.set('attack', 0);
     this.game.audio.play('swing', this, { heavy: n === 3 });
   }
 
@@ -85,6 +103,7 @@ export class Dooku extends Unit {
 
     if (this.stun > 0) {
       this.setAnim('hurt', 0.35); // a Djem So strike's stun is real for him too
+      if (this.state === 'windup') this.set('circle', 0.4); // (the blow he drew back is lost)
       return;
     }
     switch (this.state) {
@@ -96,11 +115,19 @@ export class Dooku extends Unit {
           this.set('idle', 0.4);
         }
         return;
+      case 'windup':
+        face();
+        if (this.stateT <= 0) {
+          this.set('attack', 0);
+          this.animFreeze = false; // (the swing goes on from the held frame)
+          g.audio.play('swing', this, { heavy: this.strikeN === 3 });
+        }
+        return;
       case 'parry':
         face();
         if (this.animInfo().done || this.stateT <= 0) {
           // Makashi riposte
-          if (dd < 2.2 && Math.random() < 0.45 * aggression) this.strike(Math.random() < 0.5 ? 2 : 3);
+          if (dd < 2.2 && Math.random() < 0.45 * aggression) this.strike(Math.random() < 0.5 ? 2 : 3, 'riposte');
           else this.set('idle', 0.3);
         }
         return;
@@ -118,7 +145,7 @@ export class Dooku extends Unit {
         }
         if (info.done && this.state === 'attack') {
           this.combo--;
-          if (this.combo > 0 && dd < 2.4) this.strike(1 + Math.floor(Math.random() * 3));
+          if (this.combo > 0 && dd < 2.4) this.strike(1 + Math.floor(Math.random() * 3), 'follow');
           else this.set('circle', rand(0.5, 1.2) / aggression);
         }
         return;

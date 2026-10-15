@@ -70,6 +70,12 @@ const FIGHTS = {
   ...ROUTE_FIGHTS,
 };
 const ORDER = Object.keys(FIGHTS);
+// Obi-Wan's tell (duel.js Dooku.strike): how long he holds the blade drawn back before a blow, the glint on it. The swing
+// from there to the hit is another ~0.17 s; the perfect parry is the guard raised in the last 0.25 s before the hit. So an
+// exchange he opens gives 0.6 s to see it coming (0.5 by the end: the film's pace quickens), a blow of a combo or a riposte
+// a third of a second, and the heavy backhand a little more.
+const WINDUP = { open: [0.45, 0.45, 0.38, 0.31], follow: [0.15, 0.15, 0.15, 0.15], riposte: [0.19, 0.19, 0.19, 0.19] };
+const windup = (phase, n, kind) => (WINDUP[kind] || WINDUP.open)[phase] + (n === 3 ? 0.12 : 0);
 /** What of Anakin's blows lands in part `F` (its stretch of the bar from `prevFloor` down to `floor`): REF_DPS above. */
 const bandScale = (F, floor, prevFloor, maxHp) => Math.min(1, ((prevFloor - floor) * maxHp) / (REF_DPS * PRESS_SHARE * F.time));
 
@@ -114,6 +120,7 @@ export class MustafarDirector extends Duel {
     const ob = (this.foe = new ObiWan(g, this.at.obiwanRamp.x, this.at.obiwanRamp.y));
     ob.sprite = 'obiwan3Robe';
     ob.hidden = true;
+    ob.windup = (n, kind) => windup(this.phase, n, kind);
     ob.saberLit = false;
     const pd = (this.padme = new Extra(g, 'padme', this.at.padme.x, this.at.padme.y));
     pd.hidden = true;
