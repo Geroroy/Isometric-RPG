@@ -653,7 +653,7 @@
   {
    "id": "mf.control.ctl_stairs",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_stairs.png",
    "size": [
@@ -666,12 +666,13 @@
     105
    ],
    "guide": "docs/asset_requests/guides/ctl_stairs_guide.png",
-   "layer": "flat"
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.control.ctl_shield_generator",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_shield_generator.png",
    "size": [
@@ -683,12 +684,13 @@
     100,
     146
    ],
-   "guide": "docs/asset_requests/guides/ctl_shield_generator_guide.png"
+   "guide": "docs/asset_requests/guides/ctl_shield_generator_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.control.ctl_holo_table",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_holo_table.png",
    "size": [
@@ -700,7 +702,8 @@
     80,
     92
    ],
-   "guide": "docs/asset_requests/guides/ctl_holo_table_guide.png"
+   "guide": "docs/asset_requests/guides/ctl_holo_table_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.walkway.catwalk_segment",
@@ -761,7 +764,7 @@
   {
    "id": "mf.collector.pipe_segment",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_route_assets.md",
    "file": "industrial/pipe_segment.png",
    "size": [
@@ -774,7 +777,8 @@
     112
    ],
    "guide": "docs/asset_requests/guides/pipe_segment_guide.png",
-   "layer": "flat"
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.collector.collector_arm",
@@ -798,7 +802,7 @@
   {
    "id": "mf.collector.collector_tower",
    "kind": "sprite",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_route_assets.md",
    "file": "industrial/collector_tower.png",
    "size": [
@@ -810,7 +814,8 @@
     176,
     488
    ],
-   "guide": "docs/asset_requests/guides/collector_tower_guide.png"
+   "guide": "docs/asset_requests/guides/collector_tower_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.river.mining_droid",
@@ -851,7 +856,7 @@
   {
    "id": "mf.room.wall_door_side",
    "kind": "wallElevation",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/conf_wall_door_side.png",
    "size": [
@@ -862,12 +867,13 @@
     12,
     4
    ],
-   "along": "y"
+   "along": "y",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.control.wall_window",
    "kind": "wallElevation",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_wall_window.png",
    "size": [
@@ -878,12 +884,13 @@
     18,
     4
    ],
-   "along": "x"
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.control.wall_side",
    "kind": "wallElevation",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_wall_side.png",
    "size": [
@@ -894,12 +901,13 @@
     18,
     4
    ],
-   "along": "y"
+   "along": "y",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.control.wall_front_low",
    "kind": "wallElevation",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_wall_front_low.png",
    "size": [
@@ -910,12 +918,13 @@
     18,
     1
    ],
-   "along": "x"
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.control.wall_entry_low",
    "kind": "wallElevation",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_wall_entry_low.png",
    "size": [
@@ -926,12 +935,13 @@
     18,
     1
    ],
-   "along": "y"
+   "along": "y",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.control.gallery_edge",
    "kind": "wallElevation",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "interiors/ctl_gallery_edge.png",
    "size": [
@@ -942,12 +952,13 @@
     18,
     1.625
    ],
-   "along": "x"
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.passage.wall_back",
    "kind": "wallElevation",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "corridors/ps_wall_back.png",
    "size": [
@@ -958,12 +969,13 @@
     6,
     3.5
    ],
-   "along": "x"
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.passage.wall_front_low",
    "kind": "wallElevation",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "file": "corridors/ps_wall_front_low.png",
    "size": [
@@ -974,7 +986,8 @@
     6,
     1
    ],
-   "along": "x"
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.lava.surface",
@@ -1040,7 +1053,7 @@
   {
    "id": "mf.passage.floor",
    "kind": "groundTiles",
-   "status": "requested",
+   "status": "delivered",
    "request": "docs/asset_requests/chatgpt_stage03_control.md",
    "tiles": {
     "floor": {
@@ -1054,7 +1067,8 @@
       4
      ]
     }
-   }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
   },
   {
    "id": "mf.walkway.terrace_floor",

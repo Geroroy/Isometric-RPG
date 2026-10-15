@@ -37,6 +37,7 @@ def blockout():
     arm_box['art'] = 'mf.collector.collector_arm'
     cw = 'mf.walkway.catwalk_segment'
     pipe_box, pipe_surf = deck(PIPE['x'] - 0.45, PIPE['y0'], PIPE['x'] + 0.45, PIPE['y1'], PIPE['z'], '배관 +0.35 m')
+    pipe_box['art'] = 'mf.collector.pipe_segment'
     out = [
         pipe_box,
         arm_box,
@@ -49,7 +50,7 @@ def blockout():
         {**wall_x(C[0], C[2], C[3] + 0.2, NEAR_H), 'art': cw},
         {**wall_y(C[1], C[3], C[2] + 0.2, NEAR_H), 'art': cw},
         # the collector tower at the arm's far end
-        box(TOWER[0], TOWER[1], 4, 4, 8, 'story', '집하기 탑', id='armTower'),
+        box(TOWER[0], TOWER[1], 4, 4, 8, 'story', '집하기 탑', id='armTower', art='mf.collector.collector_tower'),
     ]
     return out, [pipe_surf, arm_surf]
 
@@ -64,7 +65,11 @@ def structures():
         {'asset': 'mf.walkway.catwalk_broken', 'x': SEGMENTS[-1], 'y': y, 'id': 'catwalkBroken', 'hidden': True},
         {'asset': 'mf.walkway.lava_fall', 'x': FALL[0], 'y': FALL[1]},
         {'asset': 'mf.collector.collector_arm', 'x': (ARM[0] + ARM[2]) / 2, 'y': (ARM[1] + ARM[3]) / 2, 'id': 'arm'},
+        # the collector's tower at the arm's far end (it falls with the arm: the director hides it)
+        {'asset': 'mf.collector.collector_tower', 'x': TOWER[0], 'y': TOWER[1], 'id': 'armTower'},
     ]
+    # the service pipe: two 7 m sections end to end along y (its crown 0.35 m over the lava, only its upper half showing)
+    out = [{'asset': 'mf.collector.pipe_segment', 'x': PIPE['x'], 'y': PIPE['y0'] + 3.5 + 7 * i} for i in range(2)] + out
     # the terrace's railings: the landing pad's (the user's), 6 m runs along its near edge, one across its west end
     out += [{'asset': 'mf.landing.rail_x', 'x': x, 'y': T[3] - 0.3} for x in (T[0] + 3, T[0] + 9, T[0] + 15)]
     out.append({'asset': 'mf.landing.rail_y', 'x': T[0] + 0.3, 'y': (T[1] + T[3]) / 2})

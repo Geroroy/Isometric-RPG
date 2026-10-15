@@ -116,7 +116,6 @@ async function boot() {
     const cameras = zones.flatMap((z) => z.cameras || [z.camera]).sort((a, b) => area(a) - area(b));
     const zone = { ...zones[0], cameras, actors: Object.assign({}, ...zones.map((z) => z.actors)), river: zones.map((z) => z.river).find(Boolean) || null };
     for (const k of ['floor', 'walk', 'collision', 'structures', 'decor', 'lights', 'regions', 'triggers', 'blockout', 'surfaces', 'strips']) zone[k] = zones.flatMap((z) => z[k] || []);
-    zone.blockoutStages = zones.filter((z) => z.blockout && z.blockout.length).map((z) => z.stage); // (the badge names them)
     const man = await loadManifest('assets/mustafar/manifest.json');
     zone.art = {};
     zone.missingArt = [];
@@ -136,11 +135,13 @@ async function boot() {
     setMustafarZone(zone);
     // the lava: the delivered tile (8 × 8 m, seamless), else the old Mustafar's texture as a placeholder (on the badge)
     const lava = await loadAsset(man, 'mf.lava.surface');
-    if (lava.data) setLavaTexture(lava.data.tiles.floor);
+    if (lava.data) setLavaTexture(lava.data.tiles.floor), (zone.art['mf.lava.surface'] = lava.data); // (and the river's blockout signs go: their `art`)
     else {
       zone.missingArt.push({ id: 'mf.lava.surface', why: lava.missing });
       setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
     }
+    // the stages still in blockout (the badge names them): those with a grey box whose art has not come yet
+    zone.blockoutStages = zones.filter((z) => (z.blockout || []).some((b) => !(b.art && zone.art[b.art]))).map((z) => z.stage);
   }
   // and the facility's floor, the film's (terrain.js lays it out per room)
   if (MUSTAFAR) setFacilityFloor(await loadMustafarFloor().catch((e) => console.warn('무스타파 바닥: ' + e.message)));

@@ -40,7 +40,7 @@ def main():
         'structures': [],
         'decor': [],
         # signs on the lava (flat: the river is the surround's lava texture, a placeholder)
-        'blockout': [plate(x, MID + 4.5, 5, 1.2, '용암 강 · 흐름 →') for x in (82, 100, 118)],
+        'blockout': [{**plate(x, MID + 4.5, 5, 1.2, '용암 강 · 흐름 →'), 'art': 'mf.lava.surface'} for x in (82, 100, 118)],
         'river': {
             'y0': Y0,
             'y1': Y1,
