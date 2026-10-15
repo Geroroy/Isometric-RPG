@@ -34,7 +34,6 @@ export class StarCardsUI {
     this.el = hud.overlay('starcards', '스타 카드', '<div class="sc-parts"></div>');
     this.body = this.el.querySelector('.ov-body');
     this.body.addEventListener('click', (e) => this.click(e));
-    for (const id of Object.keys(CARDS)) probeArt(id, () => this.el.classList.contains('hidden') || this.render());
   }
 
   get cards() {
@@ -58,6 +57,12 @@ export class StarCardsUI {
   }
 
   render() {
+    // the illustrations looked for the first time the screen is drawn (not at start: every missing one is three
+    // failed requests, and a mode without this screen — the Mustafar duel — never needs them)
+    if (!this.probed) {
+      this.probed = true;
+      for (const id of Object.keys(CARDS)) probeArt(id, () => this.el.classList.contains('hidden') || this.render());
+    }
     const sc = this.cards;
     this.el.querySelector('.sc-parts').innerHTML = `<span>크래프팅 부품</span><b>${sc.parts}</b>`;
     const slots = sc.slots
