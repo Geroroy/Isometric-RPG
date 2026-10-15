@@ -168,6 +168,11 @@ export class Effects {
     this.light(x, y, z, [255, 200, 120], 30, 0.15);
   }
 
+  /** An ember off the lava: a mote of light drifting up and away on the heat, fading as it cools. */
+  ember(x, y, z = 0.1) {
+    this.parts.push({ kind: 'ember', x, y, z, vx: rand(-0.25, 0.35), vy: rand(-0.35, 0.25), vz: rand(0.35, 0.9), grav: -0.05, drag: 0.2, t: 0, life: rand(2.2, 4.2), add: true });
+  }
+
   /** A short bright burst (additive) that also lights its surroundings. */
   flash(x, y, z, rgb = [255, 240, 210], size = 18, life = 0.09) {
     this.flashes.push({ x, y, z, rgb, size, t: 0, life, rot: Math.random() * Math.PI });
@@ -395,6 +400,13 @@ export class Effects {
         ctx.moveTo(sx + 0.5, sy + 0.5);
         ctx.lineTo(Math.round(e.x - cam.x) + 0.5, Math.round(e.y - cam.y) + 0.5);
         ctx.stroke();
+      } else if (p.kind === 'ember') {
+        // a 1–2 px mote, flickering, yellow cooling to red
+        ctx.globalAlpha = Math.sin(Math.min(1, k * 5) * Math.PI * 0.5) * (1 - k) * (0.6 + 0.4 * Math.sin(p.t * 17 + p.x * 9));
+        const gl = GLOW && glowSprite(k < 0.4 ? FIRE_RGB[0] : FIRE_RGB[1]);
+        if (gl) ctx.drawImage(gl, sx - 3, sy - 3, 7, 7); // (a soft halo: a bare pixel is lost on the bright lava)
+        ctx.fillStyle = k < 0.4 ? '#fff2c0' : '#ffb060';
+        ctx.fillRect(sx, sy, 1, 1);
       } else if (p.kind === 'fire') {
         const r = p.size * (1 - k * 0.5);
         ctx.globalAlpha = 1 - k;

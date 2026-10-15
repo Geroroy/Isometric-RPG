@@ -24,6 +24,7 @@ OUT = ROOT / 'public/maps/mustafar_v2/stage05.json'
 Y0, Y1 = 147, 172  # the river's banks
 X0, X1 = 70, 140
 MID = 159.5  # its middle line, where the decks drift
+FAR_TOWERS = [(86, 142.5), (101, 141.5)]  # (clear of the high-ground bank: x 112..136, y 134..147)
 
 
 def main():
@@ -37,7 +38,9 @@ def main():
         'floor': [],
         'walk': [],
         'collision': [],
-        'structures': [],
+        # the film's row of collectors along the river: more of the collector's tower (the delivered sprite, reused),
+        # standing in the lava on the far (−y) side — behind the decks, so never in front of the fighters
+        'structures': [{'asset': 'mf.collector.collector_tower', 'x': x, 'y': y} for x, y in FAR_TOWERS],
         'decor': [],
         # signs on the lava (flat: the river is the surround's lava texture, a placeholder)
         'blockout': [{**plate(x, MID + 4.5, 5, 1.2, '용암 강 · 흐름 →'), 'art': 'mf.lava.surface'} for x in (82, 100, 118)],

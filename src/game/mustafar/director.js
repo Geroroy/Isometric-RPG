@@ -22,6 +22,7 @@ import { Duel, Extra } from '../duel.js';
 import { MustafarDuel, ObiWan } from '../duelMustafar.js';
 import { Cinema } from '../cinema.js';
 import { ROUTE, ROUTE_FIGHTS } from './route.js';
+import { BIOME } from '../../world/biome.js';
 
 /** The film's places, in order (each its zone file, public/maps/mustafar_v2/<zone>.json). */
 export const STAGES = [
@@ -56,6 +57,9 @@ const ROOM = { floor: 0.76, time: 28 };
 // the mark. With the bar as it was, every
 // part ended in 2–8 s and the whole duel had under a minute of fighting between its scenes. (Lava hurts his guard only.)
 const REF_DPS = 65;
+// embers off the lava round Anakin (updateEmbers): tries a second over a square of 2·EMBER_R m (only lava tiles keep theirs)
+const EMBERS_PER_S = 24;
+const EMBER_R = 13;
 const PRESS_SHARE = 0.6;
 
 /**
@@ -350,6 +354,7 @@ export class MustafarDirector extends Duel {
   update(dt) {
     super.update(dt);
     const g = this.game;
+    this.updateEmbers(dt);
     if (this.over) return;
     this.updateRoute(dt);
     if (g.cinema || this.lock || !this.started) return;
@@ -365,6 +370,20 @@ export class MustafarDirector extends Duel {
     if (pressed || this.partT >= F.time || (F.reach && F.reach(this))) {
       this.beatDone = false;
       this[F.next]();
+    }
+  }
+
+  /** Embers rising off the lava round Anakin (the film's air over Mustafar is never still): only over open lava. */
+  updateEmbers(dt) {
+    const g = this.game;
+    const p = g.player;
+    const w = g.world;
+    this.emberT = (this.emberT || 0) - dt;
+    while (this.emberT <= 0) {
+      this.emberT += 1 / EMBERS_PER_S;
+      const x = p.x + (Math.random() - 0.5) * 2 * EMBER_R;
+      const y = p.y + (Math.random() - 0.5) * 2 * EMBER_R;
+      if (w.biomeAt(x, y) === BIOME.LAVA) g.fx.ember(x, y, 0.1);
     }
   }
 

@@ -8,7 +8,10 @@
   "floor": [],
   "walk": [],
   "collision": [],
-  "structures": [],
+  "structures": [
+    {"asset": "mf.collector.collector_tower", "x": 86, "y": 142.5},
+    {"asset": "mf.collector.collector_tower", "x": 101, "y": 141.5}
+  ],
   "decor": [],
   "blockout": [
     {"x": 82, "y": 164.0, "w": 5, "d": 1.2, "h": 0.03, "kind": "hazard", "label": "용암 강 · 흐름 →", "flat": true, "art": "mf.lava.surface"},
