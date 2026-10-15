@@ -189,9 +189,12 @@ function plateFloor(fx, fy, o) {
 // Mustafar's lava (tools/sprites/mustafar_lava: an isometric lava tile unprojected to a seamless square), laid in
 // world space at two scales mixed by a slow noise so the repeat does not read
 let LAVA_TEX = null;
-export function setLavaTexture(t) {
+let LAVA_M = 8; // the tile's size in metres (the manifest's `metres`; the old Mustafar texture's 8)
+export function setLavaTexture(t, metres = 8) {
   TEXTURE_INPUTS.lava = t || null;
+  TEXTURE_INPUTS.lavaMetres = metres;
   LAVA_TEX = t || null;
+  LAVA_M = metres;
 }
 // the Mustafar rebuild's landing pad: its external textures by manifest id (gfx/padFloor.js, gfx/assetManifest.js;
 // the zone file's `floor` entries are world.padFloors)
@@ -872,8 +875,8 @@ export class Terrain {
         // lava: the texture where there is one (Mustafar), else dark crust plates split by glowing molten veins
         if (LAVA_TEX && lava > 0.3) {
           const k = Math.min(1, (lava - 0.3) * 2.5);
-          texel(LAVA_TEX, fx / 8, fy / 8, lavaA);
-          texel(LAVA_TEX, fx / 11.3 + 0.37, fy / 11.3 + 0.61, lavaB);
+          texel(LAVA_TEX, fx / LAVA_M, fy / LAVA_M, lavaA);
+          texel(LAVA_TEX, fx / (LAVA_M * 1.41) + 0.37, fy / (LAVA_M * 1.41) + 0.61, lavaB);
           const m = clamp((valueNoise(fx * 0.07, fy * 0.07, 57) - 0.5) * 3 + 0.5, 0, 1);
           r += (lavaA[0] + (lavaB[0] - lavaA[0]) * m - r) * k;
           g += (lavaA[1] + (lavaB[1] - lavaA[1]) * m - g) * k;

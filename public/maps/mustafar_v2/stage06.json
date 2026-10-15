@@ -13,7 +13,12 @@
     {"id": "bank", "rect": [113, 135, 135, 147]}
   ],
   "collision": [],
-  "structures": [],
+  "structures": [
+    {"asset": "mf.lava.cliff_y", "x": 137.2, "y": 140.3},
+    {"asset": "mf.lava.rock_low", "x": 137.3, "y": 146.4},
+    {"asset": "mf.lava.cliff_y", "x": 110.8, "y": 139.6},
+    {"asset": "mf.lava.rock_low", "x": 110.9, "y": 145.8}
+  ],
   "decor": [],
   "blockout": [
     {"x": 124.0, "y": 137.5, "w": 24, "d": 7, "h": 1.4, "kind": "deck", "label": "고지대 +1.4 m", "flat": true, "art": "mf.highground.bank"},

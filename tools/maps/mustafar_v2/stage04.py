@@ -30,6 +30,12 @@ PIPE = {'x': 66, 'y0': 120, 'y1': 134, 'z': 0.35, 'r': 0.45}  # (south of the to
 ARM = (69, 120, 72, 142, 0.3)
 TOWER = (70.5, 117)
 
+SCENERY = [
+    ('rock_spire', 61.5, 122), ('rock_mid', 61, 131.5), ('rock_low', 63, 138.5),  # behind the pipe
+    ('rock_low', 76.5, 126), ('rock_mid', 77.5, 138),  # off the arm's near side
+    ('rock_mid', 33, 118.5), ('rock_low', 48, 117.5),  # out in front of the terrace and the catwalk
+    ('cliff_y', 15.5, 100.5),  # behind the lava fall at the terrace's west end
+]
 
 def blockout():
     arm_box, arm_surf = deck(ARM[0], ARM[1], ARM[2], ARM[3], ARM[4], '집하기 팔 +0.3 m')
@@ -73,6 +79,9 @@ def structures():
     # the terrace's railings: the landing pad's (the user's), 6 m runs along its near edge, one across its west end
     out += [{'asset': 'mf.landing.rail_x', 'x': x, 'y': T[3] - 0.3} for x in (T[0] + 3, T[0] + 9, T[0] + 15)]
     out.append({'asset': 'mf.landing.rail_y', 'x': T[0] + 0.3, 'y': (T[1] + T[3]) / 2})
+    # basalt in the lava (phase2_review.md): behind the pipe (−x), in front of the arm and the terrace only far
+    # enough out that their tops stay below the fighters' feet on screen (the route QA's `covered` checks it)
+    out += [{'asset': f'mf.lava.{k}', 'x': x, 'y': y} for k, x, y in SCENERY]
     return out
 
 

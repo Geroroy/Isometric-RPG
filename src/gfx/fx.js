@@ -80,6 +80,7 @@ export function glowSprite(rgb) {
 }
 
 const MAX_SCORCH = 60;
+const HAZE_ALPHA = 0.32; // drifting smoke at its thickest (it stays behind the fighters' readability: haze)
 
 export class Effects {
   constructor() {
@@ -97,6 +98,7 @@ export class Effects {
     this.shakeAmt = 0;
     this.bombs = []; // lava bombs in flight (lavaBomb)
     this.tells = []; // a coming blow's warning ring under the striker (tell)
+    this.clearAround = []; // whom the drifting smoke keeps clear of (haze)
   }
 
   update(dt) {
@@ -166,6 +168,15 @@ export class Effects {
       this.parts.push({ kind: 'spark', x, y, z, vx: Math.cos(a) * s, vy: Math.sin(a) * s, vz: rand(1, 4), t: 0, life: rand(0.2, 0.5), color, add: true, grav: 12 });
     }
     this.light(x, y, z, [255, 200, 120], 30, 0.15);
+  }
+
+  /**
+   * Smoke over the lava (the film's air): one delivered smoke picture `img` drifting on the wind at height z, `size`
+   * game px across, fading in and out over `life` s — and away near anyone in `clearAround` (the duellists: the smoke
+   * never clouds the fight).
+   */
+  haze(x, y, z, img, size, life) {
+    this.parts.push({ kind: 'haze', x, y, z, vx: rand(0.25, 0.5), vy: rand(-0.2, 0.05), vz: rand(0.02, 0.08), grav: 0, t: 0, life, img, size, rot: rand(-0.3, 0.3) });
   }
 
   /** An ember off the lava: a mote of light drifting up and away on the heat, fading as it cools. */
@@ -372,6 +383,17 @@ export class Effects {
         ctx.globalAlpha = Math.min(1, (p.life - p.t) * 2);
         ctx.fillStyle = p.color;
         ctx.fillRect(sx, sy, p.size, p.size);
+        ctx.globalAlpha = 1;
+      } else if (p.kind === 'haze') {
+        let a = Math.sin(Math.min(1, k * 3) * Math.PI * 0.5) * Math.min(1, (1 - k) * 3) * HAZE_ALPHA;
+        for (const u of this.clearAround) {
+          const d = Math.hypot(u.x - p.x, u.y - p.y);
+          a *= Math.min(1, Math.max(0, (d - 2.5) / 3));
+        }
+        if (a <= 0.01) continue;
+        const w = p.size * (0.85 + k * 0.3);
+        ctx.globalAlpha = a;
+        ctx.drawImage(p.img, sx - w / 2, sy - w / 2, w, w); // (the picture as delivered: only its size and alpha change)
         ctx.globalAlpha = 1;
       } else if (p.kind === 'ghost') {
         const f = p.frame;

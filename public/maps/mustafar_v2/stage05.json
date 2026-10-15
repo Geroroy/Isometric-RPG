@@ -9,8 +9,11 @@
   "walk": [],
   "collision": [],
   "structures": [
-    {"asset": "mf.collector.collector_tower", "x": 86, "y": 142.5},
-    {"asset": "mf.collector.collector_tower", "x": 101, "y": 141.5}
+    {"asset": "mf.collector.collector_tower", "x": 93.5, "y": 141.5},
+    {"asset": "mf.collector.collector_tower", "x": 104, "y": 141},
+    {"asset": "mf.lava.rock_low", "x": 82, "y": 146},
+    {"asset": "mf.lava.rock_mid", "x": 98.5, "y": 145.2},
+    {"asset": "mf.lava.rock_low", "x": 108.6, "y": 145.4}
   ],
   "decor": [],
   "blockout": [

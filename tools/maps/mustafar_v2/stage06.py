@@ -21,6 +21,7 @@ X0, X1 = 112, 136
 Y0, Y1 = 134, 147  # (24 × 13 m: its picture fits one 1512 px image at the game's density 2)
 TOP = 141  # the top's near edge
 FOOT = 145  # the slope's foot (the shore: FOOT..Y1, at the lava's level)
+ENDS = [('cliff_y', 137.2, 140.3), ('rock_low', 137.3, 146.4), ('cliff_y', 110.8, 139.6), ('rock_low', 110.9, 145.8)]
 ART = 'mf.highground.bank'  # the bank's picture (a groundImage: the delivered highground_bank.png, its anchor the near-left corner)
 # the slope's height under the feet: eight half-metre bands from the crest down to the foot, 1.4 m over 4 m (the picture's
 # slope is smooth; the bands are fine enough that a character climbing it reads as walking up it)
@@ -56,7 +57,8 @@ def main():
         ],
         'walk': [{'id': 'bank', 'rect': [X0 + 1, Y0 + 1, X1 - 1, Y1]}],
         'collision': [],
-        'structures': [],
+        # the bank picture's two ends close in rock (its straight-cut edges showed against the lava): cliffs along y
+        'structures': [{'asset': f'mf.lava.{k}', 'x': x, 'y': y} for k, x, y in ENDS],
         'decor': [],
         'blockout': boxes,
         'surfaces': surfaces,

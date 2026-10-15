@@ -35,6 +35,12 @@ ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / 'public/maps/mustafar_v2/stage01.json'
 
 RIM = 1
+# rocks and cliffs in the lava round the pad (the delivered sprites; their anchor on the lava's surface)
+SCENERY = [
+    ('cliff_x', 103, 69.5), ('rock_mid', 84, 71.5), ('rock_spire', 96.5, 72.5), ('rock_low', 111, 72.3),
+    ('rock_mid', 68.5, 83), ('rock_spire', 70, 88.6), ('rock_low', 69.3, 107.5),
+    ('rock_low', 122.3, 85.5), ('rock_mid', 123.6, 101),
+]
 BAY = 6
 # the pad: 7 × 6 bays of 6 m inside a 1 m rim
 X0, Y0 = 74, 76
@@ -86,6 +92,9 @@ def structures():
         {'asset': 'mf.landing.robe_obiwan', 'x': 94, 'y': 100, 'id': 'robe', 'hidden': True},
         {'asset': 'mf.landing.cloak_anakin', 'x': 88, 'y': 102, 'id': 'cloak', 'hidden': True},
     ]
+    # the film's basalt in the lava round the pad (docs/asset_requests/phase2_review.md): behind it (−y) and off its
+    # sides only — never on the near (+y) side, where a rock would stand in front of the fighters
+    out += [{'asset': f'mf.lava.{k}', 'x': x, 'y': y} for k, x, y in SCENERY]
     return out
 
 

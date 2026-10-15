@@ -5,7 +5,7 @@
 (`reference/mustafar_set/mustafar_duel_visual_guide.jpg`). 평가 항목: 캐릭터 품질, 광선검 애니메이션, 해상도·스케일, 영화와의 유사성,
 조명·색감, 건축물 완성도.
 
-## 요청함 (`chatgpt_phase2.md` — 한 번에 붙여 넣는 프롬프트, 가이드 5장)
+## 요청함 → 받음, 통합됨 (`chatgpt_phase2.md`; 받은 노트 `delivered/mustafar_phase2_notes.md`)
 
 | 순위 | 에셋 | 왜 | 효과 / 비용 |
 |---|---|---|---|

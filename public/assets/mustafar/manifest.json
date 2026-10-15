@@ -993,22 +993,23 @@
    "id": "mf.lava.surface",
    "kind": "groundTiles",
    "status": "delivered",
-   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
    "tiles": {
     "floor": {
-     "file": "lava/lava_tile.png",
+     "file": "lava/lava_tile_v2.png",
      "size": [
-      512,
-      512
+      1024,
+      1024
      ],
      "metres": [
-      8,
-      8
+      16,
+      16
      ],
      "seamless": true
     }
    },
-   "delivered": "docs/asset_requests/delivered/mustafar_cloth_lava_notes.md"
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md",
+   "replaces": "lava/lava_tile.png (8 × 8 m: its repeat showed, brighter than the fighters — phase2_review.md)"
   },
   {
    "id": "mf.control.floor",
@@ -1111,6 +1112,250 @@
    ],
    "guide": "docs/asset_requests/guides/highground_bank_guide.png",
    "delivered": "docs/asset_requests/delivered/highground_bank_notes.md"
+  },
+  {
+   "id": "mf.lava.rock_low",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/rock_low.png",
+   "size": [
+    216,
+    208
+   ],
+   "density": 2,
+   "anchor": [
+    106,
+    139
+   ],
+   "world": {
+    "x": 2.5,
+    "y": 2,
+    "h": 1.6
+   },
+   "guide": "docs/asset_requests/guides/rock_low_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md",
+   "footprint": [
+    [
+     -1.25,
+     -1.0
+    ],
+    [
+     1.25,
+     -1.0
+    ],
+    [
+     1.25,
+     1.0
+    ],
+    [
+     -1.25,
+     1.0
+    ]
+   ]
+  },
+  {
+   "id": "mf.lava.rock_mid",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/rock_mid.png",
+   "size": [
+    312,
+    320
+   ],
+   "density": 2,
+   "anchor": [
+    156,
+    233
+   ],
+   "world": {
+    "x": 4,
+    "y": 3,
+    "h": 3
+   },
+   "guide": "docs/asset_requests/guides/rock_mid_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md",
+   "footprint": [
+    [
+     -2.0,
+     -1.5
+    ],
+    [
+     2.0,
+     -1.5
+    ],
+    [
+     2.0,
+     1.5
+    ],
+    [
+     -2.0,
+     1.5
+    ]
+   ]
+  },
+  {
+   "id": "mf.lava.rock_spire",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/rock_spire.png",
+   "size": [
+    160,
+    344
+   ],
+   "density": 2,
+   "anchor": [
+    80,
+    293
+   ],
+   "world": {
+    "x": 1.6,
+    "y": 1.6,
+    "h": 5
+   },
+   "guide": "docs/asset_requests/guides/rock_spire_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md",
+   "footprint": [
+    [
+     -0.8,
+     -0.8
+    ],
+    [
+     0.8,
+     -0.8
+    ],
+    [
+     0.8,
+     0.8
+    ],
+    [
+     -0.8,
+     0.8
+    ]
+   ]
+  },
+  {
+   "id": "mf.lava.cliff_x",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/cliff_x.png",
+   "size": [
+    512,
+    568
+   ],
+   "density": 2,
+   "anchor": [
+    256,
+    430
+   ],
+   "world": {
+    "x": 10,
+    "y": 2,
+    "h": 6
+   },
+   "guide": "docs/asset_requests/guides/cliff_x_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md",
+   "footprint": [
+    [
+     -5.0,
+     -1.0
+    ],
+    [
+     5.0,
+     -1.0
+    ],
+    [
+     5.0,
+     1.0
+    ],
+    [
+     -5.0,
+     1.0
+    ]
+   ]
+  },
+  {
+   "id": "mf.lava.cliff_y",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/cliff_y.png",
+   "size": [
+    512,
+    568
+   ],
+   "density": 2,
+   "anchor": [
+    256,
+    430
+   ],
+   "world": {
+    "x": 2,
+    "y": 10,
+    "h": 6
+   },
+   "guide": "docs/asset_requests/guides/cliff_y_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md",
+   "footprint": [
+    [
+     -1.0,
+     -5.0
+    ],
+    [
+     1.0,
+     -5.0
+    ],
+    [
+     1.0,
+     5.0
+    ],
+    [
+     -1.0,
+     5.0
+    ]
+   ]
+  },
+  {
+   "id": "mf.lava.smoke_a",
+   "kind": "effect",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/smoke_a.png",
+   "size": [
+    256,
+    256
+   ],
+   "note": "a drifting smoke particle (fx.js): drawn at different sizes and alpha, flat (no angle)",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md"
+  },
+  {
+   "id": "mf.lava.smoke_b",
+   "kind": "effect",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/smoke_b.png",
+   "size": [
+    256,
+    256
+   ],
+   "note": "a drifting smoke particle (fx.js): drawn at different sizes and alpha, flat (no angle)",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md"
+  },
+  {
+   "id": "mf.lava.smoke_c",
+   "kind": "effect",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/smoke_c.png",
+   "size": [
+    256,
+    256
+   ],
+   "note": "a drifting smoke particle (fx.js): drawn at different sizes and alpha, flat (no angle)",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md"
   }
  ]
 }

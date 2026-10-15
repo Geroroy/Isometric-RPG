@@ -13,7 +13,7 @@ self.onmessage = (e) => {
     if (t.floor) setFloorTexture(t.floor);
     if (t.ground) setGroundTextures(t.ground);
     setFacilityFloor(t.facility || null);
-    setLavaTexture(t.lava || null);
+    setLavaTexture(t.lava || null, t.lavaMetres || 8);
     setPadFloor(t.pad || null);
     const bg = m.world.backdrop;
     ready = bg && bg.url ? fetch(bg.url).then((r) => r.blob()).then((b) => createImageBitmap(b)).then((img) => (bg.img = img)).catch((err) => console.warn('지형 워커: 배경 그림 ' + err.message)) : Promise.resolve();

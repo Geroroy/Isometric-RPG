@@ -133,12 +133,18 @@ async function boot() {
     for (const b of zone.blockout) assets.city[blockoutName(b)] ||= blockoutSprite(b);
     setPadFloor(Object.fromEntries(Object.entries(zone.art).filter(([, d]) => d.tiles)));
     setMustafarZone(zone);
-    // the lava: the delivered tile (8 × 8 m, seamless), else the old Mustafar's texture as a placeholder (on the badge)
+    // the lava: the delivered tile (its manifest size in metres, seamless), else the old Mustafar's texture as a placeholder (on the badge)
     const lava = await loadAsset(man, 'mf.lava.surface');
-    if (lava.data) setLavaTexture(lava.data.tiles.floor), (zone.art['mf.lava.surface'] = lava.data); // (and the river's blockout signs go: their `art`)
+    if (lava.data) setLavaTexture(lava.data.tiles.floor, lava.data.spec.floor.metres[0]), (zone.art['mf.lava.surface'] = lava.data); // (and the river's blockout signs go: their `art`)
     else {
       zone.missingArt.push({ id: 'mf.lava.surface', why: lava.missing });
       setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
+    }
+    // the smoke that drifts over the lava (gfx/fx.js smoke puffs, game/mustafar/director.js): the delivered pictures, or none
+    zone.smoke = [];
+    for (const id of ['mf.lava.smoke_a', 'mf.lava.smoke_b', 'mf.lava.smoke_c']) {
+      const a = await loadAsset(man, id);
+      if (a.data) zone.smoke.push(a.data.img);
     }
     // the stages still in blockout (the badge names them): those with a grey box whose art has not come yet
     zone.blockoutStages = zones.filter((z) => (z.blockout || []).some((b) => !(b.art && zone.art[b.art]))).map((z) => z.stage);

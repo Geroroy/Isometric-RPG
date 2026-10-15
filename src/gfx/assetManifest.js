@@ -9,12 +9,13 @@
 //   sprite       a pre-rendered 2:1 cut-out standing in the world         -> a sheet sprite (renderer.js placeProp)
 //   wallElevation  a wall seen straight on (flat, no angle)               -> stood up on its base line by the
 //                game's projection here, then a sheet sprite like the others (its footprint a thin strip)
+//   effect       a flat picture the effects draw (smoke)                 -> { img } (gfx/fx.js: sized and faded there)
 // An entry whose `status` is not "delivered" is not loaded: the zone shows its placeholder and names what it waits for.
 import { cachedImage, cachedJSON } from './fileCache.js';
 import { HALF_W, HALF_H } from '../core/iso.js';
 
 export const ASSET_FORMAT = 'cw-assets';
-const KINDS = new Set(['groundTiles', 'groundImage', 'sprite', 'wallElevation']);
+const KINDS = new Set(['groundTiles', 'groundImage', 'sprite', 'wallElevation', 'effect']);
 const RATIO_TOL = 0.02; // (an image's width : height against the world size it claims, before it is refused)
 
 /** The manifest at `path` (under the site's base): { root, raw, byId }. */
@@ -69,6 +70,7 @@ export async function loadAsset(man, id) {
       if (Math.abs(img.width / img.height / want - 1) > RATIO_TOL) throw new Error(`${id}: 비율 ${img.width}:${img.height} ≠ ${e.metres[0]}:${e.metres[1]} m`);
       return { entry: e, data: standWall(img, e) };
     }
+    if (e.kind === 'effect') return { entry: e, data: { img } };
     if (e.kind === 'groundImage') return { entry: e, data: { img, url: new URL(import.meta.env.BASE_URL + man.root + e.file, location.href).href, w: img.width, h: img.height, density: e.density || 1, anchor: e.anchor } };
     // sprite: a frame as the sheet sprites' (k: game px an image px), its emissive layer drawn after the light map
     const k = 1 / (e.density || 1);

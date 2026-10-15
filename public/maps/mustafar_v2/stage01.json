@@ -57,7 +57,16 @@
     {"asset": "mf.landing.corridor_wall_end", "x": 60.9, "y": 98.0, "id": "facilityDoor"},
     {"asset": "mf.landing.ship", "x": 96, "y": 95, "block": true},
     {"asset": "mf.landing.robe_obiwan", "x": 94, "y": 100, "id": "robe", "hidden": true},
-    {"asset": "mf.landing.cloak_anakin", "x": 88, "y": 102, "id": "cloak", "hidden": true}
+    {"asset": "mf.landing.cloak_anakin", "x": 88, "y": 102, "id": "cloak", "hidden": true},
+    {"asset": "mf.lava.cliff_x", "x": 103, "y": 69.5},
+    {"asset": "mf.lava.rock_mid", "x": 84, "y": 71.5},
+    {"asset": "mf.lava.rock_spire", "x": 96.5, "y": 72.5},
+    {"asset": "mf.lava.rock_low", "x": 111, "y": 72.3},
+    {"asset": "mf.lava.rock_mid", "x": 68.5, "y": 83},
+    {"asset": "mf.lava.rock_spire", "x": 70, "y": 88.6},
+    {"asset": "mf.lava.rock_low", "x": 69.3, "y": 107.5},
+    {"asset": "mf.lava.rock_low", "x": 122.3, "y": 85.5},
+    {"asset": "mf.lava.rock_mid", "x": 123.6, "y": 101}
   ],
   "decor": [],
   "backdrop": null,

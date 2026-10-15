@@ -59,6 +59,7 @@ const ROOM = { floor: 0.76, time: 28 };
 const REF_DPS = 65;
 // embers off the lava round Anakin (updateEmbers): tries a second over a square of 2·EMBER_R m (only lava tiles keep theirs)
 const EMBERS_PER_S = 24;
+const SMOKE_PER_S = 0.9; // smoke puffs a second over the same square (updateSmoke)
 const EMBER_R = 13;
 const PRESS_SHARE = 0.6;
 
@@ -355,6 +356,7 @@ export class MustafarDirector extends Duel {
     super.update(dt);
     const g = this.game;
     this.updateEmbers(dt);
+    this.updateSmoke(dt);
     if (this.over) return;
     this.updateRoute(dt);
     if (g.cinema || this.lock || !this.started) return;
@@ -384,6 +386,24 @@ export class MustafarDirector extends Duel {
       const x = p.x + (Math.random() - 0.5) * 2 * EMBER_R;
       const y = p.y + (Math.random() - 0.5) * 2 * EMBER_R;
       if (w.biomeAt(x, y) === BIOME.LAVA) g.fx.ember(x, y, 0.1);
+    }
+  }
+
+  /** Smoke drifting over the lava round Anakin (the delivered pictures; none, none drawn), clear of the duellists. */
+  updateSmoke(dt) {
+    const g = this.game;
+    const imgs = g.world.zone && g.world.zone.smoke;
+    if (!imgs || !imgs.length) return;
+    const p = g.player;
+    g.fx.clearAround = this.foe ? [p, this.foe] : [p];
+    this.smokeT = (this.smokeT || 0) - dt;
+    while (this.smokeT <= 0) {
+      this.smokeT += 1 / SMOKE_PER_S;
+      // upwind of the view (the wind blows toward +x), so it drifts across
+      const x = p.x - 6 + (Math.random() - 0.5) * 2 * EMBER_R;
+      const y = p.y + (Math.random() - 0.5) * 2 * EMBER_R;
+      if (g.world.biomeAt(x, y) !== BIOME.LAVA) continue;
+      g.fx.haze(x, y, 0.6 + Math.random() * 1.8, imgs[Math.floor(Math.random() * imgs.length)], 90 + Math.random() * 90, 9 + Math.random() * 6);
     }
   }
 

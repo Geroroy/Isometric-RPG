@@ -31,7 +31,15 @@
     {"asset": "mf.landing.rail_x", "x": 24, "y": 110.7},
     {"asset": "mf.landing.rail_x", "x": 30, "y": 110.7},
     {"asset": "mf.landing.rail_x", "x": 36, "y": 110.7},
-    {"asset": "mf.landing.rail_y", "x": 21.3, "y": 108.5}
+    {"asset": "mf.landing.rail_y", "x": 21.3, "y": 108.5},
+    {"asset": "mf.lava.rock_spire", "x": 61.5, "y": 122},
+    {"asset": "mf.lava.rock_mid", "x": 61, "y": 131.5},
+    {"asset": "mf.lava.rock_low", "x": 63, "y": 138.5},
+    {"asset": "mf.lava.rock_low", "x": 76.5, "y": 126},
+    {"asset": "mf.lava.rock_mid", "x": 77.5, "y": 138},
+    {"asset": "mf.lava.rock_mid", "x": 33, "y": 118.5},
+    {"asset": "mf.lava.rock_low", "x": 48, "y": 117.5},
+    {"asset": "mf.lava.cliff_y", "x": 15.5, "y": 100.5}
   ],
   "decor": [],
   "blockout": [
