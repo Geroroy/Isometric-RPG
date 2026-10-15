@@ -10,7 +10,7 @@ import { prune as pruneFiles, stats as fileStats, cachedJSON, cachedBlob, cached
 import { loadCitySprites } from './gfx/citySprites.js';
 import { setCityFootprints } from './world/cityProps.js';
 import { setMustafarMap } from './world/worldgen.js';
-import { pickMap, setMapName } from './world/mapStore.js';
+import { pickMap, pickEdit, setMapName } from './world/mapStore.js';
 import { setFloorTexture, setGroundTextures, setFacilityFloor, setLavaTexture, setPadFloor } from './gfx/terrain.js';
 import { loadManifest, loadAsset } from './gfx/assetManifest.js';
 import { placeholderBadge } from './ui/placeholderBadge.js';
@@ -123,6 +123,10 @@ async function boot() {
     const area = (c) => (c.x1 - c.x0) * (c.y1 - c.y0);
     const cameras = zones.flatMap((z) => z.cameras || [z.camera]).sort((a, b) => area(a) - area(b));
     const zone = { ...zones[0], cameras, actors: Object.assign({}, ...zones.map((z) => z.actors)), river: zones.map((z) => z.river).find(Boolean) || null };
+    // the map editor's edit kept in this browser (F2: world/mustafarStage.js toMap), when made from these very zones
+    setMapName('mustafar_v2_edit');
+    zone.edit = pickEdit(JSON.stringify(zones)).edit;
+    if (zone.edit) console.info('무스타파 맵: 맵 에디터의 브라우저 저장본(배치)을 씁니다');
     for (const k of ['floor', 'walk', 'collision', 'structures', 'decor', 'lights', 'regions', 'triggers', 'blockout', 'surfaces', 'strips']) zone[k] = zones.flatMap((z) => z[k] || []);
     const man = await loadManifest('assets/mustafar/manifest.json');
     zone.art = {};
@@ -236,7 +240,20 @@ async function boot() {
   const zoom = new ZoomControl(renderer, touch);
   input.onZoom = (dir) => (dir === 0 ? zoom.reset() : zoom.step(dir));
   // the map editor (F2): the Mustafar duel's map, edited in place (ui/mapEditor.js)
-  const editor = MUSTAFAR ? new MapEditor({ game, renderer, assets, onExit: () => zoom.restore() }) : null;
+  const editor = MUSTAFAR || MUSTAFAR_V2 ? new MapEditor({ game, renderer, assets, onExit: () => zoom.restore() }) : null;
+  // (and a button for it beside the zoom buttons: a playtester driving the page with the mouse finds it there)
+  if (editor) {
+    const b = document.createElement('button');
+    b.id = 'mapEditBtn';
+    b.type = 'button';
+    b.className = 'hud-btn';
+    b.textContent = '✎';
+    b.title = '맵 에디터 (F2)';
+    b.setAttribute('aria-label', b.title);
+    b.addEventListener('click', (e) => (e.stopPropagation(), b.blur(), editor.toggle()));
+    for (const t of ['pointerdown', 'mousedown']) b.addEventListener(t, (e) => e.stopPropagation());
+    document.getElementById('hud').appendChild(b);
+  }
   touch.onEnable = () => zoom.restore();
 
   const measure = () => {

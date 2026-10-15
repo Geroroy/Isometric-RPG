@@ -877,6 +877,10 @@ body.touch .radar-region {
 #zoomOut {
   right: calc(110px + env(safe-area-inset-right, 0px));
 }
+#mapEditBtn {
+  right: calc(152px + env(safe-area-inset-right, 0px));
+  font-size: 18px;
+}
 #fsBtn svg {
   width: 100%;
   height: 100%;

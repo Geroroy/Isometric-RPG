@@ -38,3 +38,16 @@ comes at 9 s), `control2` (the control room again), `balcony`, then the later ro
 
 Per issue: where (place or part), what you did, what you saw, what you expected, a screenshot if you can. Say whether
 you used god mode or played normally, and which cutscenes you skipped. Note the version shown in the page if visible.
+
+## Map editor (to propose layout fixes)
+
+The ✎ button at the top right (or F2) opens the map editor over the running game. Modes: 1 소품 (props — drag to move,
+pick one in the panel and click the map to place it, Del removes, B toggles whether it blocks, F its layer), 2 길 (the
+walkable tiles: left button blocks a tile, right button opens it), 3 조명 (lights: click empty ground to add, drag to
+move, the panel sets colour/radius/height). P walks the map yourself to try it (P again returns, F2 closes). Ctrl+Z
+undoes. Pieces the cutscenes use (the facility door, the robes, the shield generator, the catwalk's end, the collector
+arm and tower) can be moved but not deleted. The floors and walls are fixed pictures: there is no floor painting, and
+pictures are not mirrored.
+
+When you are done: 💾 저장 (Ctrl+S) keeps it in your browser, then ⬇ 파일 받기 saves `mustafar_v2_edit.json` — send
+that file back with your report; it is merged into the map's source. Say what each change is for.

@@ -68,3 +68,23 @@ export function clearLocal() {
     /* nothing stored */
   }
 }
+
+/**
+ * The rebuilt Mustafar duel's edit (world/mustafarStage.js toMap: the map editor's props, lights, raised tops and
+ * painted way over the zone files): the browser's saved one when it was made from these very zone files (`baseText`:
+ * their text), else none — a newer build's zones win over an older edit, as a newer map file does above.
+ */
+export function pickEdit(baseText) {
+  base = textHash(baseText);
+  const local = loadLocal();
+  if (!local) return { edit: null };
+  if (local.base !== base) {
+    console.warn('맵 에디터의 브라우저 저장본이 지금 구역 파일보다 오래되어 쓰지 않습니다 (에디터의 "파일로 되돌리기"로 지울 수 있음)');
+    return { edit: null, stale: true };
+  }
+  try {
+    return { edit: JSON.parse(local.text) };
+  } catch {
+    return { edit: null };
+  }
+}

@@ -1,5 +1,8 @@
-// The map editor (F2, the Mustafar duel only): the map's props, the way (blocked tiles) and the lights edited in place
-// on the live world, saved as the map file (public/maps/mustafar.json: worldgen.js MustafarArena.toMap / mapText).
+// The map editor (F2, the Mustafar duels): the map's props, the way (blocked tiles) and the lights edited in place
+// on the live world, saved as the map file (public/maps/mustafar.json: worldgen.js MustafarArena.toMap / mapText) —
+// or, in the rebuilt duel (#duel-mustafar, the artifact: world/mustafarStage.js), as its edit over the zone files
+// (mustafar_v2_edit.json: MustafarStage.toMap): its props, lights and the way only (its floors and walls are the
+// delivered pictures — no tile or room modes, and R does not mirror a delivered picture: CLAUDE.md).
 //
 //   소품 (1)   the panel's sprites: pick one, click the map to place it (again and again; Esc or the right button
 //             stops); click a prop to select it, drag to move it; Delete removes it; R turns it (a set sprite: its
@@ -57,6 +60,13 @@ const snap = (v) => Math.round(v * 2) / 2;
 const PAN_SPEED = 900; // game px a second at zoom 1
 // the panel's groups of set sprites, by name
 const GROUPS = [
+  // (the rebuilt duel's delivered pictures: their manifest ids)
+  ['착륙장', (n) => n.startsWith('mf.landing.')],
+  ['회의실', (n) => n.startsWith('mf.room.')],
+  ['제어실 · 복도', (n) => /^mf\.(control|corridor|passage)\./.test(n)],
+  ['보행로 · 집하 시설', (n) => /^mf\.(walkway|collector)\./.test(n)],
+  ['용암 · 바위', (n) => n.startsWith('mf.lava.')],
+  ['블록아웃 (회색 상자)', (n) => n.startsWith('bo:')],
   ['벽', (n) => n.startsWith('mfWall')],
   ['세트', (n) => n.startsWith('mf')],
   ['화물', (n) => n.startsWith('cg')],
@@ -117,6 +127,16 @@ export class MapEditor {
     return this.game.world;
   }
 
+  /** The rebuilt duel's map (zone files + the editor's edit), not the old map file. */
+  get zoneMap() {
+    return !!this.world.homeSurfaces;
+  }
+
+  /** The file the editor saves: the old map's, or the rebuilt duel's edit. */
+  get fileName() {
+    return this.zoneMap ? 'mustafar_v2_edit.json' : mapName() + '.json';
+  }
+
   /** Whether the editor holds the game (paused, its own input): open and not play-testing. */
   get holds() {
     return this.on && !this.testing;
@@ -147,6 +167,12 @@ export class MapEditor {
     g.camFocus = this.focus;
     this.renderer.editing = true;
     this.renderer.propOrder = null;
+    if (this.zoneMap) {
+      // the rebuilt duel's map: its own help line (no tile or room modes, no mirroring), its file's name
+      this.dom.querySelector('.me-help').innerHTML = '클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 층 · <kbd>,</kbd><kbd>.</kbd> 레이어 뒤로/앞으로 (<kbd>Shift</kbd> 맨 뒤/맨 앞)<br><kbd>1</kbd> 소품 · <kbd>2</kbd> 길 · <kbd>3</kbd> 조명 · <kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트 · <kbd>Ctrl+S</kbd> 저장 · ⬇ 파일 받기 → 채팅으로';
+      this.dom.querySelector('.me-dl').title = '배치 파일(mustafar_v2_edit.json) 받기 — 채팅에 올리면 구역 생성기에 반영';
+      this.dom.querySelector('.me-revert').title = '이 브라우저의 저장본을 지우고 구역 파일대로 다시 불러오기';
+    }
     this.setMode(this.mode);
     this.status();
   }
@@ -285,7 +311,7 @@ export class MapEditor {
     for (const n of names) if (!(MIRROR[n] && shown.has(MIRROR[n]))) shown.add(n);
     const groups = GROUPS.map(([label]) => ({ label, items: [] }));
     for (const n of shown) groups[GROUPS.findIndex(([, f]) => f(n))].items.push({ sheet: n, frame: city[n].body });
-    const models = Object.keys(this.assets.props || {})
+    const models = (this.zoneMap ? [] : Object.keys(this.assets.props || {}))
       .filter((t) => PROPS[t] && this.assets.props[t] && this.assets.props[t][0])
       .sort()
       .map((t) => ({ type: t, frame: this.assets.props[t][0] }));
@@ -546,7 +572,9 @@ export class MapEditor {
   }
 
   setMode(m) {
+    if (this.zoneMap && (m === 'tile' || m === 'room')) return this.say('이 맵의 바닥·벽은 받은 그림이라 타일·방 모드가 없습니다');
     this.mode = m;
+    this.dom.querySelectorAll('.me-modes button').forEach((b) => b.classList.toggle('hidden', this.zoneMap && (b.dataset.mode === 'tile' || b.dataset.mode === 'room')));
     this.drag = null;
     this.dom.querySelectorAll('.me-modes button').forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
     for (const k of ['prop', 'brush', 'light', 'tile', 'room']) this.dom.querySelector('.me-' + k).classList.toggle('hidden', k !== m);
@@ -591,7 +619,7 @@ export class MapEditor {
     }
     t += this.dirty ? ' · 저장 안 됨' : '';
     this.dom.querySelector('.me-status').textContent = t;
-    this.dom.querySelector('.me-src').textContent = hasLocal() ? '브라우저 저장본' : '맵 파일';
+    this.dom.querySelector('.me-src').textContent = hasLocal() ? '브라우저 저장본' : this.zoneMap ? '구역 파일' : '맵 파일';
     const sel = this.dom.querySelector('.me-sel');
     sel.textContent = p ? `선택: ${p.sheet || p.type}` : this.palette ? `배치할 소품: ${this.palette.sheet || this.palette.type} (Esc 해제)` : '소품을 고르거나 맵의 소품을 클릭';
     this.showProp();
@@ -1002,6 +1030,7 @@ export class MapEditor {
       surfaces: w.surfaces.slice(),
       ss: w.surfaces.map((t) => ({ ...t })),
       blocked: w.blocked.slice(),
+      paint: w.paintLog ? new Map(w.paintLog) : null,
       biome: w.biome.slice(),
       rooms: w.floorPlan.slice(),
       rs: w.floorPlan.map((R) => ({ ...R })),
@@ -1018,6 +1047,7 @@ export class MapEditor {
     s.lights.forEach((l, i) => Object.assign(l, s.ls[i]));
     for (const [o, h] of s.homes) o.home = { ...h };
     w.blocked.set(s.blocked);
+    if (s.paint) w.paintLog = new Map(s.paint);
     const roomsNow = JSON.stringify(w.floorPlan);
     w.floorPlan.length = 0;
     w.floorPlan.push(...s.rooms);
@@ -1111,6 +1141,7 @@ export class MapEditor {
     const p = this.sel;
     if (!p) return;
     const before = this.snapshot();
+    if (p.sheet && this.zoneMap) return this.say('받은 그림은 뒤집지 않습니다 (방향이 다른 그림은 따로 받아야 함)');
     if (p.sheet) {
       const twin = this.twin(p.sheet);
       if (!twin) return this.say(`${p.sheet}: 다른 방향 스프라이트를 만들 수 없습니다`);
@@ -1260,6 +1291,7 @@ export class MapEditor {
         const i = ty * w.w + tx;
         if (v ? w.blocked[i] === 0 : w.blocked[i] !== 0) {
           w.blocked[i] = v;
+          if (w.paintLog) w.paintLog.set(i, v); // (the rebuilt duel's edit keeps the painted tiles, not the whole way)
           this.drag.changed = true;
         }
       }
@@ -1271,7 +1303,7 @@ export class MapEditor {
     // this browser keeps it: the next load plays the edited map, in a build too (world/mapStore.js)
     const kept = saveLocal(text);
     // `npm run dev`: straight over public/maps/mustafar.json as well (vite.config.js mapSave)
-    if (import.meta.env.DEV) {
+    if (import.meta.env.DEV && !this.zoneMap) {
       fetch('/__map/' + mapName(), { method: 'POST', body: text })
         .then((r) => {
           if (!r.ok) throw new Error(r.status);
@@ -1282,7 +1314,7 @@ export class MapEditor {
           if (kept) this.say('이 브라우저에 저장됨 (맵 파일에는 못 씀 — 파일 받기로 옮기세요)');
           else this.download(text);
         });
-    } else if (kept) this.say('이 브라우저에 저장됨 — 다시 열어도 이 맵 · 저장소에 넣으려면 파일 받기');
+    } else if (kept) this.say(this.zoneMap ? '이 브라우저에 저장됨 — 다시 열어도 이 배치 · 반영하려면 파일 받기 → 채팅으로' : '이 브라우저에 저장됨 — 다시 열어도 이 맵 · 저장소에 넣으려면 파일 받기');
     else this.download(text);
     this.status();
     return text;
@@ -1297,8 +1329,8 @@ export class MapEditor {
     const dl = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('downloads').catch(() => null) : null;
     if (dl) {
       try {
-        await dl.save({ filename: 'mustafar.json', data: text });
-        this.say('mustafar.json 저장됨 — public/maps/mustafar.json 에 덮어쓰거나 채팅에 올리면 저장소에 반영');
+        await dl.save({ filename: this.fileName, data: text });
+        this.say(this.zoneMap ? `${this.fileName} 저장됨 — 채팅에 올리면 구역 생성기에 반영` : `${this.fileName} 저장됨 — public/maps/${this.fileName} 에 덮어쓰거나 채팅에 올리면 저장소에 반영`);
       } catch (e) {
         const code = e && e.code;
         if (code === 'declined') this.say('파일 저장을 취소했습니다');
@@ -1309,12 +1341,12 @@ export class MapEditor {
     }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-    a.download = 'mustafar.json';
+    a.download = this.fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    this.say('mustafar.json 내려받음 — public/maps/mustafar.json 에 덮어쓰면 저장소에 반영');
+    this.say(this.zoneMap ? `${this.fileName} 내려받음 — 채팅에 올리면 구역 생성기에 반영` : `${this.fileName} 내려받음 — public/maps/${this.fileName} 에 덮어쓰면 저장소에 반영`);
   }
 
   /** The map file's text to the clipboard (when no save works: paste it into the chat or a file). */
