@@ -3131,7 +3131,8 @@ body.talking .touch-ui {
   text-shadow: 2px 2px 0 #000;
 }
 .duel-result {
-  background: var(--tex-hull), #474c52;
+  /* the hull plate darkened behind the text (light lettering on the bare plate was hard to read) */
+  background: linear-gradient(90deg, rgba(6, 8, 10, 0.9), rgba(6, 8, 10, 0.78) 55%, rgba(6, 8, 10, 0.55)), var(--tex-hull), #474c52;
   backdrop-filter: none;
 }
 .dr-title {

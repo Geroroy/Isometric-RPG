@@ -37,6 +37,26 @@ const GLOW = (() => {
   return c;
 })();
 
+const puffCache = new Map();
+/** The PUFF sprite in one colour ('r,g,b'; cached per colour). */
+function puffSprite(rgb) {
+  let c = puffCache.get(rgb);
+  if (!c && PUFF) {
+    c = document.createElement('canvas');
+    c.width = c.height = 32;
+    const x = c.getContext('2d');
+    x.drawImage(PUFF, 0, 0);
+    x.globalCompositeOperation = 'source-in';
+    x.fillStyle = `rgb(${rgb})`;
+    x.fillRect(0, 0, 32, 32);
+    puffCache.set(rgb, c);
+  }
+  return c;
+}
+
+// a flame's colours as it cools (the same as its small square's: #fff2b0, #ffb040, #c04010)
+const FIRE_RGB = [[255, 242, 176], [255, 176, 64], [192, 64, 16]];
+
 const glowCache = new Map();
 /** The GLOW sprite in one colour (cached per colour). */
 export function glowSprite(rgb) {
@@ -315,9 +335,17 @@ export class Effects {
       const sy = Math.round(s.y - cam.y);
       const k = p.t / p.life;
       if (p.kind === 'smoke') {
-        ctx.fillStyle = `rgba(${p.color},${(1 - k) * 0.45})`;
         const r = p.size * (0.6 + k);
-        ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+        const puff = r > 3 && puffSprite(p.color);
+        if (puff) {
+          // a big puff (an explosion's smoke) soft-edged: a square that size reads as a block
+          ctx.globalAlpha = (1 - k) * 0.6;
+          ctx.drawImage(puff, sx - r * 1.4, sy - r * 1.4, r * 2.8, r * 2.8);
+          ctx.globalAlpha = 1;
+        } else {
+          ctx.fillStyle = `rgba(${p.color},${(1 - k) * 0.45})`;
+          ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+        }
       } else if (p.kind === 'steam') {
         // a soft puff that swells and thins as it rises
         const r = p.size * (0.7 + k * 1.6);
@@ -359,8 +387,14 @@ export class Effects {
       } else if (p.kind === 'fire') {
         const r = p.size * (1 - k * 0.5);
         ctx.globalAlpha = 1 - k;
-        ctx.fillStyle = k < 0.3 ? '#fff2b0' : k < 0.6 ? '#ffb040' : '#c04010';
-        ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+        if (r > 2.5 && GLOW) {
+          // a big flame (an explosion's) as a soft glow: a filled square that size reads as a block
+          const g = glowSprite(k < 0.3 ? FIRE_RGB[0] : k < 0.6 ? FIRE_RGB[1] : FIRE_RGB[2]);
+          ctx.drawImage(g, sx - r * 2, sy - r * 2, r * 4, r * 4);
+        } else {
+          ctx.fillStyle = k < 0.3 ? '#fff2b0' : k < 0.6 ? '#ffb040' : '#c04010';
+          ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+        }
       }
     }
     ctx.globalAlpha = 1;

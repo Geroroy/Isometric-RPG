@@ -538,7 +538,7 @@ export class Duel {
     if (dk.state !== 'cast' && Math.random() < blockChance) {
       dk.set('parry', 0.5);
       dk.setAnim('parry', 1, true);
-      dk.composure -= Math.min(22, amount * 0.6) * (opts.pressure || 1); // the signature onslaught wears the guard down
+      dk.composure -= Math.min(22, (opts.weight ?? amount) * 0.6) * (opts.pressure || 1); // the signature onslaught wears the guard down (weight: the blow before a duel scales what lands)
       dk.clashFlash = 0.15;
       g.clash(dk.x + Math.cos(dk.facing) * 0.4, dk.y + Math.sin(dk.facing) * 0.4, 1.2, 9);
       g.audio.play('clash', dk);

@@ -99,9 +99,19 @@ export class DuelHUD {
         <div><span>칼날 겨루기 승리</span><b>${r.locksWon}</b></div>
         ${r.sets !== undefined ? `<div><span>눈금까지 몰아붙인 세트</span><b>${r.sets} / ${this.cfg.marks.length}</b></div>` : ''}
       </div>
-      <div class="dr-actions"><button type="button" class="dr-retry">다시 도전</button><a href="#campaign">캠페인으로</a></div>`;
+      <div class="dr-actions"><button type="button" class="dr-retry">${r.retryPart ? '이 전투부터 다시' : '다시 도전'}</button>${r.retryPart ? '<a href="#" class="dr-restart">처음부터</a>' : ''}<a href="#campaign">캠페인으로</a></div>`;
     this.result.classList.remove('hidden');
-    this.result.querySelector('.dr-retry').onclick = () => location.reload();
+    // a checkpoint (the Mustafar duel: r.retryPart, the fight he fell in) starts there — the director's ?mfPart
+    const go = (part) => {
+      const u = new URL(location.href);
+      if (part) u.searchParams.set('mfPart', part);
+      else u.searchParams.delete('mfPart');
+      if (u.href === location.href) location.reload();
+      else location.href = u.href;
+    };
+    this.result.querySelector('.dr-retry').onclick = () => (r.retryPart ? go(r.retryPart) : location.reload());
+    const restart = this.result.querySelector('.dr-restart');
+    if (restart) restart.onclick = (e) => (e.preventDefault(), go(null));
     this.result.addEventListener('mousedown', (e) => e.stopPropagation());
   }
 }

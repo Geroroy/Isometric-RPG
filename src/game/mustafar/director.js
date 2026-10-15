@@ -35,7 +35,7 @@ export const STAGES = [
 
 // the old duel's staging, borrowed as it is (it reads only this director's units and state)
 const FILM = MustafarDuel.prototype;
-const BORROW = ['intro', 'pose', 'hoodDown', 'ignite', 'travel', 'clash', 'lightning', 'filterHit', 'reachMark', 'card', 'updateRain'];
+const BORROW = ['intro', 'pose', 'hoodDown', 'ignite', 'travel', 'clash', 'lightning', 'reachMark', 'card', 'updateRain'];
 
 const LINES = {
   parry: [['obiwan', '그만둬, 아나킨!'], ['obiwan', '아직 늦지 않았다.'], ['obiwan', '분노로는 날 이길 수 없다.']],
@@ -50,6 +50,12 @@ const PAD = { floor: 0.9, filmT: 34 };
 const CORRIDOR = { floor: 0.84, time: 30 };
 // STAGE 02's: the conference room (the film's 1:02 – 1:22), then both reach for the Force at once
 const ROOM = { floor: 0.76, time: 28 };
+// How long a fight lasts when Anakin presses him the whole time: a part's stretch of Obi-Wan's bar (its floor up from the
+// last part's) is sized so that a player attacking non-stop (REF_DPS, measured: about 50 a second with clicks on him and
+// the guard when he swings) needs PRESS_SHARE of the part's time to bring him to the mark. With the bar as it was, every
+// part ended in 2–8 s and the whole duel had under a minute of fighting between its scenes. (Lava hurts his guard only.)
+const REF_DPS = 50;
+const PRESS_SHARE = 0.6;
 
 /**
  * The playable parts in the film's order: Obi-Wan's health is held at the part's `floor` (the mark on his bar); the
@@ -63,6 +69,8 @@ const FIGHTS = {
   ...ROUTE_FIGHTS,
 };
 const ORDER = Object.keys(FIGHTS);
+/** What of Anakin's blows lands in part `F` (its stretch of the bar from `prevFloor` down to `floor`): REF_DPS above. */
+const bandScale = (F, floor, prevFloor, maxHp) => Math.min(1, ((prevFloor - floor) * maxHp) / (REF_DPS * PRESS_SHARE * F.time));
 
 export class MustafarDirector extends Duel {
   constructor(game) {
@@ -200,6 +208,7 @@ export class MustafarDirector extends Duel {
     this.partT = 0;
     this.setI = 0;
     this.floor = PAD.floor;
+    this.bandScale = bandScale(FIGHTS.pad, PAD.floor, 1, this.foe.maxHp);
     this.score = FIGHTS.pad.score;
     this.advanceAt = 0;
     this.card('착륙장');
@@ -265,10 +274,14 @@ export class MustafarDirector extends Duel {
     floor ??= F.floor;
     prevFloor ??= FIGHTS[ORDER[ORDER.indexOf(part) - 1]]?.floor ?? 1;
     if (ob.hp > prevFloor * ob.maxHp) ob.hp = prevFloor * ob.maxHp; // (the film moved on: he is where the last place left him)
+    // each place a round of its own: Anakin starts it whole, as the retry from it does (a part's fight runs long enough
+    // that the hurt of the ones before would leave him none to fight with — the real-player run died by the third)
+    p.hp = p.maxHp;
     this.part = part;
     this.partT = 0;
     this.setI = ORDER.indexOf(part);
     this.floor = floor;
+    this.bandScale = bandScale(F, floor, prevFloor, ob.maxHp);
     this.score = F.score;
     this.phase = this.setI >= 6 ? 3 : this.setI >= 3 ? 2 : 1; // Obi-Wan presses harder as the film goes on (duelMustafar.js)
     // the place's hazards (route.js): the lava rain, the pipe's footing, the lava bombs
@@ -349,6 +362,24 @@ export class MustafarDirector extends Duel {
 
   /** (The duel's phases by health are this stage's marks: the progression above.) */
   phases() {}
+
+  /** The old duel's (the mark holds him, a blow at it lands on his guard), Anakin's blows scaled to the part's stretch. */
+  filterHit(src, tgt, amount, opts) {
+    if (tgt !== this.foe || opts.type === 'lava') return FILM.filterHit.call(this, src, tgt, amount, opts);
+    // his guard still feels the whole blow (duel.js reads opts.weight); opts goes back as it came, but for what the
+    // hit adds to it for game.damage (its feel)
+    const own = 'weight' in opts;
+    if (!own) opts.weight = amount;
+    const a = FILM.filterHit.call(this, src, tgt, amount * (this.bandScale ?? 1), opts);
+    if (!own) delete opts.weight;
+    return a;
+  }
+
+  /** Lost: the retry starts at the fight he fell in, not back at the landing pad (the whole duel runs many minutes). */
+  finish(won) {
+    super.finish(won);
+    if (!won && FIGHTS[this.part]) this.result.retryPart = this.part;
+  }
 }
 for (const k of BORROW) MustafarDirector.prototype[k] = FILM[k];
 Object.assign(MustafarDirector.prototype, ROUTE);
