@@ -119,6 +119,13 @@ def structures():
         {'asset': 'mf.control.ctl_shield_generator', 'x': CORE[0], 'y': CORE[1], 'block': True, 'id': 'shieldCore'},
         # the consoles: the conference room's (the user's, reused), up on the gallery
         *[{'asset': 'mf.room.console', 'x': c[0], 'y': c[1], 'z': GALLERY[2], 'block': True} for c in up],
+        # the film pass's pieces (requested — docs/asset_requests/chatgpt_film_pass1.md; their grey boxes until then)
+        {'asset': 'mf.control.ctl_long_table', 'x': TABLE[0], 'y': TABLE[1], 'block': True},
+        *[{'asset': 'mf.control.ctl_door_pillar', 'x': x, 'y': y} for x, y in PILLARS],
+        *[{'asset': 'mf.corridor.frame_far', 'x': x, 'y': JY0 + 0.15} for x in FRAMES],
+        *[{'asset': 'mf.corridor.frame_near', 'x': x, 'y': JY1 - 0.15} for x in FRAMES],
+        {'asset': 'mf.corridor.junction_pier', 'x': (JUNCTION[0] + SIDE[0]) / 2, 'y': JY0},
+        {'asset': 'mf.corridor.junction_wall_low', 'x': (JUNCTION[0] + JUNCTION[1]) / 2, 'y': JY1},
     ]
 
 

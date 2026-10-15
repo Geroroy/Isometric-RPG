@@ -66,7 +66,11 @@
     {"asset": "mf.lava.rock_spire", "x": 70, "y": 88.6},
     {"asset": "mf.lava.rock_low", "x": 69.3, "y": 107.5},
     {"asset": "mf.lava.rock_low", "x": 122.3, "y": 85.5},
-    {"asset": "mf.lava.rock_mid", "x": 123.6, "y": 101}
+    {"asset": "mf.lava.rock_mid", "x": 123.6, "y": 101},
+    {"asset": "mf.landing.guide_light", "x": 78.5, "y": 95.8},
+    {"asset": "mf.landing.guide_light", "x": 78.5, "y": 101.2},
+    {"asset": "mf.landing.guide_light", "x": 82.5, "y": 95.8},
+    {"asset": "mf.landing.guide_light", "x": 82.5, "y": 101.2}
   ],
   "decor": [],
   "backdrop": null,

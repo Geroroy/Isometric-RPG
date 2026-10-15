@@ -20,8 +20,9 @@
     {"asset": "mf.room.wall_side", "x": 41.9, "y": 86.0},
     {"asset": "mf.room.wall_front_low", "x": 49.9, "y": 92},
     {"asset": "mf.room.wall_door_low", "x": 57.9, "y": 86.0},
-    {"asset": "mf.room.table", "x": 46.9, "y": 86.0, "block": true},
-    {"asset": "mf.room.table", "x": 52.9, "y": 86.0, "block": true},
+    {"asset": "mf.room.table", "x": 46.9, "y": 86.0, "block": true, "replacedBy": "mf.room.table_long"},
+    {"asset": "mf.room.table", "x": 52.9, "y": 86.0, "block": true, "replacedBy": "mf.room.table_long"},
+    {"asset": "mf.room.table_long", "x": 49.9, "y": 86.0, "block": true},
     {"asset": "mf.room.console", "x": 45.3, "y": 81.1, "block": true},
     {"asset": "mf.room.console", "x": 54.3, "y": 81.1, "block": true},
     {"asset": "mf.room.chair_a", "x": 44.4, "y": 84.4, "block": true},
@@ -47,7 +48,10 @@
     {"asset": "mf.room.chair_a", "x": 54.4, "y": 84.4, "block": true},
     {"asset": "mf.room.chair_b", "x": 54.4, "y": 87.6, "block": true},
     {"asset": "mf.room.chair_a", "x": 55.4, "y": 84.4, "block": true},
-    {"asset": "mf.room.chair_b", "x": 55.4, "y": 87.6, "block": true}
+    {"asset": "mf.room.chair_b", "x": 55.4, "y": 87.6, "block": true},
+    {"asset": "mf.corridor.side_wall_end", "x": 59.4, "y": 84},
+    {"asset": "mf.corridor.side_wall_low", "x": 60.9, "y": 90.0},
+    {"asset": "mf.corridor.side_wall_corner", "x": 57.9, "y": 94.0}
   ],
   "decor": [],
   "blockout": [

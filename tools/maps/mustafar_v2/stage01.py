@@ -106,6 +106,8 @@ def structures():
     # the film's basalt in the lava round the pad (docs/asset_requests/phase2_review.md): behind it (−y) and off its
     # sides only — never on the near (+y) side, where a rock would stand in front of the fighters
     out += [{'asset': f'mf.lava.{k}', 'x': x, 'y': y} for k, x, y in SCENERY]
+    # the guide lights' lamps (requested: until then their light alone — lights())
+    out += [{'asset': 'mf.landing.guide_light', 'x': x, 'y': y} for x, y in GUIDE]
     return out
 
 

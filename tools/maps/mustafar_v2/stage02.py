@@ -50,7 +50,8 @@ def structures():
         {'asset': 'mf.room.wall_front_low', 'x': CX, 'y': Y1},
         {'asset': 'mf.room.wall_door_low', 'x': X1, 'y': CY},
         # the council's table, its chairs either side (a: facing +y, on the far side; b: facing −y, the near side)
-        *[{'asset': 'mf.room.table', 'x': TABLE[0] + dx, 'y': TABLE[1], 'block': True} for dx in PIECES],
+        *[{'asset': 'mf.room.table', 'x': TABLE[0] + dx, 'y': TABLE[1], 'block': True, 'replacedBy': 'mf.room.table_long'} for dx in PIECES],
+        {'asset': 'mf.room.table_long', 'x': TABLE[0], 'y': TABLE[1], 'block': True},  # (requested: once here, the two above go)
         # two consoles along the window wall
         {'asset': 'mf.room.console', 'x': X0 + 3.4, 'y': Y0 + 1.1, 'block': True},
         {'asset': 'mf.room.console', 'x': X1 - 3.6, 'y': Y0 + 1.1, 'block': True},
@@ -58,6 +59,12 @@ def structures():
     for dx in CHAIRS:
         out.append({'asset': 'mf.room.chair_a', 'x': TABLE[0] + dx, 'y': TABLE[1] - 1.6, 'block': True})
         out.append({'asset': 'mf.room.chair_b', 'x': TABLE[0] + dx, 'y': TABLE[1] + 1.6, 'block': True})
+    # the side passage's pictures (requested; their grey boxes until then: blockout())
+    out += [
+        {'asset': 'mf.corridor.side_wall_end', 'x': (SX0 + SX1) / 2, 'y': SY0},
+        {'asset': 'mf.corridor.side_wall_low', 'x': SX1, 'y': (SY0 + SY1) / 2},
+        {'asset': 'mf.corridor.side_wall_corner', 'x': SX0, 'y': (Y1 + SY1) / 2},
+    ]
     return out
 
 

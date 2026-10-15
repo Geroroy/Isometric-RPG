@@ -86,6 +86,7 @@ export class MustafarStage extends World {
       if (p && b.hidden) p.hidden = true; // (the director shows it: the fallen arm, a door)
     }
     for (const e of [...z.structures, ...z.decor]) {
+      if (e.replacedBy && art[e.replacedBy]) continue; // (a stand-in made of delivered pieces, its own picture here: the conference room's two tables)
       const a = art[e.asset];
       const p = a ? this.addSheetProp(e.asset, e.x, e.y, { noBlock: !e.block, flat: a.meta.flat }) : null;
       if (p && e.z) p.z = e.z; // (standing on a raised floor: a console on the gallery — renderer.js placeProp lifts it)

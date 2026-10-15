@@ -1439,14 +1439,34 @@
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "corridors/corr_frame_far.png",
    "size": [
-    96,
-    224
+    72,
+    216
    ],
    "density": 2,
    "anchor": [
-    48,
-    196
-   ]
+    33,
+    186
+   ],
+   "guide": "docs/asset_requests/guides/corr_frame_far_guide.png",
+   "footprint": [
+    [
+     -0.175,
+     -0.25
+    ],
+    [
+     0.175,
+     -0.25
+    ],
+    [
+     0.175,
+     0.25
+    ],
+    [
+     -0.175,
+     0.25
+    ]
+   ],
+   "layer": "standing"
   },
   {
    "id": "mf.corridor.frame_near",
@@ -1456,14 +1476,34 @@
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "corridors/corr_frame_near.png",
    "size": [
-    96,
+    72,
     96
    ],
    "density": 2,
    "anchor": [
-    48,
-    68
-   ]
+    33,
+    69
+   ],
+   "guide": "docs/asset_requests/guides/corr_frame_near_guide.png",
+   "footprint": [
+    [
+     -0.175,
+     -0.25
+    ],
+    [
+     0.175,
+     -0.25
+    ],
+    [
+     0.175,
+     0.25
+    ],
+    [
+     -0.175,
+     0.25
+    ]
+   ],
+   "layer": "standing"
   },
   {
    "id": "mf.corridor.side_wall_end",
@@ -1524,14 +1564,34 @@
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "landing/guide_light.png",
    "size": [
-    48,
-    40
+    64,
+    56
    ],
    "density": 2,
    "anchor": [
-    24,
-    26
-   ]
+    32,
+    29
+   ],
+   "guide": "docs/asset_requests/guides/guide_light_guide.png",
+   "footprint": [
+    [
+     -0.2,
+     -0.2
+    ],
+    [
+     0.2,
+     -0.2
+    ],
+    [
+     0.2,
+     0.2
+    ],
+    [
+     -0.2,
+     0.2
+    ]
+   ],
+   "layer": "flat"
   },
   {
    "id": "mf.control.ctl_long_table",
@@ -1541,14 +1601,38 @@
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "interiors/ctl_long_table.png",
    "size": [
-    432,
-    224
+    392,
+    264
    ],
    "density": 2,
    "anchor": [
-    216,
-    120
-   ]
+    196,
+    155
+   ],
+   "guide": "docs/asset_requests/guides/ctl_long_table_guide.png",
+   "footprint": [
+    [
+     -3.5,
+     -1
+    ],
+    [
+     3.5,
+     -1
+    ],
+    [
+     3.5,
+     1
+    ],
+    [
+     -3.5,
+     1
+    ]
+   ],
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 1.0
+   }
   },
   {
    "id": "mf.control.ctl_door_pillar",
@@ -1558,14 +1642,34 @@
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "interiors/ctl_door_pillar.png",
    "size": [
-    80,
-    128
+    104,
+    136
    ],
    "density": 2,
    "anchor": [
-    40,
-    100
-   ]
+    50,
+    97
+   ],
+   "guide": "docs/asset_requests/guides/ctl_door_pillar_guide.png",
+   "footprint": [
+    [
+     -0.4,
+     -0.45
+    ],
+    [
+     0.4,
+     -0.45
+    ],
+    [
+     0.4,
+     0.45
+    ],
+    [
+     -0.4,
+     0.45
+    ]
+   ],
+   "layer": "standing"
   },
   {
    "id": "mf.room.table_long",
@@ -1575,14 +1679,38 @@
    "request": "docs/asset_requests/chatgpt_film_pass1.md",
    "file": "interiors/conf_table_long.png",
    "size": [
-    624,
-    344
+    592,
+    352
    ],
    "density": 2,
    "anchor": [
-    312,
-    200
-   ]
+    296,
+    195
+   ],
+   "guide": "docs/asset_requests/guides/conf_table_long_guide.png",
+   "footprint": [
+    [
+     -6,
+     -1
+    ],
+    [
+     6,
+     -1
+    ],
+    [
+     6,
+     1
+    ],
+    [
+     -6,
+     1
+    ]
+   ],
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 0.8
+   }
   }
  ]
 }
