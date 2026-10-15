@@ -15,6 +15,7 @@ import { Duel } from './duel.js';
 import { Cinema } from './cinema.js';
 import { MustafarDuel } from './duelMustafar.js';
 import { ArtDuel } from './duelArt.js';
+import { BlankDuel } from './duelBlank.js';
 import { MustafarDirector } from './mustafar/director.js';
 import { MustafarStage } from '../world/mustafarStage.js';
 
@@ -29,7 +30,7 @@ export class Game {
     // Christophsis, reached by starfighter; each keeps its own state
     // (the Movie Duels: Geonosis; Mustafar — the rebuild's zones, docs/MUSTAFAR_REBUILD.md — and, kept for reference
     // but off the menu, the old Mustafar maps: the film's facility and the painted lava fortress)
-    this.world = mode !== 'duel' ? new CityHub(9) : duel === 'mustafar' ? new MustafarStage(66) : duel === 'mustafarLegacy' || duel === 'mustafarArt' ? new MustafarArena(66) : new Arena(77);
+    this.world = mode !== 'duel' ? new CityHub(9) : duel === 'mustafar' || duel === 'mustafarBlank' ? new MustafarStage(66) : duel === 'mustafarLegacy' || duel === 'mustafarArt' ? new MustafarArena(66) : new Arena(77);
     this.pathfinder = new PathFinder(this.world);
     this.fx = new Effects();
     this.units = [];
@@ -57,6 +58,12 @@ export class Game {
     if (mode === 'duel' && duel === 'mustafarArt') {
       // the painted map (tools/maps/mustafar_art_build.py): a free duel with Obi-Wan on it
       this.duel = new ArtDuel(this);
+      this.updateActive();
+      return;
+    }
+    if (mode === 'duel' && duel === 'mustafarBlank') {
+      // the blank map: the lava alone, built by hand in the map editor (game/duelBlank.js)
+      this.duel = new BlankDuel(this);
       this.updateActive();
       return;
     }

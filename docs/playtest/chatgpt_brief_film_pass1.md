@@ -44,10 +44,12 @@ you used god mode or played normally, and which cutscenes you skipped. Note the 
 The ✎ button at the top right (or F2) opens the map editor over the running game. Modes: 1 소품 (props — drag to move,
 pick one in the panel and click the map to place it, Del removes, B toggles whether it blocks, F its layer), 2 길 (the
 walkable tiles: left button blocks a tile, right button opens it), 3 조명 (lights: click empty ground to add, drag to
-move, the panel sets colour/radius/height). P walks the map yourself to try it (P again returns, F2 closes). Ctrl+Z
-undoes. Pieces the cutscenes use (the facility door, the robes, the shield generator, the catwalk's end, the collector
-arm and tower) can be moved but not deleted. The floors and walls are fixed pictures: there is no floor painting, and
-pictures are not mirrored.
+move, the panel sets colour/radius/height), 4 바닥 (floors: pick a delivered floor picture and click to lay it at its own
+size; the tiles under it become walkable; drag to move, Del removes). P walks the map yourself to try it (P again
+returns, F2 closes). Ctrl+Z undoes. Pieces the cutscenes use (the facility door, the robes, the shield generator, the catwalk's end, the collector
+arm and tower) can be moved but not deleted. The map's own floors and walls are fixed pictures (floors can be added on
+top, not moved), and pictures are not mirrored. The main menu also has 맵 만들기 (`#duel-mustafar-blank`): the lava
+alone, to build a map from scratch with the same editor (its file is `mustafar_blank_edit.json`).
 
 When you are done: 💾 저장 (Ctrl+S) keeps it in your browser, then ⬇ 파일 받기 saves `mustafar_v2_edit.json` — send
 that file back with your report; it is merged into the map's source. Say what each change is for.

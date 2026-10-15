@@ -61,6 +61,15 @@ export class MustafarStage extends World {
         this.rect(...c.rect, (i) => (this.blocked[i] = 1));
         if (c.door) this.doors[c.id] = c.rect;
       }
+    // the map editor's floors (its 바닥 mode: a delivered floor picture at its own size, laid over the zones' ground,
+    // the newest on top): each opens the tiles it covers — the way and the ground as the zones have them kept to
+    // work that out again when one moves (floorTiles)
+    const E = z.edit && z.edit.format === EDIT_FORMAT ? z.edit : null;
+    this.baseBlocked = this.blocked.slice();
+    this.baseBiome = this.biome.slice();
+    const added = ((E && E.floors) || []).filter((f) => art[f.asset] && art[f.asset].tiles[f.tile || 'floor']).map((f) => ({ ...f, kind: 'texturedRect', added: true }));
+    this.padFloors.splice(this.groundFloorAt(), 0, ...added.reverse());
+    for (const f of added) this.floorTiles(f);
     // who starts where (only Anakin in this step)
     const an = z.actors.anakin;
     this.spawn = { x: an.x, y: an.y };
@@ -69,7 +78,6 @@ export class MustafarStage extends World {
     // the map editor's saved edit over the zone files (main.js, world/mapStore.js pickEdit): its props, lights, raised
     // tops and painted way in place of the zones' (the rest — the floors, the way's rectangles, the doors, the places —
     // stays the zones')
-    const E = z.edit && z.edit.format === EDIT_FORMAT ? z.edit : null;
     this.edited = !!E;
     this.floorPlan = []; // (the old map's rooms: none here — the editor's room and tile modes are the old map's)
     for (const l of E ? E.lights : z.lights) this.lights.push(this.mapLight({ ...l }));
@@ -116,6 +124,27 @@ export class MustafarStage extends World {
     // the way painted in the editor (its tiles: walkable 0 / blocked 1), over everything above
     this.paintLog = new Map(E && E.paint ? E.paint.map(([x, y, v]) => [y * this.w + x, v]) : []);
     for (const [i, v] of this.paintLog) this.blocked[i] = v;
+  }
+
+  /** Where the ground's floors begin in padFloors (the raised ones before them): an added floor goes in there, on top. */
+  groundFloorAt() {
+    const i = this.padFloors.findIndex((f) => !f.z);
+    return i < 0 ? this.padFloors.length : i;
+  }
+
+  /**
+   * The way and the ground over floor `f`'s tiles worked out again (an added floor laid, moved or taken away): a tile
+   * under an added floor is walkable floor; else as the zones have it — and a tile painted in the editor as painted.
+   */
+  floorTiles(f) {
+    const on = this.padFloors.filter((q) => q.added);
+    this.rect(f.x0, f.y0, f.x1, f.y1, (i) => {
+      const x = (i % this.w) + 0.5;
+      const y = Math.floor(i / this.w) + 0.5;
+      const under = on.some((q) => x >= q.x0 && x < q.x1 && y >= q.y0 && y < q.y1);
+      this.biome[i] = under ? BIOME.MUSTAFAR : this.baseBiome[i];
+      this.blocked[i] = this.paintLog && this.paintLog.has(i) ? this.paintLog.get(i) : under ? 0 : this.baseBlocked[i];
+    });
   }
 
   /** A prop of the editor's saved edit (toMap), placed as the zones' are. */
@@ -182,11 +211,15 @@ export class MustafarStage extends World {
     return {
       format: EDIT_FORMAT,
       version: 1,
-      note: 'map editor edit over public/maps/mustafar_v2/stage01..06.json (props, lights, raised tops, painted tiles [x, y, 0 walkable / 1 blocked])',
+      note: `map editor edit over public/maps/mustafar_v2/${this.zone.id === 'blank' ? 'blank' : 'stage01..06'}.json (props, lights, raised tops, floors added [manifest id, tile, world rect], painted tiles [x, y, 0 walkable / 1 blocked])`,
       props: this.props.filter((q) => q.sheet).map(prop),
       lights: this.lights.filter((l) => l.map && !l.of).map(light),
       surfaces: this.homeSurfaces.map((t) => Object.fromEntries(Object.entries(t).map(([k, v]) => [k, typeof v === 'number' ? n6(v) : v]))),
       paint: [...this.paintLog].map(([i, v]) => [i % this.w, Math.floor(i / this.w), v]),
+      floors: this.padFloors
+        .filter((f) => f.added)
+        .reverse()
+        .map((f) => ({ asset: f.asset, tile: f.tile || 'floor', x0: n6(f.x0), y0: n6(f.y0), x1: n6(f.x1), y1: n6(f.y1) })),
     };
   }
 

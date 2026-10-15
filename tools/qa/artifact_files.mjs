@@ -1,5 +1,6 @@
 // The artifact's file list (CLAUDE.md "아티팩트는 무스타파 결투 전용"): every file the Mustafar duel requests — from the
-// start (the arrival scenes, the pad), each part pressed through to the ending and its result, and a loss — under
+// start (the arrival scenes, the pad), each part pressed through to the ending and its result, a loss, and the blank
+// map (the menu's map-building entry) — under
 // Playwright, against a static server that answers 404 for what is missing (python3 -m http.server in the build's
 // folder; `vite preview` answers 200 with the page instead and hides it). Writes the requested paths as JSON and prints
 // what came back 404 or threw (the star cards' optional pictures excepted).
@@ -41,6 +42,8 @@ await run('?mfPart=corridor#duel-mustafar', async (page) => {
 });
 // a loss: the result screen's other branch
 await run('?mfPart=pipe#duel-mustafar', async (page) => { await skipTo(page, 'pipe', 60000); await page.evaluate(() => { const g = window.__game; g.player.hp = 1; g.damage(g.duel.foe, g.player, 50, { type: 'duel' }); }); await page.waitForTimeout(4000); });
+// the blank map (the menu's '무스타파 빈 맵': its zone file, every delivered picture for the editor's panels)
+await run('#duel-mustafar-blank', async (page) => { await page.keyboard.press('Digit4'); await page.waitForTimeout(1500); });
 fs.writeFileSync(out, JSON.stringify([...seen].sort(), null, 1));
 console.log('files', seen.size, 'bad', bad.length); console.log(JSON.stringify(bad.filter((b) => !b.includes('/cards/'))));
 await browser.close();

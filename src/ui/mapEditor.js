@@ -20,6 +20,11 @@
 //             paint with the brush (the left button; the right button drags the view); the lava and the rock block
 //             the way as the ground does, a floor painted over them opens it. The ground is rebuilt after each
 //             stroke (a new Terrain: its chunks come back over a moment)
+//   바닥 (4)   the rebuilt duel's map (and its blank map) only: its delivered floor pictures (the manifest's
+//             groundTiles, each at its own size in metres — never stretched): pick one, click the map to lay it
+//             (snapped to whole metres; again and again, Esc stops); click a laid one to select it, drag to move it,
+//             Delete removes it. A floor opens the tiles it covers to walking (the way brush still paints over
+//             it); the newest lies on top. The zones' own floors stay as they are
 //   방 (5)     the rooms' floor plan (the map's floorPlan: where the facility floor's pattern is laid — the border
 //             of edge tiles, the chevron field, a corridor's runner): click a room to select it, drag it to move
 //             it, drag a corner to resize it; its numbers in the panel (edge, cell, the cut corner, pad, pit, a
@@ -86,6 +91,8 @@ const TIERS = ['flat', 'stand', 'top'];
 const TIER_LABEL = { flat: '바닥', stand: '서 있음', top: '맨 위' };
 const tierOf = (p) => (p.top ? 'top' : p.flat ? 'flat' : 'stand');
 const ORDER_STEP = 0.005; // (m: a standing prop set just past its neighbour)
+/** A floor picture's short name (its manifest id without 'mf.', and its tile when it has several). */
+const floorName = (f) => f.asset.replace(/^mf\./, '') + (f.tile && f.tile !== 'floor' ? ' · ' + f.tile : '');
 const hex = (r, g, b) => '#' + [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
 
 export class MapEditor {
@@ -134,7 +141,7 @@ export class MapEditor {
 
   /** The file the editor saves: the old map's, or the rebuilt duel's edit. */
   get fileName() {
-    return this.zoneMap ? 'mustafar_v2_edit.json' : mapName() + '.json';
+    return mapName() + '.json'; // (mustafar_v2_edit / mustafar_blank_edit on the rebuilt duel's maps: main.js)
   }
 
   /** Whether the editor holds the game (paused, its own input): open and not play-testing. */
@@ -169,8 +176,9 @@ export class MapEditor {
     this.renderer.propOrder = null;
     if (this.zoneMap) {
       // the rebuilt duel's map: its own help line (no tile or room modes, no mirroring), its file's name
-      this.dom.querySelector('.me-help').innerHTML = '클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 층 · <kbd>,</kbd><kbd>.</kbd> 레이어 뒤로/앞으로 (<kbd>Shift</kbd> 맨 뒤/맨 앞)<br><kbd>1</kbd> 소품 · <kbd>2</kbd> 길 · <kbd>3</kbd> 조명 · <kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트 · <kbd>Ctrl+S</kbd> 저장 · ⬇ 파일 받기 → 채팅으로';
-      this.dom.querySelector('.me-dl').title = '배치 파일(mustafar_v2_edit.json) 받기 — 채팅에 올리면 구역 생성기에 반영';
+      this.dom.querySelector('.me-help').innerHTML = '클릭 배치 · 드래그 이동 · <kbd>Del</kbd> 삭제 · <kbd>B</kbd> 막기 · <kbd>F</kbd> 층 · <kbd>,</kbd><kbd>.</kbd> 레이어 뒤로/앞으로 (<kbd>Shift</kbd> 맨 뒤/맨 앞)<br><kbd>1</kbd> 소품 · <kbd>2</kbd> 길 · <kbd>3</kbd> 조명 · <kbd>4</kbd> 바닥 · <kbd>Shift</kbd> 스냅 끄기 · <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>WASD</kbd>/우클릭 드래그 시점 · 휠 확대 · <kbd>P</kbd> 플레이 테스트 · <kbd>Ctrl+S</kbd> 저장 · ⬇ 파일 받기 → 채팅으로';
+      this.dom.querySelector('.me-dl').title = `배치 파일(${this.fileName}) 받기 — 채팅에 올리면 구역 생성기에 반영`;
+      if (this.world.zone && this.world.zone.id === 'blank') this.dom.querySelector('.me-map').textContent = '무스타파 빈 맵';
       this.dom.querySelector('.me-revert').title = '이 브라우저의 저장본을 지우고 구역 파일대로 다시 불러오기';
     }
     this.setMode(this.mode);
@@ -199,7 +207,7 @@ export class MapEditor {
     dom.innerHTML = `
       <div class="me-head"><b>맵 에디터</b> <span class="me-map">무스타파</span><button class="me-close" title="닫기 (F2)">✕</button></div>
       <div class="me-modes">
-        <button data-mode="prop">소품 <kbd>1</kbd></button><button data-mode="brush">길 <kbd>2</kbd></button><button data-mode="light">조명 <kbd>3</kbd></button><button data-mode="tile">타일 <kbd>4</kbd></button><button data-mode="room">방 <kbd>5</kbd></button>
+        <button data-mode="prop">소품 <kbd>1</kbd></button><button data-mode="brush">길 <kbd>2</kbd></button><button data-mode="light">조명 <kbd>3</kbd></button><button data-mode="tile">타일 <kbd>4</kbd></button><button data-mode="floor">바닥 <kbd>4</kbd></button><button data-mode="room">방 <kbd>5</kbd></button>
       </div>
       <div class="me-body me-prop">
         <input class="me-search" type="search" placeholder="스프라이트 찾기…">
@@ -227,6 +235,11 @@ export class MapEditor {
         <div class="me-tiles">${TILES.map((t) => `<button data-tile="${t.b}"><i style="background:${t.color}"></i>${t.name}</button>`).join('')}</div>
         <label>붓 크기 <input class="me-tsize" type="range" min="1" max="7" step="1" value="1"> <span class="me-tsize-v">1</span>칸 <kbd>[</kbd><kbd>]</kbd></label>
         <p class="me-note">용암·바위는 땅이 막는 칸이 되고, 그 위에 바닥을 칠하면 다시 걸을 수 있음 · 방 안의 시설 바닥은 바닥 계획(floorPlan)의 무늬로 그려짐</p>
+      </div>
+      <div class="me-body me-floor">
+        <p class="me-note">바닥 그림을 고르고 맵을 클릭해 깔기 (1 m 단위 · <kbd>Shift</kbd> 자유) · 깔린 바닥을 클릭해 선택 · 끌어서 이동 · <kbd>Del</kbd> 삭제 · <kbd>Esc</kbd> 해제. 바닥을 깔면 그 칸은 걸을 수 있게 됨 (길 모드로 다시 막을 수 있음) · 나중에 깐 것이 위</p>
+        <div class="me-fsel me-note"></div>
+        <div class="me-list me-flist"></div>
       </div>
       <div class="me-body me-room">
         <p class="me-note">방을 클릭해 선택 · 안쪽을 끌어 이동 · 모서리를 끌어 크기 조절 · 바닥 무늬(시설 바닥 타일의 테두리·쉐브론)는 이 영역 안에만 그려짐</p>
@@ -377,6 +390,75 @@ export class MapEditor {
       this.select(null);
     }
     this.status();
+  }
+
+  /** The floor mode's panel: every delivered floor picture of the map (the manifest's groundTiles, but the lava's). */
+  buildFloorPanel() {
+    const list = this.dom.querySelector('.me-flist');
+    if (list.dataset.built) return this.showFloor();
+    list.dataset.built = '1';
+    const art = (this.world.zone && this.world.zone.art) || {};
+    const grid = document.createElement('div');
+    grid.className = 'me-grid';
+    list.appendChild(grid);
+    this.floorItems = [];
+    for (const [asset, a] of Object.entries(art)) {
+      if (!a.tiles || asset === 'mf.lava.surface') continue;
+      for (const [tile, I] of Object.entries(a.tiles)) {
+        const sp = a.spec && a.spec[tile];
+        if (!sp || ['rim', 'corner', 'side'].includes(tile)) continue; // (the pad's edge strips: laid by its rim, not alone)
+        const it = { asset, tile, mw: sp.metres[0], mh: sp.metres[1], name: floorName({ asset, tile }) };
+        const b = document.createElement('button');
+        b.className = 'me-item';
+        b.title = `${asset}${tile === 'floor' ? '' : ' · ' + tile} — ${it.mw}×${it.mh} m`;
+        const c = document.createElement('canvas');
+        c.width = c.height = 64;
+        const full = document.createElement('canvas');
+        full.width = I.width;
+        full.height = I.height;
+        full.getContext('2d').putImageData(I, 0, 0);
+        const k = Math.min(64 / I.width, 64 / I.height);
+        const x = c.getContext('2d');
+        x.imageSmoothingQuality = 'high';
+        x.drawImage(full, (64 - I.width * k) / 2, (64 - I.height * k) / 2, I.width * k, I.height * k);
+        const cap = document.createElement('span');
+        cap.textContent = `${it.name} ${it.mw}×${it.mh}`;
+        b.append(c, cap);
+        b.onclick = () => this.pickFloor(this.floorPick && this.floorPick.el === b ? null : { ...it, el: b });
+        grid.appendChild(b);
+        this.floorItems.push(it);
+      }
+    }
+    if (!this.floorItems.length) list.textContent = '이 맵에 받은 바닥 그림이 없습니다';
+    this.showFloor();
+  }
+
+  pickFloor(it) {
+    if (this.floorPick) this.floorPick.el.classList.remove('on');
+    this.floorPick = it;
+    if (it) {
+      it.el.classList.add('on');
+      this.selFloor = null;
+    }
+    this.showFloor();
+    this.status();
+  }
+
+  showFloor() {
+    if (!this.dom) return;
+    const f = this.selFloor;
+    this.dom.querySelector('.me-fsel').textContent = this.floorPick ? `깔 바닥: ${this.floorPick.name} (Esc 해제)` : f ? `선택: ${floorName(f)} — 끌어서 이동 · Del 삭제` : '바닥 그림을 고르거나 깔린 바닥을 클릭';
+  }
+
+  /** A floor's corner snapped: to whole metres (Shift: a twentieth). */
+  floorSnap(x, y) {
+    const k = this.shift ? 20 : 1;
+    return { x: Math.round(x * k) / k, y: Math.round(y * k) / k };
+  }
+
+  /** The added floor under world point (x, y): the top one (the zones' own floors are not the editor's). */
+  floorAt(x, y) {
+    return (this.world.padFloors || []).find((f) => f.added && x >= f.x0 && x < f.x1 && y >= f.y0 && y < f.y1) || null;
   }
 
   buildLightPanel() {
@@ -572,12 +654,20 @@ export class MapEditor {
   }
 
   setMode(m) {
-    if (this.zoneMap && (m === 'tile' || m === 'room')) return this.say('이 맵의 바닥·벽은 받은 그림이라 타일·방 모드가 없습니다');
+    if (this.zoneMap && (m === 'tile' || m === 'room')) return this.say('이 맵의 바닥·벽은 받은 그림이라 타일·방 모드가 없습니다 — 4 바닥 모드로 받은 바닥 그림을 깔 수 있음');
+    if (!this.zoneMap && m === 'floor') return;
     this.mode = m;
-    this.dom.querySelectorAll('.me-modes button').forEach((b) => b.classList.toggle('hidden', this.zoneMap && (b.dataset.mode === 'tile' || b.dataset.mode === 'room')));
+    const off = (b) => (this.zoneMap ? b === 'tile' || b === 'room' : b === 'floor');
+    this.dom.querySelectorAll('.me-modes button').forEach((b) => b.classList.toggle('hidden', off(b.dataset.mode)));
     this.drag = null;
     this.dom.querySelectorAll('.me-modes button').forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
-    for (const k of ['prop', 'brush', 'light', 'tile', 'room']) this.dom.querySelector('.me-' + k).classList.toggle('hidden', k !== m);
+    for (const k of ['prop', 'brush', 'light', 'tile', 'floor', 'room']) this.dom.querySelector('.me-' + k).classList.toggle('hidden', k !== m);
+    if (m === 'floor') this.buildFloorPanel();
+    if (m !== 'floor') {
+      if (this.floorPick) this.pickFloor(null);
+      this.selFloor = null;
+      this.showFloor();
+    }
     if (m === 'tile') this.setTile(this.tile);
     if (m !== 'room') this.addingRoom = false;
     this.showRoom();
@@ -610,6 +700,11 @@ export class MapEditor {
     if (this.mode === 'prop') {
       if (this.palette) t += ` · 배치: ${this.palette.sheet || this.palette.type}`;
       else if (p) t += ` · 선택: ${p.sheet || p.type} (${p.x.toFixed(2)}, ${p.y.toFixed(2)}) ${TIER_LABEL[tierOf(p)]}${p.block ? ' · 막음' : ''}`;
+    }
+    if (this.mode === 'floor') {
+      const f = this.selFloor;
+      if (this.floorPick) t += ` · 깔기: ${this.floorPick.name}`;
+      else if (f) t += ` · 선택: ${floorName(f)} (${f.x0}, ${f.y0})–(${f.x1}, ${f.y1})`;
     }
     if (this.mode === 'light' && this.selLight) t += ` · 조명 (${this.selLight.x.toFixed(2)}, ${this.selLight.y.toFixed(2)})`;
     if (this.mode === 'room') t += this.addingRoom ? ' · 새 방: 맵을 클릭' : this.selRoom ? ` · 방 ${this.world.floorPlan.indexOf(this.selRoom) + 1}: (${this.selRoom.x}, ${this.selRoom.y}) ${this.selRoom.hw * 2}×${this.selRoom.hh * 2}` : '';
@@ -1034,6 +1129,8 @@ export class MapEditor {
       biome: w.biome.slice(),
       rooms: w.floorPlan.slice(),
       rs: w.floorPlan.map((R) => ({ ...R })),
+      floors: w.padFloors ? w.padFloors.slice() : null,
+      fs: w.padFloors ? w.padFloors.map((f) => ({ ...f })) : null,
     };
   }
 
@@ -1049,13 +1146,21 @@ export class MapEditor {
     w.blocked.set(s.blocked);
     if (s.paint) w.paintLog = new Map(s.paint);
     const roomsNow = JSON.stringify(w.floorPlan);
+    const floorsNow = s.floors ? JSON.stringify(w.padFloors) : '';
+    if (s.floors) {
+      w.padFloors.length = 0;
+      w.padFloors.push(...s.floors);
+      s.floors.forEach((f, i) => Object.assign(f, s.fs[i]));
+      if (this.selFloor && !w.padFloors.includes(this.selFloor)) this.selFloor = null;
+      this.showFloor();
+    }
     w.floorPlan.length = 0;
     w.floorPlan.push(...s.rooms);
     s.rooms.forEach((R, i) => {
       for (const k of Object.keys(R)) delete R[k];
       Object.assign(R, s.rs[i]);
     });
-    if (s.biome.some((b, i) => b !== w.biome[i]) || JSON.stringify(w.floorPlan) !== roomsNow) {
+    if (s.biome.some((b, i) => b !== w.biome[i]) || JSON.stringify(w.floorPlan) !== roomsNow || (s.floors && JSON.stringify(w.padFloors) !== floorsNow)) {
       w.biome.set(s.biome);
       this.rebuildGround();
     }
@@ -1114,6 +1219,17 @@ export class MapEditor {
       this.selLight = null;
       this.showLight();
       return this.commit(before);
+    }
+    if (this.mode === 'floor') {
+      const f = this.selFloor;
+      if (!f) return;
+      const before = this.snapshot();
+      w.padFloors.splice(w.padFloors.indexOf(f), 1);
+      w.floorTiles(f);
+      this.selFloor = null;
+      this.rebuildGround();
+      this.commit(before);
+      return this.showFloor();
     }
     if (this.mode === 'room') {
       const R = this.selRoom;
@@ -1489,6 +1605,7 @@ export class MapEditor {
       case 'escape':
         if (this.addingRoom) ((this.addingRoom = false), this.showRoom(), this.status());
         else if (this.mode === 'room' && this.selRoom) ((this.selRoom = null), this.showRoom(), this.status());
+        else if (this.mode === 'floor' && (this.floorPick || this.selFloor)) this.floorPick ? this.pickFloor(null) : ((this.selFloor = null), this.showFloor());
         else if (this.palette) this.pickPalette(null);
         else if (this.sel) this.select(null);
         else if (this.selLight) ((this.selLight = null), this.showLight());
@@ -1529,7 +1646,7 @@ export class MapEditor {
         this.setMode('light');
         break;
       case '4':
-        this.setMode('tile');
+        this.setMode(this.zoneMap ? 'floor' : 'tile');
         break;
       case '5':
         this.setMode('room');
@@ -1573,7 +1690,8 @@ export class MapEditor {
     this.shift = e.shiftKey;
     const m = this.at(e.clientX, e.clientY);
     this.cursor = m;
-    const pan = e.button === 1 || (e.button === 2 && this.mode !== 'brush');
+    const pan = e.button === 1 || (e.button === 2 && this.mode !== 'brush' && !(this.mode === 'floor' && this.floorPick));
+    const w0 = this.world;
     if (this.mode === 'room' && !pan) {
       if (e.button !== 0) return;
       if (this.addingRoom) return this.addRoom(m.x, m.y);
@@ -1589,6 +1707,26 @@ export class MapEditor {
       this.status();
       if (R) this.drag = { room: R, w0: m, r0: { ...R }, before: this.snapshot(), moved: false };
       return;
+    }
+    if (this.mode === 'floor' && !pan) {
+      if (e.button === 2 && this.floorPick) return this.pickFloor(null);
+      if (e.button !== 0) return;
+      if (this.floorPick) {
+        const before = this.snapshot();
+        const { asset, tile, mw, mh } = this.floorPick;
+        const at = this.floorSnap(m.x - mw / 2, m.y - mh / 2);
+        const f = { kind: 'texturedRect', asset, tile, x0: at.x, y0: at.y, x1: at.x + mw, y1: at.y + mh, added: true };
+        w0.padFloors.splice(w0.groundFloorAt(), 0, f);
+        w0.floorTiles(f);
+        this.rebuildGround();
+        this.commit(before);
+        return this.status();
+      }
+      const f = this.floorAt(m.x, m.y);
+      this.selFloor = f;
+      this.showFloor();
+      if (f) this.drag = { floor: f, w0: m, x0: f.x0, y0: f.y0, before: this.snapshot(), moved: false };
+      return this.status();
     }
     if (this.mode === 'tile' && !pan) {
       if (e.button !== 0) return;
@@ -1671,6 +1809,13 @@ export class MapEditor {
       }
       return;
     }
+    if (d.floor) {
+      // (the outline follows; the floor itself is laid there when the button comes up — the ground is rebuilt once)
+      const at = this.floorSnap(d.x0 + m.x - d.w0.x, d.y0 + m.y - d.w0.y);
+      d.to = at;
+      d.moved = d.moved || at.x !== d.x0 || at.y !== d.y0;
+      return this.status();
+    }
     let dx = m.x - d.w0.x;
     let dy = m.y - d.w0.y;
     if (!this.shift) [dx, dy] = [snap(dx), snap(dy)]; // (by half tiles: a prop keeps its offset from the grid)
@@ -1726,6 +1871,17 @@ export class MapEditor {
       this.commit(d.before);
     }
     if (d.light && d.moved) this.commit(d.before);
+    if (d.floor && d.moved && d.to) {
+      const f = d.floor;
+      const was = { ...f };
+      const W = f.x1 - f.x0;
+      const H = f.y1 - f.y0;
+      Object.assign(f, { x0: d.to.x, y0: d.to.y, x1: d.to.x + W, y1: d.to.y + H });
+      this.world.floorTiles(was);
+      this.world.floorTiles(f);
+      this.rebuildGround();
+      this.commit(d.before);
+    }
     if (d.room && d.moved) {
       this.rebuildGround();
       this.commit(d.before);
@@ -1847,6 +2003,48 @@ export class MapEditor {
         ctx.lineWidth = 1;
         ctx.stroke();
         ctx.setLineDash([]);
+      }
+    } else if (this.mode === 'floor') {
+      const rectPath = (x0, y0, x1, y1) => {
+        ctx.beginPath();
+        [P(x0, y0), P(x1, y0), P(x1, y1), P(x0, y1)].forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+        ctx.closePath();
+      };
+      for (const f of w.padFloors || []) {
+        if (!f.added) continue;
+        const on = f === this.selFloor;
+        rectPath(f.x0, f.y0, f.x1, f.y1);
+        ctx.strokeStyle = on ? '#ffc446' : 'rgba(120,200,255,0.55)';
+        ctx.lineWidth = on ? 2 : 1;
+        ctx.stroke();
+      }
+      const d = this.drag;
+      if (d && d.floor && d.to) {
+        const f = d.floor;
+        rectPath(d.to.x, d.to.y, d.to.x + f.x1 - f.x0, d.to.y + f.y1 - f.y0);
+        ctx.fillStyle = 'rgba(255,196,70,0.16)';
+        ctx.fill();
+        ctx.strokeStyle = '#ffc446';
+        ctx.setLineDash([5, 4]);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      if (this.floorPick) {
+        const { mw, mh, name } = this.floorPick;
+        const at = this.floorSnap(m.x - mw / 2, m.y - mh / 2);
+        rectPath(at.x, at.y, at.x + mw, at.y + mh);
+        ctx.fillStyle = 'rgba(127,224,255,0.16)';
+        ctx.fill();
+        ctx.strokeStyle = '#7fe0ff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        const [lx, ly] = P(at.x + mw / 2, at.y + mh / 2);
+        ctx.fillStyle = '#e8f8ff';
+        ctx.font = '12px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${name} ${mw}×${mh} m`, lx, ly + 4);
+        ctx.textAlign = 'left';
       }
     } else if (this.mode === 'tile') {
       const n = this.brush.size;

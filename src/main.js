@@ -53,31 +53,40 @@ let bootFailed = false; // (set when the boot stops on an error: the loading scr
 // reference only, off the menu: '#duel-mustafar-legacy' (the film's facility) and '#duel-mustafar-art' (the painted
 // lava fortress)
 // A build made with VITE_MUSTAFAR_ONLY=1 (the artifact: npm run build:artifact) is the rebuilt Mustafar duel alone —
-// any address plays it, the menu offers nothing else, and it carries only the files that duel loads (CLAUDE.md)
+// any address plays it, the menu offers nothing else (but its blank map: '#duel-mustafar-blank'), and it carries only
+// the files that duel loads (CLAUDE.md)
 const MUSTAFAR_ONLY = import.meta.env.VITE_MUSTAFAR_ONLY === '1';
-const DUEL = MUSTAFAR_ONLY ? 'mustafar' : { '#duel': 'geonosis', '#duel-mustafar': 'mustafar', '#duel-mustafar-legacy': 'mustafarLegacy', '#duel-mustafar-art': 'mustafarArt' }[location.hash] || null;
+const DUEL = MUSTAFAR_ONLY
+  ? location.hash === '#duel-mustafar-blank'
+    ? 'mustafarBlank'
+    : 'mustafar'
+  : { '#duel': 'geonosis', '#duel-mustafar': 'mustafar', '#duel-mustafar-blank': 'mustafarBlank', '#duel-mustafar-legacy': 'mustafarLegacy', '#duel-mustafar-art': 'mustafarArt' }[location.hash] || null;
 const MODE = DUEL ? 'duel' : 'campaign';
 // the old Mustafar: the film's map, or the painted lava fortress (the same set, sprites and editor; its own map file)
 const MUSTAFAR = DUEL === 'mustafarLegacy' || DUEL === 'mustafarArt';
 const MAP_NAME = DUEL === 'mustafarArt' ? 'mustafar_art' : 'mustafar';
-// the rebuild's zone (world/mustafarStage.js; one zone in this step)
-const MUSTAFAR_V2 = DUEL === 'mustafar';
-const ZONES = ['stage01', 'stage02', 'stage03', 'stage04', 'stage05', 'stage06']; // (the film's places, in order: 03–06 in blockout)
+// the rebuild's zones (world/mustafarStage.js) — or its blank map (the lava alone: a map built by hand in the editor,
+// tools/maps/mustafar_v2/blank.py; no Obi-Wan, game/duelBlank.js)
+const BLANK = DUEL === 'mustafarBlank';
+const MUSTAFAR_V2 = DUEL === 'mustafar' || BLANK;
+const ZONES = BLANK ? ['blank'] : ['stage01', 'stage02', 'stage03', 'stage04', 'stage05', 'stage06']; // (the film's places, in order: 03–06 in blockout)
 setRemasterAllowed(MUSTAFAR || MUSTAFAR_V2); // the remastered graphics: the Mustafar duels only (gfx/remaster.js)
 window.addEventListener('hashchange', () => location.reload());
 
 const DUEL_TITLES = {
   geonosis: ['#duel', '지오노시스의 결투', 'MOVIE DUEL · EPISODE II — 지오노시스의 결투 · 두쿠 백작의 비밀 격납고', '지오노시스 격납고 준비 중…'],
   mustafar: ['#duel-mustafar', '무스타파의 결투', 'MOVIE DUEL · EPISODE III — 무스타파의 결투 · 재개발 중: STAGE 01 착륙장', '무스타파 착륙장 준비 중…'],
+  mustafarBlank: ['#duel-mustafar-blank', '무스타파 빈 맵 (맵 만들기)', 'MAP EDITOR · 무스타파 빈 맵 — 용암만 깔린 맵에 맵 에디터로 직접 짓기', '무스타파 빈 맵 준비 중…', '맵 만들기', '맵 만들기 시작'],
   mustafarLegacy: ['#duel-mustafar-legacy', '무스타파의 결투 (이전 버전)', 'MOVIE DUEL · EPISODE III — 무스타파의 결투 (이전 버전) · 아나킨 vs 오비완', '무스타파 채굴 시설 준비 중…'],
   mustafarArt: ['#duel-mustafar-art', '무스타파 용암 요새', 'MOVIE DUEL · EPISODE III — 무스타파 용암 요새 · 아나킨 vs 오비완', '용암 요새 준비 중…'],
 };
 const OFF_MENU = new Set(['mustafarLegacy', 'mustafarArt']); // (the old Mustafar maps: by their address only)
+const MUSTAFAR_MENU = new Set(['mustafar', 'mustafarBlank']); // (the Mustafar-only build's menu: the duel and its blank map)
 const duelMenu = (d) => {
-  const others = MUSTAFAR_ONLY ? [] : Object.keys(DUEL_TITLES).filter((k) => k !== d && !OFF_MENU.has(k));
+  const others = Object.keys(DUEL_TITLES).filter((k) => k !== d && !OFF_MENU.has(k) && (!MUSTAFAR_ONLY || MUSTAFAR_MENU.has(k)));
   return `
-  <button id="startBtn" class="tm-item sel" type="button"><span>결투 시작</span></button>
-  ${others.map((o) => `<a class="tm-item" href="${DUEL_TITLES[o][0]}"><span>다른 결투</span><small>${DUEL_TITLES[o][1]}</small></a>`).join('')}
+  <button id="startBtn" class="tm-item sel" type="button"><span>${DUEL_TITLES[d][5] || '결투 시작'}</span></button>
+  ${others.map((o) => `<a class="tm-item" href="${DUEL_TITLES[o][0]}"><span>${DUEL_TITLES[o][4] || '다른 결투'}</span><small>${DUEL_TITLES[o][1]}</small></a>`).join('')}
   ${MUSTAFAR_ONLY ? '' : '<a id="modeLink" class="tm-item" href="#campaign"><span>캠페인으로</span><small>크리스토프시스 외곽</small></a>'}
   <button id="controlsBtn" class="tm-item" type="button"><span>조작법</span></button>`;
 };
@@ -124,8 +133,9 @@ async function boot() {
     const cameras = zones.flatMap((z) => z.cameras || [z.camera]).sort((a, b) => area(a) - area(b));
     const zone = { ...zones[0], cameras, actors: Object.assign({}, ...zones.map((z) => z.actors)), river: zones.map((z) => z.river).find(Boolean) || null };
     // the map editor's edit kept in this browser (F2: world/mustafarStage.js toMap), when made from these very zones
-    setMapName('mustafar_v2_edit');
-    zone.edit = pickEdit(JSON.stringify(zones)).edit;
+    // (the blank map's own: its edit is the whole map, kept whatever later builds do to the empty zone file)
+    setMapName(BLANK ? 'mustafar_blank_edit' : 'mustafar_v2_edit');
+    zone.edit = pickEdit(BLANK ? 'mustafar-blank' : JSON.stringify(zones)).edit;
     if (zone.edit) console.info('무스타파 맵: 맵 에디터의 브라우저 저장본(배치)을 씁니다');
     for (const k of ['floor', 'walk', 'collision', 'structures', 'decor', 'lights', 'regions', 'triggers', 'blockout', 'surfaces', 'strips']) zone[k] = zones.flatMap((z) => z[k] || []);
     const man = await loadManifest('assets/mustafar/manifest.json');
@@ -133,7 +143,9 @@ async function boot() {
     zone.missingArt = [];
     // (and the river's craft: STAGE 05's moving decks, units the director makes — world/mustafarStage.js `river`)
     const craft = zone.river ? [zone.river.droid, zone.river.platform] : [];
-    const ids = new Set([...zone.floor, ...zone.structures, ...zone.decor, ...craft].map((e) => e.asset).filter(Boolean));
+    const ids = new Set([...zone.floor, ...zone.structures, ...zone.decor, ...craft, ...((zone.edit && zone.edit.floors) || [])].map((e) => e.asset).filter(Boolean));
+    // (the blank map: every delivered picture, for the editor's panels — the props, the walls, the floors)
+    if (BLANK) for (const e of man.raw.assets) if (e.status === 'delivered' && ['sprite', 'wallElevation', 'groundTiles'].includes(e.kind) && e.id !== 'mf.lava.surface') ids.add(e.id);
     for (const id of ids) {
       const a = await loadAsset(man, id);
       if (a.data) zone.art[id] = a.data;
@@ -345,6 +357,7 @@ async function boot() {
     audio.play('ignite');
     // let a user sound bank finish loading so the opening line can be voiced
     if (game.duel) game.duel.start();
+    if (BLANK && editor && !editor.on) editor.toggle(); // (the blank map is for building: straight into the editor)
     else Promise.race([audio.bankReady, new Promise((r) => setTimeout(r, 1500))]).then(() => game.say('intro'));
   };
 
