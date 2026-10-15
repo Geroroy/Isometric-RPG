@@ -51,7 +51,10 @@ const label = document.querySelector('#loading .label');
 // rebuilt (docs/MUSTAFAR_REBUILD.md): '#duel-mustafar' plays the rebuild's zones; the old maps stay reachable for
 // reference only, off the menu: '#duel-mustafar-legacy' (the film's facility) and '#duel-mustafar-art' (the painted
 // lava fortress)
-const DUEL = { '#duel': 'geonosis', '#duel-mustafar': 'mustafar', '#duel-mustafar-legacy': 'mustafarLegacy', '#duel-mustafar-art': 'mustafarArt' }[location.hash] || null;
+// A build made with VITE_MUSTAFAR_ONLY=1 (the artifact: npm run build:artifact) is the rebuilt Mustafar duel alone —
+// any address plays it, the menu offers nothing else, and it carries only the files that duel loads (CLAUDE.md)
+const MUSTAFAR_ONLY = import.meta.env.VITE_MUSTAFAR_ONLY === '1';
+const DUEL = MUSTAFAR_ONLY ? 'mustafar' : { '#duel': 'geonosis', '#duel-mustafar': 'mustafar', '#duel-mustafar-legacy': 'mustafarLegacy', '#duel-mustafar-art': 'mustafarArt' }[location.hash] || null;
 const MODE = DUEL ? 'duel' : 'campaign';
 // the old Mustafar: the film's map, or the painted lava fortress (the same set, sprites and editor; its own map file)
 const MUSTAFAR = DUEL === 'mustafarLegacy' || DUEL === 'mustafarArt';
@@ -70,11 +73,11 @@ const DUEL_TITLES = {
 };
 const OFF_MENU = new Set(['mustafarLegacy', 'mustafarArt']); // (the old Mustafar maps: by their address only)
 const duelMenu = (d) => {
-  const others = Object.keys(DUEL_TITLES).filter((k) => k !== d && !OFF_MENU.has(k));
+  const others = MUSTAFAR_ONLY ? [] : Object.keys(DUEL_TITLES).filter((k) => k !== d && !OFF_MENU.has(k));
   return `
   <button id="startBtn" class="tm-item sel" type="button"><span>결투 시작</span></button>
   ${others.map((o) => `<a class="tm-item" href="${DUEL_TITLES[o][0]}"><span>다른 결투</span><small>${DUEL_TITLES[o][1]}</small></a>`).join('')}
-  <a id="modeLink" class="tm-item" href="#campaign"><span>캠페인으로</span><small>크리스토프시스 외곽</small></a>
+  ${MUSTAFAR_ONLY ? '' : '<a id="modeLink" class="tm-item" href="#campaign"><span>캠페인으로</span><small>크리스토프시스 외곽</small></a>'}
   <button id="controlsBtn" class="tm-item" type="button"><span>조작법</span></button>`;
 };
 
@@ -94,7 +97,8 @@ async function boot() {
   let mustafarMirrors = []; // (the map's name~m sprites: made once the cargo is loaded too, below)
   // characters rendered in Blender: sprite sheet + frame JSON (after the bake
   // has been cached — the cache stores baked canvases only)
-  Object.assign(assets.sprites, await loadSheets(Object.keys(CHARACTERS), onProgress));
+  // (the rebuilt Mustafar duel has its own cast — Anakin's outfits, Obi-Wan, Padmé: below — and none of these)
+  if (!MUSTAFAR_V2) Object.assign(assets.sprites, await loadSheets(Object.keys(CHARACTERS), onProgress));
   // the Coruscant undercity's Blender-rendered buildings and street
   if (MODE === 'campaign') {
     assets.city = await loadCitySprites(onProgress);
