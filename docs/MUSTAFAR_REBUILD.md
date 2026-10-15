@@ -281,3 +281,9 @@
 남은 신규 에셋: `docs/asset_requests/chatgpt_film_pass1.md`(13종, 매니페스트 `requested`). 관찰 위치 다섯 곳의 이전/이후 화면:
 `docs/images/film_pass1/`. 시험: `tools/qa/mfstage01_story.mjs`(착륙장 → 복도 → 제어실 → 회의실 → 제어실, 새 순서),
 `tools/qa/mfroute.mjs`(A 파트별, B·C 복도 → 결말, D 옆 통로 왕복·문).
+
+검증·배포(영화 대조 1차): 빌드(`npm run build:artifact`, 번들 `index-DobnP6Fd.js`)를 엄격한 정적 서버에 띄워 `mfroute.mjs` A–D 106개
+통과, 무적 없이 착륙장 → 회의실 → 제어실 재방문까지 실제 플레이(클릭 공격·막기, 컷신 시청: 컷신마다 두 인물이 화면 안 — 처음 도착 장면의
+근접 컷 4%만 예외), WebGL 없는 실제 Chromium에서 시작·요청 누락 없음(407개). 이 플레이로 찾아 고친 것: 회의실 시작 위치가 의자 칸의
+경계에 걸려 아나킨이 움직이지 못함, 밀치기 뒤 추격 장면에서 한 명이 화면 밖(12%). 공개 아티팩트 v104(`1792052446-8c33`).
+요청 그림의 배치·`replacedBy`(커밋 2be3bc7)는 그림이 올 때까지 화면에 변화가 없어 이 배포에 포함하지 않았다.
