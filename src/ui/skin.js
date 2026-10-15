@@ -163,7 +163,8 @@ const AURE = { pilot: 'PILOT', comms: 'COMMS', scan: 'SCANNER', vitals: 'VITAL S
 export function applySkin() {
   const root = document.documentElement.style;
   // the console pieces rendered in Blender (tools/ui/render_ui.py)
-  for (const n of ['frame', 'bezel', 'gauge', 'key_off', 'key_down', 'key_on']) root.setProperty(`--ui-${n.replace('_', '-')}`, `url(${import.meta.env.BASE_URL}ui/${n}.png)`);
+  // (absolute: a relative url() in a custom property resolves against the stylesheet that uses it — assets/ in a build)
+  for (const n of ['frame', 'bezel', 'gauge', 'key_off', 'key_down', 'key_on']) root.setProperty(`--ui-${n.replace('_', '-')}`, `url(${new URL(import.meta.env.BASE_URL + `ui/${n}.png`, location.href).href})`);
   for (const [k, t] of Object.entries(AURE)) root.setProperty(`--aure-${k}`, `url(${aurebesh(t)})`);
   root.setProperty('--aure-gold', `url(${aurebesh('REPUBLIC', 'rgba(240,168,60,0.8)')})`);
   root.setProperty('--tex-hull', `url(${hull()})`);
