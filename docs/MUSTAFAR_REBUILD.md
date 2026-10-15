@@ -209,3 +209,19 @@
 - 아티팩트: 파일 수 한도(511) 때문에 메뉴에 없는 옛 무스타파 맵(`#duel-mustafar-legacy`)의 맵 파일·스프라이트(`maps/mustafar.json`,
   `sprites/mustafar/*` 중 화물 상자 빼고)와 쓰지 않는 옛 `lava_tile.png`은 올리지 않는다(저장소·개발 서버에는 그대로). 올리는 파일
   집합만으로 띄워 재개발 결투·허브에서 실패한 요청 0을 확인. 
+
+## WebGL을 쓸 수 없는 브라우저 (실행 호환성)
+
+- 원인: 결투 시작 때 `bakeDuelAssets('mustafar')`가 옛 결투의 강 탈것 모델(`collector`, `platform` — 시트가 없음)을
+  three.js로 구웠다 → `new Baker()`의 `THREE.WebGLRenderer`가 WebGL 없는 브라우저(정책·원격 브라우저 등)에서 던지고 로딩이 멈춤.
+  재개발 결투는 강 탈것을 받은 그림(`mf.river.*`)으로 그려 그 구운 모델을 쓰지 않았다.
+- 고침: 재개발 결투는 쓰는 배역만 요청(`bakeDuelAssets(…, ['obiwan3','obiwan3Robe','padme'])` — 모두 배포된 Blender 시트) →
+  런타임 굽기 없음. 굽기 전 WebGL 확인(`assets.js` `webglAvailable`/`newBaker`): 없으면 three.js의 막연한 오류 대신 필요한
+  미리 구운 파일과 이유를 보여 주고 멈춤(`assetCache.js` `shippedProblem`: 파일 없음·해시 불일치 등). 오류는 로딩 화면에
+  남는다(병렬 로딩의 진행 문구가 덮지 않음). 렌더러는 원래 Canvas 2D, WebGL 후처리(`post.js`: 색 보정·블룸·비네트·그레인)는
+  컨텍스트가 없으면 스스로 꺼지는 선택 효과.
+- 배포에 들어가는 미리 렌더된 것: 아나킨 시트 3벌(`sprites/anakin_vader|robe|tunic_128`), 오비완·로브·파드메 시트
+  (`sprites/chars/`), 구운 묶음 `sprites/baked/core`(해시가 코드와 맞아야 쓰임 — `gfx/assetCache.js` SOURCE_HASH 대상 코드를
+  고치면 `npm run bake`), 무스타파 외부 그림 전부.
+- 확인 도구: `tools/qa/nowebgl.mjs`(3D API를 끈 실제 Chromium, 새 프로필; `mock`은 WebGL은 켠 채 getContext('webgl')만 null),
+  `NOWEBGL=1 node tools/qa/mfroute.mjs`, `NOWEBGL=1 node tools/qa/artifact_files.mjs`.

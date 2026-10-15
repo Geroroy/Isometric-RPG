@@ -110,12 +110,17 @@ const BAKED = 'sprites/baked/';
  * bake on its first launch or after an update. Used only while its hash
  * matches the current sources; `?bake` skips it (that's how the tool makes it).
  */
+// why a shipped bundle could not be used, by name (the error a browser without WebGL shows: assets.js newBaker)
+const PROBLEM = {};
+export const shippedProblem = (name) => `${BAKED}${name}.json — ${PROBLEM[name] || '확인 전'}`;
+
 export async function loadShipped(name) {
-  if (/[?&]bake\b/.test(location.search)) return null;
+  if (/[?&]bake\b/.test(location.search)) return (PROBLEM[name] = '?bake 로 무시함'), null;
   try {
-    const meta = await cachedJSON(import.meta.env.BASE_URL + BAKED + name + '.json').catch(() => null);
+    const meta = await cachedJSON(import.meta.env.BASE_URL + BAKED + name + '.json').catch((e) => ((PROBLEM[name] = '파일 없음 (' + e.message + ')'), null));
     if (!meta) return null;
     if (meta.hash !== SOURCE_HASH) {
+      PROBLEM[name] = `코드와 맞지 않음 (해시 ${meta.hash} ≠ ${SOURCE_HASH}: npm run bake 로 다시 구워야 함)`;
       console.warn(`sprite cache: shipped '${name}' bundle is stale (${meta.hash} ≠ ${SOURCE_HASH}) — run tools/bake_core.mjs`);
       return null;
     }
@@ -124,6 +129,7 @@ export async function loadShipped(name) {
     );
     return decode(meta.json, pages);
   } catch (e) {
+    PROBLEM[name] = '읽지 못함 (' + e.message + ')';
     console.warn('sprite cache: shipped bundle failed', e);
     return null;
   }

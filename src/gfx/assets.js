@@ -4,12 +4,35 @@ import { Baker } from './baker.js';
 import { PROPS, buildPropVariants, buildLaat } from './models/props.js';
 import { CHARACTERS, DUELS, SKINS, DUEL_CHARACTERS } from './specs.js';
 import { RNG } from '../core/math.js';
-import { loadBundle, saveBundle, loadShipped } from './assetCache.js';
+import { loadBundle, saveBundle, loadShipped, shippedProblem } from './assetCache.js';
 import { sheetIndex, loadSheets } from './sheet.js';
 
 export { CHARACTERS, DUELS, DUEL_CHARACTERS, SKINS } from './specs.js';
 
 const nextFrame = () => new Promise((r) => setTimeout(r, 0));
+
+// Baking renders models through three.js, which needs WebGL. Some browsers have none (blocked by policy, a remote or
+// sandboxed browser, no GPU): there the game runs from what is shipped pre-rendered — the Blender sheets
+// (sprites/chars, sprites/anakin_*) and the baked bundle (sprites/baked/core) — and never bakes. Asked to bake there,
+// it stops with what is missing instead of three.js's bare "Error creating WebGL context".
+let WEBGL = null;
+export function webglAvailable() {
+  if (WEBGL === null) {
+    try {
+      const c = document.createElement('canvas');
+      const gl = c.getContext('webgl2') || c.getContext('webgl');
+      WEBGL = !!gl;
+      if (gl) gl.getExtension('WEBGL_lose_context')?.loseContext(); // (the probe's context given back at once)
+    } catch {
+      WEBGL = false;
+    }
+  }
+  return WEBGL;
+}
+function newBaker(what) {
+  if (!webglAvailable()) throw new Error(`이 브라우저는 WebGL을 쓸 수 없어 스프라이트를 구울 수 없음 — 미리 구운 파일이 필요함: ${what}`);
+  return new Baker();
+}
 
 function progress(onProgress, total) {
   let done = 0;
@@ -54,7 +77,7 @@ export async function bakeAssets(onProgress) {
     onProgress(1, '스프라이트 불러옴');
     return shipped;
   }
-  const baker = new Baker();
+  const baker = newBaker(`${shippedProblem('core')}`);
   // characters with a Blender sprite sheet are loaded instead (main.js), not baked
   const idx = await sheetIndex();
   const specs = Object.fromEntries(Object.entries(CHARACTERS).filter(([k]) => !idx[k]).map(([k, f]) => [k, f()]));
@@ -87,16 +110,20 @@ export async function bakeAssets(onProgress) {
   return assets;
 }
 
-/** Sprites for one Movie Duel, baked on demand. */
-export async function bakeDuelAssets(onProgress, duel = 'geonosis') {
+/**
+ * Sprites for one Movie Duel, baked on demand. `names`: the part of the duel's cast this game needs (all of it when
+ * left out) — the rebuilt Mustafar duel draws the river's craft from its delivered pictures, not the baked models.
+ */
+export async function bakeDuelAssets(onProgress, duel = 'geonosis', names = null) {
   const key = duel === 'geonosis' ? 'duel' : 'duel-' + duel;
+  const cast = Object.entries(DUELS[duel]).filter(([k]) => !names || names.includes(k));
   // the cast with a Blender sprite sheet loads it; the rest is baked (and cached)
-  const sheets = await loadSheets(Object.keys(DUELS[duel]), onProgress);
-  const rest = Object.entries(DUELS[duel]).filter(([k]) => !sheets[k]);
+  const sheets = await loadSheets(cast.map(([k]) => k), onProgress);
+  const rest = cast.filter(([k]) => !sheets[k]);
   if (!rest.length) return { sprites: sheets };
   const cached = await loadBundle(key);
-  if (cached) return { sprites: { ...cached.sprites, ...sheets } };
-  const baker = new Baker();
+  if (cached && rest.every(([k]) => cached.sprites[k])) return { sprites: { ...cached.sprites, ...sheets } };
+  const baker = newBaker(rest.map(([k]) => `sprites/chars/${k}_*.json (시트 없음)`).join(', '));
   const specs = Object.fromEntries(rest.map(([k, f]) => [k, f()]));
   const tick = progress(onProgress, frameCost(specs));
   const sprites = await bakeCharacters(baker, specs, tick);
@@ -111,7 +138,7 @@ export async function bakeSkin(name, onProgress) {
   if (sheet) return sheet;
   const cached = await loadBundle(name);
   if (cached) return cached.sprites[name];
-  const baker = new Baker();
+  const baker = newBaker(`sprites/${name}_*.json (시트 없음)`);
   const specs = { [name]: SKINS[name]() };
   const sprites = await bakeCharacters(baker, specs, progress(onProgress, frameCost(specs)));
   saveBundle(name, { sprites });
@@ -128,7 +155,7 @@ export async function bakeSkin(name, onProgress) {
 export async function bakeCharacter(name, onProgress, only = null) {
   const make = CHARACTERS[name] || SKINS[name] || DUEL_CHARACTERS[name];
   if (!make) throw new Error('no character ' + name);
-  const baker = new Baker();
+  const baker = newBaker(name);
   const spec = make();
   if (only) spec.anims = Object.fromEntries(Object.entries(spec.anims).filter(([k]) => only.includes(k)));
   const specs = { [name]: spec };

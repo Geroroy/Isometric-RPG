@@ -46,6 +46,7 @@ applySkin();
 const loading = document.getElementById('loading');
 const bar = document.querySelector('#loading .bar div');
 const label = document.querySelector('#loading .label');
+let bootFailed = false; // (set when the boot stops on an error: the loading screen keeps showing it)
 
 // '#duel' / '#duel-mustafar' select a Movie Duel (a hash works on any host); switching reloads. Mustafar is being
 // rebuilt (docs/MUSTAFAR_REBUILD.md): '#duel-mustafar' plays the rebuild's zones; the old maps stay reachable for
@@ -89,6 +90,7 @@ async function boot() {
     document.body.classList.add('duel');
   }
   const onProgress = (k, text) => {
+    if (bootFailed) return; // (loads still running in parallel must not write over the error that stopped the boot)
     bar.style.width = Math.round(k * 100) + '%';
     label.textContent = text;
   };
@@ -106,7 +108,9 @@ async function boot() {
     setFloorTexture(assets.city.floor);
     setGroundTextures(assets.city.ground);
   }
-  if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, MUSTAFAR || MUSTAFAR_V2 ? 'mustafar' : DUEL)).sprites);
+  // (the rebuild's cast: Obi-Wan and Padmé, all shipped as sheets — its river craft are delivered pictures, not the
+  // old duel's baked models: nothing to bake, so it starts in a browser without WebGL too)
+  if (MODE === 'duel') Object.assign(assets.sprites, (await bakeDuelAssets(onProgress, MUSTAFAR || MUSTAFAR_V2 ? 'mustafar' : DUEL, MUSTAFAR_V2 ? ['obiwan3', 'obiwan3Robe', 'padme'] : null)).sprites);
   // Mustafar: Anakin in the campaign's own Blender outfits — the cloak with the hood up, hood down, the tunic
   if (MUSTAFAR || MUSTAFAR_V2) Object.assign(assets.sprites, await loadSheets(['anakin_vader', 'anakin_robe', 'anakin_tunic'], onProgress));
   // the rebuild: its zone file and the external art it names (public/assets/mustafar/manifest.json, docs/ASSETS.md) —
@@ -427,5 +431,6 @@ serviceWorkerReady()
   .then(boot)
   .catch((err) => {
     console.error(err);
+    bootFailed = true;
     label.textContent = '오류: ' + err.message;
   });

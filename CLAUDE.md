@@ -169,6 +169,11 @@
   404를 돌려주는 정적 서버 `python3 -m http.server`로 — `vite preview`는 없는 파일에도 200 HTML을 돌려줘 누락을 숨긴다),
   `assets/mustafar/`·`maps/mustafar_v2/`·해시 번들·오디오 전부를 더한다. 저장소의 다른 모드·파일은 그대로 둔다.
   이 빌드에는 캠페인이 없으므로 `tools/qa/smoke.mjs` 대신 `tools/qa/mfroute.mjs`(그 파일 집합만 띄운 서버에서)로 확인한다.
+  올릴 폴더는 `python3 tools/qa/artifact_set.py <빌드> <요청 목록.json> <폴더>`.
+- **WebGL 없는 브라우저에서도 돌아야 한다**: 무스타파 결투는 런타임에 three.js로 굽지 않는다(배포된 시트·구운 묶음만).
+  업로드 전 `node tools/qa/nowebgl.mjs <url>`(3D API를 끈 실제 브라우저)와 `NOWEBGL=1 node tools/qa/mfroute.mjs`로 확인한다.
+  `gfx/assetCache.js` SOURCE_HASH 대상(모델·애니·베이커·`gfx/assets.js`…)을 고치면 `npm run bake`로 `sprites/baked/core`를
+  다시 굽는다 — 안 그러면 WebGL 없는 브라우저는 시작하지 못한다(로딩 화면이 그 파일과 이유를 보여 줌).
 - **아티팩트(게임 빌드)를 올리기 전에 반드시 직접 게임을 플레이해서 확인하고, 이상한 부분을 다듬은 뒤 올린다.**
   정지 스크린샷만으로 끝내지 않는다: 움직이는 것(유닛·이펙트·교통 등)은 여러 프레임을 연속으로 캡처해 움직임을 보고
   (갑자기 나타나거나 사라짐, 떨림·지그재그, 방향과 스프라이트가 안 맞음, 깨진 스프라이트, 다른 그래픽과 어울리지 않는 질감),

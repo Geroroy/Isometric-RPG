@@ -9,7 +9,7 @@ import fs from 'fs'; import path from 'path';
 const base = process.argv[2] || 'http://127.0.0.1:5182/';
 const out = process.argv[3] || 'tools/qa/out/artifact_files.json';
 const chrome = fs.readdirSync('/opt/pw-browsers').map((d) => path.join('/opt/pw-browsers', d, 'chrome-linux', 'chrome')).find((p) => fs.existsSync(p));
-const browser = await chromium.launch({ executablePath: chrome, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
+const browser = await chromium.launch({ executablePath: chrome, args: process.env.NOWEBGL === '1' ? ['--disable-3d-apis', '--disable-webgl', '--disable-webgl2', '--disable-gpu', '--autoplay-policy=no-user-gesture-required'] : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
 const seen = new Set(); const bad = [];
 const origin = new URL(base).origin;
 async function run(q, steps) {

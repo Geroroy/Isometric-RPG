@@ -9,6 +9,7 @@
 //   C  the chain from the control room with every scene skipped (Esc): the same state as watched
 //   D  elevation and doors: the gallery's steps (the rail blocks, the steps lead up, z 0.6), the high ground's slope
 //      (up to 1.4 m), the conference room's west door shut until its scene, the balcony doorway open
+// NOWEBGL=1: in a Chromium with its 3D APIs off (no WebGL: the game's no-WebGL path — tools/qa/nowebgl.mjs).
 // Prints a table per part and ok/FAIL lines; frames in out_dir; exits 1 on a failure.
 //     node tools/qa/mfroute.mjs [base_url] [out_dir] [sections, e.g. ABCD]
 import { chromium } from 'playwright-core';
@@ -20,7 +21,7 @@ const out = process.argv[3] || 'tools/qa/out/mfroute';
 const sections = process.argv[4] || 'ABCD';
 fs.mkdirSync(out, { recursive: true });
 const chrome = fs.readdirSync('/opt/pw-browsers').map((d) => path.join('/opt/pw-browsers', d, 'chrome-linux', 'chrome')).find((p) => fs.existsSync(p));
-const browser = await chromium.launch({ executablePath: chrome, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
+const browser = await chromium.launch({ executablePath: chrome, args: process.env.NOWEBGL === '1' ? ['--disable-3d-apis', '--disable-webgl', '--disable-webgl2', '--disable-gpu', '--autoplay-policy=no-user-gesture-required'] : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
 let ok = true;
 const check = (name, pass, info = '') => {
   if (!pass) ok = false;
