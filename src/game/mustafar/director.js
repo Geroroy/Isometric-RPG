@@ -51,10 +51,11 @@ const CORRIDOR = { floor: 0.84, time: 30 };
 // STAGE 02's: the conference room (the film's 1:02 – 1:22), then both reach for the Force at once
 const ROOM = { floor: 0.76, time: 28 };
 // How long a fight lasts when Anakin presses him the whole time: a part's stretch of Obi-Wan's bar (its floor up from the
-// last part's) is sized so that a player attacking non-stop (REF_DPS, measured: about 50 a second with clicks on him and
-// the guard when he swings) needs PRESS_SHARE of the part's time to bring him to the mark. With the bar as it was, every
+// last part's) is sized so that a player attacking non-stop (REF_DPS, measured: about 65 a second with clicks on him and
+// the guard when he swings, his broken guard and staggers included) needs PRESS_SHARE of the part's time to bring him to
+// the mark. With the bar as it was, every
 // part ended in 2–8 s and the whole duel had under a minute of fighting between its scenes. (Lava hurts his guard only.)
-const REF_DPS = 50;
+const REF_DPS = 65;
 const PRESS_SHARE = 0.6;
 
 /**
