@@ -1,14 +1,15 @@
 // The Mustafar rebuild's STAGE 03–06 (docs/MUSTAFAR_REBUILD.md): the rest of the film's duel on the route laid out in
 // BLOCKOUT (grey boxes: tools/maps/mustafar_v2/stage03..06.py). Methods of the director (director.js mixes them in):
-// its parts here continue its own (pad → corridor → room), with the same rules — Obi-Wan's health held at each part's
+// its parts here continue its own (pad → corridor → control → room → control2), with the same rules — Obi-Wan's health held at each part's
 // mark, the part ending at the mark or its time, a scene taking the fight on. The scenes are the old Mustafar duel's
 // (duelMustafar.js: the console cut, the lava rain, the cables, the pipe, the arm, "I have failed you", the tower, the
 // arm adrift, the decks, the high ground and the ending), staged here on this route's places (the zones' `actors`,
 // the river's data) instead of the old map's.
 //
-//   STAGE 03  control    out of the conference room and through the passage; the fight among the holo-tables, the
-//                        gallery's steps — at the mark Anakin's cut opens the shield generator, the alarm; out the
-//                        balcony door
+//   STAGE 03  control2   after the push, back out of the conference room, down the side passage and the corridor into
+//                        the control room again (the same room the fight passed through before the conference room);
+//                        the fight among the consoles — at the mark Anakin's cut opens the shield generator, the alarm;
+//                        out the balcony door
 //   STAGE 04  balcony    the terrace and the catwalk over the lava falls; the shields fail —
 //             rain       lava rains onto the catwalk (a hazard); it gives way: the cables over the lava —
 //             pipe       down onto the service pipe, inching along it; a leap —
@@ -27,7 +28,6 @@ const say = (t, who, text, d) => ({ t, say: [SPEAKERS[who], text, d] });
 
 /** STAGE 03–06's playable parts (director.js FIGHTS: the same fields; `footing`, `bombs`, `rain`: the place's hazards). */
 export const ROUTE_FIGHTS = {
-  control: { stage: 3, floor: 0.64, time: 40, next: 'toConsole', score: 'mustafarA' },
   balcony: { stage: 4, floor: 0.56, time: 26, next: 'toBlast', score: 'mustafarA' },
   rain: { stage: 4, floor: 0.5, time: 24, next: 'toCollapse', score: 'mustafarA', rain: true },
   pipe: { stage: 4, floor: 0.46, time: 18, next: 'toArm', score: 'mustafarB', footing: true },
@@ -38,7 +38,7 @@ export const ROUTE_FIGHTS = {
 };
 
 /** Cues walking `u` through `pts` from cue time `t0` at `speed` m/s; returns [cues, the time it arrives]. */
-function walk(u, pts, t0, speed, anim = 'walk') {
+export function walk(u, pts, t0, speed, anim = 'walk') {
   const cues = [];
   let t = t0;
   let at = { x: u.x, y: u.y };
@@ -49,6 +49,22 @@ function walk(u, pts, t0, speed, anim = 'walk') {
     t += d;
   }
   return [cues, t];
+}
+
+/**
+ * walk() along a route through the building (`nodes`: doorways, the corridor's line) from where `u` is: from the node
+ * nearest it, or the next one when it already stands between the two (a scene takes the fight on from wherever it is).
+ */
+export function walkRoute(u, nodes, t0, speed, anim = 'walk') {
+  let i = 0;
+  let bd = Infinity;
+  nodes.forEach((q, k) => {
+    const d = dist(u.x, u.y, q.x, q.y);
+    if (d < bd) (bd = d), (i = k);
+  });
+  const n = nodes[i + 1];
+  if (n && dist(u.x, u.y, n.x, n.y) < dist(nodes[i].x, nodes[i].y, n.x, n.y)) i++;
+  return walk(u, nodes.slice(i), t0, speed, anim);
 }
 
 export const ROUTE = {
@@ -165,39 +181,30 @@ export const ROUTE = {
 
   // --- STAGE 03: the control room ----------------------------------------------------------------------------------
 
-  /** After the push: Obi-Wan is up first and away through the room's west door; Anakin after him into the control room. */
-  toControl() {
+  /**
+   * After the push: Obi-Wan is up first and away out of the conference room's door, down the side passage and the
+   * corridor into the control room (the one they fought through before: not a second copy of it); Anakin after him.
+   */
+  toControl2() {
     const g = this.game;
     const p = g.player;
     const ob = this.foe;
     const A = this.at;
-    this.part = 'toControl';
+    this.part = 'toControl2';
     this.hold();
     ob.set('circle', 99);
-    const W = A.confWestDoor;
-    const J = { x: 41.6, y: 98 }; // (the passage)
-    const [obC, obT] = walk(ob, [{ x: W.x + 0.8, y: W.y + 0.6 }, W, J, A.ctlObiwan], 0.3, 4.2);
-    const [pC, pT] = walk(p, [{ x: 48.5, y: 101.4 }, { x: W.x + 0.2, y: W.y + 0.3 }, { x: J.x, y: J.y + 0.2 }, A.ctlAnakin], 1.1, 4.6, 'run');
+    const way = [{ x: 55.8, y: 88.4 }, A.confDoor, A.sideTop, A.sideBottom, { x: 58.6, y: 97.8 }, { x: 50, y: 98 }, A.ctlEntry];
+    const [obC, obT] = walkRoute(ob, [...way, A.ctlObiwan], 0.3, 5.0, 'run');
+    const [pC, pT] = walkRoute(p, [{ x: 51, y: 89.6 }, ...way, A.ctlAnakin], 1.4, 5.2, 'run');
     const end = Math.max(obT, pT);
     const cues = [
-      { t: 0, do: () => (this.openConfWest(), g.audio.play('click'), g.fx.dust(W.x - 0.6, W.y, 5)), cam: { follow: p, zoom: 1.25, dur: 0.8 } },
+      { t: 0, cam: { follow: p, zoom: 1.25, dur: 0.8 } },
       ...obC,
       ...pC,
       { t: obT - 0.6, do: () => this.card('제어실') },
       { t: end, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
     ];
-    return new Cinema(g, { length: end + 0.4, cues }).play().then(() => this.enterPart('control'));
-  },
-
-  /** The conference room's west door opens: its way through, and its wall picture with the door open (when delivered). */
-  openConfWest() {
-    const w = this.game.world;
-    w.open('confWestDoor');
-    const open = w.named.confWestDoorOpen;
-    if (open) {
-      open.hidden = false;
-      if (w.named.confWestWall) w.named.confWestWall.hidden = true;
-    }
+    return new Cinema(g, { length: end + 0.4, cues }).play().then(() => this.enterPart('control2'));
   },
 
   /** The film's 2:28: Anakin's cut opens the shield generator (the alarm: the shields begin to fail); out onto the balcony. */
@@ -841,11 +848,10 @@ export const ROUTE = {
     ob.hidden = false;
     this.padme.hidden = false;
     this.padme.setAnim('down');
-    if (past('room')) {
+    if (past('corridor')) {
       if (w.named.facilityDoor) w.named.facilityDoor.hidden = true;
       w.open('facilityDoor');
     }
-    if (past('control')) this.openConfWest();
     if (past('balcony')) this.openBalcony(), this.alarmOn();
     if (past('pipe')) this.collapseCatwalk();
     if (past('raft')) this.dropArm();
@@ -853,9 +859,10 @@ export const ROUTE = {
     const Ar = A.arm;
     const START = {
       pad: [A.anakin, A.obiwan],
-      corridor: [{ x: 72.5, y: 98.3 }, { x: 69.5, y: 98 }],
-      room: [A.roomAnakin, A.roomObiwan],
+      corridor: [A.corrAnakin, A.corrObiwan],
       control: [A.ctlAnakin, A.ctlObiwan],
+      room: [A.roomAnakin, A.roomObiwan],
+      control2: [A.ctlAnakin, A.ctlObiwan],
       balcony: [A.terraceAnakin, A.terraceObiwan],
       rain: [{ x: 48, y: 109.2 }, { x: 51, y: 108.8 }],
       pipe: [{ x: P.x, y: P.y0 + 4 }, { x: P.x, y: P.y0 + 8 }],

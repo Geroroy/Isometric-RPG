@@ -10,25 +10,30 @@
 //   choke       the old duel's opening on the film's audio: the Force grip, Padmé collapses, the confrontation, robes
 //               off, both ignite (MustafarDuel.intro)
 //   the pad     the playable duel against the existing Obi-Wan AI, his health held at the pad's mark
-//   corridor    at the mark (or the film's 0:34) the two fight their way into the facility corridor; the fight goes on
-//               inside it
-// STAGE 02 — the Separatist conference room:
-//   the door    at the corridor's far door (or its mark, or its time) the facility door opens and they fight into the room
-//   the room    the duel round the council's table, his health held at the room's mark
-//   the push    at the mark (or the room's time) both reach for the Force at once and are thrown apart
-// STAGE 03–06 (BLOCKOUT — grey boxes, the art not requested yet): the control room, the walkway and the lava collector,
-// the river's moving decks, the high ground and the film's ending — their parts and scenes are in ./route.js.
+// The film's order indoors (docs/MUSTAFAR_REBUILD.md "영화 대조 1차": pad → corridor → control room → conference room;
+// the zones' ids are the order they were built in, not the film's — STAGES below lists them in the film's):
+//   the door    at the mark (or the film's 0:34) the two fight across the connecting deck (STAGE 01) to the facility
+//               door; it opens and they fight into the interior corridor (STAGE 03)
+//   corridor    the fight in the corridor, to the control room's entry (or its mark, or its time)
+//   control     STAGE 03 — the control room, among the consoles
+//   the room    STAGE 02 — Obi-Wan breaks away down the corridor and up the side passage into the conference room;
+//               the duel round the council's table, his health held at the room's mark
+//   the push    at the mark (or the room's time) both reach for the Force at once and are thrown apart; then back
+//               into the control room (the same room: route.js toControl2) — the shield generator's cut, the balcony
+// STAGE 04–06 (BLOCKOUT — grey boxes, the art not requested yet): the walkway and the lava collector, the river's moving
+// decks, the high ground and the film's ending — their parts and scenes are in ./route.js.
 import { Duel, Extra } from '../duel.js';
 import { MustafarDuel, ObiWan } from '../duelMustafar.js';
 import { Cinema } from '../cinema.js';
-import { ROUTE, ROUTE_FIGHTS } from './route.js';
+import { ROUTE, ROUTE_FIGHTS, walkRoute } from './route.js';
 import { BIOME } from '../../world/biome.js';
+import { dist } from '../../core/math.js';
 
-/** The film's places, in order (each its zone file, public/maps/mustafar_v2/<zone>.json). */
+/** The film's places, in the film's order (each its zone file, public/maps/mustafar_v2/<zone>.json: ids in build order). */
 export const STAGES = [
   { id: 'stage01', zone: 'stage01', title: '무스타파 · 착륙장' },
+  { id: 'stage03', zone: 'stage03', title: '무스타파 · 입구 복도 · 제어실' },
   { id: 'stage02', zone: 'stage02', title: '무스타파 · 분리주의 회의실' },
-  { id: 'stage03', zone: 'stage03', title: '무스타파 · 제어실', blockout: true },
   { id: 'stage04', zone: 'stage04', title: '무스타파 · 산업 보행로 · 용암 집하 시설', blockout: true },
   { id: 'stage05', zone: 'stage05', title: '무스타파 · 용암 강 · 이동 플랫폼', blockout: true },
   { id: 'stage06', zone: 'stage06', title: '무스타파 · 고지대', blockout: true },
@@ -46,11 +51,14 @@ const LINES = {
 const SPEAKERS = { anakin: '아나킨', obiwan: '오비완', padme: '파드메' };
 const say = (t, who, text, d) => ({ t, say: [SPEAKERS[who], text, d] });
 
-// STAGE 01's marks on Obi-Wan's health (the pad, then the corridor), and when the film moves on regardless (s)
+// The marks on Obi-Wan's health (the pad, the corridor, the control room, the conference room, the control room again),
+// and when the film moves on regardless (s)
 const PAD = { floor: 0.9, filmT: 34 };
 const CORRIDOR = { floor: 0.84, time: 30 };
-// STAGE 02's: the conference room (the film's 1:02 – 1:22), then both reach for the Force at once
-const ROOM = { floor: 0.76, time: 28 };
+const CONTROL = { floor: 0.76, time: 30 };
+// the conference room, then both reach for the Force at once
+const ROOM = { floor: 0.64, time: 36 };
+const CONTROL2 = { floor: 0.6, time: 18 }; // (back in the control room: to the shield generator's cut)
 // How long a fight lasts when Anakin presses him the whole time: a part's stretch of Obi-Wan's bar (its floor up from the
 // last part's) is sized so that a player attacking non-stop (REF_DPS, measured: about 65 a second with clicks on him and
 // the guard when he swings, his broken guard and staggers included) needs PRESS_SHARE of the part's time to bring him to
@@ -70,8 +78,10 @@ const PRESS_SHARE = 0.6;
  */
 const FIGHTS = {
   pad: { stage: 1, floor: PAD.floor, time: PAD.filmT, next: 'toCorridor', score: 'mustafarA' },
-  corridor: { stage: 1, floor: CORRIDOR.floor, time: CORRIDOR.time, next: 'toRoom', score: 'mustafarA', reach: (d) => d.game.player.x < d.at.door.x + 0.5 },
+  corridor: { stage: 3, floor: CORRIDOR.floor, time: CORRIDOR.time, next: 'toControl', score: 'mustafarA', reach: (d) => d.game.player.x < d.at.ctlEntry.x + 1 },
+  control: { stage: 3, floor: CONTROL.floor, time: CONTROL.time, next: 'toRoom', score: 'mustafarA' },
   room: { stage: 2, floor: ROOM.floor, time: ROOM.time, next: 'toPush', score: 'mustafarA' },
+  control2: { stage: 3, floor: CONTROL2.floor, time: CONTROL2.time, next: 'toConsole', score: 'mustafarA' },
   ...ROUTE_FIGHTS,
 };
 const ORDER = Object.keys(FIGHTS);
@@ -90,7 +100,7 @@ export class MustafarDirector extends Duel {
     this.lines = LINES;
     this.speakers = SPEAKERS;
     this.stage = STAGES[0];
-    this.part = 'arrival'; // arrival -> choke -> pad -> toCorridor -> corridor -> toRoom -> room -> push -> … (FIGHTS) -> ending -> done
+    this.part = 'arrival'; // arrival -> choke -> pad -> toCorridor -> corridor -> toControl -> control -> toRoom -> room -> push -> … (FIGHTS) -> ending -> done
     this.fights = FIGHTS;
     this.setI = 0;
     this.floor = 1;
@@ -236,47 +246,79 @@ export class MustafarDirector extends Duel {
     if (f) (u.x = f[0] + 0.5), (u.y = f[1] + 0.5);
   }
 
-  // --- 6: into the facility corridor, toward STAGE 02 ------------------------------------------------------------
+  // --- 6: across the connecting deck, through the facility door into the interior corridor (STAGE 03) -------------
   toCorridor() {
     const g = this.game;
     const p = g.player;
     const ob = this.foe;
+    const A = this.at;
+    const D = A.door; // (the deck's far end, before the facility door)
     this.part = 'toCorridor';
     this.hold();
     ob.set('circle', 99);
     const y = 98;
+    const door = g.world.named && g.world.named.facilityDoor;
     const cues = [
       { t: 0, do: (c) => this.travel(c, { x: 80.5, y: y + 0.6 }, { x: 78, y }, 2.4), cam: { follow: p, zoom: 1.3, dur: 0.8 } },
       { t: 1.2, do: (c) => this.clash(c) },
-      { t: 2.4, do: (c) => (this.clash(c, p), this.travel(c, { x: 75.5, y }, { x: 72.5, y: y - 0.3 }, 1.8)) },
+      { t: 2.4, do: (c) => (this.clash(c, p), this.travel(c, { x: 72.5, y: y + 0.3 }, { x: 69.5, y }, 1.8)) },
       { t: 3.6, do: (c) => this.clash(c) },
-      { t: 4.2, do: (c) => (this.travel(c, { x: 72.5, y: y + 0.3 }, { x: 69.5, y }, 1.4), this.card('입구 복도')) },
-      { t: 5.6, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
+      { t: 4.2, do: (c) => this.travel(c, { x: D.x + 2.6, y: D.y + 0.4 }, { x: D.x, y: D.y }, 1.6), cam: { x: D.x, y: D.y, zoom: 1.35, dur: 1.0 } },
+      { t: 5.2, do: (c) => this.clash(c) },
+      // the facility door gives way behind Obi-Wan (the film's 12909: the frame of an inside door wrecked)
+      { t: 6.0, do: () => (door && (door.hidden = true), g.world.open && g.world.open('facilityDoor'), g.fx.dust(D.x - 1.4, D.y, 6), g.audio.play('click')) },
+      { t: 6.2, do: (c) => (this.clash(c, p), this.travel(c, A.corrAnakin, A.corrObiwan, 2.0)), cam: { follow: p, zoom: 1.3, dur: 1.2 } },
+      { t: 7.4, do: (c) => (this.clash(c), this.card('입구 복도')) },
+      { t: 8.2, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
     ];
-    return new Cinema(g, { length: 6.0, cues }).play().then(() => this.enterPart('corridor', CORRIDOR.floor, PAD.floor)); // (the corridor's mark: the fight goes on inside it)
+    return new Cinema(g, { length: 8.6, cues }).play().then(() => this.enterPart('corridor', CORRIDOR.floor, PAD.floor)); // (the corridor's mark: the fight goes on inside it)
   }
 
-  /** The far door: the two fight up to it, it opens, and the fight goes on into the conference room (STAGE 02). */
+  /** The corridor's west end: in through the control room's entry (STAGE 03); the fight goes on among the consoles. */
+  toControl() {
+    const g = this.game;
+    const p = g.player;
+    const ob = this.foe;
+    const A = this.at;
+    const E = A.ctlEntry;
+    this.part = 'toControl';
+    this.hold();
+    ob.set('circle', 99);
+    const d0 = Math.max(1.2, Math.max(dist(p.x, p.y, E.x + 2.4, E.y), dist(ob.x, ob.y, E.x - 0.4, E.y)) / 4.5); // (from wherever they were)
+    const cues = [
+      { t: 0, do: (c) => this.travel(c, { x: E.x + 2.4, y: E.y + 0.3 }, { x: E.x - 0.4, y: E.y - 0.2 }, d0), cam: { follow: p, zoom: 1.3, dur: 0.8 } },
+      { t: d0, do: (c) => this.clash(c) },
+      { t: d0 + 0.6, do: (c) => (this.clash(c, p), this.travel(c, A.ctlAnakin, A.ctlObiwan, 1.8), this.card('제어실')) },
+      { t: d0 + 2.4, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
+    ];
+    return new Cinema(g, { length: d0 + 2.8, cues }).play().then(() => this.enterPart('control', CONTROL.floor, CORRIDOR.floor));
+  }
+
+  /**
+   * The control room's mark (or its time): Obi-Wan breaks away out of the entry, along the corridor and up the side
+   * passage into the conference room (STAGE 02); Anakin after him. (The film shows the two rooms in this order, not the
+   * way between them: the side passage is this map's estimate — stage02.py.)
+   */
   toRoom() {
     const g = this.game;
     const p = g.player;
     const ob = this.foe;
-    const D = this.at.door;
     const A = this.at;
     this.part = 'toRoom';
     this.hold();
     ob.set('circle', 99);
-    const door = g.world.named && g.world.named.facilityDoor;
+    const way = [{ x: 36.4, y: 99.6 }, A.ctlEntry, { x: 50, y: 98 }, { x: 58.6, y: 97.8 }, A.sideBottom, A.sideTop, A.confDoor];
+    const [obC, obT] = walkRoute(ob, [...way, A.roomObiwan], 0.3, 5.0, 'run');
+    const [pC, pT] = walkRoute(p, [...way, A.roomAnakin], 1.0, 5.2, 'run');
+    const end = Math.max(obT, pT);
     const cues = [
-      { t: 0, do: (c) => this.travel(c, { x: D.x + 2.6, y: D.y + 0.4 }, { x: D.x, y: D.y }, 1.6), cam: { x: D.x + 1.5, y: D.y, zoom: 1.4, dur: 1.0 } },
-      { t: 1.0, do: (c) => this.clash(c) },
-      // the facility door opens behind Obi-Wan
-      { t: 1.8, do: () => (door && (door.hidden = true), g.world.open && g.world.open('facilityDoor'), g.fx.dust(D.x - 3.2, D.y, 6), g.audio.play('click')) },
-      { t: 2.0, do: (c) => (this.clash(c, p), this.travel(c, { x: A.roomAnakin.x, y: A.roomAnakin.y }, { x: A.roomObiwan.x, y: A.roomObiwan.y }, 2.2)), cam: { follow: p, zoom: 1.3, dur: 1.2 } },
-      { t: 3.2, do: (c) => (this.clash(c), this.card('분리주의 회의실')) },
-      { t: 4.2, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
+      { t: 0, do: () => g.audio.play('click'), cam: { follow: p, zoom: 1.25, dur: 0.8 } },
+      ...obC,
+      ...pC,
+      { t: obT - 0.6, do: () => this.card('분리주의 회의실') },
+      { t: end, do: () => (p.setAnim('idle'), ob.setAnim('idle'), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
     ];
-    return new Cinema(g, { length: 4.6, cues }).play().then(() => this.enterPart('room', ROOM.floor, CORRIDOR.floor));
+    return new Cinema(g, { length: end + 0.4, cues }).play().then(() => this.enterPart('room', ROOM.floor, CONTROL.floor));
   }
 
   /** The fight moves on into `part`: Obi-Wan's health at least down to the previous mark, the new mark, play. */
@@ -296,7 +338,7 @@ export class MustafarDirector extends Duel {
     this.floor = floor;
     this.bandScale = bandScale(F, floor, prevFloor, ob.maxHp);
     this.score = F.score;
-    this.phase = this.setI >= 6 ? 3 : this.setI >= 3 ? 2 : 1; // Obi-Wan presses harder as the film goes on (duelMustafar.js)
+    this.phase = this.setI >= 7 ? 3 : this.setI >= 3 ? 2 : 1; // Obi-Wan presses harder as the film goes on (duelMustafar.js): the room, the pipe
     // the place's hazards (route.js): the lava rain, the pipe's footing, the lava bombs
     this.rain = !!F.rain;
     this.footing = !!F.footing;
@@ -311,7 +353,7 @@ export class MustafarDirector extends Duel {
 
   /**
    * The end of the conference room (the film's 1:22): both reach for the Force at once; the pushes meet and throw them
-   * apart across the room — then on to the control room (STAGE 03, not built yet). The staging is the old duel's
+   * apart across the room (Obi-Wan toward its door) — then back to the control room (route.js toControl2). The staging is the old duel's
    * junction scene (duelMustafar.js scenePush) on this room's lane south of the table.
    */
   toPush() {
@@ -348,7 +390,7 @@ export class MustafarDirector extends Duel {
       { t: 4.1, do: () => (p.setAnim('death', 0.9, true), ob.setAnim('death', 0.9, true)) },
       { t: 6.2, do: () => (p.setAnim('idle', 1, true), ob.setAnim('idle', 1, true), p.faceTo(ob.x, ob.y), ob.faceTo(p.x, p.y)) },
     ];
-    return new Cinema(g, { length: 6.8, cues }).play().then(() => this.toControl()); // (STAGE 03: route.js)
+    return new Cinema(g, { length: 6.8, cues }).play().then(() => this.toControl2()); // (back to the control room: route.js)
   }
 
   /** Per frame: the duel's upkeep (duel.js), the places' own (route.js: the rain, the pipe, the decks), then how the fight moves on. */

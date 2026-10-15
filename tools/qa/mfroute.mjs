@@ -4,11 +4,12 @@
 //      fighting for 10 s of game time (Anakin attacking him) — sampled: either on a blocked tile, either off screen,
 //      Anakin covered by a structure, their distance (how much of it they are engaged) — then the part's mark: the
 //      scene that takes the fight on, where it leaves them
-//   B  the chain from the conference room to the end, watched: every part in the film's order, nobody stranded,
-//      the music, the result screen
-//   C  the chain from the control room with every scene skipped (Esc): the same state as watched
+//   B  the chain from the interior corridor to the end, watched: every part in the film's order (corridor → control
+//      room → conference room → the control room again → …), nobody stranded, the music, the result screen
+//   C  the same chain with every scene skipped (Esc): the same state as watched
 //   D  elevation and doors: the gallery's steps (the rail blocks, the steps lead up, z 0.6), the high ground's slope
-//      (up to 1.4 m), the conference room's west door shut until its scene, the balcony doorway open
+//      (up to 1.4 m), the facility door open once the fight is through it, the balcony doorway open, the way from the
+//      corridor up the side passage into the conference room walkable (and only through its doorways)
 // NOWEBGL=1: in a Chromium with its 3D APIs off (no WebGL: the game's no-WebGL path — tools/qa/nowebgl.mjs).
 // Prints a table per part and ok/FAIL lines; frames in out_dir; exits 1 on a failure.
 //     node tools/qa/mfroute.mjs [base_url] [out_dir] [sections, e.g. ABCD]
@@ -27,7 +28,7 @@ const check = (name, pass, info = '') => {
   if (!pass) ok = false;
   console.log(`${pass ? 'ok  ' : 'FAIL'} ${name} ${info}`);
 };
-const PARTS = ['control', 'balcony', 'rain', 'pipe', 'arm', 'arm2', 'raft', 'river'];
+const PARTS = ['corridor', 'control', 'room', 'control2', 'balcony', 'rain', 'pipe', 'arm', 'arm2', 'raft', 'river'];
 
 async function open(tag, part) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
@@ -139,7 +140,7 @@ const fight = (page, sec) =>
 const press = (page) => page.evaluate(() => { const d = window.__game.duel; d.foe.hp = Math.min(d.foe.hp, d.floor * d.foe.maxHp); d.reachMark(); });
 
 // ---- A: each part on its own ---------------------------------------------------------------------------------
-const NEXT = { control: 'balcony', balcony: 'rain', rain: 'pipe', pipe: 'arm', arm: 'arm2', arm2: 'raft', raft: 'river', river: 'ending' };
+const NEXT = { corridor: 'control', control: 'room', room: 'control2', control2: 'balcony', balcony: 'rain', rain: 'pipe', pipe: 'arm', arm: 'arm2', arm2: 'raft', raft: 'river', river: 'ending' };
 const table = [];
 if (sections.includes('A'))
   for (const part of PARTS) {
@@ -171,11 +172,11 @@ if (sections.includes('A'))
   }
 if (table.length) console.table(table);
 
-// ---- B: the chain from the conference room to the end, watched ---------------------------------------------------
+// ---- B: the chain from the interior corridor to the end, watched -------------------------------------------------
 if (sections.includes('B')) {
-  const { page, errs } = await open('B', 'room');
+  const { page, errs } = await open('B', 'corridor');
   const seen = [];
-  const want = ['room', 'control', 'balcony', 'rain', 'pipe', 'arm', 'arm2', 'raft', 'river'];
+  const want = ['corridor', 'control', 'room', 'control2', 'balcony', 'rain', 'pipe', 'arm', 'arm2', 'raft', 'river'];
   const music = {};
   for (const part of want) {
     const on = await waitPart(page, part, 180000);
@@ -199,16 +200,16 @@ if (sections.includes('B')) {
   const endOn = await page.waitForFunction(() => { const r = document.querySelector('.duel-result'); return r && !r.classList.contains('hidden'); }, null, { timeout: 240000 }).then(() => true, () => false);
   const endText = await page.evaluate(() => document.querySelector('.duel-result') && document.querySelector('.duel-result').innerText.slice(0, 140));
   check('B: the whole chain in the film\'s order', seen.join(',') === want.join(','), seen.join(' → '));
-  check('B: the film\'s music by part', music.control === 'mustafarA' && music.pipe === 'mustafarB' && music.arm2 === 'mustafarC' && music.river === 'mustafarD', JSON.stringify(music));
+  check('B: the film\'s music by part', music.control === 'mustafarA' && music.room === 'mustafarA' && music.pipe === 'mustafarB' && music.arm2 === 'mustafarC' && music.river === 'mustafarD', JSON.stringify(music));
   check('B: the ending plays to the result screen (won)', endOn && /높은 곳/.test(endText || ''), (endText || '').replace(/\n/g, ' | '));
   await page.screenshot({ path: `${out}/B_end.png` });
   check('B: no errors', errs.length === 0, errs.slice(0, 3).join(' || '));
   await page.close();
 }
 
-// ---- C: the chain from the control room, every scene skipped ---------------------------------------------------
+// ---- C: the chain from the interior corridor, every scene skipped -----------------------------------------------
 if (sections.includes('C')) {
-  const { page, errs } = await open('C', 'control');
+  const { page, errs } = await open('C', 'corridor');
   const seen = [];
   for (const part of PARTS) {
     const on = await waitPart(page, part, 120000);
@@ -234,18 +235,51 @@ if (sections.includes('C')) {
 // ---- D: elevation and doors ----------------------------------------------------------------------------------
 if (sections.includes('D')) {
   {
+    // the way from the corridor to the conference room: the side passage and the room's door (the pathfinder's walk),
+    // never across a blocked tile
     const { page, errs } = await open('D:room', 'room');
     await waitPart(page, 'room', 60000);
-    const shut = await page.evaluate(() => window.__game.world.isBlocked(45, 98));
-    check('D: the conference room\'s west door is shut during the room\'s fight', shut);
+    const walkTo = (from, to, sec) =>
+      page.evaluate(
+        ([from, to, sec]) =>
+          new Promise((res) => {
+            const g = window.__game;
+            const ob = g.duel.foe;
+            ob.scripted = true;
+            ob.x = 45;
+            ob.y = 84;
+            const p = g.player;
+            p.x = from[0];
+            p.y = from[1];
+            p.commandMove(to[0], to[1]);
+            const t0 = g.time;
+            let bad = 0;
+            const f = () => {
+              if (g.world.isBlocked(p.x, p.y)) bad++;
+              if (g.time - t0 < sec && Math.hypot(p.x - to[0], p.y - to[1]) > 0.4) requestAnimationFrame(f);
+              else res({ end: [+p.x.toFixed(2), +p.y.toFixed(2)], bad, t: +(g.time - t0).toFixed(1) });
+            };
+            f();
+          }),
+        [from, to, sec]
+      );
+    const doors = await page.evaluate(() => ({ facility: window.__game.world.isBlocked(61, 98), confDoor: window.__game.world.isBlocked(57.5, 86), side: window.__game.world.isBlocked(59.5, 92) }));
+    check('D room: the facility door open, the conference room\'s door and the side passage walkable', !doors.facility && !doors.confDoor && !doors.side, JSON.stringify(doors));
+    const there = await walkTo([45, 98], [50, 90], 20);
+    check('D room: walked from the corridor up the side passage into the conference room', Math.hypot(there.end[0] - 50, there.end[1] - 90) < 0.6 && there.bad === 0, JSON.stringify(there));
+    const back = await walkTo([50, 82.5], [37, 98.5], 20);
+    check('D room: and back down to the control room', Math.hypot(back.end[0] - 37, back.end[1] - 98.5) < 0.6 && back.bad === 0, JSON.stringify(back));
+    const wall = await page.evaluate(() => [[50, 93.5], [44, 94.5], [56, 95], [40, 90]].map(([x, y]) => window.__game.world.isBlocked(x, y)));
+    check('D room: no way between the room and the corridor but the side passage (the wall between them)', wall.every(Boolean), JSON.stringify(wall));
+    await page.screenshot({ path: `${out}/D_link.png` });
     check('D room: no errors', errs.length === 0, errs.slice(0, 3).join(' || '));
     await page.close();
   }
   {
     const { page, errs } = await open('D:control', 'control');
     await waitPart(page, 'control', 60000);
-    const doors = await page.evaluate(() => ({ west: window.__game.world.isBlocked(45, 98), balcony: window.__game.world.isBlocked(29, 106) }));
-    check('D control: the west door open, the balcony doorway an open gap (no invisible blocker)', !doors.west && !doors.balcony, JSON.stringify(doors));
+    const doors = await page.evaluate(() => ({ entry: window.__game.world.isBlocked(39, 98), balcony: window.__game.world.isBlocked(29, 106) }));
+    check('D control: the entry from the corridor open, the balcony doorway an open gap (no invisible blocker)', !doors.entry && !doors.balcony, JSON.stringify(doors));
     // hold the fight still (Obi-Wan aside, scripted) and walk Anakin up to the gallery from below its rail
     await page.evaluate(() => {
       const g = window.__game;
@@ -255,7 +289,7 @@ if (sections.includes('D')) {
       ob.y = 104;
       const p = g.player;
       p.x = 24.5;
-      p.y = 95.5;
+      p.y = 97.5; // (in front of the console bank at the gallery's foot: the way up is the steps)
       p.commandMove(24.5, 90.5);
       window.__track = [];
       const f = () => {

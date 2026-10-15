@@ -8,7 +8,7 @@
   "grade": "mustafar",
   "surround": {"biome": "LAVA", "asset": "mf.lava.surface", "note": "the delivered lava tile (the old texture only while it is missing)"},
   "floor": [
-    {"id": "pad", "kind": "landingPad", "x0": 74, "y0": 76, "x1": 118, "y1": 114, "rim": 1, "bay": 6, "bays": ["AaAaCaA", "DDDDDDD", "aAEEEaC", "CaEEEAa", "aBAaABa", "ACaAaAa"], "asset": "mf.landing.floor"},
+    {"id": "pad", "kind": "landingPad", "x0": 74, "y0": 76, "x1": 118, "y1": 114, "rim": 1, "bay": 6, "bays": ["AaAAAaA", "DDDDDDD", "aAAEEAC", "AAaAAAa", "aBAAaAA", "AaAAACa"], "asset": "mf.landing.floor"},
     {"id": "corridor", "kind": "texturedRect", "x0": 60.9, "y0": 95, "x1": 74, "y1": 101, "asset": "mf.landing.corridor_floor"}
   ],
   "walk": [
@@ -70,7 +70,7 @@
   ],
   "decor": [],
   "backdrop": null,
-  "actors": {"anakin": {"x": 77, "y": 98.5, "faceTo": {"x": 90.8, "y": 100.6}}, "anakinMeet": {"x": 87, "y": 102.5}, "padme": {"x": 90.8, "y": 100.6}, "obiwanRamp": {"x": 93.2, "y": 97.4}, "obiwan": {"x": 94, "y": 99.2}, "door": {"x": 64, "y": 98}},
+  "actors": {"anakin": {"x": 77, "y": 98.5, "faceTo": {"x": 90.8, "y": 100.6}}, "anakinMeet": {"x": 87, "y": 102.5}, "padme": {"x": 90.8, "y": 100.6}, "obiwanRamp": {"x": 93.2, "y": 97.4}, "obiwan": {"x": 94, "y": 99.2}, "door": {"x": 62.2, "y": 98}},
   "triggers": [],
   "camera": {"x0": 58, "y0": 73, "x1": 121, "y1": 117},
   "lights": [
@@ -99,10 +99,14 @@
     {"x": 72.5, "y": 103, "z": 0.2, "r": 255, "g": 108, "b": 40, "rad": 160, "flicker": 0.1},
     {"x": 119.5, "y": 103, "z": 0.2, "r": 255, "g": 108, "b": 40, "rad": 160, "flicker": 0.1},
     {"x": 72.5, "y": 109, "z": 0.2, "r": 255, "g": 108, "b": 40, "rad": 160, "flicker": 0.1},
-    {"x": 119.5, "y": 109, "z": 0.2, "r": 255, "g": 108, "b": 40, "rad": 160, "flicker": 0.1}
+    {"x": 119.5, "y": 109, "z": 0.2, "r": 255, "g": 108, "b": 40, "rad": 160, "flicker": 0.1},
+    {"x": 78.5, "y": 95.8, "z": 0.15, "r": 120, "g": 170, "b": 255, "rad": 46, "flicker": 0.0},
+    {"x": 78.5, "y": 101.2, "z": 0.15, "r": 120, "g": 170, "b": 255, "rad": 46, "flicker": 0.0},
+    {"x": 82.5, "y": 95.8, "z": 0.15, "r": 120, "g": 170, "b": 255, "rad": 46, "flicker": 0.0},
+    {"x": 82.5, "y": 101.2, "z": 0.15, "r": 120, "g": 170, "b": 255, "rad": 46, "flicker": 0.0}
   ],
   "regions": [
-    {"x": 67.45, "y": 98.0, "r": 7, "name": "무스타파 · 입구 복도"},
+    {"x": 67.45, "y": 98.0, "r": 6.6, "name": "무스타파 · 연결 데크"},
     {"x": 96.0, "y": 95.0, "r": 28, "name": "무스타파 · 착륙장"}
   ]
 }

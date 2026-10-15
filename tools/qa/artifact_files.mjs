@@ -29,9 +29,9 @@ const press = (page) => page.evaluate(() => { const d = window.__game.duel; d.fo
 // from the start: the arrival scenes watched a while (their music, voices), then the pad
 await run('#duel-mustafar', async (page) => { await page.evaluate(() => (window.__game.cheats.god = true)); await page.waitForTimeout(20000); await skipTo(page, 'pad', 120000); await page.waitForTimeout(3000); });
 // every part, then pressed through to the ending and the result
-await run('?mfPart=room#duel-mustafar', async (page) => {
+await run('?mfPart=corridor#duel-mustafar', async (page) => {
   await page.evaluate(() => (window.__game.cheats.god = true));
-  for (const part of ['room', 'control', 'balcony', 'rain', 'pipe', 'arm', 'arm2', 'raft', 'river']) {
+  for (const part of ['corridor', 'control', 'room', 'control2', 'balcony', 'rain', 'pipe', 'arm', 'arm2', 'raft', 'river']) {
     await skipTo(page, part, 120000);
     await page.waitForTimeout(2500);
     await press(page);

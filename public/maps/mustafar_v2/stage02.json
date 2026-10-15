@@ -4,47 +4,74 @@
   "id": "stage02",
   "stage": 2,
   "title": "무스타파 · 분리주의 회의실",
+  "blockoutNote": "BLOCKOUT: the side passage to the corridor (grey boxes: requested)",
   "floor": [
-    {"id": "room", "kind": "texturedRect", "x0": 44.9, "y0": 92, "x1": 60.9, "y1": 104, "asset": "mf.room.floor"}
+    {"id": "room", "kind": "texturedRect", "x0": 41.9, "y0": 80, "x1": 57.9, "y1": 92, "asset": "mf.room.floor"},
+    {"id": "sidePassage", "kind": "texturedRect", "x0": 57.9, "y0": 84, "x1": 60.9, "y1": 96, "asset": "mf.corridor.side_floor", "fallback": "grid"}
   ],
   "walk": [
-    {"id": "room", "rect": [46, 93, 60, 103], "needs": ["mf.room.floor"]},
-    {"id": "doorway", "rect": [60, 96, 62, 100], "needs": ["mf.room.floor"]},
-    {"id": "westDoorway", "rect": [44, 96, 46, 100]}
+    {"id": "room", "rect": [43, 81, 57, 91], "needs": ["mf.room.floor"]},
+    {"id": "doorway", "rect": [57, 84.0, 59, 88.0], "needs": ["mf.room.floor"]},
+    {"id": "sidePassage", "rect": [58, 84, 61, 96]}
   ],
-  "collision": [
-    {"id": "facilityDoor", "rect": [60, 96, 62, 100], "door": true},
-    {"id": "confWestDoor", "rect": [44, 96, 46, 100], "door": true}
-  ],
+  "collision": [],
   "structures": [
-    {"asset": "mf.room.wall_window", "x": 52.9, "y": 92},
-    {"asset": "mf.room.wall_side", "x": 44.9, "y": 98.0, "id": "confWestWall"},
-    {"asset": "mf.room.wall_door_side", "x": 44.9, "y": 98.0, "id": "confWestDoorOpen", "hidden": true},
-    {"asset": "mf.room.wall_front_low", "x": 52.9, "y": 104},
-    {"asset": "mf.room.wall_door_low", "x": 60.9, "y": 98.0},
-    {"asset": "mf.room.table", "x": 52.9, "y": 98.0, "block": true},
-    {"asset": "mf.room.console", "x": 48.3, "y": 93.1, "block": true},
-    {"asset": "mf.room.console", "x": 57.3, "y": 93.1, "block": true},
-    {"asset": "mf.room.chair_a", "x": 50.4, "y": 96.4, "block": true},
-    {"asset": "mf.room.chair_b", "x": 50.4, "y": 99.6, "block": true},
-    {"asset": "mf.room.chair_a", "x": 52.9, "y": 96.4, "block": true},
-    {"asset": "mf.room.chair_b", "x": 52.9, "y": 99.6, "block": true},
-    {"asset": "mf.room.chair_a", "x": 55.4, "y": 96.4, "block": true},
-    {"asset": "mf.room.chair_b", "x": 55.4, "y": 99.6, "block": true}
+    {"asset": "mf.room.wall_window", "x": 49.9, "y": 80},
+    {"asset": "mf.room.wall_side", "x": 41.9, "y": 86.0},
+    {"asset": "mf.room.wall_front_low", "x": 49.9, "y": 92},
+    {"asset": "mf.room.wall_door_low", "x": 57.9, "y": 86.0},
+    {"asset": "mf.room.table", "x": 46.9, "y": 86.0, "block": true},
+    {"asset": "mf.room.table", "x": 52.9, "y": 86.0, "block": true},
+    {"asset": "mf.room.console", "x": 45.3, "y": 81.1, "block": true},
+    {"asset": "mf.room.console", "x": 54.3, "y": 81.1, "block": true},
+    {"asset": "mf.room.chair_a", "x": 44.4, "y": 84.4, "block": true},
+    {"asset": "mf.room.chair_b", "x": 44.4, "y": 87.6, "block": true},
+    {"asset": "mf.room.chair_a", "x": 45.4, "y": 84.4, "block": true},
+    {"asset": "mf.room.chair_b", "x": 45.4, "y": 87.6, "block": true},
+    {"asset": "mf.room.chair_a", "x": 46.4, "y": 84.4, "block": true},
+    {"asset": "mf.room.chair_b", "x": 46.4, "y": 87.6, "block": true},
+    {"asset": "mf.room.chair_a", "x": 47.4, "y": 84.4, "block": true},
+    {"asset": "mf.room.chair_b", "x": 47.4, "y": 87.6, "block": true},
+    {"asset": "mf.room.chair_a", "x": 48.4, "y": 84.4, "block": true},
+    {"asset": "mf.room.chair_b", "x": 48.4, "y": 87.6, "block": true},
+    {"asset": "mf.room.chair_a", "x": 49.4, "y": 84.4, "block": true},
+    {"asset": "mf.room.chair_b", "x": 49.4, "y": 87.6, "block": true},
+    {"asset": "mf.room.chair_a", "x": 50.4, "y": 84.4, "block": true},
+    {"asset": "mf.room.chair_b", "x": 50.4, "y": 87.6, "block": true},
+    {"asset": "mf.room.chair_a", "x": 51.4, "y": 84.4, "block": true},
+    {"asset": "mf.room.chair_b", "x": 51.4, "y": 87.6, "block": true},
+    {"asset": "mf.room.chair_a", "x": 52.4, "y": 84.4, "block": true},
+    {"asset": "mf.room.chair_b", "x": 52.4, "y": 87.6, "block": true},
+    {"asset": "mf.room.chair_a", "x": 53.4, "y": 84.4, "block": true},
+    {"asset": "mf.room.chair_b", "x": 53.4, "y": 87.6, "block": true},
+    {"asset": "mf.room.chair_a", "x": 54.4, "y": 84.4, "block": true},
+    {"asset": "mf.room.chair_b", "x": 54.4, "y": 87.6, "block": true},
+    {"asset": "mf.room.chair_a", "x": 55.4, "y": 84.4, "block": true},
+    {"asset": "mf.room.chair_b", "x": 55.4, "y": 87.6, "block": true}
   ],
   "decor": [],
-  "actors": {"roomAnakin": {"x": 59.2, "y": 98.2}, "roomObiwan": {"x": 57.3, "y": 101.6}, "pushAnakin": {"x": 57.6, "y": 101.8}, "pushObiwan": {"x": 53.4, "y": 101.8}, "pushAnakinTo": {"x": 59.4, "y": 101.8}, "pushObiwanTo": {"x": 47.2, "y": 101.8}, "confWestDoor": {"x": 45.4, "y": 98}},
+  "blockout": [
+    {"x": 59.4, "y": 83.8, "w": 3.0, "d": 0.4, "h": 2.0, "kind": "wall", "label": "회의실 옆 통로", "art": "mf.corridor.side_wall_end"},
+    {"x": 61.1, "y": 90.0, "w": 0.4, "d": 12, "h": 1.0, "kind": "wall", "label": "", "art": "mf.corridor.side_wall_low"},
+    {"x": 57.7, "y": 94.0, "w": 0.4, "d": 4, "h": 2.0, "kind": "wall", "label": "", "art": "mf.corridor.side_wall_corner"}
+  ],
+  "reserved": {"tableTop": {"x0": 43.9, "y0": 85.0, "x1": 55.9, "y1": 87.0, "z": 0.8, "access": [{"x": 43.3, "y": 86.0}, {"x": 56.5, "y": 86.0}]}},
+  "actors": {"sideBottom": {"x": 59.4, "y": 95.2}, "sideTop": {"x": 59.4, "y": 86.0}, "confDoor": {"x": 57.3, "y": 86.0}, "roomAnakin": {"x": 56.0, "y": 84.6}, "roomObiwan": {"x": 53.8, "y": 89.4}, "pushAnakin": {"x": 51.0, "y": 89.6}, "pushObiwan": {"x": 55.2, "y": 89.6}, "pushAnakinTo": {"x": 44.8, "y": 89.6}, "pushObiwanTo": {"x": 56.9, "y": 89.6}},
   "triggers": [],
-  "camera": {"x0": 42.9, "y0": 89, "x1": 62.9, "y1": 106},
+  "cameras": [
+    {"x0": 39.9, "y0": 77, "x1": 61.9, "y1": 93}
+  ],
   "lights": [
-    {"x": 47.4, "y": 90.8, "z": 1.5, "r": 255, "g": 110, "b": 40, "rad": 190, "flicker": 0.1},
-    {"x": 52.9, "y": 90.8, "z": 1.5, "r": 255, "g": 110, "b": 40, "rad": 190, "flicker": 0.1},
-    {"x": 58.4, "y": 90.8, "z": 1.5, "r": 255, "g": 110, "b": 40, "rad": 190, "flicker": 0.1},
-    {"x": 45.699999999999996, "y": 95, "z": 1.4, "r": 255, "g": 170, "b": 80, "rad": 120, "flicker": 0.04},
-    {"x": 45.699999999999996, "y": 101, "z": 1.4, "r": 255, "g": 170, "b": 80, "rad": 120, "flicker": 0.04},
-    {"x": 52.9, "y": 98.0, "z": 2.5, "r": 220, "g": 170, "b": 120, "rad": 150, "flicker": 0.02}
+    {"x": 44.4, "y": 78.8, "z": 1.5, "r": 255, "g": 110, "b": 40, "rad": 190, "flicker": 0.1},
+    {"x": 49.9, "y": 78.8, "z": 1.5, "r": 255, "g": 110, "b": 40, "rad": 190, "flicker": 0.1},
+    {"x": 55.4, "y": 78.8, "z": 1.5, "r": 255, "g": 110, "b": 40, "rad": 190, "flicker": 0.1},
+    {"x": 42.699999999999996, "y": 83, "z": 1.4, "r": 255, "g": 170, "b": 80, "rad": 120, "flicker": 0.04},
+    {"x": 42.699999999999996, "y": 89, "z": 1.4, "r": 255, "g": 170, "b": 80, "rad": 120, "flicker": 0.04},
+    {"x": 49.9, "y": 86.0, "z": 2.5, "r": 220, "g": 170, "b": 120, "rad": 150, "flicker": 0.02},
+    {"x": 59.4, "y": 90.0, "z": 2.5, "r": 220, "g": 170, "b": 120, "rad": 90, "flicker": 0.02}
   ],
   "regions": [
-    {"x": 52.9, "y": 98.0, "r": 9, "name": "무스타파 · 분리주의 회의실"}
+    {"x": 49.9, "y": 86.0, "r": 8.5, "name": "무스타파 · 분리주의 회의실"},
+    {"x": 59.4, "y": 90.0, "r": 3.2, "name": "무스타파 · 회의실 옆 통로"}
   ]
 }

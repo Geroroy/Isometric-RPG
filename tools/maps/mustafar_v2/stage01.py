@@ -47,23 +47,34 @@ X0, Y0 = 74, 76
 X1, Y1 = X0 + 2 * RIM + 7 * BAY, Y0 + 2 * RIM + 6 * BAY
 # the bays, a row per bay along y (from y0), a letter per bay along x (pad_floor.py): A / a plain, B access hatch,
 # C vent grilles, D a cable trench cover (they line up into one service run), E the ship's tie-down clamps (the
-# middle, where the ship is meant to stand: step 5)
+# middle, where the ship stands: step 5). Film pass 1 (docs/MUSTAFAR_REBUILD.md "영화 대조 1차"): the film's pad reads
+# as wide plain grey plates; the busy bays thinned out — the clamps (their four rings a bay) only under the hull, no
+# hatch or grille where the three stand off (the ramp's foot, Padmé, the corridor's mouth); the service run kept as
+# the one long line behind the ship. Was: 6 E, 4 C, 2 B; now 2 E, 2 C, 1 B (the pictures themselves untouched).
 BAYS = [
-    'AaAaCaA',
+    'AaAAAaA',
     'DDDDDDD',
-    'aAEEEaC',
-    'CaEEEAa',
-    'aBAaABa',
-    'ACaAaAa',
+    'aAAEEAC',
+    'AAaAAAa',
+    'aBAAaAA',
+    'AaAAACa',
 ]
 assert len(BAYS) * BAY == Y1 - Y0 - 2 * RIM and all(len(r) * BAY == X1 - X0 - 2 * RIM for r in BAYS)
 
 CX, CY = (X0 + X1) / 2, (Y0 + Y1) / 2
-# the entry corridor: off the pad's −x edge, 6 m wide (one railing run left out), 10 m long, toward the facility
+# the connecting deck (the delivered 'entry corridor' pictures): off the pad's −x edge, 6 m wide (one railing run left
+# out), 13.1 m long, out in the open between the pad and the facility door at its far end; the INTERIOR corridor behind
+# that door is STAGE 03's (film pass 1: the deck outside and the corridor inside told apart)
 DOOR_Y0, DOOR_Y1 = 95, 101
 CORR_X0 = X0 - 13.1  # (13.1 m: the delivered pictures' own proportions at 6 m wide)
 # Padmé's ship on the tie-down clamps (the E bays), nose to +x
 SHIP = (96, 95)
+# the pad's small guide lights (reference/mustafar_reference_pack_pass1, landing_clip_05s: small blue lamps set in the
+# grey deck beyond Anakin, on the facility's side of the standoff — not at the ramp, whose steps carry their own
+# lights): light only, separate emissive points, never baked into the set's pictures (their lamp sprite: requested,
+# docs/asset_requests/chatgpt_film_pass1.md). Dim and small, so they mark the way from the deck's mouth to the
+# standoff without competing with the blades. ESTIMATED: how many there are and where the row runs.
+GUIDE = [(78.5, 95.8), (78.5, 101.2), (82.5, 95.8), (82.5, 101.2)]
 
 
 def structures():
@@ -108,6 +119,7 @@ def lights():
     for y in range(Y0 + 3, Y1, 6):
         for x in (X0 - 1.5, X1 + 1.5):
             out.append([x, y, 0.2, *glow, 160, 0.1])
+    out += [[x, y, 0.15, 120, 170, 255, 46, 0.0] for x, y in GUIDE]
     return [{'x': l[0], 'y': l[1], 'z': l[2], 'r': l[3], 'g': l[4], 'b': l[5], 'rad': l[6], 'flicker': l[7]} for l in out]
 
 
@@ -156,13 +168,13 @@ def main():
             'padme': {'x': 90.8, 'y': 100.6},  # at the foot of her ship's ramp
             'obiwanRamp': {'x': 93.2, 'y': 97.4},  # Obi-Wan appears on the ramp
             'obiwan': {'x': 94, 'y': 99.2},  # and steps down off it
-            'door': {'x': 64, 'y': 98},  # the corridor's far end, at the facility door (STAGE 02 beyond)
+            'door': {'x': 62.2, 'y': 98},  # the deck's far end, at the facility door (STAGE 03's interior corridor beyond)
         },
         'triggers': [],
         'camera': {'x0': math.floor(CORR_X0) - 2, 'y0': Y0 - 3, 'x1': X1 + 3, 'y1': Y1 + 3},  # (the corridor too)
         'lights': lights(),
-        # (the first a point is inside names it: the corridor, then the pad — not reaching into STAGE 02's room)
-        'regions': [{'x': (CORR_X0 + X0) / 2, 'y': (DOOR_Y0 + DOOR_Y1) / 2, 'r': 7, 'name': '무스타파 · 입구 복도'}, {'x': CX, 'y': CY, 'r': 28, 'name': '무스타파 · 착륙장'}],
+        # (the first a point is inside names it: the deck, then the pad — not reaching through the door into STAGE 03's corridor)
+        'regions': [{'x': (CORR_X0 + X0) / 2, 'y': (DOOR_Y0 + DOOR_Y1) / 2, 'r': 6.6, 'name': '무스타파 · 연결 데크'}, {'x': CX, 'y': CY, 'r': 28, 'name': '무스타파 · 착륙장'}],
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     one = lambda v: json.dumps(v, ensure_ascii=False)  # noqa: E731

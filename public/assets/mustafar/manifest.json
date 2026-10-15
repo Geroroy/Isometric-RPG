@@ -1356,6 +1356,233 @@
    ],
    "note": "a drifting smoke particle (fx.js): drawn at different sizes and alpha, flat (no angle)",
    "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md"
+  },
+  {
+   "id": "mf.corridor.junction_floor",
+   "name": "입구 복도 문 쪽 4 m 바닥 (위에서 본 평면)",
+   "kind": "groundTiles",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "tiles": {
+    "floor": {
+     "file": "corridors/corr_junction_floor.png",
+     "size": [
+      256,
+      256
+     ],
+     "metres": [
+      4,
+      4
+     ]
+    }
+   }
+  },
+  {
+   "id": "mf.corridor.side_floor",
+   "name": "회의실 옆 통로 바닥 (위에서 본 평면)",
+   "kind": "groundTiles",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "tiles": {
+    "floor": {
+     "file": "corridors/corr_side_floor.png",
+     "size": [
+      192,
+      768
+     ],
+     "metres": [
+      3,
+      12
+     ]
+    }
+   }
+  },
+  {
+   "id": "mf.corridor.junction_pier",
+   "name": "입구 복도 안쪽 벽 기둥 (정면도, 옆 통로 입구 옆)",
+   "kind": "wallElevation",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_junction_pier.png",
+   "size": [
+    64,
+    224
+   ],
+   "metres": [
+    1,
+    3.5
+   ],
+   "along": "x"
+  },
+  {
+   "id": "mf.corridor.junction_wall_low",
+   "name": "입구 복도 문 쪽 낮은 앞벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_junction_wall_low.png",
+   "size": [
+    256,
+    64
+   ],
+   "metres": [
+    4,
+    1
+   ],
+   "along": "x"
+  },
+  {
+   "id": "mf.corridor.frame_far",
+   "name": "입구 복도 기울어진 구조 프레임 (안쪽 벽, 전체 높이)",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_frame_far.png",
+   "size": [
+    96,
+    224
+   ],
+   "density": 2,
+   "anchor": [
+    48,
+    196
+   ]
+  },
+  {
+   "id": "mf.corridor.frame_near",
+   "name": "입구 복도 구조 프레임 밑동 (앞쪽, 잘린 높이)",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_frame_near.png",
+   "size": [
+    96,
+    96
+   ],
+   "density": 2,
+   "anchor": [
+    48,
+    68
+   ]
+  },
+  {
+   "id": "mf.corridor.side_wall_end",
+   "name": "회의실 옆 통로 끝벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_side_wall_end.png",
+   "size": [
+    192,
+    128
+   ],
+   "metres": [
+    3,
+    2
+   ],
+   "along": "x"
+  },
+  {
+   "id": "mf.corridor.side_wall_low",
+   "name": "회의실 옆 통로 낮은 바깥벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_side_wall_low.png",
+   "size": [
+    768,
+    64
+   ],
+   "metres": [
+    12,
+    1
+   ],
+   "along": "y"
+  },
+  {
+   "id": "mf.corridor.side_wall_corner",
+   "name": "회의실 모서리와 복도 사이 벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_side_wall_corner.png",
+   "size": [
+    256,
+    128
+   ],
+   "metres": [
+    4,
+    2
+   ],
+   "along": "y"
+  },
+  {
+   "id": "mf.landing.guide_light",
+   "name": "착륙장 유도등 (작은 발광 등)",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "landing/guide_light.png",
+   "size": [
+    48,
+    40
+   ],
+   "density": 2,
+   "anchor": [
+    24,
+    26
+   ]
+  },
+  {
+   "id": "mf.control.ctl_long_table",
+   "name": "제어실 중앙 긴 홀로 테이블",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "interiors/ctl_long_table.png",
+   "size": [
+    432,
+    224
+   ],
+   "density": 2,
+   "anchor": [
+    216,
+    120
+   ]
+  },
+  {
+   "id": "mf.control.ctl_door_pillar",
+   "name": "제어실 입구 사선 문틀 기둥 (잘린 높이)",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "interiors/ctl_door_pillar.png",
+   "size": [
+    80,
+    128
+   ],
+   "density": 2,
+   "anchor": [
+    40,
+    100
+   ]
+  },
+  {
+   "id": "mf.room.table_long",
+   "name": "회의실 긴 테이블 (12 m 한 장)",
+   "kind": "sprite",
+   "status": "requested",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "interiors/conf_table_long.png",
+   "size": [
+    624,
+    344
+   ],
+   "density": 2,
+   "anchor": [
+    312,
+    200
+   ]
   }
  ]
 }

@@ -4,20 +4,24 @@
   "id": "stage03",
   "stage": 3,
   "title": "무스타파 · 제어실",
-  "blockoutNote": "BLOCKOUT: grey boxes stand in for the art (not requested yet)",
+  "blockoutNote": "BLOCKOUT: the corridor's frames and its last 4 m by the door (grey boxes: requested)",
   "floor": [
-    {"id": "passage", "kind": "texturedRect", "x0": 38.9, "y0": 96, "x1": 44.9, "y1": 100, "asset": "mf.passage.floor", "fallback": "grid"},
+    {"id": "corridor0", "kind": "texturedRect", "x0": 38.9, "y0": 96, "x1": 44.9, "y1": 100, "asset": "mf.passage.floor", "fallback": "grid"},
+    {"id": "corridor1", "kind": "texturedRect", "x0": 44.9, "y0": 96, "x1": 50.9, "y1": 100, "asset": "mf.passage.floor", "fallback": "grid"},
+    {"id": "corridor2", "kind": "texturedRect", "x0": 50.9, "y0": 96, "x1": 56.9, "y1": 100, "asset": "mf.passage.floor", "fallback": "grid"},
+    {"id": "junction", "kind": "texturedRect", "x0": 56.9, "y0": 96, "x1": 60.9, "y1": 100, "asset": "mf.corridor.junction_floor", "fallback": "grid"},
     {"id": "gallery", "kind": "texturedRect", "x0": 20.9, "y0": 88, "x1": 38.9, "y1": 93, "z": 0.6, "asset": "mf.control.gallery_floor", "fallback": "grid"},
     {"id": "control", "kind": "texturedRect", "x0": 20.9, "y0": 93, "x1": 38.9, "y1": 106, "asset": "mf.control.floor", "fallback": "grid"}
   ],
   "walk": [
-    {"id": "passage", "rect": [38, 96, 45, 100]},
+    {"id": "corridor", "rect": [38, 96, 62, 100]},
     {"id": "control", "rect": [22, 89, 38, 105]},
     {"id": "balconyDoorway", "rect": [27.9, 105, 31.9, 107]}
   ],
   "collision": [
     {"id": "galleryRailW", "rect": [22, 92, 27.9, 93]},
-    {"id": "galleryRailE", "rect": [31.9, 92, 38, 93]}
+    {"id": "galleryRailE", "rect": [31.9, 92, 38, 93]},
+    {"id": "facilityDoor", "rect": [60, 96, 62, 100], "door": true}
   ],
   "structures": [
     {"asset": "mf.control.wall_window", "x": 29.9, "y": 88},
@@ -26,13 +30,17 @@
     {"asset": "mf.control.wall_entry_low", "x": 38.9, "y": 97.0},
     {"asset": "mf.control.gallery_edge", "x": 29.9, "y": 93},
     {"asset": "mf.passage.wall_back", "x": 41.9, "y": 96},
+    {"asset": "mf.passage.wall_back", "x": 47.9, "y": 96},
+    {"asset": "mf.passage.wall_back", "x": 53.9, "y": 96},
     {"asset": "mf.passage.wall_front_low", "x": 41.9, "y": 100},
+    {"asset": "mf.passage.wall_front_low", "x": 47.9, "y": 100},
+    {"asset": "mf.passage.wall_front_low", "x": 53.9, "y": 100},
     {"asset": "mf.control.ctl_stairs", "x": 29.9, "y": 94},
     {"asset": "mf.control.ctl_shield_generator", "x": 21.7, "y": 99, "block": true, "id": "shieldCore"},
-    {"asset": "mf.control.ctl_holo_table", "x": 28.5, "y": 99.5, "block": true},
-    {"asset": "mf.control.ctl_holo_table", "x": 33.5, "y": 99.5, "block": true},
-    {"asset": "mf.room.console", "x": 25, "y": 89.6, "z": 0.6, "block": true},
-    {"asset": "mf.room.console", "x": 34.5, "y": 89.6, "z": 0.6, "block": true}
+    {"asset": "mf.room.console", "x": 23.3, "y": 89.6, "z": 0.6, "block": true},
+    {"asset": "mf.room.console", "x": 25.7, "y": 89.6, "z": 0.6, "block": true},
+    {"asset": "mf.room.console", "x": 34.1, "y": 89.6, "z": 0.6, "block": true},
+    {"asset": "mf.room.console", "x": 36.5, "y": 89.6, "z": 0.6, "block": true}
   ],
   "decor": [],
   "blockout": [
@@ -45,34 +53,67 @@
     {"x": 35.4, "y": 106.2, "w": 7.0, "d": 0.4, "h": 1.0, "kind": "wall", "label": "", "art": "mf.control.wall_front_low"},
     {"x": 39.1, "y": 92.0, "w": 0.4, "d": 8, "h": 1.0, "kind": "wall", "label": "", "art": "mf.control.wall_entry_low"},
     {"x": 39.1, "y": 103.0, "w": 0.4, "d": 6, "h": 1.0, "kind": "wall", "label": "", "art": "mf.control.wall_entry_low"},
-    {"x": 41.9, "y": 95.8, "w": 6.0, "d": 0.4, "h": 3.5, "kind": "wall", "label": "연결 통로", "art": "mf.passage.wall_back"},
+    {"x": 41.9, "y": 95.8, "w": 6.0, "d": 0.4, "h": 3.5, "kind": "wall", "label": "입구 복도", "art": "mf.passage.wall_back"},
+    {"x": 47.9, "y": 95.8, "w": 6.0, "d": 0.4, "h": 3.5, "kind": "wall", "label": "입구 복도", "art": "mf.passage.wall_back"},
+    {"x": 53.9, "y": 95.8, "w": 6.0, "d": 0.4, "h": 3.5, "kind": "wall", "label": "입구 복도", "art": "mf.passage.wall_back"},
     {"x": 41.9, "y": 100.2, "w": 6.0, "d": 0.4, "h": 1.0, "kind": "wall", "label": "", "art": "mf.passage.wall_front_low"},
+    {"x": 47.9, "y": 100.2, "w": 6.0, "d": 0.4, "h": 1.0, "kind": "wall", "label": "", "art": "mf.passage.wall_front_low"},
+    {"x": 53.9, "y": 100.2, "w": 6.0, "d": 0.4, "h": 1.0, "kind": "wall", "label": "", "art": "mf.passage.wall_front_low"},
+    {"x": 57.4, "y": 95.8, "w": 1.0, "d": 0.4, "h": 3.5, "kind": "wall", "label": "", "art": "mf.corridor.junction_pier"},
+    {"x": 58.9, "y": 100.2, "w": 4.0, "d": 0.4, "h": 1.0, "kind": "wall", "label": "", "art": "mf.corridor.junction_wall_low"},
+    {"x": 41.9, "y": 96.15, "w": 0.35, "d": 0.5, "h": 3.3, "kind": "wall", "label": "프레임", "art": "mf.corridor.frame_far"},
+    {"x": 44.9, "y": 96.15, "w": 0.35, "d": 0.5, "h": 3.3, "kind": "wall", "label": "", "art": "mf.corridor.frame_far"},
+    {"x": 47.9, "y": 96.15, "w": 0.35, "d": 0.5, "h": 3.3, "kind": "wall", "label": "", "art": "mf.corridor.frame_far"},
+    {"x": 50.9, "y": 96.15, "w": 0.35, "d": 0.5, "h": 3.3, "kind": "wall", "label": "", "art": "mf.corridor.frame_far"},
+    {"x": 53.9, "y": 96.15, "w": 0.35, "d": 0.5, "h": 3.3, "kind": "wall", "label": "", "art": "mf.corridor.frame_far"},
+    {"x": 56.9, "y": 96.15, "w": 0.35, "d": 0.5, "h": 3.3, "kind": "wall", "label": "", "art": "mf.corridor.frame_far"},
+    {"x": 41.9, "y": 99.85, "w": 0.35, "d": 0.5, "h": 0.9, "kind": "wall", "label": "", "art": "mf.corridor.frame_near"},
+    {"x": 44.9, "y": 99.85, "w": 0.35, "d": 0.5, "h": 0.9, "kind": "wall", "label": "", "art": "mf.corridor.frame_near"},
+    {"x": 47.9, "y": 99.85, "w": 0.35, "d": 0.5, "h": 0.9, "kind": "wall", "label": "", "art": "mf.corridor.frame_near"},
+    {"x": 50.9, "y": 99.85, "w": 0.35, "d": 0.5, "h": 0.9, "kind": "wall", "label": "", "art": "mf.corridor.frame_near"},
+    {"x": 53.9, "y": 99.85, "w": 0.35, "d": 0.5, "h": 0.9, "kind": "wall", "label": "", "art": "mf.corridor.frame_near"},
+    {"x": 56.9, "y": 99.85, "w": 0.35, "d": 0.5, "h": 0.9, "kind": "wall", "label": "", "art": "mf.corridor.frame_near"},
     {"x": 21.7, "y": 99, "w": 1.4, "d": 2.8, "h": 1.8, "kind": "story", "label": "방어막 발생기", "block": true, "art": "mf.control.ctl_shield_generator"},
-    {"x": 28.5, "y": 99.5, "w": 1.6, "d": 1.6, "h": 0.9, "kind": "furniture", "label": "홀로 테이블", "block": true, "art": "mf.control.ctl_holo_table"},
-    {"x": 33.5, "y": 99.5, "w": 1.6, "d": 1.6, "h": 0.9, "kind": "furniture", "label": "홀로 테이블", "block": true, "art": "mf.control.ctl_holo_table"},
-    {"x": 25, "y": 89.6, "w": 2.4, "d": 1.0, "h": 1.6, "kind": "furniture", "label": "콘솔", "block": true, "z": 0.6, "art": "mf.room.console"},
-    {"x": 34.5, "y": 89.6, "w": 2.4, "d": 1.0, "h": 1.6, "kind": "furniture", "label": "콘솔", "block": true, "z": 0.6, "art": "mf.room.console"}
+    {"x": 31.4, "y": 101.0, "w": 7.0, "d": 2.0, "h": 1.0, "kind": "furniture", "label": "중앙 홀로 테이블", "block": true, "art": "mf.control.ctl_long_table"},
+    {"x": 23.3, "y": 89.6, "w": 2.4, "d": 1.0, "h": 1.6, "kind": "furniture", "label": "콘솔", "block": true, "z": 0.6, "art": "mf.room.console"},
+    {"x": 25.7, "y": 89.6, "w": 2.4, "d": 1.0, "h": 1.6, "kind": "furniture", "label": "콘솔", "block": true, "z": 0.6, "art": "mf.room.console"},
+    {"x": 34.1, "y": 89.6, "w": 2.4, "d": 1.0, "h": 1.6, "kind": "furniture", "label": "콘솔", "block": true, "z": 0.6, "art": "mf.room.console"},
+    {"x": 36.5, "y": 89.6, "w": 2.4, "d": 1.0, "h": 1.6, "kind": "furniture", "label": "콘솔", "block": true, "z": 0.6, "art": "mf.room.console"},
+    {"x": 39.0, "y": 95.55, "w": 0.8, "d": 0.9, "h": 1.3, "kind": "wall", "label": "문틀 기둥", "art": "mf.control.ctl_door_pillar"},
+    {"x": 39.0, "y": 100.45, "w": 0.8, "d": 0.9, "h": 1.3, "kind": "wall", "label": "", "art": "mf.control.ctl_door_pillar"}
   ],
   "surfaces": [
     {"x0": 20.9, "y0": 88, "x1": 38.9, "y1": 93, "z": 0.6},
     {"x0": 27.9, "y0": 93, "x1": 31.9, "y1": 94, "z": 0.4},
     {"x0": 27.9, "y0": 94, "x1": 31.9, "y1": 95, "z": 0.2}
   ],
-  "actors": {"ctlAnakin": {"x": 35.5, "y": 102.5}, "ctlObiwan": {"x": 31.0, "y": 103.0}, "core": {"x": 21.7, "y": 99}, "balconyDoor": {"x": 29.9, "y": 105.4}},
+  "actors": {"corrAnakin": {"x": 57.6, "y": 98.4}, "corrObiwan": {"x": 54.6, "y": 97.8}, "ctlEntry": {"x": 39.6, "y": 98}, "ctlAnakin": {"x": 36.2, "y": 98.6}, "ctlObiwan": {"x": 32.0, "y": 98.4}, "core": {"x": 21.7, "y": 99}, "balconyDoor": {"x": 29.9, "y": 105.4}},
   "triggers": [],
-  "camera": {"x0": 18.9, "y0": 85, "x1": 46.9, "y1": 108},
+  "cameras": [
+    {"x0": 18.9, "y0": 85, "x1": 40.9, "y1": 108},
+    {"x0": 38.9, "y0": 93, "x1": 61.9, "y1": 102}
+  ],
   "lights": [
     {"x": 23.9, "y": 87.0, "z": 1.5, "r": 255, "g": 110, "b": 40, "rad": 180, "flicker": 0.1},
     {"x": 29.9, "y": 87.0, "z": 1.5, "r": 255, "g": 110, "b": 40, "rad": 180, "flicker": 0.1},
     {"x": 35.9, "y": 87.0, "z": 1.5, "r": 255, "g": 110, "b": 40, "rad": 180, "flicker": 0.1},
     {"x": 22.5, "y": 99, "z": 1.2, "r": 255, "g": 150, "b": 60, "rad": 120, "flicker": 0.08},
-    {"x": 28.5, "y": 99.5, "z": 1.4, "r": 255, "g": 190, "b": 120, "rad": 80, "flicker": 0.04},
-    {"x": 33.5, "y": 99.5, "z": 1.4, "r": 255, "g": 190, "b": 120, "rad": 80, "flicker": 0.04},
-    {"x": 29.9, "y": 97, "z": 3.0, "r": 220, "g": 170, "b": 120, "rad": 170, "flicker": 0.02},
-    {"x": 41.9, "y": 98, "z": 2.5, "r": 220, "g": 170, "b": 120, "rad": 90, "flicker": 0.02}
+    {"x": 31.4, "y": 101.0, "z": 1.4, "r": 255, "g": 190, "b": 120, "rad": 110, "flicker": 0.04},
+    {"x": 23.3, "y": 90.5, "z": 1.6, "r": 255, "g": 175, "b": 90, "rad": 70, "flicker": 0.04},
+    {"x": 25.7, "y": 90.5, "z": 1.6, "r": 255, "g": 175, "b": 90, "rad": 70, "flicker": 0.04},
+    {"x": 34.1, "y": 90.5, "z": 1.6, "r": 255, "g": 175, "b": 90, "rad": 70, "flicker": 0.04},
+    {"x": 36.5, "y": 90.5, "z": 1.6, "r": 255, "g": 175, "b": 90, "rad": 70, "flicker": 0.04},
+    {"x": 29.9, "y": 100, "z": 3.0, "r": 220, "g": 170, "b": 120, "rad": 170, "flicker": 0.02},
+    {"x": 41.9, "y": 98, "z": 2.5, "r": 220, "g": 170, "b": 120, "rad": 90, "flicker": 0.02},
+    {"x": 47.9, "y": 98, "z": 2.5, "r": 220, "g": 170, "b": 120, "rad": 90, "flicker": 0.02},
+    {"x": 53.9, "y": 98, "z": 2.5, "r": 220, "g": 170, "b": 120, "rad": 90, "flicker": 0.02},
+    {"x": 58.9, "y": 98, "z": 2.5, "r": 220, "g": 170, "b": 120, "rad": 90, "flicker": 0.02}
   ],
   "regions": [
-    {"x": 41.9, "y": 98, "r": 3, "name": "무스타파 · 연결 통로"},
+    {"x": 42.4, "y": 98, "r": 3.1, "name": "무스타파 · 입구 복도"},
+    {"x": 48.4, "y": 98, "r": 3.1, "name": "무스타파 · 입구 복도"},
+    {"x": 54.4, "y": 98, "r": 3.1, "name": "무스타파 · 입구 복도"},
+    {"x": 59.4, "y": 98, "r": 3.1, "name": "무스타파 · 입구 복도"},
     {"x": 29.9, "y": 97, "r": 10, "name": "무스타파 · 제어실"}
   ]
 }

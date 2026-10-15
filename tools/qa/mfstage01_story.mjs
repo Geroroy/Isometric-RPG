@@ -1,8 +1,10 @@
 // Mustafar rebuild, STAGE 01's whole sequence under Playwright (npm run dev, or a preview):
 //   run 1 (watched): the arrival, the choke scene on the film's audio, the duel on the pad, the press to the pad's
-//     mark -> the scene into the corridor -> the duel in the corridor -> Anakin at the far door -> the stage's end
+//     mark -> the scene across the connecting deck and through the facility door -> the duel in the interior corridor
+//     -> Anakin at its west end -> the control room -> its mark: Obi-Wan away to the conference room -> the push -> back
+//     to the control room (the film's order: docs/MUSTAFAR_REBUILD.md "영화 대조 1차")
 //   run 2 (skipped): Esc through the cutscenes, the pad's time limit moves the fight on by itself, the corridor's
-//     mark ends it
+//     mark, then the control room's and the conference room's times
 // Checks the parts' order, who is shown and lit when, nobody left on a blocked tile, the end screen, no errors;
 // frames of every part in out_dir.
 //     node tools/qa/mfstage01_story.mjs [base_url] [out_dir]
@@ -108,24 +110,31 @@ async function open(tag) {
   await page.screenshot({ path: `${out}/d1_to_corridor.png` });
   const corOn = await waitPart(page, 'corridor', 60000);
   const sC = await state(page);
-  check('corridor: the scene took the fight into the corridor', corOn && sC.p[0] < 74 && sC.ob[0] < 74, JSON.stringify({ p: sC.p, ob: sC.ob }));
+  const door = await page.evaluate(() => { const d = window.__game.world.named.facilityDoor; return d && d.hidden; });
+  check('corridor: the scene took the fight through the facility door into the interior corridor', corOn && door && sC.p[0] < 61 && sC.ob[0] < 61 && sC.p[0] > 39, JSON.stringify({ p: sC.p, ob: sC.ob, door }));
   check('corridor: nobody on a blocked tile, playable', !sC.pBlocked && !sC.obBlocked && !sC.locked, JSON.stringify(sC));
   await page.waitForTimeout(1500);
   await page.screenshot({ path: `${out}/d2_corridor_fight.png` });
-  // Anakin pushes on to the far door (W + A: along −x)
+  // Anakin pushes on along the corridor to the control room's entry (W + A: along −x)
   await page.keyboard.down('w');
   await page.keyboard.down('a');
-  const doorOn = await page.waitForFunction(() => ['toRoom', 'room'].includes(window.__game.duel.part), null, { timeout: 30000 }).then(() => true, () => false);
+  const entryOn = await page.waitForFunction(() => ['toControl', 'control'].includes(window.__game.duel.part), null, { timeout: 40000 }).then(() => true, () => false);
   await page.keyboard.up('w');
   await page.keyboard.up('a');
-  check('door: reaching the far door moves on', doorOn);
+  check('entry: reaching the corridor\'s west end moves on', entryOn);
   await page.waitForTimeout(1200);
-  await page.screenshot({ path: `${out}/e1_door.png` });
-  // STAGE 02: through the opened door into the conference room
-  const roomOn = await waitPart(page, 'room', 60000);
+  await page.screenshot({ path: `${out}/e1_entry.png` });
+  // STAGE 03: the control room (first)
+  const ctlOn = await waitPart(page, 'control', 60000);
+  const sK = await state(page);
+  check('control: the fight is in the control room', ctlOn && sK.p[0] < 38.9 && sK.ob[0] < 38.9 && !sK.pBlocked && !sK.obBlocked && !sK.locked, JSON.stringify({ p: sK.p, ob: sK.ob }));
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: `${out}/e2_control_fight.png` });
+  await page.evaluate(() => { const g = window.__game; for (let i = 0; i < 20; i++) g.damage(g.player, g.duel.foe, 60, { type: 'saber' }); });
+  // STAGE 02: Obi-Wan away down the corridor and up the side passage, into the conference room
+  const roomOn = await waitPart(page, 'room', 90000);
   const sR = await state(page);
-  const door = await page.evaluate(() => { const d = window.__game.world.named.facilityDoor; return d && d.hidden; });
-  check('room: the door opened, the fight is in the conference room', roomOn && door && sR.p[0] < 61 && sR.ob[0] < 61, JSON.stringify({ p: sR.p, ob: sR.ob, door }));
+  check('room: the fight is in the conference room', roomOn && sR.p[0] > 41.9 && sR.p[0] < 57.9 && sR.p[1] < 92 && sR.ob[0] > 41.9 && sR.ob[0] < 57.9 && sR.ob[1] < 92, JSON.stringify({ p: sR.p, ob: sR.ob }));
   check('room: nobody on a blocked tile, playable', !sR.pBlocked && !sR.obBlocked && !sR.locked, JSON.stringify({ p: sR.p, ob: sR.ob }));
   await page.waitForTimeout(1500);
   await page.screenshot({ path: `${out}/f1_room_fight.png` });
@@ -136,11 +145,11 @@ async function open(tag) {
   await page.screenshot({ path: `${out}/f2_push.png` });
   await page.waitForFunction(() => window.__game.cinema && window.__game.cinema.t >= 5.0, null, { timeout: 20000 }).catch(() => {});
   await page.screenshot({ path: `${out}/f3_thrown.png` });
-  // (STAGE 03 follows: the push hands the fight on to the control room — tools/qa/mfroute.mjs tests the rest of the route)
-  const ctl = await waitPart(page, 'control', 60000);
-  const sK = await state(page);
-  check('push: the fight goes on into the control room (STAGE 03)', ctl && sK.p[0] < 39 && sK.ob[0] < 39 && !sK.pBlocked && !sK.obBlocked, JSON.stringify({ p: sK.p, ob: sK.ob }));
-  await page.screenshot({ path: `${out}/g1_control.png` });
+  // back to the control room (the same room: the shield generator's scene, the balcony — tools/qa/mfroute.mjs tests the rest)
+  const ctl2 = await waitPart(page, 'control2', 60000);
+  const sK2 = await state(page);
+  check('push: the fight goes back into the control room', ctl2 && sK2.p[0] < 38.9 && sK2.ob[0] < 38.9 && !sK2.pBlocked && !sK2.obBlocked, JSON.stringify({ p: sK2.p, ob: sK2.ob }));
+  await page.screenshot({ path: `${out}/g1_control2.png` });
   check('run 1: no errors', errs.length === 0, errs.slice(0, 4).join(' || '));
   await page.close();
 }
@@ -161,17 +170,22 @@ async function open(tag) {
   const t1 = await page.evaluate(() => window.__game.time);
   check('time: the pad moves on at the film\'s 0:34 by itself', moved && t1 - t0 >= 33, `after ${(t1 - t0).toFixed(1)} s of play`);
   await waitPart(page, 'corridor', 60000);
-  // the corridor's mark moves it on too, then the room's
+  // the corridor's mark moves it on too, then the control room's time, then the conference room's
   await page.evaluate(() => { const g = window.__game; for (let i = 0; i < 20; i++) g.damage(g.player, g.duel.foe, 60, { type: 'saber' }); });
-  const room = await page.waitForFunction(() => ['toRoom', 'room'].includes(window.__game.duel.part), null, { timeout: 40000 }).then(() => true, () => false);
-  check('mark: the corridor\'s mark (or time) takes the fight to the room', room);
-  await waitPart(page, 'room', 60000);
+  const ctl = await page.waitForFunction(() => ['toControl', 'control'].includes(window.__game.duel.part), null, { timeout: 40000 }).then(() => true, () => false);
+  check('mark: the corridor\'s mark takes the fight to the control room', ctl);
+  await waitPart(page, 'control', 60000);
   const t2 = await page.evaluate(() => window.__game.time);
-  const done = await page.waitForFunction(() => ['push', 'toControl', 'control'].includes(window.__game.duel.part), null, { timeout: 120000 }).then(() => true, () => false);
+  const room = await page.waitForFunction(() => ['toRoom', 'room'].includes(window.__game.duel.part), null, { timeout: 120000 }).then(() => true, () => false);
   const t3 = await page.evaluate(() => window.__game.time);
-  check('time: the room moves on to the push by itself', done && t3 - t2 >= 27, `after ${(t3 - t2).toFixed(1)} s of play`);
-  const end = await page.waitForFunction(() => window.__game.duel.part === 'control', null, { timeout: 60000 }).then(() => true, () => false);
-  check('end: the push hands STAGE 02 on to the control room', end);
+  check('time: the control room moves on to the conference room by itself', room && t3 - t2 >= 29, `after ${(t3 - t2).toFixed(1)} s of play`);
+  await waitPart(page, 'room', 60000);
+  const t4 = await page.evaluate(() => window.__game.time);
+  const done = await page.waitForFunction(() => ['push', 'toControl2', 'control2'].includes(window.__game.duel.part), null, { timeout: 120000 }).then(() => true, () => false);
+  const t5 = await page.evaluate(() => window.__game.time);
+  check('time: the room moves on to the push by itself', done && t5 - t4 >= 35, `after ${(t5 - t4).toFixed(1)} s of play`);
+  const end = await page.waitForFunction(() => window.__game.duel.part === 'control2', null, { timeout: 60000 }).then(() => true, () => false);
+  check('end: the push hands the fight back to the control room', end);
   check('run 2: no errors', errs.length === 0, errs.slice(0, 4).join(' || '));
   await page.close();
 }
