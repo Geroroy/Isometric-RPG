@@ -428,7 +428,15 @@ v1의 기록으로 남기고, 새 공개본은 따로 적는다.
 범위: 캐릭터마다 기본 연속 공격 1묶음 · 강공격 1 · 쳐내기 후 반격 1 · 그에 맞는 방어·회수·기본 자세 연결 (위 "검술 v1"). 추가 기술은 후속.
 KO·재시작 수정(전투 원형 v1, `f90437a`)은 그대로 들어 있고 다시 확인했다.
 
-### 검증 (모두 이 커밋의 빌드)
+### 소스 ↔ 공개 아티팩트
+| | |
+|---|---|
+| 소스 | 브랜치 `ccr-da9fc683-ysnrrp` 커밋 `b902769` ("swordsmanship v1") — 원격에 올리지 않음 |
+| 공개본 | https://claude.ai/artifact/45s5zi6Wr3Whnmw8N1wQcx Version 4 (버전 id `1792170454-f054`) — 전투 원형 v1(Version 3)과 같은 링크의 새 버전 |
+| `assets/arena-C0TMy-he.js` | sha256 `193199a06a3eee0953054b530124944e1f4315e443d821333717f9c1da882276` (공개본에서 받아 비교: 같음) |
+| `assets/arena-DGxi6I4o.css` · `assets/audio-B55H8McU.js` | Version 3과 같은 파일 (sha256 위 v1 표와 같음) |
+
+### 검증 (모두 `b902769` 빌드)
 - `npm run test:combat` 33/33 (규칙 24 + 검술 9). 기존 24개는 공격자를 아나킨 검술로 읽어 그대로 통과.
 - `tools/qa/arena_reset.mjs` 60/60 (KO 뒤 판정·통계 정지, R 6가지 시점) · `tools/qa/arena.mjs frames`(막기·쳐내기·맞부딪힘·피격·붕괴·헛침
   장면 캡처) · `arena.mjs play` · `tools/qa/arena_play.mjs`(진짜 키·마우스 5장면) — 모두 정상 종료, 페이지 오류 없음.
