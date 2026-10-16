@@ -67,7 +67,16 @@ export class CombatHUD {
     let cls = '';
     switch (e.type) {
       case 'reset':
+        // (재시작: 앞 결투의 문구를 지운다 — 승패·사건 설명·버려진 입력, 흐려지는 시간 없이 바로)
+        this.over.innerHTML = '';
+        this.root.classList.add('cb-snap'); // (체력·균형 바도 바로 — 다음 프레임 뒤 다시 부드럽게)
+        this.snapT = 2;
+        this.banner.textContent = '';
+        this.reject.textContent = '';
         this.bannerT = 0;
+        this.rejectT = 0;
+        this.rejectSeen = [null, null];
+        this.reject.className = 'cb-reject';
         this.banner.className = 'cb-banner';
         this.over.className = 'cb-over';
         return;
@@ -118,6 +127,7 @@ export class CombatHUD {
 
   update(dt, debug) {
     const sim = this.sim;
+    if (this.snapT > 0 && --this.snapT === 0) requestAnimationFrame(() => this.root.classList.remove('cb-snap'));
     const now = sim.time;
     const ps = this.opts.playerSide();
     const watch = this.opts.watching();
@@ -140,7 +150,12 @@ export class CombatHUD {
     // 주도권: 표시하는 시간은 sim의 실제 행동 가능 시간 그대로 (누가 먼저 칠 수 있고, 상대는 그때 막을 수 있는가)
     const ini = sim.initiative();
     const side = (f) => `cb-lead on ${f.side === ps && !watch ? 'me' : 'foe'}`;
-    if (ini.swing) {
+    if (ini.over) {
+      // 승패가 일반 공방 표시보다 먼저
+      const w = ini.over.winner;
+      this.lead.innerHTML = `승부 결정 — <b>${w.name}</b> 승리 · R 재시작`;
+      this.lead.className = side(w);
+    } else if (ini.swing) {
       const w = ini.swing;
       const other = sim.fighters[1 - w.by.side];
       const kind = KIND[w.kind] || w.kind;

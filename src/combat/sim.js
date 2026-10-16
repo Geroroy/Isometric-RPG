@@ -80,6 +80,15 @@ export class CombatSim {
     for (const fn of this.listeners) fn(e, this);
   }
 
+  /**
+   * 승부가 났다: 전투를 끝낸다. 두 결투자의 입력 버퍼·쳐내기 창·휘두르는 중인 공격(판정 없이 회복으로)을 지우고 더는
+   * 입력을 받지 않게 하며, 컨트롤러(AI의 예약된 누름·연속 공격·의도)도 멈춘다. 쓰러지는 동작·불꽃 같은 그리기는 계속된다.
+   */
+  endCombat() {
+    for (const f of this.fighters) f.endCombat();
+    for (const c of this.controllers) if (c && c.endCombat) c.endCombat(this);
+  }
+
   /** 타격 정지: 시뮬레이션 전체를 `sec` 동안 멈춘다 (겹치면 긴 쪽). 입력은 ingest로 계속 기억된다. */
   hitstop(sec) {
     this.freeze = Math.max(this.freeze, Math.round(sec * 60) * 2); // (60 fps 기준 프레임 수로 반올림 → 틱)
@@ -100,7 +109,8 @@ export class CombatSim {
   /** 한 틱 */
   step() {
     const [A, B] = this.fighters;
-    const cmds = this.controllers.map((c, i) => (c ? c.command(this, this.fighters[i], this.fighters[1 - i]) : {}));
+    // (승부가 난 뒤엔 컨트롤러에 묻지 않는다: 플레이어 입력도 AI 명령도 더 없음 — endCombat)
+    const cmds = this.controllers.map((c, i) => (c && !this.over ? c.command(this, this.fighters[i], this.fighters[1 - i]) : {}));
     A.ingest(cmds[0] || {}, this.time);
     B.ingest(cmds[1] || {}, this.time);
     if (this.freeze > 0) {
@@ -117,13 +127,14 @@ export class CombatSim {
     this.separate(A, B);
     this.updateGuard(A, B);
     this.updateGuard(B, A);
-    if (this.over) return; // (승부가 난 뒤: 서 있는 쪽은 동작을 마치고, 판정은 더 없다)
+    if (this.over) return; // (승부가 난 뒤: 서 있는 쪽은 동작을 마치고 쓰러진 쪽은 쓰러짐을 마친다 — 판정·통계는 더 없다)
     resolveContacts(this);
     this.updateLead();
     for (const f of this.fighters) {
       if (f.dead && !this.over) {
         const w = f === A ? B : A;
         this.over = { winner: w, loser: f, t: this.time };
+        this.endCombat();
         this.emit({ type: 'over', winner: w, loser: f });
       }
     }
@@ -187,6 +198,8 @@ export class CombatSim {
   initiative() {
     const [A, B] = this.fighters;
     const now = this.time;
+    // (승부가 났으면 주도권 대신 승패 — HUD가 일반 공방 문구보다 먼저 보여 준다)
+    if (this.over) return { over: this.over, leader: null, swing: null, adv: 0, a: Infinity, b: Infinity, ga: Infinity, gb: Infinity, dist: Math.hypot(A.x - B.x, A.y - B.y) };
     const a = A.actionableIn(now);
     const b = B.actionableIn(now);
     const ga = A.guardableIn(now);

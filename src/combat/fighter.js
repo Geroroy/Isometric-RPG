@@ -71,6 +71,7 @@ export class Fighter {
     this.koT = 0;
     this.guardAfter = Infinity; // (parried: 이 시간 뒤 방어 가능)
     this.blend = null; // (그리기: 상태가 바뀌기 전 손·검 — pose.js)
+    this.combatOver = false; // 승부가 났다 (sim.endCombat): 입력을 받지 않는다
     this.gpose = null; // (그리기: 방어 손·검 — sim.js updateGuard)
   }
 
@@ -178,6 +179,7 @@ export class Fighter {
    * cmd: { move: {x,y} 월드 단위 벡터, attack, heavy, dodge: 누른 순간(edge), guard: 누르고 있음, guardPressed: 누른 순간 }
    */
   ingest(cmd, now) {
+    if (this.combatOver) return; // (승부가 난 뒤: 아무 입력도 받지 않는다)
     this.moveIn = cmd.move || NO_MOVE;
     this.guardHeld = !!cmd.guard;
     if (cmd.guardPressed) {
@@ -196,6 +198,21 @@ export class Fighter {
       // (회복 중 이어 베기를 누르면 회수가 다음 베기 준비 쪽으로 바뀐다: 그 자세로 이어 붙임)
       if (this.cutPose && this.state === 'attack' && this.atk.phase === 'recovery' && was !== this.buffer.type) this.cutPose('buffer');
     }
+  }
+
+  /**
+   * 승부가 났다 (sim.endCombat): 버퍼·방어 입력·쳐내기 창을 지우고, 휘두르는 중이던 공격은 판정 없이 회복으로 돌린다
+   * (outcome 'ended' — 헛침도 아니다). 그 뒤 ingest는 아무것도 받지 않는다. 회복·쓰러짐 같은 동작은 그대로 끝까지 간다.
+   */
+  endCombat() {
+    this.combatOver = true;
+    this.buffer = null;
+    this.reject = null;
+    this.press = null;
+    this.parryUntil = -1;
+    this.guardHeld = false;
+    this.moveIn = NO_MOVE;
+    if (this.state === 'attack' && this.atk.phase !== 'recovery') this.toRecovery('ended');
   }
 
   openParry(now) {

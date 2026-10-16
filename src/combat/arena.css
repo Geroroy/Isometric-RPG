@@ -59,6 +59,10 @@ body {
   left: 0;
   transition: width 0.12s linear;
 }
+/* (재시작 직후: 바가 차오르는 애니메이션 없이 바로) */
+.cb-snap .cb-bar i {
+  transition: none;
+}
 .right .cb-bar i {
   left: auto;
   right: 0;
@@ -222,10 +226,11 @@ body {
   transform: translate(-50%, -50%);
   text-align: center;
   opacity: 0;
-  transition: opacity 0.6s 0.4s;
 }
+/* (나타날 때만 천천히: 재시작하면 바로 사라진다) */
 .cb-over.on {
   opacity: 1;
+  transition: opacity 0.6s 0.4s;
 }
 .cb-over .t {
   font-size: 44px;

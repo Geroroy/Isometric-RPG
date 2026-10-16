@@ -31,6 +31,7 @@ export class CombatView {
     sim.on((e) => this.onEvent(e));
     this.resize();
     addEventListener('resize', () => this.resize());
+    this.snapCamera(); // (첫 화면부터 두 결투자가 보이게)
   }
 
   resize() {
@@ -58,6 +59,7 @@ export class CombatView {
         this.fx = [];
         this.trails.forEach((t) => t.clear());
         this.flash = [0, 0];
+        this.snapCamera(); // (카메라도 새 결투의 자리로 바로: 일시정지 중이어도 따라가기를 기다리지 않게)
         break;
       case 'block':
         this.sparks(at, SPARK.block, e.kind === 'heavy' ? 26 : 14, e.kind === 'heavy' ? 3.2 : 2.4);
@@ -118,22 +120,34 @@ export class CombatView {
   }
 
   // ------------------------------------------------------------------------------------------------ 그리기
+  /** 카메라가 가려는 곳: 두 결투자의 가운데, 거리가 멀면 조금 멀리 (확대 s) */
+  cameraTarget() {
+    const [A, B] = this.sim.fighters;
+    const sep = Math.hypot(A.x - B.x, A.y - B.y);
+    const base = Math.max(1.8, Math.min(4.6, innerHeight / 215));
+    const fit = (innerWidth * 0.62) / Math.max(1, sep * PX_M);
+    return { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2, s: Math.min(base, Math.max(1.4, fit)) };
+  }
+
+  /** 카메라를 목표에 바로 (따라가기 보간·흔들림 없이) — 재시작 */
+  snapCamera() {
+    const t = this.cameraTarget();
+    this.cam = { x: t.x, y: t.y, s: t.s };
+    this.camS = worldToScreen(t.x, t.y, 0);
+    this.shake = 0;
+    this.shakeX = this.shakeY = 0;
+  }
+
   render(dt) {
     const sim = this.sim;
     const ctx = this.ctx;
     this.time += dt;
     const [A, B] = sim.fighters;
-    // 카메라: 두 결투자의 가운데, 거리가 멀면 조금 멀리
-    const mx = (A.x + B.x) / 2;
-    const my = (A.y + B.y) / 2;
+    const tgt = this.cameraTarget();
     const k = Math.min(1, dt * 4);
-    this.cam.x += (mx - this.cam.x) * k;
-    this.cam.y += (my - this.cam.y) * k;
-    const sep = Math.hypot(A.x - B.x, A.y - B.y);
-    const base = Math.max(1.8, Math.min(4.6, innerHeight / 215));
-    const fit = (innerWidth * 0.62) / Math.max(1, sep * PX_M);
-    const want = Math.min(base, Math.max(1.4, fit));
-    this.cam.s += (want - this.cam.s) * Math.min(1, dt * 2.5);
+    this.cam.x += (tgt.x - this.cam.x) * k;
+    this.cam.y += (tgt.y - this.cam.y) * k;
+    this.cam.s += (tgt.s - this.cam.s) * Math.min(1, dt * 2.5);
     this.camS = worldToScreen(this.cam.x, this.cam.y, 0);
     this.shake = Math.max(0, this.shake - dt);
     const sh = this.shake * 9;

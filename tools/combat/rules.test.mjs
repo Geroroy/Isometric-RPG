@@ -436,3 +436,101 @@ test('막힌 순간 두 검은 접촉점에서 만나고, 잠깐 맞물린 채 �
   // 타격 정지(틱이 멈춤) 뒤에도 몇 틱 동안 0.2 m 안에 맞물려 있다
   assert.ok(gaps.slice(0, 12).every((g) => g < 0.2), gaps.map((g) => g.toFixed(2)).join(' '));
 });
+
+// ---- 승부 확정과 재시작 (플레이 검수 2026-10-16: KO 뒤 남은 공격 판정, R 직후 상태) ----
+import { CombatSim } from '../../src/combat/sim.js';
+import { ArenaGround } from '../../src/combat/world.js';
+
+/** 시험장(arena.js)과 똑같이: 같은 시작 위치, AI 시드, 시작 때 한 번 더 reset (round 2) */
+function arenaWatch(seed) {
+  const ais = [new AIController('anakin', seed), new AIController('obiwan', seed + 100)];
+  const sim = new CombatSim({ ground: new ArenaGround(0, 0, 7), spawns: [{ x: -1.5, y: 1.5 }, { x: 1.5, y: -1.5 }], cast: ['anakin', 'obiwan'], controllers: ais });
+  sim.reset();
+  return { sim, ais };
+}
+const JUDGE = /^(swing|active|whiff|block|parry|clash|break|hit|evade|ko|dodge|lead)$/;
+
+test('승부가 나면 전투가 끝난다: KO 뒤 공격·방어·피격·헛침 판정과 통계가 더 생기지 않는다 (seed 3·7·11 관전)', () => {
+  let kos = 0;
+  for (const seed of [3, 7, 11]) {
+    const { sim, ais } = arenaWatch(seed);
+    const late = [];
+    let stats = null;
+    sim.on((e, s) => {
+      if (e.type === 'over') stats = JSON.stringify(s.stats);
+      else if (s.over && JUDGE.test(e.type)) late.push(`${e.t.toFixed(2)} ${e.type}`);
+    });
+    while (sim.time < 60 && !(sim.over && sim.time > sim.over.t + 5)) sim.advance(1 / 60);
+    if (!sim.over) continue; // (seed 7은 60 s 안에 승부가 나지 않는다)
+    kos++;
+    assert.deepEqual(late, [], `seed ${seed} KO 뒤 사건`);
+    assert.equal(JSON.stringify(sim.stats), stats, `seed ${seed} KO 뒤 통계`);
+    for (const f of sim.fighters) {
+      assert.equal(f.buffer, null);
+      assert.ok(!(f.state === 'attack' && f.atk.phase !== 'recovery'), '휘두르는 중인 공격이 남음');
+    }
+    for (const a of ais) {
+      assert.equal(a.presses.length, 0);
+      assert.equal(a.intent, 'over');
+    }
+    const ini = sim.initiative();
+    assert.ok(ini.over && ini.over.winner === sim.over.winner, '주도권 대신 승패');
+    assert.equal(ini.leader, null);
+    // 쓰러짐 동작(그리기용)은 계속 진행된다
+    assert.ok(sim.over.loser.koT > 4, `koT ${sim.over.loser.koT}`);
+  }
+  assert.ok(kos >= 2, `KO가 난 판 ${kos}`);
+});
+
+test('KO 순간 눌러 둔 이어 베기·예약된 공격은 나가지 않는다 (스크립트)', () => {
+  // A가 1타로 B를 쓰러뜨림 — 그 직후 A의 버퍼에 이어 베기, 이어서 강공격 입력
+  const c = 0.3 + L1.windup;
+  const sim = duel({ dist: 1.8, c0: new Script([{ at: 0.3, attack: true }, { at: c - 0.02, attack: true }, { at: c + 0.2, heavy: true }, { at: c + 0.5, dodge: true }]) });
+  sim.fighters[1].hp = 5;
+  run(sim, 2);
+  assert.ok(sim.over && sim.over.winner === sim.fighters[0]);
+  const after = sim.events.filter((e) => e.t > sim.over.t && JUDGE.test(e.type));
+  assert.deepEqual(after.map((e) => e.type), []);
+  assert.equal(sim.events.filter((e) => e.type === 'swing').length, 1);
+});
+
+test('R(재시작)는 어떤 순간에도 판정·입력·AI·통계·위치를 처음으로 되돌린다 (진행 중·공격 중·피격 중·타격 정지 중·KO 뒤)', () => {
+  const moments = {
+    진행중: (s) => s.time > 2,
+    공격중: (s) => s.fighters.some((f) => f.state === 'attack' && f.atk.phase === 'windup'),
+    피격중: (s) => s.fighters.some((f) => f.state === 'hitstun'),
+    타격정지중: (s) => s.freeze > 0,
+    KO뒤: (s) => s.over && s.time > s.over.t + 0.5,
+  };
+  for (const [name, when] of Object.entries(moments)) {
+    const { sim, ais } = arenaWatch(11);
+    let n = 0;
+    while (!when(sim) && n++ < 120 * 80) sim.step();
+    assert.ok(when(sim), `${name} 상황에 이르지 못함`);
+    sim.reset();
+    assert.equal(sim.time, 0, name);
+    assert.equal(sim.tick, 0, name);
+    assert.equal(sim.freeze, 0, name);
+    assert.equal(sim.over, null, name);
+    assert.equal(sim.log.length, 0, name);
+    assert.ok(Object.values(sim.stats).every((v) => v === 0), name);
+    const sp = sim.spawns;
+    sim.fighters.forEach((f, i) => {
+      assert.equal(f.hp, 100, name);
+      assert.equal(f.bal, 100, name);
+      assert.equal(f.state, 'ready', name);
+      assert.equal(f.atk, null, name);
+      assert.equal(f.buffer, null, name);
+      assert.equal(f.combatOver, false, name);
+      assert.ok(f.x === sp[i].x && f.y === sp[i].y && f.kx === 0 && f.vx === 0, name);
+    });
+    for (const a of ais) {
+      assert.equal(a.hist.length, 0, name);
+      assert.equal(a.presses.length, 0, name);
+      assert.equal(a.intent, 'idle', name);
+    }
+    // 재시작한 결투가 다시 정상으로 싸운다 (막기·쳐내기 등 판정이 다시 난다)
+    while (sim.time < 12) sim.advance(1 / 60);
+    assert.ok(sim.log.length > 0, `${name}: 재시작 뒤 판정 없음`);
+  }
+});

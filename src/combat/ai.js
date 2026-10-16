@@ -90,6 +90,7 @@ const INTENT = {
   advance: '제한된 전진 (이어 베기엔 멂)',
   abort: '공격 중단 (상대가 빠짐)',
   press: '방어하며 밀고 들어감 (유도 읽음)',
+  over: '결투 끝',
   chase: '추격 (균형 붕괴)',
   idle: '대기',
 };
@@ -150,6 +151,18 @@ export class AIController {
     const x = o.x + v.x * ahead;
     const y = o.y + v.y * ahead;
     return Math.hypot(x - me.x, y - me.y) - lunge;
+  }
+
+  /** 승부가 났다 (sim.endCombat): 예약된 누름·연속 공격·방어·이동을 모두 거두고 더는 판단하지 않는다 */
+  endCombat() {
+    this.presses = [];
+    this.string = null;
+    this.guard = false;
+    this.guardUntil = -1;
+    this.advanceUntil = -1;
+    this.move = { x: 0, y: 0 };
+    this.intent = 'over';
+    this.lastJudge = null;
   }
 
   /** 지연된 관측: 지금 - delay 시각의 상대 모습 */
