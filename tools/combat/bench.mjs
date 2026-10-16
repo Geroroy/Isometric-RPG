@@ -83,6 +83,7 @@ function measure(sim, secs) {
   });
   // 자세 연결: 틱마다 몸에 대한 손 위치의 튐(1/60 s에 10 cm = 6 m/s 초과, 휘두르기·타격 반응 제외), 막은 뒤 0.35 s 동안 두 검이 가까이 맞물려 있는가
   const prevHand = [null, null];
+  const prevSwing = [false, false];
   let blockT = -9;
   sim.on((e) => e.type === 'block' && !e.broke && (blockT = e.t));
   const end = sim.time + secs;
@@ -99,8 +100,10 @@ function measure(sim, secs) {
       // (휘두르는 중, 맞힌·헛친 베기의 끝까지 휘두름 0.1 s, 맞거나 쳐내진 직후 0.12 s의 반응은 원래 빠른 동작: 빼고)
       const swinging = (f.state === 'attack' && (f.atk.phase !== 'recovery' || (f.atk.outcome !== 'blocked' && f.atk.recT < 0.1))) || (/^(parried|clash|overpowered|hitstun|broken)$/.test(f.state) && f.st < 0.12);
       const rel = v3.sub(p.hand, p.hips); // (몸에 대한 손: 회피·밀려남 같은 몸 전체의 이동은 빼고)
-      if (prevHand[i] && !swinging && v3.len(v3.sub(rel, prevHand[i])) > 0.1) out.pops++; // (1/60 s에 10 cm = 6 m/s 넘게 튐)
+      // (1/60 s에 10 cm = 6 m/s 넘게 튐. 앞 프레임이 휘두르는 중이었으면 그 사이 움직임은 휘두르기 — 막힌 순간에 닿는 마지막 한 프레임)
+      if (prevHand[i] && !swinging && !prevSwing[i] && v3.len(v3.sub(rel, prevHand[i])) > 0.1) out.pops++;
       prevHand[i] = rel;
+      prevSwing[i] = swinging;
     });
     if (sim.time - blockT < 0.35 && sim.time > blockT) {
       out.afterBlockTicks++;
@@ -131,7 +134,8 @@ for (const [name, mk] of Object.entries(SCEN)) {
   for (const persona of ['anakin', 'obiwan']) {
     const acc = {};
     for (let s = 1; s <= SEEDS; s++) {
-      const sim = duel({ dist: 3.2, c0: mk(), c1: new AIController(persona, s * 31) });
+      // (AI 쪽 캐릭터 = 그 성향의 캐릭터: 아나킨 성향은 아나킨의 검술로, 오비완 성향은 오비완의 검술로)
+      const sim = duel({ dist: 3.2, cast: [persona === 'anakin' ? 'obiwan' : 'anakin', persona], c0: mk(), c1: new AIController(persona, s * 31) });
       sim.on((e) => {
         if (e.type === 'hit' && e.by.side === 1) acc.aiHits = (acc.aiHits || 0) + 1;
         if ((e.type === 'block' || e.type === 'parry') && e.target && e.target.side === 1) acc.aiBlocked = (acc.aiBlocked || 0) + 1;

@@ -10,7 +10,7 @@ const el = (tag, cls, html = '') => {
   return e;
 };
 
-const KIND = { light1: '베기', light2: '베기 2', light3: '마무리 베기', heavy: '강공격' };
+const KIND = { light1: '베기', light2: '베기 2', light3: '마무리 베기', heavy: '강공격', riposte: '반격' };
 const WHY_HIT = {
   open: '방어하지 않음',
   combo: '경직 중 이어 맞음',
@@ -40,7 +40,7 @@ export class CombatHUD {
     this.guide = el(
       'div',
       'cb-guide',
-      `<b>WASD</b> 이동 <b>좌클릭</b> 베기(연속 3타) <b>F</b> 강공격 <b>우클릭 유지</b> 방어 <b>공격 직전 우클릭</b> 쳐내기
+      `<b>WASD</b> 이동 <b>좌클릭</b> 베기(연속 3타) <b>F</b> 강공격 <b>우클릭 유지</b> 방어 <b>공격 직전 우클릭</b> 쳐내기 <b>쳐낸 뒤 좌클릭</b> 반격
        <b>Space+방향</b> 회피 <b>R</b> 재시작 <b>F3</b> 디버그 <b>P</b> 일시정지 <b>M</b> AI 대 AI <b>C</b> 캐릭터 바꾸기 <b>H</b> 안내`,
     );
     this.over = el('div', 'cb-over');

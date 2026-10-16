@@ -66,6 +66,7 @@ export class CombatView {
         this.fx.push({ k: 'flash', p: at, r: e.kind === 'heavy' ? 0.5 : 0.32, rgb: SPARK.block, t: 0, life: 0.12 });
         this.fx.push({ k: 'ring', p: at, rgb: SPARK.block, r0: 0.08, r1: 0.42, t: 0, life: 0.2 });
         txt(v3.add(at, [0, 0, 0.32]), e.broke ? '방어 붕괴!' : '막음', e.broke ? '#ffb070' : '#cfe6ff', e.broke ? 17 : 14);
+        if (e.press) txt([e.target.x, e.target.y, 2.0], '압박 유지', '#9cc4ff', 13, 0.7);
         break;
       case 'parry':
         this.sparks(at, SPARK.parry, 34, 3.6);
@@ -106,6 +107,7 @@ export class CombatView {
       case 'swing':
         this.trails[e.by.side].clear();
         this.trails[e.by.side].whiff = false;
+        if (e.kind === 'riposte') txt([e.by.x, e.by.y, 2.0], e.by.atk.def.name, '#ffe3a0', 14, 0.7);
         break;
     }
   }
@@ -259,9 +261,10 @@ export class CombatView {
     const faceFront = Math.cos(f.facing) + Math.sin(f.facing) > -0.2; // 얼굴이 화면 쪽인가
     const down = f.dead ? Math.min(1, f.koT / 0.5) : 0;
     const fall = (q) => (down ? fallen(q, f, down) : q);
-    const hipL = fall(v3.add(p.hips, v3.mul(right, -0.09)));
-    const hipR = fall(v3.add(p.hips, v3.mul(right, 0.09)));
+    const hipL = fall(p.hipL);
+    const hipR = fall(p.hipR);
     const feet = p.feet.map(fall);
+    const knees = p.knees.map(fall);
     const hips = fall(p.hips);
     const chest = fall(p.chest);
     const head = fall(p.head);
@@ -274,8 +277,11 @@ export class CombatView {
       d: bodyD,
       draw(ctx) {
         ctx.lineCap = 'round';
-        seg(ctx, self, hipL, feet[0], 0.115 * S, tint(c.tunic2));
-        seg(ctx, self, hipR, feet[1], 0.115 * S, tint(c.tunic2));
+        // 다리: 엉덩이 → 무릎 → 디딘 발 (앞발 = 왼발)
+        seg(ctx, self, hipL, knees[0], 0.12 * S, tint(c.tunic2));
+        seg(ctx, self, knees[0], feet[0], 0.105 * S, tint(c.tunic2));
+        seg(ctx, self, hipR, knees[1], 0.12 * S, tint(c.tunic2));
+        seg(ctx, self, knees[1], feet[1], 0.105 * S, tint(c.tunic2));
         for (const ft of feet) dot(ctx, self, ft, 0.07 * S, '#121010');
         ctx.lineCap = 'butt';
         seg(ctx, self, hips, skirtLo, (persona === 'obiwan' ? 0.42 : 0.33) * S, tint(persona === 'obiwan' ? c.tunic : c.tunic2));
@@ -310,24 +316,23 @@ export class CombatView {
         }
       },
     });
-    // 팔 (어깨 → 손): 손이 몸 뒤면 몸보다 먼저
-    const hand = fall(p.hand);
-    const handD = hand[0] + hand[1];
+    // 팔 (어깨 → 팔꿈치 → 손잡이를 쥔 손, 두 손): 손이 몸 뒤면 몸보다 먼저
+    const hands = [fall(p.handL), fall(p.hand)];
+    const elbows = p.elbows.map(fall);
     const sleeve = persona === 'obiwan' ? c.tunic : c.tunic2;
-    const elbow = (sh) => v3.add(v3.lerp(sh, hand, 0.5), [0, 0, -0.1]);
-    for (const sh of [shL, shR]) {
-      const d = (sh[0] + sh[1] + handD) / 2;
+    [shL, shR].forEach((sh, i) => {
+      const hd = hands[i];
+      const d = (sh[0] + sh[1] + hd[0] + hd[1]) / 2;
       items.push({
         d: d + 0.001,
         draw(ctx) {
           ctx.lineCap = 'round';
-          const e = elbow(sh);
-          seg(ctx, self, sh, e, 0.09 * S, tint(sleeve));
-          seg(ctx, self, e, hand, 0.08 * S, tint(sleeve));
-          dot(ctx, self, hand, 0.05 * S, persona === 'anakin' ? '#121010' : c.skin);
+          seg(ctx, self, sh, elbows[i], 0.09 * S, tint(sleeve));
+          seg(ctx, self, elbows[i], hd, 0.08 * S, tint(sleeve));
+          dot(ctx, self, hd, 0.05 * S, persona === 'anakin' ? '#121010' : c.skin);
         },
       });
-    }
+    });
     // 광선검: 손잡이 + 날 (중심부 흰색, 바깥 빛)
     const base = fall(p.base);
     const bb = fall(p.bladeBase);
@@ -423,7 +428,7 @@ export class CombatView {
         const act = a.phase === 'active';
         sector(ctx, this, f.x, f.y, f.facing, a.def.arc, a.def.reach, act ? 'rgba(255,60,40,0.28)' : null, act ? '#ff5a3c' : 'rgba(255,150,80,0.8)', !act);
       } else if (!f.dead) {
-        sector(ctx, this, f.x, f.y, f.facing, T.attacks.light1.arc, T.attacks.light1.reach, null, 'rgba(255,255,255,0.12)', true);
+        sector(ctx, this, f.x, f.y, f.facing, f.attacks.light1.arc, f.attacks.light1.reach, null, 'rgba(255,255,255,0.12)', true);
       }
     }
     const [A, B] = sim.fighters;
@@ -438,7 +443,7 @@ export class CombatView {
     ctx.setLineDash([]);
     const d = Math.hypot(A.x - B.x, A.y - B.y);
     ctx.font = "600 12px 'Share Tech Mono', monospace";
-    ctx.fillStyle = d <= T.attacks.light1.reach ? '#ff9b7a' : '#cfd6de';
+    ctx.fillStyle = d <= Math.max(A.attacks.light1.reach, B.attacks.light1.reach) ? '#ff9b7a' : '#cfd6de';
     ctx.textAlign = 'center';
     ctx.fillText(`${d.toFixed(2)} m`, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 6);
   }

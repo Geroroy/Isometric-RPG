@@ -6,7 +6,8 @@ import { duel, Script, run } from './harness.mjs';
 import { TUNING as T } from '../../src/combat/tuning.js';
 import { AIController } from '../../src/combat/ai.js';
 
-const L1 = T.attacks.light1;
+const ATK = T.styles.anakin.attacks; // (시나리오의 공격자는 거의 0번 = 아나킨의 검술)
+const L1 = ATK.light1;
 const contactAt = (start, def = L1) => start + def.windup; // (사거리 안이면 active 첫 틱에 판정)
 const only = (sim, type) => sim.log.filter((e) => e.type === type);
 
@@ -84,7 +85,7 @@ test('정확한 쳐내기: 공격자 균형·경직, 쳐낸 쪽이 주도권을 
 
 test('연속 공격의 약점: 끝까지 막힌 3타는 반격당하고, 2타는 다시 누른 방어로 쳐낼 수 있다', () => {
   // A: 1-2-3타 (각 타의 이어치기 가능 시각 조금 전에 눌러 버퍼로), B: 방어 유지 후 3타가 막히자마자 공격
-  const L2 = T.attacks.light2;
+  const L2 = ATK.light2;
   const s0 = 0.5;
   const c1 = s0 + L1.windup; // 1타 판정
   const c2 = c1 + L1.chainAt + L2.windup; // 2타 판정 (막히면 그 자리에서 회복으로)
@@ -99,7 +100,7 @@ test('연속 공격의 약점: 끝까지 막힌 3타는 반격당하고, 2타는
   c1c.command = (s, me, foe) => {
     const cmd = orig(s, me, foe);
     if (punishAt !== null) cmd.guard = false;
-    if (punishAt !== null && s.time >= punishAt + T.attacks.light3.blockstun - 0.05 && !c1c.fired) {
+    if (punishAt !== null && s.time >= punishAt + ATK.light3.blockstun - 0.05 && !c1c.fired) {
       c1c.fired = true;
       cmd.attack = true;
     }
@@ -129,7 +130,7 @@ test('방어 유지의 약점: 계속 막으면 균형이 무너지고, 강공�
   // 강공격 막기
   const h = duel({ dist: 1.9, c0: new Script([{ at: 0.4, heavy: true }]), c1: new Script([], { guard: [[0, 3]] }) });
   run(h, 1.5);
-  assert.ok(h.fighters[1].bal <= 100 - T.attacks.heavy.blockBal + 0.5);
+  assert.ok(h.fighters[1].bal <= 100 - ATK.heavy.blockBal + 0.5);
 });
 
 test('측면 회피와 후퇴로 공격을 피한다 (공격은 도중에 돌아서 따라오지 않는다)', () => {
@@ -193,7 +194,7 @@ test('한 공격은 한 번만 판정한다 (여러 틱·타격 정지에도 중
   }
   const drops = hp.filter((v, i) => i && v < hp[i - 1]).length;
   assert.equal(drops, 1);
-  assert.equal(sim.fighters[1].hp, 100 - T.attacks.heavy.dmg);
+  assert.equal(sim.fighters[1].hp, 100 - ATK.heavy.dmg);
   assert.equal(only(sim, 'hit').length, 1);
 });
 
@@ -204,7 +205,7 @@ test('동시 공격: 같은 무게는 맞부딪히고, 강공격은 기본 공�
   assert.equal(only(sim, 'hit').length, 0);
   assert.equal(sim.fighters[0].hp + sim.fighters[1].hp, 200);
   // 강공격의 active에 기본 공격이 맞물림
-  const hv = T.attacks.heavy;
+  const hv = ATK.heavy;
   sim = duel({ dist: 1.9, c0: new Script([{ at: 0.3, heavy: true }]), c1: new Script([{ at: 0.3 + hv.windup - L1.windup, attack: true }]) });
   run(sim, 1.5);
   const c = only(sim, 'clash');
@@ -331,13 +332,13 @@ test('프레임 속도가 달라도 공격 시간과 판정 결과가 같다', (
 });
 
 test('주도권 표시는 실제로 행동할 수 있는 시간과 같다 (막기·3타 막기·강공격 막기·쳐내기·헛침)', () => {
-  const L3 = T.attacks.light3;
-  const H = T.attacks.heavy;
+  const L3 = ATK.light3;
+  const H = ATK.heavy;
   // 장면: [이름, A의 입력, B의 방어 구간, 기다릴 사건]
   const c1 = 0.4 + L1.windup;
   const scenes = [
     ['베기 막기', [{ at: 0.4, attack: true }], [[0, 9]], 'block'],
-    ['3타 막기', [0.4, c1 + L1.chainAt - 0.05, c1 + L1.chainAt + T.attacks.light2.windup + T.attacks.light2.chainAt - 0.05].map((at) => ({ at, attack: true })), [[0, 9]], (e) => e.type === 'block' && e.kind === 'light3'],
+    ['3타 막기', [0.4, c1 + L1.chainAt - 0.05, c1 + L1.chainAt + ATK.light2.windup + ATK.light2.chainAt - 0.05].map((at) => ({ at, attack: true })), [[0, 9]], (e) => e.type === 'block' && e.kind === 'light3'],
     ['강공격 막기', [{ at: 0.4, heavy: true }], [[0, 9]], 'block'],
     ['쳐내기', [{ at: 0.4, attack: true }], [[c1 - 0.05, 9]], 'parry'],
     ['베기 헛침', [{ at: 0.4, attack: true }], [], 'whiff', 3.2],

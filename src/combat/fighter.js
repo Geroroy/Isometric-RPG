@@ -37,6 +37,10 @@ export class Fighter {
     this.cast = cast;
     this.name = cast.name;
     this.side = side;
+    // 검술 (캐릭터별 공격·연결 규칙 — tuning.js TUNING.styles, 동작 — moves.js). 조작하는 쪽(플레이어·AI)과 무관하게 캐릭터에 붙는다
+    this.style = cast.style || cast.persona;
+    this.attacks = T.styles[this.style].attacks;
+    this.links = T.styles[this.style].links;
     this.radius = T.body.radius;
     this.reset(0, 0, 0);
   }
@@ -67,12 +71,14 @@ export class Fighter {
     this.balLossT = -99;
     this.shakenUntil = -1;
     this.contact = null; // 마지막 접촉 (자세: 막힌 검이 멈춘 자리 등) { kind, at, t, role }
-    this.walked = 0; // 걸은 거리 (발 애니메이션)
     this.koT = 0;
     this.guardAfter = Infinity; // (parried: 이 시간 뒤 방어 가능)
     this.blend = null; // (그리기: 상태가 바뀌기 전 손·검 — pose.js)
     this.combatOver = false; // 승부가 났다 (sim.endCombat): 입력을 받지 않는다
     this.gpose = null; // (그리기: 방어 손·검 — sim.js updateGuard)
+    this.gait = null; // (그리기: 디딘 발 — gait.js)
+    this.riposteUntil = -1; // 이 시각까지 누른 기본 공격은 반격 동작 (links.riposte: 쳐낸·막은 뒤)
+    this.blockSide = 1; // (막으며 옆으로 디딜 쪽 — links.blockStep)
   }
 
   // ---------------------------------------------------------------- 질의
@@ -97,10 +103,21 @@ export class Fighter {
     return this.st >= a && this.st <= b;
   }
 
-  /** 지금 회복 잠김이 끝나는 공격 시간 (recovery 기준) */
-  lockEnd() {
+  /**
+   * 지금 회복 잠김이 끝나는 공격 시간 (recovery 기준). 막혔어도 유리하면(pressOn — links.pressOnBlock) 이어 베기·강공격만 더 일찍
+   * (회피·방어는 보통 잠김: 압박은 공격을 이어 가는 것이지 빠져나오는 것이 아니다)
+   */
+  lockEnd(type = 'light') {
     const a = this.atk;
-    return a.def.chainAt + (a.outcome === 'whiff' ? a.def.whiffExtra : 0);
+    const at = a.pressOn && type !== 'dodge' ? Math.min(a.def.chainAt, this.links.pressOnBlock.chainAt) : a.def.chainAt;
+    return at + (a.outcome === 'whiff' ? a.def.whiffExtra : 0);
+  }
+
+  /** 방어를 올릴 수 있게 되는 공격 시간 (recovery 기준): guardAt(짧게 회수되는 검) 또는 잠김 끝 */
+  guardEnd() {
+    const a = this.atk;
+    const g = a.def.guardAt ?? a.def.chainAt;
+    return Math.min(this.lockEnd('dodge'), g + (a.outcome === 'whiff' ? a.def.whiffExtra : 0));
   }
 
   /** 공격·강공격·회피가 지금 불가능한 이유 (가능하면 null) */
@@ -115,7 +132,7 @@ export class Fighter {
       const a = this.atk;
       if (a.phase === 'windup') return REASON.windup;
       if (a.phase === 'active') return REASON.active;
-      const left = this.lockEnd() - a.recT;
+      const left = this.lockEnd(type) - a.recT;
       if (left > 1e-9) return REASON.locked(left);
       if (type === 'light' && !a.def.next) return REASON.noChain;
       if (type === 'heavy' && !a.def.heavyChain) return REASON.noHeavyChain;
@@ -127,7 +144,7 @@ export class Fighter {
   canGuard() {
     const s = this.state;
     if (s === 'ready' || s === 'guard') return true;
-    if (s === 'attack') return this.atk.phase === 'recovery' && this.atk.recT >= this.lockEnd() - 1e-9;
+    if (s === 'attack') return this.atk.phase === 'recovery' && this.atk.recT >= this.guardEnd() - 1e-9;
     if (s === 'parried') return this.st >= this.guardAfter - 1e-9;
     return false;
   }
@@ -142,8 +159,8 @@ export class Fighter {
     if (s === 'dodge') return Math.max(0, T.dodge.dur - this.st);
     if (s === 'attack') {
       const a = this.atk;
-      if (a.phase === 'recovery') return Math.max(0, this.lockEnd() - a.recT);
-      return this.actionableIn(now);
+      if (a.phase === 'recovery') return Math.max(0, this.guardEnd() - a.recT);
+      return Math.max(0, a.def.windup + a.def.active - a.t) + this.guardEnd();
     }
     return 0;
   }
@@ -313,7 +330,8 @@ export class Fighter {
     if (b.type === 'dodge') this.startDodge(b.dir, foe, sim, now);
     else {
       const chainFrom = this.state === 'attack' ? this.atk : null;
-      const kind = b.type === 'heavy' ? 'heavy' : chainFrom ? chainFrom.def.next : 'light1';
+      // (쳐낸·막은 뒤 창 안의 기본 공격 = 이 캐릭터의 반격 동작)
+      const kind = b.type === 'heavy' ? 'heavy' : chainFrom ? chainFrom.def.next : now <= this.riposteUntil + 1e-9 ? 'riposte' : 'light1';
       this.startAttack(kind, foe, sim, now, chainFrom ? chainFrom.combo + 1 : 1);
     }
     return true;
@@ -331,10 +349,11 @@ export class Fighter {
   }
 
   startAttack(kind, foe, sim, now, combo) {
-    const def = T.attacks[kind];
+    const def = this.attacks[kind];
     this.setState('attack');
-    this.atk = { id: ATTACK_SEQ++, kind, def, t: 0, recT: 0, phase: 'windup', resolved: false, outcome: null, evaded: false, combo, lunged: 0 };
+    this.atk = { id: ATTACK_SEQ++, kind, def, t: 0, recT: 0, phase: 'windup', resolved: false, outcome: null, evaded: false, combo, lunged: 0, pressOn: false };
     this.parryUntil = -1;
+    this.riposteUntil = -1;
     sim.emit({ type: 'swing', by: this, kind, combo });
   }
 
@@ -350,20 +369,21 @@ export class Fighter {
         sim.emit({ type: 'active', by: this, kind: a.kind });
       }
     }
-    // 내딛기: windup 후반부터 active 끝까지, 최대 lunge m, 상대에게 lungeStop보다 가까워지지 않음
+    // 내딛기: windup 후반부터 active 끝까지, 최대 lunge m, 상대에게 lungeStop보다 가까워지지 않음. 걷기 속도로 넣어 바닥(벽)을
+    // 따른다 (sim.integrate → ground.move)
     if (a.phase !== 'recovery') {
       const t0 = def.windup * 0.45;
       const t1 = def.windup + def.active;
+      this.vx = this.vy = 0;
       if (a.t > t0 && a.lunged < def.lunge) {
         const d = Math.hypot(foe.x - this.x, foe.y - this.y);
         const step = Math.min(def.lunge - a.lunged, (def.lunge / (t1 - t0)) * DT);
         if (d - step > T.lungeStop) {
-          this.x += Math.cos(this.facing) * step;
-          this.y += Math.sin(this.facing) * step;
+          this.vx = (Math.cos(this.facing) * step) / DT;
+          this.vy = (Math.sin(this.facing) * step) / DT;
           a.lunged += step;
         } else a.lunged = def.lunge;
       }
-      this.vx = this.vy = 0;
     }
     if (a.phase === 'active' && !a.resolved && a.t >= def.windup + def.active - 1e-9) {
       // 판정 구간이 끝날 때까지 아무것도 맞히지 못했다: 헛침 (회복에 whiffExtra)
@@ -377,7 +397,10 @@ export class Fighter {
     if (a.phase === 'recovery') {
       a.recT += DT;
       if (this.tryBuffered(foe, sim, now)) return;
-      if (this.guardHeld && this.canGuard()) {
+      // (방어 버튼을 쥔 채여도, 이어 갈 베기를 눌러 두었으면 그 베기를 기다린다: 일찍 돌아오는 검(guardAt)이 연속 공격을 끊지 않게)
+      const b = this.buffer;
+      const chainWaits = b && ((b.type === 'light' && def.next) || (b.type === 'heavy' && def.heavyChain));
+      if (this.guardHeld && this.canGuard() && !chainWaits) {
         this.setState('guard');
         this.openParry(now);
         return;
@@ -396,6 +419,9 @@ export class Fighter {
     a.outcome = outcome;
     a.phase = 'recovery';
     a.recT = 0;
+    this.vx = this.vy = 0;
+    // 베고 물러서기 (recoil): 회복 시작에 뒤로 한 걸음 — 밀려남과 같은 감쇠 속도로 (상태가 바뀌어도 걸음은 끝까지)
+    if (a.def.recoil && outcome !== 'ended') this.push(-Math.cos(this.facing), -Math.sin(this.facing), a.def.recoil);
   }
 
   startDodge(dir, foe, sim, now) {
@@ -517,6 +543,8 @@ export class Fighter {
       atkT: a ? a.t : 0,
       atkRecT: a ? a.recT : 0,
       atkOutcome: a ? a.outcome : null,
+      atkPressOn: a ? a.pressOn : false,
+      style: this.style,
       guarding: this.guardActive(),
       hp: this.hp,
       bal: this.bal,

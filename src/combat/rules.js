@@ -123,6 +123,7 @@ export function breakBalance(sim, f, cause = 'guard') {
   f.setTimed('broken', T.reactions.broken);
   f.parryUntil = -1;
   f.actLockUntil = -1;
+  f.riposteUntil = -1;
   sim.emit({ type: 'break', target: f, cause, dur: T.reactions.broken });
 }
 
@@ -158,6 +159,8 @@ function strike(sim, F, O) {
       F.shakenUntil = now + T.guard.shakenT;
     }
     F.push(-away[0], -away[1], 0.22);
+    // 쳐낸 쪽: 이 창 안에 누른 기본 공격은 그 캐릭터의 반격 동작 (links.riposte — 확정 피해는 아니다: 쳐내진 쪽도 parriedGuard 뒤 방어 가능)
+    if (O.links.riposte && O.links.riposte.parry) O.riposteUntil = now + O.links.riposte.parry;
     sim.emit({ type: 'parry', by: O, target: F, kind: a.kind, at, bal: def.parryBal, stun: def.parried, guardAfter: def.parriedGuard, broke });
     sim.hitstop(T.hitstop.parry);
     return;
@@ -173,15 +176,32 @@ function strike(sim, F, O) {
     markContact(sim, F, 'block', at, 'blocked');
     const broke = O.loseBal(cost, now);
     F.loseBal(def.selfBlockBal, now, 1); // (튕긴 검: 공격자도 조금 — 막기로는 공격자가 무너지지 않음)
-    O.push(away[0], away[1], def.blockPush * (broke ? 1.3 : 1));
+    // 막은 쪽이 밀리는 방향: 보통은 곧장 뒤로, blockStep이 있는 검술은 뒤·옆으로 디디며 받아낸다 (거리는 같다 — 각도만)
+    const bs = O.links.blockStep;
+    let push = away;
+    if (bs && !broke) {
+      const l = Math.hypot(away[0], away[1]) || 1;
+      const [bx, by] = [away[0] / l, away[1] / l];
+      O.blockSide = -O.blockSide; // (번갈아: 한쪽으로만 돌아 나가지 않게)
+      push = [bx * bs.back - by * bs.side * O.blockSide, by * bs.back + bx * bs.side * O.blockSide];
+    }
+    O.push(push[0], push[1], def.blockPush * (broke ? 1.3 : 1));
     F.push(-away[0], -away[1], 0.06);
+    // 막혀도 압박을 이어 가는 검술 (links.pressOnBlock): 내 균형이 상대보다 낫고, 밀려난 뒤에도 다음 베기가 닿을 거리면 잠김이 짧다
+    const po = F.links.pressOnBlock;
+    if (po && def.next && !broke) {
+      const nx = F.attacks[def.next];
+      F.atk.pressOn = F.bal >= O.bal + po.balEdge && distOf(F, O) + def.blockPush <= nx.reach + nx.lunge * 0.6 + po.range; // (판정 순간까지 내딛는 몫 ≈ 0.6)
+    }
+    // 막은 쪽: 밀림이 끝난 뒤 창 안의 기본 공격은 반격 동작 (links.riposte.block)
+    if (!broke && O.links.riposte && O.links.riposte.block) O.riposteUntil = now + def.blockstun + O.links.riposte.block;
     if (broke) {
       breakBalance(sim, O, 'guard');
       sim.emit({ type: 'block', by: O, target: F, kind: a.kind, at, bal: cost, broke: true });
       sim.hitstop(T.hitstop.break);
     } else {
       O.setTimed('blockstun', def.blockstun);
-      sim.emit({ type: 'block', by: O, target: F, kind: a.kind, at, bal: cost, shaken: mult > 1, stun: def.blockstun });
+      sim.emit({ type: 'block', by: O, target: F, kind: a.kind, at, bal: cost, shaken: mult > 1, stun: def.blockstun, press: F.atk.pressOn });
       sim.hitstop(a.kind === 'heavy' ? T.hitstop.blockHeavy : T.hitstop.block);
     }
     return;
@@ -209,6 +229,7 @@ function strike(sim, F, O) {
   }
   O.setTimed('hitstun', def.hitstun + (counter ? T.reactions.counterHitStun : 0));
   O.parryUntil = -1;
+  O.riposteUntil = -1;
   if (wasBroken) O.bal = T.balance.afterPunish;
   else O.loseBal(def.hitBal, now, 1);
   O.push(away[0], away[1], def.knock);

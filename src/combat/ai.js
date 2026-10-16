@@ -5,6 +5,16 @@
 import { TUNING as T } from './tuning.js';
 import { RNG, angleDiff } from '../core/math.js';
 
+/** 관측한 상대의 공격 표 (상대가 누구인지는 보인다: 그 캐릭터의 검술) */
+const foeAttacks = (o) => T.styles[o.style].attacks;
+/** 관측한 상대 공격의 회복 잠김 길이 (막혀도 압박을 이어 가는 검술이면 짧다) */
+function foeLock(o) {
+  const def = foeAttacks(o)[o.atkKind];
+  const po = T.styles[o.style].links.pressOnBlock;
+  const at = o.atkPressOn && po ? Math.min(def.chainAt, po.chainAt) : def.chainAt;
+  return at + (o.atkOutcome === 'whiff' ? def.whiffExtra : 0);
+}
+
 /**
  * 성향. 수치는 가설값 (tuning.js와 같은 취지: 시험장에서 맞춘다).
  *   reaction   관측 지연 범위 (s) — 상대의 공격을 '보는' 데 걸리는 시간
@@ -25,6 +35,9 @@ import { RNG, angleDiff } from '../core/math.js';
  *   readParry  막은 뒤 다음 베기를 '읽고' 그 타이밍에 쳐내기를 노릴 확률 (빗나가면 방어로 남음)
  *   riposte    막은 뒤 밀림이 끝나자마자 되받아 칠 확률 (확정이 아닌 읽기: 상대가 이어 치면 부딪히거나 맞는다)
  *   patience   거리를 재며 기다리는 시간 범위 (s): 지나면 스스로 파고들어 압박한다 (상대가 가만히 있어도 공방이 생기게)
+ *   pressOn    막혔어도 압박을 이어 갈 수 있을 때(검술의 pressOnBlock) 연속 공격을 계속할 확률에 더하는 값
+ *   guardAfterAttack 연속 공격이 끝난 뒤 검이 돌아오자마자 방어를 들 확률 (검술의 guardAt과 함께: 짧게 회수해 방어로)
+ * 공격의 시간·거리는 성향이 아니라 그 캐릭터의 검술(Fighter.attacks)을 쓴다 — 플레이어와 같은 동작이다.
  */
 export const PERSONAS = {
   anakin: {
@@ -50,6 +63,8 @@ export const PERSONAS = {
     readParry: 0.12,
     riposte: 0.35,
     patience: [0.6, 1.4],
+    pressOn: 0.4,
+    guardAfterAttack: 0.25,
   },
   obiwan: {
     label: '오비완 성향: 거리 조절·방어·빈틈 응징',
@@ -74,6 +89,8 @@ export const PERSONAS = {
     readParry: 0.3,
     riposte: 0.4,
     patience: [1.6, 3.2],
+    pressOn: 0,
+    guardAfterAttack: 0.75,
   },
 };
 
@@ -129,6 +146,7 @@ export class AIController {
     this.seenWhiffId = 0;
     this.decisions = { chain: 0, advance: 0, abort: 0, stopBlocked: 0 }; // (이어 베기 판단 기록: 검증용)
     this.lastJudge = null; // 최근 이어 베기 판단 { what, dPred, reach, t } (디버그 표시)
+    this.guardAfterId = 0;
   }
 
   /**
@@ -191,6 +209,7 @@ export class AIController {
     this.afterBlock(me, o, now);
     this.learnBait(me, now);
     this.continueString(me, now);
+    this.guardAfterOwn(me, now);
     return this.emit(me, o, now);
   }
 
@@ -221,17 +240,19 @@ export class AIController {
     if (now > this.guardUntil && this.intent !== 'guard') this.guard = false;
 
     // 2. 상대의 빈틈
-    const def = (k) => T.attacks[k];
-    const lockLeft = o.atkPhase === 'recovery' ? def(o.atkKind).chainAt + (o.atkOutcome === 'whiff' ? def(o.atkKind).whiffExtra : 0) - o.atkRecT - (now - o.t) : 0;
+    const mine = me.attacks;
+    const lockLeft = o.atkPhase === 'recovery' ? foeLock(o) - o.atkRecT - (now - o.t) : 0;
     const openLeft = o.state === 'broken' || o.state === 'parried' || o.state === 'overpowered' || o.state === 'hitstun' ? o.dur - o.st - (now - o.t) : o.state === 'attack' && o.atkPhase === 'recovery' ? lockLeft : 0;
-    const myWind = def('light1').windup;
+    // (쳐낸 직후라면 내 기본 공격은 반격 동작으로 나간다: 그 준비 시간·내딛기로 잰다)
+    const opener = now <= me.riposteUntil ? mine.riposte : mine.light1;
+    const myWind = opener.windup;
     if (openLeft > 0.04 && me.state !== 'attack') {
-      const reachable = d <= def('light1').reach + 0.15;
+      const reachable = d <= opener.reach + opener.lunge * 0.6 + 0.1;
       if (o.state === 'broken') {
         this.intent = 'chase';
         this.guard = false;
         if (reachable && this.rng.chance(P.punish)) {
-          const heavy = openLeft > def('heavy').windup + 0.08 && this.rng.chance(0.55);
+          const heavy = openLeft > mine.heavy.windup + 0.08 && this.rng.chance(0.55);
           this.attack(me, now, heavy ? 'heavy' : 'attack', heavy ? 0 : 2);
         } else this.moveToward(me, o, 1);
         return;
@@ -270,9 +291,10 @@ export class AIController {
       return;
     }
     // 공격을 시작할지: 지금 거리가 아니라 판정 시점(준비 시간 뒤)의 예상 거리로 — 물러나는 상대에게 헛치지 않게
-    const dHit = this.predictDist(me, o, now, T.attacks.light1.windup, T.attacks.light1.lunge * 0.6);
+    const L1 = mine.light1;
+    const dHit = this.predictDist(me, o, now, L1.windup, L1.lunge * 0.6);
     const closer = Math.min(0.45, this.baited * 0.18); // (유도에 걸린 만큼 더 붙어서)
-    const inReach = d <= P.attackRange + 0.25 - closer && dHit <= T.attacks.light1.reach - 0.12 - closer;
+    const inReach = d <= P.attackRange + L1.lunge * 0.6 + 0.1 - closer && dHit <= L1.reach - 0.12 - closer;
     if (!inReach && this.baited >= 1.5 && d < P.engage && this.rng.chance(0.35)) {
       // 유도를 읽음: 방어를 든 채 밀고 들어가 상대가 물러날 자리를 줄인다
       this.intent = 'press';
@@ -317,7 +339,7 @@ export class AIController {
   /** 관측된 상대 공격이 나에게 닿을 것 같은가 → { kind, eta(남은 시간), def } */
   threat(me, o, d) {
     if (o.state !== 'attack' || (o.atkPhase !== 'windup' && o.atkPhase !== 'active')) return null;
-    const def = T.attacks[o.atkKind];
+    const def = foeAttacks(o)[o.atkKind];
     if (d > def.reach + def.lunge + 0.25) return null;
     const ang = Math.abs(angleDiff(o.facing, Math.atan2(me.y - o.y, me.x - o.x)));
     if (ang > def.arc + 0.5) return null;
@@ -337,8 +359,8 @@ export class AIController {
     let w = [...P.defend];
     if (me.bal < 30) w = [w[0] * 1.3, w[1] * 0.5, w[2] * 2, w[3] * 0.5]; // (균형이 없으면 막기보다 피하거나 쳐낸다)
     if (th.kind === 'heavy') w = [w[0] * 1.3, w[1] * 0.8, w[2] * 1.5, w[3] * 2.2];
-    const myWind = T.attacks.light1.windup;
-    const canCounter = me.state !== 'attack' && left > myWind + 0.05 && d <= T.attacks.light1.reach;
+    const myWind = me.attacks.light1.windup;
+    const canCounter = me.state !== 'attack' && left > myWind + 0.05 && d <= me.attacks.light1.reach + me.attacks.light1.lunge * 0.5;
     if (!canCounter) w[3] = 0;
     if (me.state === 'attack' && me.atk.phase !== 'recovery') w = [0, 0, 0, 0]; // (이미 휘두르는 중: 운에 맡김)
     const pick = this.weighted(w);
@@ -395,9 +417,11 @@ export class AIController {
     if (me.state !== 'blockstun') return;
     this.lastBlockT = c.t;
     this.guardUntil = Math.max(this.guardUntil, now + this.p.holdAfterBlock);
-    const def = o.atkKind && T.attacks[o.atkKind];
+    const def = o.atkKind && foeAttacks(o)[o.atkKind];
     const d = Math.hypot(o.x - me.x, o.y - me.y);
-    if (d < T.attacks.light1.reach + 0.4 && this.rng.chance(this.p.riposte)) {
+    // (막은 뒤 내 기본 공격이 반격 동작이면 — 아나킨의 전진 되받아치기 — 그 내딛기만큼 멀리서도)
+    const mine = me.links.riposte && me.links.riposte.block ? me.attacks.riposte : me.attacks.light1;
+    if (d < mine.reach + mine.lunge * 0.7 + 0.2 && this.rng.chance(this.p.riposte)) {
       // 밀림이 끝나는 순간 되받아 치기 (버퍼 안에 미리 누름)
       this.press(now + Math.max(0, me.dur - me.st - 0.05), 'attack');
       this.string = this.rng.chance(0.4) ? { left: 1, id: 0 } : null;
@@ -406,7 +430,7 @@ export class AIController {
       return;
     }
     if (def && def.next && this.rng.chance(this.p.readParry)) {
-      const eta = def.chainAt + T.attacks[def.next].windup;
+      const eta = foeLock(o) + foeAttacks(o)[def.next].windup;
       this.press(now + eta - T.guard.parryWindow * 0.5 + (this.rng.next() - 0.5) * this.p.timing * 2, 'tap');
       this.intent = 'parry';
     } else this.intent = 'guard';
@@ -451,10 +475,12 @@ export class AIController {
       this.string = null;
       return;
     }
-    if (a.recT < a.def.chainAt - 0.07 - 1e-9) return; // (아직: 누르기 직전에 판단)
+    const lock = me.lockEnd();
+    if (a.recT < lock - 0.07 - 1e-9) return; // (아직: 누르기 직전에 판단)
     s.id = a.id;
     const o = this.seen;
-    if (a.outcome === 'blocked' && !this.rng.chance(this.p.overcommit)) {
+    // (막혔어도 균형·거리가 유리해 압박을 이어 갈 수 있으면 — pressOn — 더 자주 계속한다)
+    if (a.outcome === 'blocked' && !this.rng.chance(this.p.overcommit + (a.pressOn ? this.p.pressOn : 0))) {
       this.string = null;
       this.decisions.stopBlocked++;
       this.lastJudge = { what: '막힘 → 그만둠', t: now };
@@ -463,15 +489,15 @@ export class AIController {
       return;
     }
     const heavyEnd = s.left === 1 && a.def.heavyChain && this.rng.chance(this.p.heavy + (this.foeGuards > 2 ? this.p.heavyVsGuard : 0));
-    const next = T.attacks[heavyEnd ? 'heavy' : a.def.next];
-    const lead = Math.max(0, a.def.chainAt - a.recT) + next.windup;
+    const next = me.attacks[heavyEnd ? 'heavy' : a.def.next];
+    const lead = Math.max(0, lock - a.recT) + next.windup;
     const dPred = o ? this.predictDist(me, o, now, lead, next.lunge * 0.85) : 0;
     const judge = (what) => (this.lastJudge = { what, dPred, reach: next.reach, t: now });
     if (dPred <= next.reach - 0.08) {
       s.left--;
       this.decisions.chain++;
       judge('이어 베기');
-      this.press(now + Math.max(0, a.def.chainAt - a.recT - 0.03), heavyEnd ? 'heavy' : 'attack');
+      this.press(now + Math.max(0, lock - a.recT - 0.03), heavyEnd ? 'heavy' : 'attack');
       if (s.left <= 0) this.string = null;
       return;
     }
@@ -488,6 +514,18 @@ export class AIController {
       this.intent = 'abort';
       this.guard = true;
       this.guardUntil = now + 0.35;
+    }
+  }
+
+  /** 내 공격이 끝나 검이 돌아오는 중이고 이어 칠 계획이 없다: 성향대로 곧장 방어를 든다 (검술의 guardAt부터 실제로 선다) */
+  guardAfterOwn(me, now) {
+    const a = me.atk;
+    if (me.state !== 'attack' || !a || a.phase !== 'recovery' || this.string || this.guardAfterId === a.id) return;
+    this.guardAfterId = a.id;
+    if (this.presses.some((p) => p.type === 'attack' || p.type === 'heavy')) return;
+    if (this.rng.chance(this.p.guardAfterAttack)) {
+      this.guardUntil = Math.max(this.guardUntil, now + me.guardEnd() - a.recT + 0.35);
+      if (this.intent !== 'counter') this.intent = 'guard';
     }
   }
 

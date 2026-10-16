@@ -9,6 +9,7 @@ import { TUNING as T, DT, CAST } from './tuning.js';
 import { Fighter } from './fighter.js';
 import { resolveContacts } from './rules.js';
 import { poseOf, BLEND, guardPoseTarget, v3 } from './pose.js';
+import { stepGait } from './gait.js';
 
 const AIM_RATE = 24; // (1/s) 방어 손·검이 목표로 붙는 빠르기: 예측 접촉 자세까지 ~0.12 s — 가장 빠른 베기 준비(0.24 s) 안
 const GUARD_SPEED = 3; // (m/s) 방어 손의 최고 속도
@@ -32,7 +33,7 @@ export class CombatSim {
         const dur = BLEND[to] || 0;
         if (!dur) return (f.blend = null);
         const p = poseOf(f, foe(), this.time);
-        f.blend = { rel: [p.hand[0] - f.x, p.hand[1] - f.y, p.hand[2]], dir: p.dir, t: this.time, dur };
+        f.blend = { rel: [p.hand[0] - f.x, p.hand[1] - f.y, p.hand[2]], dir: p.dir, tw: p.tw, cr: p.cr, lean: p.lean, t: this.time, dur };
       };
     }
     this.controllers = opts.controllers || [null, null];
@@ -127,6 +128,8 @@ export class CombatSim {
     this.separate(A, B);
     this.updateGuard(A, B);
     this.updateGuard(B, A);
+    stepGait(A, B, this.time); // (발 디딤: 그리기 전용 — 디딘 발은 미끄러지지 않는다)
+    stepGait(B, A, this.time);
     if (this.over) return; // (승부가 난 뒤: 서 있는 쪽은 동작을 마치고 쓰러진 쪽은 쓰러짐을 마친다 — 판정·통계는 더 없다)
     resolveContacts(this);
     this.updateLead();
@@ -147,15 +150,17 @@ export class CombatSim {
   updateGuard(f, foe) {
     if (!f.guardActive() && f.state !== 'ready') return (f.gpose = null);
     const tgt = guardPoseTarget(f, foe, this.time);
-    if (f.state === 'blockstun' || !f.gpose) return (f.gpose = tgt);
+    // (막는 순간엔 접촉 자세로 바로 — 타격 정지 화면에 실제로 맞물린 검. 그 뒤 밀리는 동안은 빠르게 따라감)
+    if ((f.state === 'blockstun' && f.st <= DT + 1e-9) || !f.gpose) return (f.gpose = tgt);
+    const fast = f.state === 'blockstun' ? 1.5 : 1;
     // 목표 쪽으로 지수적으로, 단 손은 GUARD_SPEED m/s, 검은 GUARD_TURN rad/s를 넘지 않게 (겨눌 곳이 바뀌어도 튀지 않음)
-    const k = 1 - Math.exp(-AIM_RATE * DT);
+    const k = 1 - Math.exp(-AIM_RATE * fast * DT);
     let dr = v3.mul(v3.sub(tgt.rel, f.gpose.rel), k);
     const dl = v3.len(dr);
-    if (dl > GUARD_SPEED * DT) dr = v3.mul(dr, (GUARD_SPEED * DT) / dl);
+    if (dl > GUARD_SPEED * fast * DT) dr = v3.mul(dr, (GUARD_SPEED * fast * DT) / dl);
     const want = v3.norm(v3.lerp(f.gpose.dir, tgt.dir, k));
     const ang = Math.acos(Math.max(-1, Math.min(1, v3.dot(want, f.gpose.dir))));
-    const dir = ang > GUARD_TURN * DT ? v3.norm(v3.lerp(f.gpose.dir, want, (GUARD_TURN * DT) / ang)) : want;
+    const dir = ang > GUARD_TURN * fast * DT ? v3.norm(v3.lerp(f.gpose.dir, want, (GUARD_TURN * fast * DT) / ang)) : want;
     f.gpose = { rel: v3.add(f.gpose.rel, dr), dir };
   }
 
@@ -169,7 +174,6 @@ export class CombatSim {
     if (Math.abs(f.ky) < 1e-4) f.ky = 0;
     if (!dx && !dy) return;
     const p = this.ground.move(f.x, f.y, dx, dy, f.radius);
-    f.walked += Math.hypot(p.x - f.x, p.y - f.y) * (f.state === 'ready' || f.state === 'guard' ? 1 : 0);
     f.x = p.x;
     f.y = p.y;
   }
