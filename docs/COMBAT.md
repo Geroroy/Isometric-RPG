@@ -15,6 +15,7 @@
 - 시험장: `npm run dev` → `http://localhost:5173/arena.html` (빌드에선 `dist/arena.html`). 본편 메뉴의 "광선검 결투",
   `#duel`·`#duel-arena` 주소도 여기로 간다. 맵 에셋 없이 실행되고 WebGL을 쓰지 않는다(Canvas 2D).
 - 주소 옵션: `?autostart`(시작 화면 생략) · `?watch`(AI 대 AI) · `?debug` · `?side=obiwan`(오비완 조작) · `?seed=N`(AI 난수).
+  같은 옵션을 해시 토큰으로도 받는다(아티팩트 링크는 해시만 전달): `#autostart-watch-debug-obiwan-seed3`.
 - 자동 검증: `npm run test:combat` (`node --test tools/combat/*.test.mjs`).
 - 브라우저 QA: `node tools/qa/arena.mjs <url> <출력폴더> watch|frames|strip|play` (아래 "검증").
 

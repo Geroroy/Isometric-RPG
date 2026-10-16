@@ -11,15 +11,18 @@ import { CombatView } from './view.js';
 import { CombatHUD } from './hud.js';
 import { Audio } from '../core/audio.js';
 
+// 옵션: 주소의 ?watch&debug&side=obiwan&seed=3, 또는 해시 토큰 #watch-debug-obiwan-seed3 (아티팩트 링크는 해시만 전달한다)
 const q = new URLSearchParams(location.search);
+const tok = new Set(location.hash.replace(/^#/, '').split(/[-._~]/).filter(Boolean));
+const seedTok = [...tok].map((t) => /^seed(\d+)$/.exec(t)).find(Boolean);
 const state = {
-  playerSide: q.get('side') === 'obiwan' ? 1 : 0,
-  watching: q.has('watch'), // AI 대 AI
+  playerSide: q.get('side') === 'obiwan' || tok.has('obiwan') ? 1 : 0,
+  watching: q.has('watch') || tok.has('watch'), // AI 대 AI
   paused: false,
   speed: 1,
-  debug: q.has('debug'),
-  started: q.has('autostart'),
-  seed: Number(q.get('seed')) || 1,
+  debug: q.has('debug') || tok.has('debug'),
+  started: q.has('autostart') || tok.has('autostart'),
+  seed: Number(q.get('seed')) || (seedTok ? Number(seedTok[1]) : 1),
 };
 
 const player = new PlayerController(window);
