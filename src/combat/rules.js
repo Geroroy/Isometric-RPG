@@ -14,7 +14,8 @@
 //   4. 그 밖 (방어 안 함, 측면·후방, 균형 붕괴, 공격 준비 중) → 몸에 맞음
 // 두 공격이 같은 틱에 서로 닿으면 (둘 다 active·사거리·각도 안), 또는 닿는 순간 상대도 이미 휘두르기 시작했으면
 // (windup의 마지막 swingLead 초): 같은 무게면 맞부딪힘(둘 다 튕김), 강공격 대 기본 공격이면 강공격이 이김 (기본
-// 공격 쪽이 밀림). 그보다 이른 준비 중(검을 젖히는 중)인 상대를 베면 그건 4 — 먼저 휘두른 쪽이 이긴다.
+// 공격 쪽이 밀림). 두 공격이 tradeWindow(0.12 s) 안에 거의 같이 시작했어도 맞부딪힘(같은 무게로). 그보다 늦게
+// 시작해 아직 준비 중(검을 젖히는 중)인 상대를 베면 그건 4 — 분명히 먼저 휘두른 쪽이 이긴다.
 import { TUNING as T } from './tuning.js';
 import { angleDiff } from '../core/math.js';
 import { contactPoint, swingS } from './pose.js';
@@ -37,6 +38,14 @@ export function swinging(f, o) {
   return distOf(f, o) <= a.def.reach + 0.1 && Math.abs(angleDiff(f.facing, angleTo(f, o))) <= a.def.arc;
 }
 
+/** `f`의 공격이 닿는 순간, `o`도 tradeWindow 안에 늦게 시작한 공격으로 `f`를 향하고 있는가 */
+export function traded(f, o) {
+  const a = o.atk;
+  if (o.state !== 'attack' || !a || a.resolved || a.phase !== 'windup') return false;
+  if (f.atk.t - a.t > T.tradeWindow + 1e-9) return false;
+  return distOf(f, o) <= a.def.reach + 0.1 && Math.abs(angleDiff(o.facing, angleTo(o, f))) <= a.def.arc;
+}
+
 /** 방어자 `o`가 공격자 `f`를 정면으로 보고 있는가 (방어가 받아내는 각도) */
 export function inGuardArc(o, f) {
   return Math.abs(angleDiff(o.facing, angleTo(o, f))) <= T.guard.arc;
@@ -51,18 +60,21 @@ export function resolveContacts(sim) {
   // 상대도 이미 휘두르기 시작했다 (준비의 마지막 swingLead 초: 검이 나와 있음) → 몸이 아니라 검끼리 맞부딪힘
   if (ra && swinging(B, A)) return clash(sim, A, B);
   if (rb && swinging(A, B)) return clash(sim, A, B);
+  // 거의 같이 시작한 두 공격 (tradeWindow 안): 먼저 닿은 쪽이 상대 몸을 베는 게 아니라 마주 나온 검끼리 부딪힌다 (같은 무게로)
+  if (ra && traded(A, B)) return clash(sim, A, B, true);
+  if (rb && traded(B, A)) return clash(sim, A, B, true);
   if (ra) strike(sim, A, B);
   if (rb && B.state === 'attack') strike(sim, B, A); // (A의 판정으로 B의 공격이 취소됐을 수 있다)
 }
 
 function markContact(sim, f, kind, at, role) {
-  f.contact = { kind, at, t: sim.time, role };
+  f.contact = { kind, at, t: sim.time, role, from: [f.x, f.y] };
 }
 
-function clash(sim, A, B) {
+function clash(sim, A, B, even = false) {
   const now = sim.time;
-  const ha = A.atk.kind === 'heavy';
-  const hb = B.atk.kind === 'heavy';
+  const ha = A.atk.kind === 'heavy' && !even;
+  const hb = B.atk.kind === 'heavy' && !even;
   const at = contactPoint('clash', A, B, now);
   for (const f of [A, B]) f.atk.contactS = swingS(f.atk.def, f.atk.t);
   if (ha === hb) {

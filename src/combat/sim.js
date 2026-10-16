@@ -8,6 +8,11 @@
 import { TUNING as T, DT, CAST } from './tuning.js';
 import { Fighter } from './fighter.js';
 import { resolveContacts } from './rules.js';
+import { poseOf, BLEND, guardPoseTarget, v3 } from './pose.js';
+
+const AIM_RATE = 24; // (1/s) 방어 손·검이 목표로 붙는 빠르기: 예측 접촉 자세까지 ~0.12 s — 가장 빠른 베기 준비(0.24 s) 안
+const GUARD_SPEED = 3; // (m/s) 방어 손의 최고 속도
+const GUARD_TURN = (600 * Math.PI) / 180; // (rad/s) 방어 검의 최고 회전
 
 export class CombatSim {
   /**
@@ -19,6 +24,17 @@ export class CombatSim {
     this.spawns = opts.spawns;
     this.castIds = opts.cast || ['anakin', 'obiwan'];
     this.fighters = this.castIds.map((c, i) => new Fighter(i, CAST[c], i));
+    // 상태가 바뀌는 순간의 손·검을 남겨 다음 자세로 섞는다 (그리기 전용). 막는 순간(blockstun)과 경직 반응 중
+    // 접촉에서 시작하는 것(parried·clash·overpowered)은 이어 붙이지 않는다: 타격 정지 화면에 실제 접촉 자세가 보이게
+    for (const f of this.fighters) {
+      const foe = () => this.fighters[1 - f.side];
+      f.cutPose = (to) => {
+        const dur = BLEND[to] || 0;
+        if (!dur) return (f.blend = null);
+        const p = poseOf(f, foe(), this.time);
+        f.blend = { rel: [p.hand[0] - f.x, p.hand[1] - f.y, p.hand[2]], dir: p.dir, t: this.time, dur };
+      };
+    }
     this.controllers = opts.controllers || [null, null];
     this.listeners = [];
     this.round = 0;
@@ -99,6 +115,8 @@ export class CombatSim {
     this.integrate(A);
     this.integrate(B);
     this.separate(A, B);
+    this.updateGuard(A, B);
+    this.updateGuard(B, A);
     if (this.over) return; // (승부가 난 뒤: 서 있는 쪽은 동작을 마치고, 판정은 더 없다)
     resolveContacts(this);
     this.updateLead();
@@ -109,6 +127,25 @@ export class CombatSim {
         this.emit({ type: 'over', winner: w, loser: f });
       }
     }
+  }
+
+  /**
+   * 방어(와 자유 자세)의 손·검을 틱마다 목표 쪽으로 (그리기 전용, 틱 단위라 프레임 속도와 무관). 방어를 막 올렸으면 그 자리에서 시작
+   * (f.blend가 앞 자세에서 이어 줌), 막는 순간(blockstun)엔 접촉 자세로 바로.
+   */
+  updateGuard(f, foe) {
+    if (!f.guardActive() && f.state !== 'ready') return (f.gpose = null);
+    const tgt = guardPoseTarget(f, foe, this.time);
+    if (f.state === 'blockstun' || !f.gpose) return (f.gpose = tgt);
+    // 목표 쪽으로 지수적으로, 단 손은 GUARD_SPEED m/s, 검은 GUARD_TURN rad/s를 넘지 않게 (겨눌 곳이 바뀌어도 튀지 않음)
+    const k = 1 - Math.exp(-AIM_RATE * DT);
+    let dr = v3.mul(v3.sub(tgt.rel, f.gpose.rel), k);
+    const dl = v3.len(dr);
+    if (dl > GUARD_SPEED * DT) dr = v3.mul(dr, (GUARD_SPEED * DT) / dl);
+    const want = v3.norm(v3.lerp(f.gpose.dir, tgt.dir, k));
+    const ang = Math.acos(Math.max(-1, Math.min(1, v3.dot(want, f.gpose.dir))));
+    const dir = ang > GUARD_TURN * DT ? v3.norm(v3.lerp(f.gpose.dir, want, (GUARD_TURN * DT) / ang)) : want;
+    f.gpose = { rel: v3.add(f.gpose.rel, dr), dir };
   }
 
   integrate(f) {
@@ -142,17 +179,31 @@ export class CombatSim {
   }
 
   /**
-   * 주도권: 둘 중 누가 먼저 다음 행동을 시작할 수 있는가 (강제 턴이 아니라 회복·경직의 차이에서 생긴다).
-   * 반환: { leader: Fighter | null, adv: s, a, b } — 가까이(3.4 m) 있고 차이가 0.06 s 이상일 때만 leader.
+   * 주도권: 둘 중 누가 먼저 새 행동(공격·회피)을 시작할 수 있는가 — 강제 턴이 아니라 회복·경직의 차이. 표시되는 값은
+   * Fighter.actionableIn 그대로라, 그 시간에 실제로 공격이 나간다 (tools/combat/rules.test.mjs "주도권 표시").
+   * 한쪽이 휘두르는 중이면 주도권 대신 그 공격(swing: 누가, 판정까지)과 상대가 그 전에 방어를 올릴 수 있는지를 준다.
+   * 반환: { leader, adv, a, b (각자 행동 가능까지), ga, gb (각자 방어 가능까지), swing, dist }
    */
   initiative() {
     const [A, B] = this.fighters;
-    const a = A.initiativeIn(this.time);
-    const b = B.initiativeIn(this.time);
+    const now = this.time;
+    const a = A.actionableIn(now);
+    const b = B.actionableIn(now);
+    const ga = A.guardableIn(now);
+    const gb = B.guardableIn(now);
     const d = Math.hypot(A.x - B.x, A.y - B.y);
+    const ea = A.swingEta();
+    const eb = B.swingEta();
+    let swing = null;
+    if (ea !== null || eb !== null) {
+      const by = eb === null || (ea !== null && ea <= eb) ? A : B;
+      const eta = by === A ? ea : eb;
+      const guard = by === A ? gb : ga;
+      swing = { by, eta, kind: by.atk.kind, canGuard: guard <= eta + 1e-9, guardIn: guard };
+    }
     const adv = b - a;
-    const leader = d > 3.4 || Math.abs(adv) < 0.06 || !isFinite(adv) ? null : adv > 0 ? A : B;
-    return { leader, adv: Math.abs(adv), a, b, dist: d };
+    const leader = swing || d > 3.4 || Math.abs(adv) < 0.06 || !isFinite(adv) ? null : adv > 0 ? A : B;
+    return { leader, adv: Math.abs(adv), a, b, ga, gb, swing, dist: d };
   }
 
   updateLead() {

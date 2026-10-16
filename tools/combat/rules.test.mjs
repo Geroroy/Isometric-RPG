@@ -56,14 +56,20 @@ test('정확한 쳐내기: 공격자 균형·경직, 쳐낸 쪽이 주도권을 
   const press = contactAt(start) - 0.05;
   // 쳐낸 뒤 바로 반격, 공격자는 방어를 다시 올리지 않음 → 반격이 들어간다
   let sim = duel({ dist: 1.8, c0: new Script([{ at: start, attack: true }]), c1: new Script([{ at: contactAt(start) + 0.01, attack: true }], { guard: [[press, contactAt(start) + 0.01]] }) });
+  let atParry = null;
+  sim.on((e, s) => e.type === 'parry' && (atParry = s.initiative()));
   run(sim, contactAt(start) + 0.02);
   const p = only(sim, 'parry');
   assert.equal(p.length, 1);
   const [A, B] = sim.fighters;
   assert.equal(A.state, 'parried');
   assert.ok(A.bal <= 100 - L1.parryBal - L1.selfBlockBal + 0.5 || A.bal <= 100 - L1.parryBal + 0.5);
+  assert.equal(atParry.leader, B, '쳐낸 쪽 주도권');
+  assert.ok(Math.abs(atParry.adv - L1.parried) < 0.02, `주도권 ${atParry.adv}`);
+  // 반격이 나가는 중: 쳐내진 쪽은 그 판정 전에 방어를 올릴 수 있다 (작은 기회 — 확정 피해 아님)
   const ini = sim.initiative();
-  assert.equal(ini.leader, B, '쳐낸 쪽 주도권');
+  assert.equal(ini.swing.by, B);
+  assert.equal(ini.swing.canGuard, true, JSON.stringify({ eta: ini.swing.eta, g: ini.swing.guardIn }));
   run(sim, 0.6);
   assert.equal(only(sim, 'hit').length, 1, '방어하지 않은 공격자는 반격에 맞는다');
   // 공격자가 방어를 다시 올리면: 반격은 막히지만 (확정 피해 없음) 균형을 더 잃는다 (shaken)
@@ -322,4 +328,111 @@ test('프레임 속도가 달라도 공격 시간과 판정 결과가 같다', (
   let r = 7;
   const jitter = () => ((r = (r * 16807) % 2147483647) / 2147483647) * 0.04 + 0.002;
   assert.equal(sig(jitter), base, '불규칙한 프레임');
+});
+
+test('주도권 표시는 실제로 행동할 수 있는 시간과 같다 (막기·3타 막기·강공격 막기·쳐내기·헛침)', () => {
+  const L3 = T.attacks.light3;
+  const H = T.attacks.heavy;
+  // 장면: [이름, A의 입력, B의 방어 구간, 기다릴 사건]
+  const c1 = 0.4 + L1.windup;
+  const scenes = [
+    ['베기 막기', [{ at: 0.4, attack: true }], [[0, 9]], 'block'],
+    ['3타 막기', [0.4, c1 + L1.chainAt - 0.05, c1 + L1.chainAt + T.attacks.light2.windup + T.attacks.light2.chainAt - 0.05].map((at) => ({ at, attack: true })), [[0, 9]], (e) => e.type === 'block' && e.kind === 'light3'],
+    ['강공격 막기', [{ at: 0.4, heavy: true }], [[0, 9]], 'block'],
+    ['쳐내기', [{ at: 0.4, attack: true }], [[c1 - 0.05, 9]], 'parry'],
+    ['베기 헛침', [{ at: 0.4, attack: true }], [], 'whiff', 3.2],
+    ['강공격 헛침', [{ at: 0.4, heavy: true }], [], 'whiff', 3.6],
+  ];
+  void L3;
+  void H;
+  for (const [name, steps, guard, until, dist = 1.8] of scenes) {
+    const match = typeof until === 'function' ? until : (e) => e.type === until;
+    // 1) 사건이 난 틱의 표시 값
+    let at = null;
+    let ini = null;
+    const probe = duel({ dist, c0: new Script(steps), c1: new Script([], { guard }) });
+    probe.on((e, s) => {
+      if (!at && match(e)) (at = e.t), (ini = s.initiative());
+    });
+    run(probe, 3);
+    assert.ok(at !== null, name);
+    // 2) 같은 장면을 다시: 사건 뒤부터 한쪽이 매 틱 공격을 누르면 실제로 언제 공격이 나가는가
+    for (const side of [0, 1]) {
+      const spam = { command: (s) => (s.time >= at - 1e-9 ? { attack: true, guard: false, move: { x: 0, y: 0 } } : null) };
+      const base = [new Script(steps), new Script([], { guard })];
+      const ctl = base.map((b, i) => ({ command: (s, me, foe) => (i === side && spam.command(s)) || b.command(s, me, foe) }));
+      const sim = duel({ dist, c0: ctl[0], c1: ctl[1] });
+      let swingAt = null;
+      sim.on((e) => e.type === 'swing' && e.by.side === side && e.t >= at - 1e-9 && swingAt === null && (swingAt = e.t));
+      run(sim, at + 1.6);
+      const shown = side === 0 ? ini.a : ini.b;
+      assert.ok(swingAt !== null, `${name}: ${side}`);
+      assert.ok(Math.abs(swingAt - at - shown) <= 1.5 / 120, `${name} side ${side}: 표시 ${shown.toFixed(3)} 실제 ${(swingAt - at).toFixed(3)}`);
+    }
+  }
+});
+
+test('거의 같이 시작한 공격은 검끼리 부딪히고, 분명히 먼저 친 쪽은 준비 중인 상대를 벤다', () => {
+  // B가 tradeWindow 안에 늦게 시작: 맞부딪힘 (몸 피해 없음)
+  let sim = duel({ dist: 1.8, c0: new Script([{ at: 0.3, attack: true }]), c1: new Script([{ at: 0.3 + T.tradeWindow - 0.03, attack: true }]) });
+  run(sim, 1);
+  assert.equal(only(sim, 'clash').length, 1, sim.log.map((e) => e.type).join(' '));
+  assert.equal(only(sim, 'hit').length, 0);
+  // B가 그보다 늦게 (준비 초반): A가 B를 벤다 — 준비 중에 끊김
+  sim = duel({ dist: 1.8, c0: new Script([{ at: 0.3, attack: true }]), c1: new Script([{ at: 0.3 + T.tradeWindow + 0.04, attack: true }]) });
+  run(sim, 1);
+  const h = only(sim, 'hit');
+  assert.equal(h.length, 1);
+  assert.equal(h[0].why, 'counter');
+});
+
+test('AI는 이어 베기 전에 거리를 다시 본다: 물러나는 상대에게 연속 공격을 헛치지 않는다', () => {
+  // 시험용 상대: AI가 휘두르기 시작하면 뒤로 걷고, 아니면 사거리 끝으로 다가온다 (후퇴로 헛치기 유도)
+  const bait = () => ({
+    command(s, me, foe) {
+      const d = Math.hypot(foe.x - me.x, foe.y - me.y);
+      const to = { x: (foe.x - me.x) / d, y: (foe.y - me.y) / d };
+      if (foe.state === 'attack' && foe.atk.phase !== 'recovery') this.back = s.time + 0.35;
+      if (s.time < (this.back || 0)) return { move: { x: -to.x, y: -to.y } };
+      return { move: d > 2.1 ? to : d < 1.7 ? { x: -to.x, y: -to.y } : { x: 0, y: 0 } };
+    },
+  });
+  let chainWhiff = 0;
+  let firstWhiff = 0;
+  const dec = { chain: 0, advance: 0, abort: 0, stopBlocked: 0 };
+  for (let seed = 1; seed <= 10; seed++) {
+    const ai = new AIController('anakin', seed);
+    const sim = duel({ dist: 3, c0: bait(), c1: ai });
+    sim.on((e) => {
+      if (e.type === 'whiff' && e.by.side === 1) e.by.atk && e.by.atk.combo > 1 ? chainWhiff++ : firstWhiff++;
+    });
+    run(sim, 20);
+    for (const k in dec) dec[k] += ai.decisions[k];
+  }
+  // 첫 베기는 유도에 걸려 헛칠 수 있다 (플레이어의 후퇴가 통한다) — 이어 베기는 거의 헛치지 않는다
+  assert.ok(firstWhiff > 20, `첫 베기 헛침 ${firstWhiff}`);
+  assert.ok(chainWhiff <= firstWhiff * 0.15, `이어 베기 헛침 ${chainWhiff} / 첫 베기 ${firstWhiff}`);
+  assert.ok(dec.advance + dec.abort > 0, JSON.stringify(dec));
+});
+
+test('막힌 순간 두 검은 접촉점에서 만나고, 잠깐 맞물린 채 머문다', async () => {
+  const { poseOf, closestSeg, v3 } = await import('../../src/combat/pose.js');
+  const sim = duel({ dist: 1.8, c0: new Script([{ at: 0.4, attack: true }]), c1: new Script([], { guard: [[0, 9]] }) });
+  let at = null;
+  sim.on((e) => e.type === 'block' && (at = e.at));
+  const gaps = [];
+  for (let i = 0; i < 160; i++) {
+    sim.step();
+    if (!at) continue;
+    const [A, B] = sim.fighters;
+    const pa = poseOf(A, B, sim.time);
+    const pb = poseOf(B, A, sim.time);
+    const [p, q] = closestSeg(pa.bladeBase, pa.tip, pb.bladeBase, pb.tip);
+    gaps.push(v3.len(v3.sub(p, q)));
+    if (gaps.length === 1) assert.ok(v3.len(v3.sub(p, at)) < 0.15, '공격자 검이 접촉점을 지남');
+    if (gaps.length > 16) break;
+  }
+  assert.ok(gaps[0] < 0.05, `접촉 순간 두 검 사이 ${gaps[0]}`);
+  // 타격 정지(틱이 멈춤) 뒤에도 몇 틱 동안 0.2 m 안에 맞물려 있다
+  assert.ok(gaps.slice(0, 12).every((g) => g < 0.2), gaps.map((g) => g.toFixed(2)).join(' '));
 });

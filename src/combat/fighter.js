@@ -14,7 +14,7 @@ const NO_MOVE = { x: 0, y: 0 };
 const REASON = {
   windup: '공격 준비 중 — 취소 불가',
   active: '공격 판정 중',
-  locked: (s) => `공격 회복 중 (${s.toFixed(2)}s)`,
+  locked: (s) => `공격 회복 중 (${Math.max(0.01, s).toFixed(2)}s 남음)`,
   blockstun: '막으며 밀리는 중',
   parried: '쳐내져 경직',
   clash: '검이 맞부딪혀 튕김',
@@ -70,6 +70,8 @@ export class Fighter {
     this.walked = 0; // 걸은 거리 (발 애니메이션)
     this.koT = 0;
     this.guardAfter = Infinity; // (parried: 이 시간 뒤 방어 가능)
+    this.blend = null; // (그리기: 상태가 바뀌기 전 손·검 — pose.js)
+    this.gpose = null; // (그리기: 방어 손·검 — sim.js updateGuard)
   }
 
   // ---------------------------------------------------------------- 질의
@@ -129,13 +131,26 @@ export class Fighter {
     return false;
   }
 
-  /**
-   * 주도권 계산 (sim.initiative): 먼저 움직이는 쪽 — 다음 행동을 시작할 수 있거나, 이미 시작한 공격이 판정에 이르기까지
-   * 남은 시간 (휘두르는 중인 공격은 이미 '먼저 움직인' 것이다).
-   */
-  initiativeIn(now) {
-    if (this.state === 'attack' && this.atk.phase !== 'recovery') return Math.max(0, this.atk.def.windup - this.atk.t);
-    return this.actionableIn(now);
+  /** 방어를 올릴 수 있을 때까지 남은 시간 (이미 서 있으면 0) — 주도권 표시: 상대가 먼저 쳐도 막을 수 있는가 */
+  guardableIn(now) {
+    const s = this.state;
+    if (s === 'dead') return Infinity;
+    if (s === 'ready' || s === 'guard' || s === 'blockstun') return 0;
+    if (s === 'parried') return Math.max(0, this.guardAfter - this.st);
+    if (TIMED.has(s)) return Math.max(0, this.dur - this.st);
+    if (s === 'dodge') return Math.max(0, T.dodge.dur - this.st);
+    if (s === 'attack') {
+      const a = this.atk;
+      if (a.phase === 'recovery') return Math.max(0, this.lockEnd() - a.recT);
+      return this.actionableIn(now);
+    }
+    return 0;
+  }
+
+  /** 휘두르는 중인 공격이 판정에 이르기까지 (휘두르는 중이 아니면 null) */
+  swingEta() {
+    if (this.state !== 'attack' || this.atk.phase === 'recovery') return null;
+    return Math.max(0, this.atk.def.windup - this.atk.t);
   }
 
   /** 다음 행동(공격)을 시작할 수 있을 때까지 남은 시간 */
@@ -147,7 +162,8 @@ export class Fighter {
     if (s === 'dodge') return Math.max(0, T.dodge.dur - this.st);
     if (s === 'attack') {
       const a = this.atk;
-      const lock = this.lockEnd();
+      // (이어 갈 공격이 없는 베기는 회복이 다 끝나야 새 행동)
+      const lock = a.def.next || a.def.heavyChain ? this.lockEnd() : a.def.recovery + (a.outcome === 'whiff' ? a.def.whiffExtra : 0);
       if (a.phase === 'windup') return a.def.windup - a.t + a.def.active + lock;
       if (a.phase === 'active') return a.def.windup + a.def.active - a.t + lock;
       return Math.max(0, lock - a.recT);
@@ -175,7 +191,10 @@ export class Fighter {
     for (const type of ['attack', 'heavy', 'dodge']) {
       if (!cmd[type]) continue;
       // 버퍼는 한 칸: 마지막 입력만 남는다 (여러 번 누른 공격이 긴 대기열로 쌓이지 않음)
+      const was = this.buffer && this.buffer.type;
       this.buffer = { type: type === 'attack' ? 'light' : type, t: now, dir, reason: null };
+      // (회복 중 이어 베기를 누르면 회수가 다음 베기 준비 쪽으로 바뀐다: 그 자세로 이어 붙임)
+      if (this.cutPose && this.state === 'attack' && this.atk.phase === 'recovery' && was !== this.buffer.type) this.cutPose('buffer');
     }
   }
 
@@ -236,6 +255,7 @@ export class Fighter {
   }
 
   setState(s, dur = 0) {
+    if (this.cutPose && s !== this.state) this.cutPose(s); // (자세 이어 붙이기: sim.js — 그리기만, 판정과 무관)
     if (s !== 'attack' && this.atk) {
       this.lastAtk = this.atk;
       this.atk = null;
@@ -255,7 +275,8 @@ export class Fighter {
   expireBuffer(now) {
     const b = this.buffer;
     if (!b) return;
-    if (now - b.t > T.input.buffer + 1e-9) {
+    // (만료되는 틱에 마침 가능해졌으면 버리지 않는다: 이 틱의 tryBuffered가 실행)
+    if (now - b.t > T.input.buffer + 1e-9 && this.blockReason(b.type, now)) {
       this.reject = { type: b.type, reason: b.reason || this.blockReason(b.type, now) || '입력 시간 초과', t: now };
       this.buffer = null;
     }
@@ -344,7 +365,10 @@ export class Fighter {
         this.openParry(now);
         return;
       }
-      if (a.recT >= def.recovery + (a.outcome === 'whiff' ? def.whiffExtra : 0) - 1e-9) this.setState('ready');
+      if (a.recT >= def.recovery + (a.outcome === 'whiff' ? def.whiffExtra : 0) - 1e-9) {
+        this.setState('ready');
+        this.stepFree(foe, sim, now); // (끝난 틱에 바로: 버퍼·방어가 한 틱 늦지 않게)
+      }
     }
   }
 

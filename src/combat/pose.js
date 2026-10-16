@@ -7,10 +7,13 @@ import { TUNING as T } from './tuning.js';
 import { clamp, lerp } from '../core/math.js';
 
 const RAD = Math.PI / 180;
-// 휘두르기의 보이는 구간: windup 끝 LEAD 초 전부터 active 끝 FOLLOW 초 뒤까지 (s = 0..1)
+// 휘두르기의 보이는 구간: windup 끝 LEAD 초 전부터 active 끝 FOLLOW 초 뒤까지 (s = 0..1). s = MID(검이 정면)는 정확히
+// windup이 끝나는 순간 = 판정이 날 수 있는 첫 틱: 막힘·쳐내짐의 접촉점이 두 사람 사이, 검이 상대를 향한 자리에 생긴다
 const LEAD = T.swingLead;
 const FOLLOW = 0.07;
-const MID = 0.42; // s의 이 지점에서 검이 정면 (판정이 active 시작에서 나면 s ≈ LEAD/(LEAD+active+FOLLOW) 근처)
+const MID = 0.42;
+// 상태가 바뀔 때 손·검을 이어 붙이는 시간 (s): 전 자세에서 새 자세로 섞는다 (판정과 무관, sim.js가 순간 자세를 넘겨줌)
+export const BLEND = { attack: 0.1, guard: 0.12, ready: 0.14, dodge: 0.06, hitstun: 0.06, broken: 0.08, buffer: 0.08 };
 
 // 자세 키: h = 손 [f, r, u], yaw, pitch (도), lean = 상체 기울기 (m, +앞)
 const K = (f, r, u, yaw, pitch, lean = 0) => ({ h: [f, r, u], yaw, pitch, lean });
@@ -44,7 +47,8 @@ function swingKey(kind, s) {
 
 /** 공격 시각 t (공격 시작부터)의 휘두르기 위치 */
 export function swingS(def, t) {
-  return clamp((t - (def.windup - LEAD)) / (LEAD + def.active + FOLLOW), 0, 1);
+  if (t <= def.windup) return clamp((t - (def.windup - LEAD)) / LEAD, 0, 1) * MID;
+  return MID + clamp((t - def.windup) / (def.active + FOLLOW), 0, 1) * (1 - MID);
 }
 
 // --- 벡터 -------------------------------------------------------------------------------------------------------
@@ -108,22 +112,67 @@ function attackKey(f, stance) {
   const def = a.def;
   const pre = def.windup - LEAD;
   if (a.phase !== 'recovery') {
-    if (a.t < pre) return mix(stance, SWING[a.kind][0], easeOut(a.t / pre)); // 젖히기 (보고 대응할 수 있는 준비 동작)
+    // 젖히기 (보고 대응할 수 있는 준비 동작). 이어 베기는 앞 베기의 회수가 이미 젖힌 자리까지 와 있다: 거기서 버틴다
+    const from = a.combo > 1 ? mix(stance, SWING[a.kind][0], 0.7) : stance;
+    if (a.t < pre) return mix(from, SWING[a.kind][0], easeOut(a.t / pre));
     return swingKey(a.kind, swingS(def, a.t));
   }
-  // 회복: 결과에 따라 — 헛침: 끝까지 휘두르고 돌아옴, 막힘: 튕겨 되돌아옴, 맞힘: 베고 지나감
+  // 회복: 결과에 따라 — 헛침: 끝까지 휘두르고 돌아옴, 막힘: 튕겨 되돌아옴, 맞힘: 베고 지나감. 돌아가는 곳은 다음 행동:
+  // 이어 베기를 눌러 두었으면 그 베기의 젖힌 자세로(회수가 곧 다음 준비), 아니면 기본 자세
   const total = def.recovery + (a.outcome === 'whiff' ? def.whiffExtra : 0);
   const sc = a.contactS ?? swingS(def, def.windup + def.active);
+  const b = f.buffer;
+  const next = b && b.type === 'light' && def.next ? SWING[def.next][0] : b && b.type === 'heavy' && def.heavyChain ? SWING.heavy[0] : null;
+  const home = next ? mix(stance, next, 0.7) : stance;
   if (a.outcome === 'blocked' || a.outcome === 'clashWin') {
+    // 막힌 검: 접촉한 자리에 잠깐 머물렀다가(맞물림) 조금 튕겨 나오고, 다음 행동 자세로 회수
     const at = swingKey(a.kind, sc);
-    const back = mix(at, SWING[a.kind][0], 0.45);
-    if (a.recT < 0.1) return mix(at, back, easeOut(a.recT / 0.1));
-    return mix(back, stance, ease(clamp((a.recT - 0.1) / Math.max(0.05, total - 0.1), 0, 1)));
+    const back = mix(at, SWING[a.kind][0], 0.3);
+    if (a.recT < 0.05) return at;
+    if (a.recT < 0.14) return mix(at, back, easeOut((a.recT - 0.05) / 0.09));
+    return mix(back, home, ease(clamp((a.recT - 0.14) / Math.max(0.05, (next ? def.chainAt : total) - 0.14), 0, 1)));
   }
   const follow = 0.1;
   const s1 = Math.min(1, sc + (a.recT / follow) * (1 - sc));
   if (a.recT < follow) return swingKey(a.kind, s1);
-  return mix(SWING[a.kind][2], stance, ease(clamp((a.recT - follow) / Math.max(0.05, total - follow), 0, 1)));
+  return mix(SWING[a.kind][2], home, ease(clamp((a.recT - follow) / Math.max(0.05, (next ? Math.max(def.chainAt, follow + 0.05) : total) - follow), 0, 1)));
+}
+
+/**
+ * 자유 자세(ready)의 손·검: 성향의 기본 자세에서 검끝을 상대 검 쪽으로 (가까이 있을 때 — 서로 겨눈 결투 자세).
+ * 방어(가로지른 사선)와 달리 손은 낮게, 검은 앞으로 뻗어 있다.
+ */
+function stanceTarget(f, foe) {
+  const st = STANCE[f.cast.persona] || STANCE.anakin;
+  const hand = local(f.facing, f.x, f.y, st.h);
+  let dir = dirOf(f.facing, st.yaw, st.pitch);
+  if (foe && !foe.dead && Math.hypot(foe.x - f.x, foe.y - f.y) < 3) {
+    const [h, d] = rawHandDir(foe);
+    const to = v3.norm(v3.sub(v3.add(h, v3.mul(d, T.saber.blade * 0.6)), hand));
+    dir = v3.norm(v3.lerp(dir, to, 0.65));
+  }
+  return { rel: [hand[0] - f.x, hand[1] - f.y, hand[2]], dir };
+}
+
+/**
+ * 방어가 겨눌 점: 들어오는 공격이 지날 자리(예측 접촉점), 공격이 없으면 상대 검의 끝 쪽(맞물린 결투 자세),
+ * 멀면 없음(기본 방어 자세). 막는 중(blockstun)이면 실제 접촉점.
+ */
+export function guardAimTarget(f, foe, now) {
+  // (막는 중: 접촉점을 몸과 함께 — 밀려나는 동안 검이 몸에서 떨어져 늘어나지 않게)
+  if (f.state === 'blockstun' && f.contact) return f.contact.from ? [f.contact.at[0] + f.x - f.contact.from[0], f.contact.at[1] + f.y - f.contact.from[1], f.contact.at[2]] : f.contact.at;
+  if (!foe || foe.dead) return null;
+  if (foe.state === 'attack' && foe.atk.phase !== 'recovery') return predictContact(foe, f, now);
+  if (Math.hypot(foe.x - f.x, foe.y - f.y) >= 3) return null;
+  const [h, d] = rawHandDir(foe);
+  return v3.add(h, v3.mul(d, T.saber.blade * 0.7));
+}
+
+/** 블렌드·방어 겨눔 없이 자세 키만으로 본 손·검 (상대 쪽 계산용: 서로를 겨누는 재귀를 피한다) */
+function rawHandDir(f) {
+  const stance = STANCE[f.cast.persona] || STANCE.anakin;
+  const key = f.state === 'attack' ? attackKey(f, stance) : f.state === 'guard' || f.state === 'blockstun' ? GUARD : stance;
+  return [local(f.facing, f.x, f.y, key.h), dirOf(f.facing, key.yaw, key.pitch)];
 }
 
 /**
@@ -141,8 +190,8 @@ export function poseOf(f, foe, now) {
   if (s === 'attack') key = attackKey(f, stance);
   else if (s === 'guard' || s === 'blockstun') {
     key = GUARD;
-    if (s === 'blockstun' && c) aimAt = c.at;
-    else if (foe && foe.state === 'attack' && foe.atk.phase !== 'recovery') aimAt = predictContact(foe, f, now);
+    // (방어 손·검은 sim.js가 틱마다 목표 쪽으로 옮긴 f.gpose — 목표는 guardPoseTarget; 막는 순간엔 그대로)
+    aimAt = guardAimTarget(f, foe, now);
     if (s === 'blockstun') crouch = 0.05 * (1 - f.st / Math.max(0.05, f.dur));
   } else if (s === 'parried' || s === 'overpowered' || s === 'clash') {
     const from = f.lastAtk ? swingKey(f.lastAtk.kind, f.lastAtk.contactS ?? MID) : stance;
@@ -176,11 +225,22 @@ export function poseOf(f, foe, now) {
   let hand = local(fc, f.x, f.y, [key.h[0], key.h[1] + side, up(key.h[2])]);
   let dir = dirOf(fc, key.yaw, key.pitch);
   // 방어: 검이 겨눈 점(들어오는 공격이 닿을 자리, 막는 중이면 실제 접촉점)을 지나도록
-  if (aimAt) [hand, dir] = guardThrough(f, chest, aimAt, foe);
+  if (s === 'guard' || s === 'blockstun' || (s === 'ready' && f.gpose)) {
+    const g = f.gpose || guardPoseTarget(f, foe, now);
+    hand = [f.x + g.rel[0], f.y + g.rel[1], g.rel[2]];
+    dir = g.dir;
+  }
   // 쳐낸 직후: 검을 바깥으로 쳐 올린다
   if (c && c.role === 'parrier' && now - c.t < 0.16 && (s === 'guard' || s === 'ready')) {
     const k = 1 - (now - c.t) / 0.16;
     dir = v3.norm(v3.add(dir, v3.mul(dirOf(fc, 60, 50), k * 1.4)));
+  }
+  // 상태가 바뀐 직후: 바뀌기 전 손·검에서 이어서 (sim.js가 바뀌는 순간의 자세를 f.blend에 남김)
+  const bl = f.blend;
+  if (bl && now - bl.t < bl.dur) {
+    const k = ease(clamp((now - bl.t) / bl.dur, 0, 1));
+    hand = v3.lerp([f.x + bl.rel[0], f.y + bl.rel[1], bl.rel[2]], hand, k); // (몸을 따라 움직이는 손에서)
+    dir = v3.norm(v3.lerp(bl.dir, dir, k));
   }
   const base = v3.add(hand, v3.mul(dir, -0.06));
   const tip = v3.add(hand, v3.mul(dir, T.saber.hilt * 0.5 + T.saber.blade));
@@ -203,14 +263,10 @@ export function poseOf(f, foe, now) {
 }
 
 /** 방어 손·검: 검이 점 `p`를 날 중간쯤에서 지나고, 공격자의 검과 엇갈리게 */
-function guardThrough(f, chest, p, foe) {
+function guardThrough(f, chest, p, foe, line) {
   const n = foe ? v3.norm([foe.x - f.x, foe.y - f.y, 0]) : [Math.cos(f.facing), Math.sin(f.facing), 0];
-  // 상대 검의 방향 (없으면 가로)
-  let ad = [-n[1], n[0], 0];
-  if (foe) {
-    const fp = foe.state === 'attack' || foe.lastAtk ? rawBlade(foe) : null;
-    if (fp) ad = fp;
-  }
+  // 막아 낼 검의 방향 (공격의 휘두르는 선; 없으면 가로) — 상대 검의 지금 방향이 아니라 예상되는 선이라 흔들리지 않는다
+  const ad = line || [-n[1], n[0], 0];
   let d = v3.cross(ad, n);
   if (v3.len(d) < 0.2) d = [0, 0, 1];
   d = v3.norm(d);
@@ -227,11 +283,34 @@ function guardThrough(f, chest, p, foe) {
   return [hand, dir];
 }
 
-/** 공격자 검의 방향만 (방어 자세 계산용, 재귀 없이) */
-function rawBlade(f) {
-  const stance = STANCE[f.cast.persona] || STANCE.anakin;
-  const key = f.state === 'attack' ? attackKey(f, stance) : f.lastAtk ? swingKey(f.lastAtk.kind, f.lastAtk.contactS ?? MID) : stance;
-  return dirOf(f.facing, key.yaw, key.pitch);
+/**
+ * 방어 손·검의 목표 { rel: 몸 위치에 대한 손 [dx, dy, z], dir } — sim.js updateGuard가 틱마다 이쪽으로 옮긴다.
+ * 들어오는 공격: 그 공격이 정면(MID)에서 지날 선과 엇갈리게, 막는 중: 실제 접촉점에서 막힌 검의 선과 엇갈리게,
+ * 그 밖: 상대 검끝 쪽을 겨눈 사선.
+ */
+export function guardPoseTarget(f, foe, now) {
+  if (f.state === 'ready') return stanceTarget(f, foe);
+  const crouch = f.state === 'blockstun' ? 0.05 * (1 - f.st / Math.max(0.05, f.dur)) : 0;
+  const chest = local(f.facing, f.x, f.y, [GUARD.lean, 0, 1.36 - crouch]);
+  const aim = guardAimTarget(f, foe, now);
+  let hand;
+  let dir;
+  if (!aim) {
+    hand = local(f.facing, f.x, f.y, [GUARD.h[0], GUARD.h[1], GUARD.h[2] - crouch]);
+    dir = dirOf(f.facing, GUARD.yaw, GUARD.pitch);
+  } else {
+    let line = null;
+    const atk = foe && (foe.state === 'attack' ? foe.atk : foe.lastAtk);
+    if (atk && f.state === 'blockstun') {
+      const k = swingKey(atk.kind, atk.contactS ?? MID);
+      line = dirOf(foe.facing, k.yaw, k.pitch);
+    } else if (foe && foe.state === 'attack' && foe.atk.phase !== 'recovery') {
+      const k = swingKey(foe.atk.kind, MID);
+      line = dirOf(foe.facing, k.yaw, k.pitch);
+    }
+    [hand, dir] = guardThrough(f, chest, aim, foe, line);
+  }
+  return { rel: [hand[0] - f.x, hand[1] - f.y, hand[2]], dir };
 }
 
 /** 공격자 `att`의 휘두르기가 정면(MID)에 올 때, 방어자 `def` 앞에서 검이 지날 점 (방어가 미리 겨눔) */

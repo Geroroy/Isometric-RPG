@@ -137,12 +137,23 @@ export class CombatHUD {
       b.state.textContent = describe(f, now);
     });
     // 주도권
+    // 주도권: 표시하는 시간은 sim의 실제 행동 가능 시간 그대로 (누가 먼저 칠 수 있고, 상대는 그때 막을 수 있는가)
     const ini = sim.initiative();
-    if (ini.leader) {
-      this.lead.innerHTML = `주도권 <b>${ini.leader.name}</b> +${Math.min(1, ini.adv).toFixed(2)}s`;
-      this.lead.className = `cb-lead on ${ini.leader.side === ps && !watch ? 'me' : 'foe'}`;
+    const side = (f) => `cb-lead on ${f.side === ps && !watch ? 'me' : 'foe'}`;
+    if (ini.swing) {
+      const w = ini.swing;
+      const other = sim.fighters[1 - w.by.side];
+      const kind = KIND[w.kind] || w.kind;
+      this.lead.innerHTML = `<b>${w.by.name}</b> ${kind} — 판정 ${w.eta.toFixed(2)}s 후 · ${w.canGuard ? `${other.name} 막을 수 있음` : `${other.name} 방어 불가 (${Math.min(9, w.guardIn).toFixed(2)}s 뒤 가능)`}`;
+      this.lead.className = side(w.by);
+    } else if (ini.leader) {
+      const L = ini.leader;
+      const other = sim.fighters[1 - L.side];
+      const g = other.side === 0 ? ini.ga : ini.gb;
+      this.lead.innerHTML = `주도권 <b>${L.name}</b> — 먼저 ${Math.min(1, ini.adv).toFixed(2)}s 행동 · ${other.name} ${g > 0.01 ? `방어 ${Math.min(9, g).toFixed(2)}s 뒤` : '방어 가능'}`;
+      this.lead.className = side(L);
     } else {
-      this.lead.innerHTML = ini.dist > 3.4 ? '거리 벌어짐' : '대등';
+      this.lead.innerHTML = ini.dist > 3.4 ? '거리 벌어짐' : '대등 — 둘 다 행동 가능';
       this.lead.className = 'cb-lead';
     }
     this.bannerT -= dt;
@@ -178,6 +189,7 @@ export class CombatHUD {
         ${f.parryActive(now) ? `<br><span class="par">쳐내기 창 ${(f.parryUntil - now).toFixed(3)}s</span>` : ''}
         ${b ? `<br>버퍼: ${b.type} ${(now - b.t).toFixed(2)}s 전${b.reason ? ' · ' + b.reason : ''}` : ''}
         ${f.reject ? `<br><span class="dim">버려짐: ${f.reject.type} · ${f.reject.reason}</span>` : ''}
+        ${ai && ai.lastJudge && now - ai.lastJudge.t < 1.5 ? `<br>이어 베기 판단: <b>${ai.lastJudge.what}</b>${ai.lastJudge.dPred !== undefined ? ` (예상 거리 ${ai.lastJudge.dPred.toFixed(2)} / 사거리 ${ai.lastJudge.reach.toFixed(2)} m)` : ''}` : ''}
         ${ai ? `<br>AI 의도: <b>${ai.intentLabel}</b> · 관측 지연 ${ai.delay.toFixed(2)}s<br>인지한 상대: ${seen ? `${seen.state}${seen.atkKind ? ' ' + seen.atkKind + '/' + seen.atkPhase : ''} (${(now - seen.t).toFixed(2)}s 전 모습)` : '-'}` : '<br>플레이어 조작'}</div>`;
     });
     const log = sim.log

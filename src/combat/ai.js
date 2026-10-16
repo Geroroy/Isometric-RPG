@@ -87,6 +87,9 @@ const INTENT = {
   counter: '맞받아치기',
   punish: '빈틈 응징',
   retreat: '후퇴 (균형 회복)',
+  advance: '제한된 전진 (이어 베기엔 멂)',
+  abort: '공격 중단 (상대가 빠짐)',
+  press: '방어하며 밀고 들어감 (유도 읽음)',
   chase: '추격 (균형 붕괴)',
   idle: '대기',
 };
@@ -120,6 +123,33 @@ export class AIController {
     this.idleGuardT = 0;
     this.idleGuard = false;
     this.waitUntil = this.rng.range(...this.p.patience);
+    this.advanceUntil = -1;
+    this.baited = 0; // 첫 베기가 물러나는 상대에게 사거리 밖으로 헛친 횟수 (시간이 지나면 줄어듦): 많을수록 더 다가가서 친다
+    this.seenWhiffId = 0;
+    this.decisions = { chain: 0, advance: 0, abort: 0, stopBlocked: 0 }; // (이어 베기 판단 기록: 검증용)
+    this.lastJudge = null; // 최근 이어 베기 판단 { what, dPred, reach, t } (디버그 표시)
+  }
+
+  /**
+   * 관측한 상대의 바닥 속도 (지연된 관측 두 개의 차이 — 실제 입력이 아니라 보이는 움직임)
+   */
+  observedVel(o) {
+    let prev = null;
+    for (const h of this.hist) {
+      if (h.t > o.t - 0.08 + 1e-9) break;
+      prev = h;
+    }
+    if (!prev || o.t - prev.t < 0.02) return { x: 0, y: 0 };
+    return { x: (o.x - prev.x) / (o.t - prev.t), y: (o.y - prev.y) / (o.t - prev.t) };
+  }
+
+  /** `lead` 초 뒤 상대와의 거리 예상 (관측 위치 + 관측 속도, 내 내딛기 `lunge`만큼 줄여서) */
+  predictDist(me, o, now, lead, lunge = 0) {
+    const v = this.observedVel(o);
+    const ahead = Math.min(0.5, now - o.t + lead); // (관측 지연만큼과 앞으로 lead만큼: 0.5 s 넘게 내다보지는 않음)
+    const x = o.x + v.x * ahead;
+    const y = o.y + v.y * ahead;
+    return Math.hypot(x - me.x, y - me.y) - lunge;
   }
 
   /** 지연된 관측: 지금 - delay 시각의 상대 모습 */
@@ -146,6 +176,7 @@ export class AIController {
       this.think(sim, me, o, now);
     }
     this.afterBlock(me, o, now);
+    this.learnBait(me, now);
     this.continueString(me, now);
     return this.emit(me, o, now);
   }
@@ -200,6 +231,13 @@ export class AIController {
       }
     }
     if (me.state === 'attack' && this.string) return; // (연속 공격 중: continueString)
+    if (now < this.advanceUntil) {
+      // 제한된 전진: 이어 베기엔 멀어 몇 걸음 다가간 뒤 다시 판단 (방어는 내린 채 — 다가가는 동안이 빈틈)
+      this.intent = 'advance';
+      this.guard = false;
+      this.moveToward(me, o, 1);
+      return;
+    }
 
     // 3. 균형이 낮다: 물러나 자세 정비
     if (me.bal < P.retreatBal || (this.intent === 'retreat' && me.bal < P.retreatBal + 25)) {
@@ -218,7 +256,18 @@ export class AIController {
       this.moveToward(me, o, 1);
       return;
     }
-    const inReach = d <= P.attackRange;
+    // 공격을 시작할지: 지금 거리가 아니라 판정 시점(준비 시간 뒤)의 예상 거리로 — 물러나는 상대에게 헛치지 않게
+    const dHit = this.predictDist(me, o, now, T.attacks.light1.windup, T.attacks.light1.lunge * 0.6);
+    const closer = Math.min(0.45, this.baited * 0.18); // (유도에 걸린 만큼 더 붙어서)
+    const inReach = d <= P.attackRange + 0.25 - closer && dHit <= T.attacks.light1.reach - 0.12 - closer;
+    if (!inReach && this.baited >= 1.5 && d < P.engage && this.rng.chance(0.35)) {
+      // 유도를 읽음: 방어를 든 채 밀고 들어가 상대가 물러날 자리를 줄인다
+      this.intent = 'press';
+      this.guard = true;
+      this.guardUntil = now + 0.25;
+      this.moveToward(me, o, 1);
+      return;
+    }
     // 오래 기다렸다: 스스로 파고든다
     if (this.intent !== 'spacing' && this.intent !== 'pressure') this.waitUntil = Math.max(this.waitUntil, now + this.rng.range(...P.patience) * 0.5);
     if (now > this.waitUntil && !inReach) {
@@ -301,6 +350,21 @@ export class AIController {
     }
   }
 
+  /**
+   * 헛치기 유도에 대한 적응: 내 첫 베기가 사거리 밖으로 헛쳤으면 baited를 올린다 (상대가 휘두르는 걸 보고 물러난다).
+   * baited가 높을수록 더 가까운 거리에서만 공격을 시작하고, 때로는 방어를 든 채 밀고 들어간다. 몇 초면 잊는다 — 유도는
+   * 계속 통하지만 매번 같은 수에 같은 방식으로 걸리지는 않는다.
+   */
+  learnBait(me, now) {
+    this.baited = Math.max(0, this.baited - (now - (this.baitT ?? now)) * 0.12);
+    this.baitT = now;
+    const a = me.atk;
+    if (me.state === 'attack' && a && a.outcome === 'whiff' && a.id !== this.seenWhiffId) {
+      this.seenWhiffId = a.id;
+      if (a.combo === 1) this.baited = Math.min(3, this.baited + 1);
+    }
+  }
+
   /** 막고 밀리는 중 (내 상태는 정확히 안다): 이어지는 베기를 예상해 방어를 유지하고, 때로는 그 타이밍에 쳐내기 */
   afterBlock(me, o, now) {
     const c = me.contact;
@@ -354,7 +418,14 @@ export class AIController {
     this.move = { x: 0, y: 0 };
   }
 
-  /** 연속 공격: 내 회복이 이어치기 가능해질 즈음 다음 입력 (버퍼 안). 막히면 성향대로 그만두기도 한다. */
+  /**
+   * 연속 공격: 다음 베기를 누르기 직전(이어치기 가능 0.07 s 전)에 다시 판단한다 — 그 사이 상대가 물러났거나 밀려났을 수
+   * 있다. 관측한 상대 위치·속도로 다음 베기가 닿을 때의 거리를 예상해:
+   *   이어 베기  예상 거리가 다음 베기의 사거리 안 (내딛기 포함)
+   *   제한된 전진 조금 멀다 (사거리 + 0.9 m 안): 연속 공격을 접고 0.25 s 다가간 뒤 다시 판단
+   *   중단      더 멀다: 연속 공격을 접고 방어
+   * 막혔으면 성향대로(overcommit) 그만두기도 한다. 쳐내졌으면 이미 끝났다.
+   */
   continueString(me, now) {
     const s = this.string;
     if (!s || me.state !== 'attack') {
@@ -367,17 +438,44 @@ export class AIController {
       this.string = null;
       return;
     }
+    if (a.recT < a.def.chainAt - 0.07 - 1e-9) return; // (아직: 누르기 직전에 판단)
+    s.id = a.id;
+    const o = this.seen;
     if (a.outcome === 'blocked' && !this.rng.chance(this.p.overcommit)) {
       this.string = null;
+      this.decisions.stopBlocked++;
+      this.lastJudge = { what: '막힘 → 그만둠', t: now };
       this.guard = true; // (그만두고 방어)
       this.guardUntil = now + 0.4;
       return;
     }
-    s.id = a.id;
-    s.left--;
-    const heavyEnd = s.left === 0 && a.def.heavyChain && this.rng.chance(this.p.heavy + (this.foeGuards > 2 ? this.p.heavyVsGuard : 0));
-    this.press(now + Math.max(0, a.def.chainAt - a.recT - 0.05), heavyEnd ? 'heavy' : 'attack');
-    if (s.left <= 0) this.string = null;
+    const heavyEnd = s.left === 1 && a.def.heavyChain && this.rng.chance(this.p.heavy + (this.foeGuards > 2 ? this.p.heavyVsGuard : 0));
+    const next = T.attacks[heavyEnd ? 'heavy' : a.def.next];
+    const lead = Math.max(0, a.def.chainAt - a.recT) + next.windup;
+    const dPred = o ? this.predictDist(me, o, now, lead, next.lunge * 0.85) : 0;
+    const judge = (what) => (this.lastJudge = { what, dPred, reach: next.reach, t: now });
+    if (dPred <= next.reach - 0.08) {
+      s.left--;
+      this.decisions.chain++;
+      judge('이어 베기');
+      this.press(now + Math.max(0, a.def.chainAt - a.recT - 0.03), heavyEnd ? 'heavy' : 'attack');
+      if (s.left <= 0) this.string = null;
+      return;
+    }
+    this.string = null;
+    if (dPred <= next.reach + 0.9) {
+      this.decisions.advance++;
+      judge('제한된 전진');
+      this.intent = 'advance';
+      this.advanceUntil = now + Math.max(0, a.def.recovery - a.recT) + 0.25;
+      this.move = this.dirTo(me, o);
+    } else {
+      this.decisions.abort++;
+      judge('공격 중단');
+      this.intent = 'abort';
+      this.guard = true;
+      this.guardUntil = now + 0.35;
+    }
   }
 
   press(at, type, dir = null) {
