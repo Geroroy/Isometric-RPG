@@ -1,5 +1,8 @@
 # 무스타파 결투 재개발
 
+> **결투 전투 교체 (광선검 결투 브랜치)**: 이 문서의 결투 규칙·director·컷신 진행(`game/mustafar/director.js`·`route.js`)과 그 QA는
+> 옛 결투 시스템과 함께 지워졌다. 새 결투는 `docs/COMBAT.md`(`src/combat`, `arena.html`). 맵·존·에셋 내용은 그대로 유효하다.
+
 목표: 《시스의 복수》의 아나킨 대 오비완 무스타파 결투를 영화의 사건 순서와 결말대로 직접 겪는, 실시간 광선검 액션 RPG의
 시네마틱 결투(Diablo II식 조작감; Commandos 2는 그래픽 참고만 — `CLAUDE.md` "프로젝트 정체성").
 플레이어는 아나킨. 대체 결말은 범위 밖. 시각 에셋은 외부 제작(`CLAUDE.md` "역할 분리", `docs/ASSETS.md`), 여기서는

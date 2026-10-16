@@ -16,6 +16,16 @@
 - 역할: ChatGPT = 최종 시각 에셋 제작·아트 디렉션 / Claude Code = 게임플레이, 렌더링, AI, 전투, 애니메이션 시스템, 컷신, 에셋 통합
   (아래 "역할 분리").
 
+## 광선검 결투 — 새 시스템 (`src/combat`, `docs/COMBAT.md`)
+
+- 결투 전투는 **새로 만든 시스템**이다 (사용자 지시: 기존 결투 전투 폐기). 옛 `game/duel.js`·`duelMustafar.js`·`duelArt.js`·
+  `duelBlank.js`·`game/mustafar/director.js`·`route.js`·`ui/duelHud.js`와 그 QA(`mfroute`·`director_mustafar`·`mfstage01_story`·
+  `sigframes`)는 지웠다 — Git 이력에 있다. 옛 규칙을 되살리거나 새 규칙과 같이 두지 않는다(런타임 토글 없음).
+- 실행: `arena.html`(독립 시험장, 본편 메뉴 "광선검 결투", `#duel`), 검증 `npm run test:combat` + `node tools/qa/arena.mjs`.
+  모든 조정값은 `src/combat/tuning.js` 한곳(검증 전 가설값). 플레이어와 AI는 같은 `Fighter`·같은 명령을 쓴다.
+- 무스타파 맵 주소(`#duel-mustafar` 등)는 전투 없이 맵을 걷는다(`game/mapWalk.js`, 맵 에디터 그대로). 맵에 결투를 붙일 때는
+  `docs/COMBAT.md` "맵 연결"의 작은 인터페이스(`groundFromTiles`)로 한다. 아래 문서의 결투·컷신 진행(director) 설명은 옛 시스템 기준이다.
+
 ## 개발 방침 — 플레이 가능한 완성본 우선
 
 - 무스타파 결투는 **영화 텍스처의 완벽한 재현보다 전체 게임을 플레이 가능하게 완성하는 것**을 우선한다. 목표: 아나킨을 조작하는

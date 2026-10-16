@@ -39,10 +39,7 @@ export class Input {
         this.lmb = false;
         this.lmbTarget = null;
       }
-      if (e.button === 2) {
-        this.rmb = false;
-        this.game.player.blocking = false;
-      }
+      if (e.button === 2) this.rmb = false;
     });
     window.addEventListener('mousemove', (e) => {
       this.mx = e.clientX;
@@ -100,14 +97,6 @@ export class Input {
     this.updateMouse();
     // the map editor's play-test (ui/mapEditor.js): walking only — no fight, no skills
     if (g.mapTest && e.button !== 0) return;
-    const duel = g.mapTest ? null : g.duel;
-    if (duel && e.button === 0 && duel.press()) return;
-    if (duel && e.button === 2) {
-      // in the duel the right button is the guard
-      p.blocking = true;
-      p.blockT = g.time;
-      return;
-    }
     if (e.button === 0) {
       if (this.hud.pendingSkill) {
         this.cast(this.hud.pendingSkill);
@@ -223,10 +212,6 @@ export class Input {
     const panelOpen = Object.values(hud.open).some(Boolean) || !document.getElementById('help').classList.contains('hidden');
     if (panelOpen && !PANEL_KEYS.has(k) && e.code !== 'Backquote') return;
     if (g.mapTest && (/^[1-6]$/.test(e.key) || k === ' ' || k === 'q' || k === 'x')) return; // (the play-test: walking only)
-    if (k === ' ' && g.duel && g.duel.press()) {
-      e.preventDefault();
-      return;
-    }
     if (k === 'tab') {
       e.preventDefault();
       hud.toggle('map');

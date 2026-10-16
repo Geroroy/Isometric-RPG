@@ -407,9 +407,8 @@ export class Renderer {
         shown.push(pr);
       }
     }
-    // service pipes over the lava and the cables the duellists hang from (the Mustafar duel), under everyone
+    // service pipes over the lava, under everyone
     if (g.world.pipes && g.world.pipes.length) this.drawPipes(ctx, cam);
-    if (g.duel && g.duel.ropes) this.drawRopes(ctx, cam);
     for (const u of g.activeUnits) {
       if (!u.dead) continue;
       const s = worldToScreen(u.x, u.y);
@@ -1128,33 +1127,6 @@ export class Renderer {
         ctx.beginPath();
         ctx.moveTo(cx + (nx * w) / 2 + ux * 2, cy + (ny * w) / 2 + uy * 2);
         ctx.lineTo(cx - (nx * w) / 2 + ux * 2, cy - (ny * w) / 2 + uy * 2);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-  }
-
-  /** The cables the duellists hang from (duel.ropes: an anchor high above, a unit at the end), sagging a little. */
-  drawRopes(ctx, cam) {
-    for (const r of this.game.duel.ropes) {
-      const u = r.u;
-      if (u.hidden) continue;
-      const A = worldToScreen(r.ax, r.ay, r.az);
-      const B = worldToScreen(u.x, u.y, u.z + (r.hand ?? 1.3));
-      const ax = A.x - cam.x;
-      const ay = A.y - cam.y;
-      const bx = B.x - cam.x;
-      const by = B.y - cam.y;
-      const mx = (ax + bx) / 2 + (r.sag || 0);
-      const my = (ay + by) / 2 + 5;
-      ctx.save();
-      ctx.lineCap = 'round';
-      for (const [c, w, o] of [['#120e0b', 2.6, 0], ['#7a6854', 1, -0.8]]) {
-        ctx.strokeStyle = c;
-        ctx.lineWidth = w;
-        ctx.beginPath();
-        ctx.moveTo(ax + o, ay);
-        ctx.quadraticCurveTo(mx + o, my, bx + o, by);
         ctx.stroke();
       }
       ctx.restore();

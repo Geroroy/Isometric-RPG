@@ -518,7 +518,6 @@ export class Player extends Unit {
   /** Ignite or switch off the blade (X key, or automatically around fights). */
   setSaber(on) {
     if (on === this.saberLit || this.dead || this.saberOut) return;
-    if (!on && this.game.duel) return; // the duel is all blade
     this.saberLit = on;
     if (on) this.saberIgnite = true; // the renderer plays the ignition (spark, growth, bloom)
     this.game.audio.play(on ? 'ignite' : 'retract');
@@ -585,8 +584,6 @@ export class Player extends Unit {
   moveSpeed() {
     let s = 4.6 * (1 + (this.buffs.speed ? this.buffs.speed.move : 0));
     if (this.buffs.barrier) s *= 0.75;
-    const d = this.game.duel;
-    if (d && d.footing) s *= d.footing; // a narrow pipe over the lava: inching along it (duelMustafar.js)
     const bio = this.game.world.biomeAt(this.x, this.y);
     if (bio === BIOME.CITY_MUD) s *= 0.72; // the undercity's mud
     else if (bio === BIOME.CITY_SWAMP) s *= 0.6; // its standing water
@@ -792,18 +789,10 @@ export class Player extends Unit {
       return;
     }
     const duel = g.duel;
-    if (duel && duel.lock) return this.setAnim('lock');
     if (duel && duel.locked && !this.action) {
       if (!(this.anim === 'hurt' && !this.animInfo().done)) this.setAnim('idle');
       return;
     }
-    // duel guard: hold still behind the blade (a parry flourish plays through)
-    if (this.blocking && !this.busy) {
-      this.action = null;
-      if (this.anim !== 'parry' || this.animInfo().done) this.setAnim('block');
-      return;
-    }
-
     const act = this.action;
     if (!act) {
       if (this.saberOut) {

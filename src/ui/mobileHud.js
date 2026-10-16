@@ -3,7 +3,7 @@
 // the right thumb has the action cluster (ui/touch.js), and the readouts sit
 // in the corners where neither thumb goes:
 //   top left     vitals plate — portrait, HP / Force bars, level, dark meter;
-//                in a duel the composure bar; below it the status chips
+//                below it the status chips
 //   top right    radar (campaign) and the menu keys (skills · info · cards ·
 //                map · settings · hide the UI · fullscreen)
 //   bottom       the last few console lines, fading out (the message log)
@@ -49,7 +49,7 @@ export class MobileHUD {
        <div class="m-bars">
          <div class="m-bar hp"><i class="chip"></i><i class="fill"></i><b></b></div>
          <div class="m-bar fp"><i class="fill"></i><b></b></div>
-         ${duel ? '<div class="m-bar comp"><i class="fill"></i><span>평정</span></div>' : '<div class="m-dark"><i></i></div>'}
+         ${duel ? '' : '<div class="m-dark"><i></i></div>'}
        </div>`,
     );
     root.appendChild(this.vitals);
@@ -61,7 +61,6 @@ export class MobileHUD {
     this.hpText = this.vitals.querySelector('.hp b');
     this.fpFill = this.vitals.querySelector('.fp .fill');
     this.fpText = this.vitals.querySelector('.fp b');
-    this.compFill = this.vitals.querySelector('.comp .fill');
     this.darkMark = this.vitals.querySelector('.m-dark i');
     // tapping the face: Anakin talks (same as the PC portrait)
     this.face.addEventListener('pointerdown', (e) => {
@@ -173,10 +172,6 @@ export class MobileHUD {
     this.hpChipEl.style.width = this.hpChip * 100 + '%';
     this.vitals.classList.toggle('low', hpK < 0.25);
     this.fpFill.style.width = Math.max(0, p.force / p.maxForce) * 100 + '%';
-    if (this.compFill) {
-      this.compFill.style.width = Math.max(0, p.composure) + '%';
-      this.vitals.classList.toggle('comp-low', p.composure < 30);
-    }
     hud.portrait.draw(this.fctx, this.face.width, this.face.height);
 
     // the lines of the log fade and go

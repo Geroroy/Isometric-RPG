@@ -182,7 +182,6 @@ export class TouchControls {
       this.audio.unlock();
       a.setPointerCapture(e.pointerId);
       a.classList.add('down');
-      if (this.game.duel && this.game.duel.press()) return;
       this.attackHeld = true;
     });
     const release = () => {
@@ -193,25 +192,7 @@ export class TouchControls {
     a.addEventListener('pointercancel', release);
 
     const bb = this.bactaBtn;
-    if (this.game.duel) {
-      // no bacta in the duel: this button is the guard (hold)
-      bb.innerHTML = `<img src="${iconURL('shien')}" alt=""><span class="lv">막기</span>`;
-      bb.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        this.audio.unlock();
-        bb.setPointerCapture(e.pointerId);
-        bb.classList.add('down');
-        const g = this.game;
-        g.player.blocking = true;
-        g.player.blockT = g.time;
-      });
-      const off = () => {
-        bb.classList.remove('down');
-        this.game.player.blocking = false;
-      };
-      bb.addEventListener('pointerup', off);
-      bb.addEventListener('pointercancel', off);
-    } else {
+    {
       bb.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         this.audio.unlock();

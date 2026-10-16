@@ -100,10 +100,6 @@ export class Music {
     for (const k of ['combat', 'explore', 'victory']) for (const u of this.lists[k] || []) this.track(u);
     game.on('death', () => this.playSting('death'));
     game.on('darkSide', () => this.playSting('dark'));
-    game.on('duelEnd', (r) => {
-      this.duelOver = r.won ? 'credits' : 'silence';
-      if (r.won && !game.duel.music) this.playSting('victory'); // Mustafar ends in tragedy
-    });
   }
 
   track(url) {
@@ -198,7 +194,7 @@ export class Music {
     if (this.isTitle()) return 'title';
     if (p.dead) return 'silence'; // the death sting plays over it
     if (g.duel && g.duel.music) return g.duel.music();
-    if (g.duel) return this.duelOver || (g.duel.started ? 'duel' : 'title');
+    if (g.duel) return g.duel.started ? 'duel' : 'title';
     if (g.inCombat) {
       const boss = g.activeUnits.some((u) => u.elite && !u.dead && u.target === p && dist(u.x, u.y, p.x, p.y) < 14);
       return boss || /공장/.test(g.region || '') ? 'boss' : 'combat';

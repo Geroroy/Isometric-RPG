@@ -11,12 +11,8 @@ import { NPC, NPC_DEFS, TALK_RANGE } from './npc.js';
 import { QuestLog } from './quests.js';
 import { BASE_POS, Arena, ARENA, MustafarArena, CityHub, CITY } from '../world/worldgen.js';
 import { CityLife } from './cityLife.js';
-import { Duel } from './duel.js';
 import { Cinema } from './cinema.js';
-import { MustafarDuel } from './duelMustafar.js';
-import { ArtDuel } from './duelArt.js';
-import { BlankDuel } from './duelBlank.js';
-import { MustafarDirector } from './mustafar/director.js';
+import { MapWalk } from './mapWalk.js';
 import { MustafarStage } from '../world/mustafarStage.js';
 
 const ELITE_NAMES = ['OOM 지휘관 드로이드', '전투 드로이드 분대장', '전술 사령 드로이드 T-7', '돌격 지휘 드로이드'];
@@ -55,36 +51,10 @@ export class Game {
     this.audio.listener = this.player;
     this.quests = new QuestLog(this);
     this.talkingTo = null;
-    if (mode === 'duel' && duel === 'mustafarArt') {
-      // the painted map (tools/maps/mustafar_art_build.py): a free duel with Obi-Wan on it
-      this.duel = new ArtDuel(this);
-      this.updateActive();
-      return;
-    }
-    if (mode === 'duel' && duel === 'mustafarBlank') {
-      // the blank map: the lava alone, built by hand in the map editor (game/duelBlank.js)
-      this.duel = new BlankDuel(this);
-      this.updateActive();
-      return;
-    }
-    if (mode === 'duel' && duel === 'mustafar') {
-      // the rebuild: the film's places in order, its director on the duel's rules (game/mustafar/director.js)
-      this.duel = new MustafarDirector(this);
-      this.updateActive();
-      return;
-    }
-    if (mode === 'duel' && duel === 'mustafarLegacy') {
-      this.duel = new MustafarDuel(this);
-      this.updateActive();
-      return;
-    }
     if (mode === 'duel') {
-      // Obi-Wan lies wounded by the wall, as in the film
-      const ob = new NPC(this, 'obiwan', ARENA.x - 4.5, ARENA.y - 4.5);
-      ob.restAnim = 'down';
-      ob.npc = false;
-      this.units.push(ob);
-      this.duel = new Duel(this);
+      // the Mustafar maps, walked without a fight: the lightsaber duel is its own system now (src/combat, arena.html —
+      // docs/COMBAT.md); the old duel rules and their scenes were removed (git history keeps them)
+      this.duel = new MapWalk(this);
       this.updateActive();
       return;
     }
@@ -440,11 +410,6 @@ export class Game {
 
   damage(src, tgt, amount, opts = {}) {
     if (!tgt || tgt.dead || amount <= 0) return 0;
-    if (this.duel) {
-      amount = this.duel.filter(src, tgt, amount, opts);
-      if (amount <= 0) return 0;
-    }
-    const duelCap = this.duel && tgt === this.duel.foe ? Math.max(0, tgt.hp - 1) : Infinity; // the film's ending decides the duel, not a crit
     const p = this.player;
     if (tgt === p && this.cheats.god) return 0; // debug: invincible
     let crit = false;
@@ -479,7 +444,7 @@ export class Game {
       const cl = p.skillLevel('command');
       if (cl) amount *= 1 - SKILLS.command.dr(cl) / 100;
     }
-    amount = Math.max(1, Math.round(Math.min(amount, duelCap)));
+    amount = Math.max(1, Math.round(amount));
     if (amount <= 0) return 0;
     tgt.hp -= amount;
     const feel = feelFor(opts, crit);
@@ -533,7 +498,6 @@ export class Game {
       this.emit('death');
       return;
     }
-    if (u === (this.duel && this.duel.foe)) return;
     if (u.team === 'cis') {
       p.kills++;
       this.streak = this.time - (this.lastKillT ?? -99) < 4 ? (this.streak || 0) + 1 : 1;

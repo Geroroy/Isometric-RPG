@@ -19,7 +19,6 @@ import { setMustafarZone } from './world/mustafarStage.js';
 import { loadMustafarFloor, loadMustafarTexture, loadMustafarConsoles, loadMustafarDroid, loadCargo, loadRocks, loadWalls, addMirror, MIRROR_SUFFIX } from './gfx/mustafarFloor.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
-import { DuelHUD } from './ui/duelHud.js';
 import { Game } from './game/game.js';
 import { Renderer } from './gfx/renderer.js';
 import { Post } from './gfx/post.js';
@@ -56,17 +55,22 @@ let bootFailed = false; // (set when the boot stops on an error: the loading scr
 // any address plays it, the menu offers nothing else (but its blank map: '#duel-mustafar-blank'), and it carries only
 // the files that duel loads (CLAUDE.md)
 const MUSTAFAR_ONLY = import.meta.env.VITE_MUSTAFAR_ONLY === '1';
+// The lightsaber duel is its own system (src/combat, docs/COMBAT.md), played in its test arena: arena.html. The duel
+// that used to run on the maps below was removed — '#duel' and '#duel-arena' go to the arena; the Mustafar map hashes
+// still open their maps, walked without a fight (game/mapWalk.js), for the map work and its editor.
+const ARENA_PAGE = 'arena.html';
+if (location.hash === '#duel' || location.hash === '#duel-arena') location.replace(ARENA_PAGE);
 const DUEL = MUSTAFAR_ONLY
   ? location.hash === '#duel-mustafar-blank'
     ? 'mustafarBlank'
     : 'mustafar'
-  : { '#duel': 'geonosis', '#duel-mustafar': 'mustafar', '#duel-mustafar-blank': 'mustafarBlank', '#duel-mustafar-legacy': 'mustafarLegacy', '#duel-mustafar-art': 'mustafarArt' }[location.hash] || null;
+  : { '#duel-mustafar': 'mustafar', '#duel-mustafar-blank': 'mustafarBlank', '#duel-mustafar-legacy': 'mustafarLegacy', '#duel-mustafar-art': 'mustafarArt' }[location.hash] || null;
 const MODE = DUEL ? 'duel' : 'campaign';
 // the old Mustafar: the film's map, or the painted lava fortress (the same set, sprites and editor; its own map file)
 const MUSTAFAR = DUEL === 'mustafarLegacy' || DUEL === 'mustafarArt';
 const MAP_NAME = DUEL === 'mustafarArt' ? 'mustafar_art' : 'mustafar';
 // the rebuild's zones (world/mustafarStage.js) — or its blank map (the lava alone: a map built by hand in the editor,
-// tools/maps/mustafar_v2/blank.py; no Obi-Wan, game/duelBlank.js)
+// tools/maps/mustafar_v2/blank.py)
 const BLANK = DUEL === 'mustafarBlank';
 const MUSTAFAR_V2 = DUEL === 'mustafar' || BLANK;
 const ZONES = BLANK ? ['blank'] : ['stage01', 'stage02', 'stage03', 'stage04', 'stage05', 'stage06']; // (the film's places, in order: 03–06 in blockout)
@@ -74,8 +78,7 @@ setRemasterAllowed(MUSTAFAR || MUSTAFAR_V2); // the remastered graphics: the Mus
 window.addEventListener('hashchange', () => location.reload());
 
 const DUEL_TITLES = {
-  geonosis: ['#duel', '지오노시스의 결투', 'MOVIE DUEL · EPISODE II — 지오노시스의 결투 · 두쿠 백작의 비밀 격납고', '지오노시스 격납고 준비 중…'],
-  mustafar: ['#duel-mustafar', '무스타파의 결투', 'MOVIE DUEL · EPISODE III — 무스타파의 결투 · 재개발 중: STAGE 01 착륙장', '무스타파 착륙장 준비 중…'],
+  mustafar: ['#duel-mustafar', '무스타파 맵 둘러보기', 'MAP · EPISODE III — 무스타파 · 재개발 중인 맵을 전투 없이 둘러보기 (결투는 광선검 결투 시험장)', '무스타파 착륙장 준비 중…', '무스타파 맵', '맵 둘러보기'],
   mustafarBlank: ['#duel-mustafar-blank', '무스타파 빈 맵 (맵 만들기)', 'MAP EDITOR · 무스타파 빈 맵 — 용암만 깔린 맵에 맵 에디터로 직접 짓기', '무스타파 빈 맵 준비 중…', '맵 만들기', '맵 만들기 시작'],
   mustafarLegacy: ['#duel-mustafar-legacy', '무스타파의 결투 (이전 버전)', 'MOVIE DUEL · EPISODE III — 무스타파의 결투 (이전 버전) · 아나킨 vs 오비완', '무스타파 채굴 시설 준비 중…'],
   mustafarArt: ['#duel-mustafar-art', '무스타파 용암 요새', 'MOVIE DUEL · EPISODE III — 무스타파 용암 요새 · 아나킨 vs 오비완', '용암 요새 준비 중…'],
@@ -85,8 +88,9 @@ const MUSTAFAR_MENU = new Set(['mustafar', 'mustafarBlank']); // (the Mustafar-o
 const duelMenu = (d) => {
   const others = Object.keys(DUEL_TITLES).filter((k) => k !== d && !OFF_MENU.has(k) && (!MUSTAFAR_ONLY || MUSTAFAR_MENU.has(k)));
   return `
-  <button id="startBtn" class="tm-item sel" type="button"><span>${DUEL_TITLES[d][5] || '결투 시작'}</span></button>
-  ${others.map((o) => `<a class="tm-item" href="${DUEL_TITLES[o][0]}"><span>${DUEL_TITLES[o][4] || '다른 결투'}</span><small>${DUEL_TITLES[o][1]}</small></a>`).join('')}
+  <button id="startBtn" class="tm-item sel" type="button"><span>${DUEL_TITLES[d][5] || '맵 둘러보기'}</span></button>
+  <a class="tm-item" href="${ARENA_PAGE}"><span>광선검 결투</span><small>결투 시험장 · 아나킨 대 오비완</small></a>
+  ${others.map((o) => `<a class="tm-item" href="${DUEL_TITLES[o][0]}"><span>${DUEL_TITLES[o][4] || '다른 맵'}</span><small>${DUEL_TITLES[o][1]}</small></a>`).join('')}
   ${MUSTAFAR_ONLY ? '' : '<a id="modeLink" class="tm-item" href="#campaign"><span>캠페인으로</span><small>크리스토프시스 외곽</small></a>'}
   <button id="controlsBtn" class="tm-item" type="button"><span>조작법</span></button>`;
 };
@@ -164,7 +168,7 @@ async function boot() {
       zone.missingArt.push({ id: 'mf.lava.surface', why: lava.missing });
       setLavaTexture(await loadMustafarTexture('lava.png').catch((e) => console.warn('무스타파 용암: ' + e.message)));
     }
-    // the smoke that drifts over the lava (gfx/fx.js smoke puffs, game/mustafar/director.js): the delivered pictures, or none
+    // the smoke that drifts over the lava (gfx/fx.js smoke puffs): the delivered pictures, or none
     zone.smoke = [];
     for (const id of ['mf.lava.smoke_a', 'mf.lava.smoke_b', 'mf.lava.smoke_c']) {
       const a = await loadAsset(man, id);
@@ -244,7 +248,6 @@ async function boot() {
   const dialogue = new DialogueUI(game, audio, startDialogue, renderer);
   const input = new Input(game, renderer, hud, audio, canvas);
   input.dialogue = dialogue;
-  const duelHud = game.duel ? new DuelHUD(game) : null;
   const touch = new TouchControls(game, renderer, hud, input, audio);
   const mobile = (hud.mobile = new MobileHUD(game, hud, audio)); // the phone's own chrome (shown with body.touch)
   const fullscreen = new Fullscreen();
@@ -358,7 +361,7 @@ async function boot() {
     // let a user sound bank finish loading so the opening line can be voiced
     if (game.duel) game.duel.start();
     if (BLANK && editor && !editor.on) editor.toggle(); // (the blank map is for building: straight into the editor)
-    else Promise.race([audio.bankReady, new Promise((r) => setTimeout(r, 1500))]).then(() => game.say('intro'));
+    else if (!game.duel) Promise.race([audio.bankReady, new Promise((r) => setTimeout(r, 1500))]).then(() => game.say('intro'));
   };
 
   window.__game = game; // handy for debugging in the console
@@ -381,7 +384,7 @@ async function boot() {
   // the frame's systems, made once (not a fresh array of closures every frame)
   let dt = 0;
   let paused = false;
-  const steps = [() => paused || game.update(dt), () => renderer.render(dt), () => editor && editor.draw(dt), () => post.render(dt), () => hud.update(dt), () => touch.enabled && mobile.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update(), () => duelHud && duelHud.update(dt)];
+  const steps = [() => paused || game.update(dt), () => renderer.render(dt), () => editor && editor.draw(dt), () => post.render(dt), () => hud.update(dt), () => touch.enabled && mobile.update(dt), () => dialogue.update(dt), () => music.update(), () => ambience.update(game), () => jukebox.update()];
   const loop = (now) => {
     if (hiddenTab) return; // restarted when the tab shows again
     requestAnimationFrame(loop);
