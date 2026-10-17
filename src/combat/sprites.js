@@ -16,24 +16,45 @@ import { TUNING as T } from './tuning.js';
 import { swingS, LEAD } from './pose.js';
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || './';
-// 캐릭터마다 세 시트: 몸 전체(공격·반응·회피·쓰러짐) · 위 겹(기본·방어 자세) · 아래 겹(선 다리·걷기) — 한 세트로 합친다
-export const SHEETS = (style) => [`sprites/duel/hero_${style}_256.json`, `sprites/duel/hero_${style}_up_256.json`, `sprites/duel/hero_${style}_low_256.json`];
-const POSES = 'sprites/duel/hero_poses.json';
+// 캐릭터마다 세 시트: 몸 전체(공격·반응·회피·쓰러짐) · 위 겹(기본·방어 자세) · 아래 겹(선 다리·걷기) — 한 세트로 합친다.
+// 시트 세트는 캐릭터마다 앞에서부터 시도한다: 아나킨은 Movie Duels 모델(tools/sprites/md/md_combat.py — 8방향, 사용자 제공 비공개 팩의
+// 렌더라 저장소 밖 public/sprites/duel_md/, docs/characters/MD_ANAKIN.md "전투 연결"), 없으면 프리렌더 모델 v1 (16방향, docs/CHARACTERS.md)
+const V1 = (style) => ({ id: 'v1', lib: 'sprites/duel/hero_poses.json', sheets: [`sprites/duel/hero_${style}_256.json`, `sprites/duel/hero_${style}_up_256.json`, `sprites/duel/hero_${style}_low_256.json`] });
+const MD = { id: 'md', lib: 'sprites/duel/md_poses.json', sheets: ['sprites/duel_md/md_anakin_256.json', 'sprites/duel_md/md_anakin_up_256.json', 'sprites/duel_md/md_anakin_low_256.json'] };
+export const SETS = { anakin: [MD, V1('anakin')], obiwan: [V1('obiwan')] };
 const WALK_MIN = 0.25; // (m/s) 이보다 빠르면 걷기 프레임
+const RUN_MIN = 4.0; // (m/s) 이보다 빠르면 (맵의 먼 이동) 먼 이동 걸음 run_f가 있으면 그것
+const PARRY_T = 0.16; // (s) 쳐낸 직후 검을 쳐 올리는 시간 (pose.js 'parrier'와 같게)
 const TIMED = { parried: 'parried', clash: 'clash', overpowered: 'overpowered', hitstun: 'hitstun', broken: 'broken' };
 
 /** 시트와 동작 라이브러리를 불러온다 (실패하면 null — 시험장은 임시 표현으로 그린다) */
 export async function loadFighterSprites(styles = ['anakin', 'obiwan']) {
-  const lib = await fetch(BASE + POSES).then((r) => (r.ok ? r.json() : Promise.reject(new Error('동작 라이브러리 없음: ' + POSES))));
   const { loadSheet } = await import('../gfx/sheet.js'); // (브라우저 전용: 파일 캐시 — 노드 시험은 이 모듈의 프레임 고르기만 쓴다)
+  const json = (u) => fetch(BASE + u).then((r) => (r.ok ? r.json() : Promise.reject(new Error('없음: ' + u))));
+  const lib = { styles: {} };
   const sets = {};
+  const used = {};
   await Promise.all(
     styles.map(async (s) => {
-      const parts = await Promise.all(SHEETS(s).map((u) => loadSheet(BASE + u)));
-      sets[s] = { dirs: parts[0].dirs, anims: Object.assign({}, ...parts.map((x) => x.anims)) };
+      let err;
+      for (const def of SETS[s] || [V1(s)]) {
+        try {
+          const [L, ...parts] = await Promise.all([json(def.lib), ...def.sheets.map((u) => loadSheet(BASE + u))]);
+          sets[s] = { dirs: parts[0].dirs, anims: Object.assign({}, ...parts.map((x) => x.anims)) };
+          lib.styles[s] = L.styles[s];
+          used[s] = def.id;
+          return;
+        } catch (e) {
+          err = e;
+          console.info(`결투자 시트 ${s}/${def.id} 없음 — 다음 후보`, e.message || e);
+        }
+      }
+      throw err;
     }),
   );
-  return new FighterSprites(lib, sets);
+  const sp = new FighterSprites(lib, sets);
+  sp.used = used;
+  return sp;
 }
 
 export class FighterSprites {
@@ -41,6 +62,9 @@ export class FighterSprites {
     this.lib = lib;
     this.sets = sets;
     this.walk = new Map(); // 결투자 → { phase, clip }
+    // 시트에 있는 동작만 (렌더를 나눠서 하는 동안 일부만 있는 세트도 그린다: 없는 동작은 있는 몸 전체 동작 중 가장 가까운 자세로)
+    this.avail = {};
+    for (const [s, set] of Object.entries(sets)) this.avail[s] = new Set(Object.keys(set.anims).filter((n) => lib.styles[s] && lib.styles[s][n]));
   }
 
   has(f) {
@@ -50,9 +74,10 @@ export class FighterSprites {
   /**
    * 결투자 f의 지금 그림: { parts: [{ clip, i, fr, dy }] (아래에서 위로 그릴 겹 — 한 장 또는 아래·위 두 겹), blade (날 표지를 가진 겹),
    * dir }. fr = 시트 프레임 (page·sx·sy·w·h·ox·oy·k·markers·blades·shadow), dy = 그 겹을 아래로 옮길 게임 px (위 겹을 아래 겹의 골반 높이에).
-   * `p`: pose.js poseOf(f, …) (이번 화면의 자세), `dt`: 화면 시간 (걷기 위상).
+   * `p`: pose.js poseOf(f, …) (이번 화면의 자세), `dt`: 화면 시간 (걷기 위상), `now`: sim 시각 (쳐내기 직후 — 없으면 쳐내기 동작을 쓰지 않음).
    */
-  pick(f, p, dt) {
+  pick(f, p, dt, now) {
+    this.now = now;
     const L = this.lib.styles[f.style];
     const set = this.sets[f.style];
     const dir = dirIndex(f.facing, set.dirs);
@@ -62,7 +87,7 @@ export class FighterSprites {
       const k = Math.min(i, n - 1);
       return { clip, i: k, fr: a.data[dir][k], dy };
     };
-    const ch = this.choose(f, p, dt, L);
+    const ch = this.fallback(f, p, this.choose(f, p, dt, L), L);
     if (ch.length === 2) {
       const parts = [frame(...ch)];
       return { parts, blade: parts[0], dir };
@@ -74,10 +99,31 @@ export class FighterSprites {
     return { parts, blade: parts[1], dir };
   }
 
+  /** 고른 동작이 시트에 없으면: 있는 몸 전체 동작(겹 아닌 것) 중 지금 손·검끝·골반에 가장 가까운 프레임 한 장 */
+  fallback(f, p, ch, L) {
+    const av = this.avail[f.style];
+    const names = ch.length === 2 ? [ch[0]] : [ch[0], ch[2]];
+    if (names.every((n) => av.has(n))) return ch;
+    const own = local(f, p);
+    let best = null;
+    let bd = Infinity;
+    for (const n of av) {
+      if (L[n].layer) continue;
+      const i = nearestPose(L[n], own, null);
+      const d = poseDist(L[n].frames[i], own);
+      if (d < bd) (bd = d), (best = [n, i]);
+    }
+    return best || ch;
+  }
+
   /** [동작, 프레임] (한 장) 또는 [아래 동작, 아래 프레임, 위 동작, 위 프레임] (두 겹) */
   choose(f, p, dt, L) {
     const s = f.state;
     if (s === 'attack') return this.attack(f, p, L);
+    // 쳐낸 직후 (방어·자유 자세에서 PARRY_T 동안): 쳐내기 동작이 있으면 시각 비율로 (몸 전체 한 장)
+    const c = f.contact;
+    const now = this.now;
+    if (L.parry && c && c.role === 'parrier' && (s === 'guard' || s === 'ready') && now !== undefined && now - c.t < PARRY_T) return ['parry', nearestK(L.parry, (now - c.t) / PARRY_T)];
     if (s === 'dead') return ['dead', nearestK(L.dead, Math.min(1, f.koT / 0.5))];
     if (s === 'dodge') return ['dodge', nearestK(L.dodge, Math.min(1, f.st / T.dodge.dur))];
     if (TIMED[s]) return [TIMED[s], nearestK(L[TIMED[s]], f.st / Math.max(0.05, f.dur))];
@@ -96,7 +142,9 @@ export class FighterSprites {
       const fwd = (f.vx * c + f.vy * sn) / speed;
       const right = (-f.vx * sn + f.vy * c) / speed;
       const d = Math.abs(fwd) >= Math.abs(right) ? (fwd > 0 ? 'f' : 'b') : right > 0 ? 'r' : 'l';
-      const name = `${guard ? 'gwalk' : 'walk'}_${d}`;
+      // (맵의 먼 이동: 가는 쪽을 보고 4.6 m/s — 그 빠르기로 찍은 걸음이 있으면 그것)
+      const run = !guard && L.run_f && (f.traveling || speed > RUN_MIN) && d === 'f';
+      const name = run ? 'run_f' : `${guard ? 'gwalk' : 'walk'}_${d}`;
       const C = L[name];
       w.phase = (w.phase + (speed * dt) / C.stride) % 1;
       return [name, Math.floor(w.phase * C.frames.length) % C.frames.length, up, ui];

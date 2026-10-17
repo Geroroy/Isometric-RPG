@@ -19,6 +19,11 @@ export const TUNING = {
     guardMoveSpeed: 1.3, // 방어를 유지한 채 이동
     backFactor: 0.75, // 상대에게서 멀어지는 방향으로 걸을 때 속도 배율
     sideFactor: 0.92, // 옆걸음 배율
+    // 맵의 먼 이동 (CombatSim travel 옵션 — 무스타파 맵 연결만): 상대가 travelDist보다 멀면 가는 쪽을 보고 맵 걷기 빠르기로
+    // (본편 유닛·맵 걷기와 같은 4.6 m/s), travelLeave 안으로 들어오면 상대를 보는 결투 걸음으로 돌아온다
+    travelSpeed: 4.6,
+    travelDist: 7,
+    travelLeave: 6,
     accel: 28, // 목표 속도로 붙는 가속 (m/s²): 반응성
     friction: 9, // 밀려남 속도의 감쇠 (1/s)
     turnFree: deg(720), // 자유 상태에서 상대를 바라보는 회전 속도 (rad/s)

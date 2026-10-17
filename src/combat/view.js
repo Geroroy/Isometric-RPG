@@ -18,10 +18,12 @@ const PX_M = 22.4; // 바닥에서 1 m ≈ 22.4 px (투영 축 길이), 굵기 �
 const SPARK = { block: [200, 230, 255], parry: [255, 214, 110], clash: [235, 240, 255], hit: [255, 90, 60] };
 
 export class CombatView {
+  /** canvas: 시험장의 화면. null이면 그리기 부품만 (맵 결투 mapView.js — 맵 렌더러의 화면에 끼워 그린다) */
   constructor(canvas, sim) {
     this.cv = canvas;
-    this.ctx = canvas.getContext('2d');
+    this.ctx = canvas ? canvas.getContext('2d') : null;
     this.sim = sim;
+    this.textK = 1; // 글자 크기 배율 (맵: 게임 px로 그리므로 화면 배율로 나눔)
     this.debug = false;
     this.cam = { x: 0, y: 0, s: 3 };
     this.fx = [];
@@ -33,6 +35,7 @@ export class CombatView {
     this.shake = 0;
     this.time = 0;
     sim.on((e) => this.onEvent(e));
+    if (!canvas) return;
     this.resize();
     addEventListener('resize', () => this.resize());
     this.snapCamera(); // (첫 화면부터 두 결투자가 보이게)
@@ -167,7 +170,7 @@ export class CombatView {
     const now = sim.time;
     const poses = [poseOf(A, B, now), poseOf(B, A, now)];
     this.poses = poses;
-    this.picks = sim.fighters.map((f) => (this.sprites && this.sprites.has(f) ? this.sprites.pick(f, poses[f.side], dt) : null));
+    this.picks = sim.fighters.map((f) => (this.sprites && this.sprites.has(f) ? this.sprites.pick(f, poses[f.side], dt, now) : null));
     for (const f of sim.fighters) this.trails[f.side].sample(f, poses[f.side], this.time);
     if (this.debug) this.drawDebugFloor(ctx, poses);
     // 그림자·발밑 표시 (항상 몸보다 먼저)
@@ -178,23 +181,27 @@ export class CombatView {
     for (const f of sim.fighters) this.collect(items, f, poses[f.side]);
     items.sort((a, b) => a.d - b.d);
     for (const it of items) it.draw(ctx);
-    // 날 중심선을 한 번 더 위에 (옅게): 두 결투자가 화면에서 앞뒤로 겹쳐도 검과 접촉은 보이게
-    ctx.globalAlpha = 0.5;
-    ctx.lineCap = 'round';
-    for (const f of sim.fighters) {
-      if (f.dead) continue;
-      const p = poses[f.side];
-      const bl = this.bladeOf(f);
-      if (bl) line2(ctx, bl[0], bl[1], Math.max(1.5, 0.026 * this.cam.s * PX_M), '#eaf6ff');
-      else seg(ctx, this, p.bladeBase, p.tip, Math.max(1.5, 0.026 * this.cam.s * PX_M), '#eaf6ff');
-    }
-    ctx.globalAlpha = 1;
+    this.drawBladeCores(ctx);
     this.drawFx(ctx, dt);
     if (this.debug) {
       for (const f of sim.fighters) if (this.picks[f.side]) this.drawPoseSkeleton(ctx, f, poses[f.side]);
       this.drawDebugText(ctx, poses);
     }
     for (let i = 0; i < 2; i++) this.flash[i] = Math.max(0, this.flash[i] - dt);
+  }
+
+  /** 날 중심선을 한 번 더 위에 (옅게): 두 결투자가 화면에서 앞뒤로 겹쳐도 검과 접촉은 보이게 */
+  drawBladeCores(ctx, alpha = 0.5) {
+    ctx.globalAlpha = alpha;
+    ctx.lineCap = 'round';
+    for (const f of this.sim.fighters) {
+      if (f.dead) continue;
+      const p = this.poses[f.side];
+      const bl = this.bladeOf(f);
+      if (bl) line2(ctx, bl[0], bl[1], Math.max(1.5, 0.026 * this.cam.s * PX_M), '#eaf6ff');
+      else seg(ctx, this, p.bladeBase, p.tip, Math.max(1.5, 0.026 * this.cam.s * PX_M), '#eaf6ff');
+    }
+    ctx.globalAlpha = 1;
   }
 
   drawFloor(ctx) {
@@ -519,10 +526,10 @@ export class CombatView {
       if (e.k !== 'text' || e.t >= e.life) continue;
       const k = e.t / e.life;
       const c = this.P(e.p[0], e.p[1], e.p[2] + k * 0.35);
-      ctx.font = `700 ${e.size}px 'Pretendard Variable', Pretendard, system-ui, sans-serif`;
+      ctx.font = `700 ${e.size * this.textK}px 'Pretendard Variable', Pretendard, system-ui, sans-serif`;
       ctx.textAlign = 'center';
       ctx.globalAlpha = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3 * this.textK;
       ctx.strokeStyle = 'rgba(0,0,0,0.75)';
       ctx.strokeText(e.s, c[0], c[1]);
       ctx.fillStyle = e.color;

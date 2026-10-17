@@ -212,6 +212,11 @@ export class Input {
     const panelOpen = Object.values(hud.open).some(Boolean) || !document.getElementById('help').classList.contains('hidden');
     if (panelOpen && !PANEL_KEYS.has(k) && e.code !== 'Backquote') return;
     if (g.mapTest && (/^[1-6]$/.test(e.key) || k === ' ' || k === 'q' || k === 'x')) return; // (the play-test: walking only)
+    // the lightsaber duel on the map (game/mapDuel.js): its keys are its controller's (F heavy, Space dodge, R restart…)
+    if (g.duel && g.duel.keys && g.duel.keys.has(k) && !g.mapTest) {
+      if (k === ' ' || k === 'f') e.preventDefault();
+      return;
+    }
     if (k === 'tab') {
       e.preventDefault();
       hud.toggle('map');

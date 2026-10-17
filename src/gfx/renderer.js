@@ -380,16 +380,20 @@ export class Renderer {
     // the depth-sorted list reuses its entries from frame to frame (no garbage per object per frame)
     const standing = this.standing || (this.standing = []);
     let ns = 0;
-    const put = (depth, prop, unit, pickup, scorch, car = null) => {
-      const e = standing[ns] || (standing[ns] = { depth: 0, prop: null, unit: null, pickup: null, scorch: null, car: null });
+    const put = (depth, prop, unit, pickup, scorch, car = null, item = null) => {
+      const e = standing[ns] || (standing[ns] = { depth: 0, prop: null, unit: null, pickup: null, scorch: null, car: null, item: null });
       e.depth = depth;
       e.prop = prop;
       e.unit = unit;
       e.pickup = pickup;
       e.scorch = scorch;
       e.car = car;
+      e.item = item;
       ns++;
     };
+    // the lightsaber duel on the map (game/mapDuel.js — src/combat): its fighters' poses and frames for this view
+    const duel = g.duel && g.duel.frame && !g.mapTest ? g.duel : null;
+    if (duel) duel.frame(this, dt);
     if (!this.propOrder || this.propOrder.world !== g.world || this.propOrder.n !== g.world.props.length) this.orderProps(g.world);
     const shown = this.shownProps || (this.shownProps = []);
     shown.length = 0;
@@ -451,8 +455,11 @@ export class Renderer {
       shadow(s.x, s.y, 4);
     }
 
+    if (duel) duel.drawShadows(ctx); // (the duel's fighters: their rendered shadows and the rings at their feet)
+
     // --- depth-sorted standing objects
     for (const u of g.activeUnits) if (!u.dead && !u.hidden) put((u.drawDepth = this.unitDepth(u, shown)), null, u, null, null);
+    if (duel) for (const it of duel.items((f) => this.unitDepth({ x: f.x, y: f.y, z: 0 }, shown))) put(it.depth, null, null, null, null, null, it);
     for (const pk of g.pickups) put(pk.x + pk.y, null, null, pk, null);
     for (const m of g.fx.scorches) put(m.depth ?? m.x + m.y, null, null, null, m);
     if (this.lanes) for (const it of this.lanes.visible('drop', cam, W, H)) put(it[0], null, null, null, null, it);
@@ -529,6 +536,8 @@ export class Renderer {
         g.fx.drawScorch(ctx, cam, d.scorch);
       } else if (d.car) {
         this.lanes.drawItem(ctx, d.car);
+      } else if (d.item) {
+        d.item.draw(ctx);
       } else if (d.pickup) {
         const pk = d.pickup;
         const s = worldToScreen(pk.x, pk.y, 0.15 + Math.sin(pk.t * 4) * 0.08);
@@ -582,6 +591,7 @@ export class Renderer {
     this.drawThrows(ctx, cam);
     g.fx.drawAdd(ctx, cam);
     ctx.globalCompositeOperation = 'source-over';
+    if (duel) duel.drawGlow(ctx, dt); // (the duel's blades, sparks and words over the light map: seen on the darkest floor)
     if (this.lanes) this.lanes.draw(ctx, cam, W, H, 'over'); // the craft over the streets
 
     // --- aircraft (above everything)

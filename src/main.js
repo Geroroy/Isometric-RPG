@@ -55,9 +55,9 @@ let bootFailed = false; // (set when the boot stops on an error: the loading scr
 // any address plays it, the menu offers nothing else (but its blank map: '#duel-mustafar-blank'), and it carries only
 // the files that duel loads (CLAUDE.md)
 const MUSTAFAR_ONLY = import.meta.env.VITE_MUSTAFAR_ONLY === '1';
-// The lightsaber duel is its own system (src/combat, docs/COMBAT.md), played in its test arena: arena.html. The duel
-// that used to run on the maps below was removed — '#duel' and '#duel-arena' go to the arena; the Mustafar map hashes
-// still open their maps, walked without a fight (game/mapWalk.js), for the map work and its editor.
+// The lightsaber duel is its own system (src/combat, docs/COMBAT.md), played in its test arena: arena.html — '#duel' and
+// '#duel-arena' go there — and on the rebuilt Mustafar map ('#duel-mustafar': game/mapDuel.js). The other Mustafar map
+// hashes open their maps walked without a fight (game/mapWalk.js), for the map work and its editor.
 const ARENA_PAGE = 'arena.html';
 if (location.hash === '#duel' || location.hash === '#duel-arena') location.replace(ARENA_PAGE);
 const DUEL = MUSTAFAR_ONLY
@@ -78,7 +78,7 @@ setRemasterAllowed(MUSTAFAR || MUSTAFAR_V2); // the remastered graphics: the Mus
 window.addEventListener('hashchange', () => location.reload());
 
 const DUEL_TITLES = {
-  mustafar: ['#duel-mustafar', '무스타파 맵 둘러보기', 'MAP · EPISODE III — 무스타파 · 재개발 중인 맵을 전투 없이 둘러보기 (결투는 광선검 결투 시험장)', '무스타파 착륙장 준비 중…', '무스타파 맵', '맵 둘러보기'],
+  mustafar: ['#duel-mustafar', '무스타파 결투 (시연)', 'MOVIE DUEL · EPISODE III — 무스타파 · 아나킨 vs 오비완 · 재개발 중인 맵 위의 새 결투 시스템 시연 (검토용 그래픽)', '무스타파 착륙장 준비 중…', '무스타파 결투', '결투 시작'],
   mustafarBlank: ['#duel-mustafar-blank', '무스타파 빈 맵 (맵 만들기)', 'MAP EDITOR · 무스타파 빈 맵 — 용암만 깔린 맵에 맵 에디터로 직접 짓기', '무스타파 빈 맵 준비 중…', '맵 만들기', '맵 만들기 시작'],
   mustafarLegacy: ['#duel-mustafar-legacy', '무스타파의 결투 (이전 버전)', 'MOVIE DUEL · EPISODE III — 무스타파의 결투 (이전 버전) · 아나킨 vs 오비완', '무스타파 채굴 시설 준비 중…'],
   mustafarArt: ['#duel-mustafar-art', '무스타파 용암 요새', 'MOVIE DUEL · EPISODE III — 무스타파 용암 요새 · 아나킨 vs 오비완', '용암 요새 준비 중…'],

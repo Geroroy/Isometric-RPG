@@ -292,10 +292,14 @@ const sim = new CombatSim({
 // 매 프레임: sim.advance(dt); 그리기는 sim.fighters[i]의 위치·상태와 pose.js poseOf(), 사건은 sim.on(e => …)
 ```
 
-- 본편의 무스타파 주소(`#duel-mustafar`·`-blank`·`-legacy`·`-art`)는 이제 **전투 없이 맵을 걷는다** (`game/mapWalk.js`: 맵 에디터·
-  플레이 테스트는 그대로). 옛 결투의 컷신·스테이지 진행(director)은 옛 전투 규칙 위에 있어 함께 지웠다 — 스테이지 진행·컷신은 후속 범위.
-- 연결 시 할 일(후속): 본편 `Renderer`가 결투자를 그리거나(`pose.js`의 자세를 쓰는 그리기), 시험장 `CombatView`를 맵 위 오버레이로
-  쓰기. 고저차(`groundAt`)·용암 위험 지대는 `ground`에 함수를 더해 넘기면 된다.
+- **연결함 (2026-10-17, `#duel-mustafar`·아티팩트)**: `game/mapDuel.js`가 재개발 맵의 막힌 칸으로 위처럼 `CombatSim`을 만들고(아나킨 = 플레이어,
+  오비완 = AI, STAGE 01 착륙장의 `actors` 자리에서), 본편 `Renderer`가 결투자를 소품·유닛과 같은 깊이 정렬 목록에 넣어 그린다 —
+  `combat/mapView.js`(시험장 `CombatView`의 그리기를 맵 카메라·게임 px로: 그림자 → 서 있는 것 사이의 몸·검 → 빛 지도 뒤 날 중심선·불꽃·글자).
+  HUD는 시험장의 `combat/hud.js`(+ `hud.css`, 본편 콘솔 위로 조작 안내). KO 뒤 결과, R 재시작. 맵 에디터·플레이 테스트는 그대로(그동안 결투 멈춤).
+- **먼 이동** (`CombatSim({ travel: true })` — 맵만, 시험장은 끔): 두 사람이 `travelDist` 7 m보다 멀면 가는 쪽을 보고 `travelSpeed` 4.6 m/s(본편 유닛·맵
+  걷기와 같은 빠르기), `travelLeave` 6 m 안으로 들어오면 상대를 보는 결투 걸음. 걷기 그림은 그 빠르기로 기록한 `run_f`(MD 아나킨).
+- 빈 맵·옛 맵(`#duel-mustafar-blank`·`-legacy`·`-art`)은 여전히 전투 없이 걷는다(`game/mapWalk.js`). 스테이지 진행·컷신·고저차(`groundAt`)·용암 위험
+  지대는 후속 범위(`ground`에 함수를 더해 넘기면 된다). 시험: `node tools/qa/mfduel.mjs <url> <폴더>`.
 
 ## 검증
 

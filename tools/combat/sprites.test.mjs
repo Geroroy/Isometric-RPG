@@ -1,5 +1,6 @@
-// 결투자 스프라이트 프레임 고르기 (src/combat/sprites.js, docs/CHARACTERS.md): 동작 라이브러리(public/sprites/duel/hero_poses.json —
-// 같은 전투 코드에서 뽑은 자세)로 고른 프레임이 판정 타이밍과 실제 자세에 맞는가. 시트 그림은 보지 않는다(브라우저 QA).
+// 결투자 스프라이트 프레임 고르기 (src/combat/sprites.js, docs/CHARACTERS.md): 동작 라이브러리(같은 전투 코드에서 뽑은 자세 —
+// 아나킨은 Movie Duels 모델의 public/sprites/duel/md_poses.json, 오비완은 v1의 hero_poses.json)로 고른 프레임이 판정 타이밍과 실제
+// 자세에 맞는가. 시트 그림은 보지 않는다(브라우저 QA).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -11,11 +12,12 @@ import { TUNING as T } from '../../src/combat/tuning.js';
 import { poseOf } from '../../src/combat/pose.js';
 import { FighterSprites } from '../../src/combat/sprites.js';
 
-const LIB = JSON.parse(readFileSync(new URL('../../public/sprites/duel/hero_poses.json', import.meta.url)));
-const DIRS = 16;
+const read = (f) => JSON.parse(readFileSync(new URL('../../public/sprites/duel/' + f, import.meta.url)));
+const LIB = { styles: { anakin: read('md_poses.json').styles.anakin, obiwan: read('hero_poses.json').styles.obiwan } };
+const DIRS = { anakin: 8, obiwan: 16 };
 // 시트 대신 프레임 수만 맞춘 가짜 세트 (pick이 돌려주는 프레임 = { clip, i })
 const fakeSets = Object.fromEntries(
-  Object.entries(LIB.styles).map(([s, clips]) => [s, { dirs: DIRS, anims: Object.fromEntries(Object.entries(clips).map(([n, c]) => [n, { data: Array.from({ length: DIRS }, () => c.frames.map((_, i) => ({ clip: n, i }))) }])) }]),
+  Object.entries(LIB.styles).map(([s, clips]) => [s, { dirs: DIRS[s], anims: Object.fromEntries(Object.entries(clips).map(([n, c]) => [n, { data: Array.from({ length: DIRS[s] }, () => c.frames.map((_, i) => ({ clip: n, i }))) }])) }]),
 );
 const sprites = () => new FighterSprites(LIB, fakeSets);
 const KINDS = ['light1', 'light2', 'light3', 'heavy'];
@@ -91,4 +93,42 @@ test('AI 대 AI: 모든 상태에서 유효한 프레임을 고르고, 날을 �
   assert.ok(q(hs, 0.5) < 0.06 && q(hs, 0.9) < 0.16, '손');
   assert.ok(q(ts, 0.5) < 0.15 && q(ts, 0.9) < 0.4, '검끝');
   for (const k of ['up_stance', 'up_guard', 'low_stance', 'low_guard', 'light1', 'light2', 'walk_f']) assert.ok(clips.has('anakin.' + k) || clips.has('obiwan.' + k), k);
+});
+
+test('쳐내기: 정확히 쳐낸 직후 쳐내는 쪽은 쳐내기 동작(parry)을 시각 비율로, 쳐내진 쪽은 쳐내짐(parried)', () => {
+  const contact = 0.4 + T.styles.obiwan.attacks.light1.windup;
+  const sim = duel({ c0: new Script([], { guard: [[contact - 0.05, 2]] }), c1: new Script([{ at: 0.4, attack: true }]) });
+  const [a, o] = sim.fighters;
+  const sp = sprites();
+  const seen = [];
+  for (let i = 0; i < 1.2 * 120; i++) {
+    sim.step();
+    const pe = sim.events.find((e) => e.type === 'parry');
+    if (!pe || sim.time > pe.t + 0.2) continue;
+    const pa = sp.pick(a, poseOf(a, o, sim.time), 1 / 60, sim.time);
+    if (sim.time - pe.t < 0.16) seen.push(pa.blade.clip);
+    if (o.state === 'parried') assert.equal(sp.pick(o, poseOf(o, a, sim.time), 1 / 60, sim.time).blade.clip, 'parried');
+  }
+  assert.ok(seen.length > 5 && seen.every((c) => c === 'parry'), seen.join(','));
+});
+
+test('맵의 먼 이동 (sim travel): 상대가 멀면 가는 쪽을 보고 4.6 m/s, 먼 이동 걸음(run_f) — 시험장(travel 없음)은 그대로', () => {
+  for (const travel of [true, false]) {
+    const c0 = new Script([], { move: [[0, 3, { x: 0, y: 1 }]] });
+    const sim = new CombatSim({ ground: new ArenaGround(0, 0, 40), spawns: [{ x: -10, y: -10 }, { x: 10, y: -10 }], cast: ['anakin', 'obiwan'], controllers: [c0, null], travel });
+    const f = sim.fighters[0];
+    const sp = sprites();
+    for (let i = 0; i < 1.5 * 120; i++) sim.step();
+    const speed = Math.hypot(f.vx, f.vy);
+    const pk = sp.pick(f, poseOf(f, sim.fighters[1], sim.time), 1 / 60, sim.time);
+    if (travel) {
+      assert.ok(Math.abs(speed - 4.6) < 0.01, 'speed ' + speed);
+      assert.ok(Math.abs(Math.sin(f.facing) - 1) < 0.01, 'facing ' + f.facing);
+      assert.equal(pk.parts[0].clip, 'run_f');
+    } else {
+      assert.ok(speed < 3.5, 'speed ' + speed);
+      assert.ok(Math.cos(f.facing) > 0.9, 'facing ' + f.facing);
+      assert.equal(pk.parts[0].clip, 'walk_r');
+    }
+  }
 });

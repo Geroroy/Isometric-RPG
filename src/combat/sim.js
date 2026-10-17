@@ -37,6 +37,7 @@ export class CombatSim {
       };
     }
     this.controllers = opts.controllers || [null, null];
+    this.travel = !!opts.travel; // (맵: 먼 이동 — fighter.js stepFree)
     this.listeners = [];
     this.round = 0;
     this.reset();

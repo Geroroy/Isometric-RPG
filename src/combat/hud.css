@@ -1,0 +1,303 @@
+/* 결투 화면 정보 (combat/hud.js — 시험장 arena.html과 무스타파 맵 결투 game/mapDuel.js가 같이 쓴다). 페이지 전체 규칙은 arena.css */
+:root {
+  --cb-font: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+  --cb-mono: 'Share Tech Mono', ui-monospace, monospace;
+}
+#cb-hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  color: #e6ebf0;
+  font-family: var(--cb-font);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.cb-bars {
+  position: absolute;
+  top: 14px;
+  width: min(34vw, 380px);
+}
+.cb-bars.left {
+  left: 16px;
+}
+.cb-bars.right {
+  right: 16px;
+  text-align: right;
+}
+.cb-name {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+  text-shadow: 0 1px 2px #000;
+}
+.cb-bar {
+  position: relative;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  margin-bottom: 4px;
+  overflow: hidden;
+}
+.cb-bar i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  transition: width 0.12s linear;
+}
+/* (재시작 직후: 바가 차오르는 애니메이션 없이 바로) */
+.cb-snap .cb-bar i {
+  transition: none;
+}
+.right .cb-bar i {
+  left: auto;
+  right: 0;
+}
+.cb-bar span {
+  position: absolute;
+  inset: 0;
+  font-size: 11px;
+  line-height: 16px;
+  padding: 0 6px;
+  font-family: var(--cb-mono);
+  text-shadow: 0 1px 1px #000;
+}
+.cb-bar.hp i {
+  background: linear-gradient(#e2533f, #a8281c);
+}
+.cb-bar.bal {
+  height: 12px;
+}
+.cb-bar.bal span {
+  line-height: 12px;
+  font-size: 10px;
+}
+.cb-bar.bal i {
+  background: linear-gradient(#f2c25a, #b8862a);
+}
+.cb-bar.bal.low i {
+  background: linear-gradient(#ff8a3a, #c2551a);
+}
+.cb-bar.bal.broken {
+  border-color: #ff8a3a;
+  box-shadow: 0 0 10px rgba(255, 138, 58, 0.7);
+}
+.cb-state {
+  font-size: 12px;
+  color: #aab4bf;
+  font-family: var(--cb-mono);
+}
+.cb-lead {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  padding: 4px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.45);
+  color: #9aa4ae;
+  white-space: nowrap;
+}
+.cb-lead.on.me {
+  color: #bcd8ff;
+  border-color: rgba(120, 170, 255, 0.6);
+}
+.cb-lead.on.foe {
+  color: #ffd9a8;
+  border-color: rgba(255, 190, 120, 0.6);
+}
+.cb-banner {
+  position: absolute;
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 17px;
+  font-weight: 700;
+  padding: 6px 16px;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.25s;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px #000;
+}
+.cb-banner.on {
+  opacity: 1;
+  transition: none;
+}
+.cb-banner.blk {
+  color: #cfe6ff;
+}
+.cb-banner.par {
+  color: #ffd979;
+}
+.cb-banner.cls {
+  color: #ffffff;
+}
+.cb-banner.wif {
+  color: #b3bac2;
+}
+.cb-banner.brk {
+  color: #ff9a3c;
+}
+.cb-banner.hit {
+  color: #ff7a63;
+}
+.cb-reject {
+  position: absolute;
+  bottom: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: #ffcf9a;
+  opacity: 0;
+  transition: opacity 0.3s;
+  text-shadow: 0 1px 2px #000;
+}
+.cb-reject.on {
+  opacity: 1;
+  transition: none;
+}
+.cb-guide {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: #c3ccd5;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 4px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.cb-guide b {
+  color: #fff;
+  font-weight: 700;
+  margin-left: 8px;
+  padding: 0 4px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 11.5px;
+}
+.cb-guide.off {
+  display: none;
+}
+.cb-badge {
+  position: absolute;
+  top: 98px;
+  left: 16px;
+  font-size: 11px;
+  color: #ffb070;
+  border: 1px dashed rgba(255, 176, 112, 0.6);
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.4);
+}
+.cb-mode {
+  position: absolute;
+  top: 98px;
+  right: 16px;
+  font-size: 12px;
+  color: #9fe0c0;
+  opacity: 0;
+}
+.cb-mode.on {
+  opacity: 1;
+}
+.cb-over {
+  position: absolute;
+  top: 36%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  opacity: 0;
+}
+/* (나타날 때만 천천히: 재시작하면 바로 사라진다) */
+.cb-over.on {
+  opacity: 1;
+  transition: opacity 0.6s 0.4s;
+}
+.cb-over .t {
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-shadow: 0 2px 8px #000;
+}
+.cb-over.won .t {
+  color: #bcd8ff;
+}
+.cb-over.lost .t {
+  color: #ff8a73;
+}
+.cb-over .s {
+  font-size: 15px;
+  color: #c3ccd5;
+}
+.cb-over b {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 0 4px;
+}
+.cb-debug {
+  position: absolute;
+  top: 120px;
+  right: 16px;
+  width: 330px;
+  font-family: var(--cb-mono);
+  font-size: 11.5px;
+  line-height: 1.45;
+  background: rgba(0, 0, 0, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 8px 10px;
+  display: none;
+}
+.cb-debug.on {
+  display: block;
+}
+.cb-debug .f {
+  margin-bottom: 7px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.cb-debug .par {
+  color: #ffd25a;
+}
+.cb-debug .dim {
+  color: #8a949e;
+}
+.cb-debug ol {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+.cb-debug li.hit {
+  color: #ff8b76;
+}
+.cb-debug li.block {
+  color: #cfe6ff;
+}
+.cb-debug li.parry {
+  color: #ffd979;
+}
+.cb-debug li.break {
+  color: #ff9a3c;
+}
+.cb-debug li.whiff {
+  color: #9aa2aa;
+}
+@media (max-width: 760px) {
+  .cb-banner {
+    font-size: 13px;
+    white-space: normal;
+    width: 90vw;
+    text-align: center;
+  }
+  .cb-guide {
+    font-size: 11px;
+  }
+}
+/* 무스타파 맵 결투 (game/mapDuel.js): 본편의 아래 콘솔 위로 */
+#cb-hud.map-duel .cb-guide {
+  bottom: calc(var(--console-h, 0px) + 8px);
+}

@@ -41,7 +41,8 @@ export class CombatHUD {
       'div',
       'cb-guide',
       `<b>WASD</b> 이동 <b>좌클릭</b> 베기(연속 3타) <b>F</b> 강공격 <b>우클릭 유지</b> 방어 <b>공격 직전 우클릭</b> 쳐내기 <b>쳐낸 뒤 좌클릭</b> 반격
-       <b>Space+방향</b> 회피 <b>R</b> 재시작 <b>F3</b> 디버그 <b>P</b> 일시정지 <b>M</b> AI 대 AI <b>C</b> 캐릭터 바꾸기 <b>H</b> 안내`,
+       <b>Space+방향</b> 회피 <b>R</b> 재시작 ` +
+        (opts.onMap ? '<b>+ −</b> 확대·축소 <b>F2</b> 맵 에디터' : '<b>F3</b> 디버그 <b>P</b> 일시정지 <b>M</b> AI 대 AI <b>C</b> 캐릭터 바꾸기 <b>H</b> 안내'),
     );
     this.over = el('div', 'cb-over');
     this.dbg = el('div', 'cb-debug');
@@ -52,9 +53,16 @@ export class CombatHUD {
   }
 
   /** 화면 배지: 캐릭터 표현이 무엇인지 (승인 전의 모델은 최종 그래픽으로 표시하지 않는다 — docs/CHARACTERS.md) */
-  setCharacters(kind) {
+  /** kind: 'loading' · 'sprites' (used: 캐릭터마다 쓴 시트 세트 — sprites.js SETS의 id) · 'fallback'. 맵 결투는 바닥·배경이 맵의 것 (opts.onMap) */
+  setCharacters(kind, used = {}) {
+    const model = (id) => (id === 'md' ? 'Movie Duels 모델' : '프리렌더 모델 v1');
+    const place = this.opts.onMap ? '' : ' · 바닥·배경은 임시';
     this.badge.textContent =
-      kind === 'sprites' ? '캐릭터: 프리렌더 모델 v1 (검토용, 승인 전) · 바닥·배경은 임시 — 최종 그래픽 아님' : '임시 표현 — 전투 시험장 · 최종 그래픽 아님';
+      kind === 'loading'
+        ? '캐릭터 불러오는 중 — 최종 그래픽 아님'
+        : kind === 'sprites'
+          ? `아나킨: ${model(used.anakin)} · 오비완: ${model(used.obiwan)} (검토용, 승인 전)${place} — 최종 그래픽 아님`
+          : `임시 표현 — ${this.opts.onMap ? '맵 결투' : '전투 시험장'} · 최종 그래픽 아님`;
   }
 
   makeBars(side) {

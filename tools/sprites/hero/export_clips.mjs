@@ -3,7 +3,10 @@
 // 스프라이트 프레임으로 쓸 순간을 고른다. pose_hero.py가 이 관절 위치를 모델 리그에 그대로 옮긴다 (리타깃).
 // 검술 v1의 동작을 따로 그리지 않는다 — 게임이 그리는 자세 그 자체다.
 //
-//   node tools/sprites/hero/export_clips.mjs [out.json]      (기본 tools/sprites/out/hero_clips.json)
+//   node tools/sprites/hero/export_clips.mjs [out.json] [--styles anakin] [--lib <동작 라이브러리.json>] [--md]
+//     (기본 tools/sprites/out/hero_clips.json, public/sprites/duel/hero_poses.json, 두 캐릭터)
+//     --md   Movie Duels 아나킨 시트용 (tools/sprites/md/md_combat.py, docs/characters/MD_ANAKIN.md "전투 연결"): 쳐내기 `parry`와
+//            맵의 먼 이동 걸음 `run_f`(4.6 m/s, sim travel)를 더한다
 //
 // 좌표: 몸 기준 (몸 중심 바닥 = 원점), Blender 축 — X 앞(바라보는 방향), Y 몸의 왼쪽, Z 위, m.
 // 동작(clip)마다 프레임 목록과, 게임이 프레임을 고르는 데 쓰는 값(m: 상태·공격 위치 s·시각 비율 k·걷기 위상)을 둔다.
@@ -18,8 +21,11 @@ import { movesOf } from '../../../src/combat/moves.js';
 import { AIController } from '../../../src/combat/ai.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(process.argv[2] || resolve(HERE, '../out/hero_clips.json'));
-const STYLES = ['anakin', 'obiwan'];
+const ARGV = process.argv.slice(2);
+const opt = (k) => (ARGV.includes(k) ? ARGV[ARGV.indexOf(k) + 1] : null);
+const OUT = resolve(ARGV[0] && !ARGV[0].startsWith('--') ? ARGV[0] : resolve(HERE, '../out/hero_clips.json'));
+const STYLES = opt('--styles') ? opt('--styles').split(',') : ['anakin', 'obiwan'];
+const MD = ARGV.includes('--md');
 const other = (s) => (s === 'anakin' ? 'obiwan' : 'anakin');
 const r4 = (x) => Math.round(x * 1e4) / 1e4;
 
@@ -51,9 +57,9 @@ class Script {
   }
 }
 
-function duel(style, { dist = 1.8, c0 = null, c1 = null, x0 } = {}) {
+function duel(style, { dist = 1.8, c0 = null, c1 = null, x0, half = 9, travel = false } = {}) {
   const a = x0 ?? -dist / 2;
-  return new CombatSim({ ground: new ArenaGround(0, 0, 9), spawns: [{ x: a, y: 0 }, { x: a + dist, y: 0 }], cast: [style, other(style)], controllers: [c0, c1] });
+  return new CombatSim({ ground: new ArenaGround(0, 0, half), spawns: [{ x: a, y: 0 }, { x: a + dist, y: 0 }], cast: [style, other(style)], controllers: [c0, c1], travel });
 }
 
 /** 결투자 f의 자세를 몸 기준(Blender 축)으로 */
@@ -206,6 +212,8 @@ function attackClips(style) {
 // ------------------------------------------------------------------------------------------------- 반응
 /** 상태 `state`의 기록을 시간 비율 k(= st / dur)로 n장 */
 function timed(recs, state, ks, extra = {}) {
+  // (--md: 반응이 시작하는 순간(k = 0 — 접촉한 자세)도 한 장: 타격 정지 화면에서 날이 접촉점에 있게)
+  if (MD && ks[0] > 0) ks = [0, ...ks];
   const rs = recs.filter((r) => r.state === state);
   if (!rs.length) throw new Error('no ' + state);
   return ks.map((k) => {
@@ -251,6 +259,18 @@ function reactionClips(style) {
     const rs = recs.filter((r) => r.state === 'dodge');
     clips.dodge = { frames: [0.05, 0.25, 0.45, 0.65, 0.85, 1.0].map((k) => strip(rs[Math.min(rs.length - 1, Math.round(k * (rs.length - 1)))], { phase: 'dodge', k })) };
   }
+  // 쳐내기 (--md): 상대의 베기를 판정 직전 새로 누른 방어로 쳐낸 직후 0.16 s — 검을 바깥으로 쳐 올림 (pose.js 'parrier'), 시각 비율 k
+  if (MD) {
+    const foeDef = foeA.light1;
+    const contact = 0.4 + foeDef.windup;
+    const sim = duel(style, { dist: 1.9, c0: new Script([], { guard: [[contact - 0.05, 2]] }), c1: new Script([{ at: 0.4, attack: true }]) });
+    const recs = record(sim, 1.2);
+    // (쳐낸 시각은 사건으로: 기록의 f는 같은 객체라 그 contact는 마지막 값)
+    const pe = sim.events.find((e) => e.type === 'parry');
+    if (!pe) throw new Error(style + ': no parry');
+    const win = recs.filter((r) => r.t >= pe.t - 1e-9 && r.t <= pe.t + 0.16 + 1e-9);
+    clips.parry = { frames: [0, 0.25, 0.5, 0.75, 1].map((k) => strip(win.reduce((b, r) => (Math.abs(r.t - pe.t - 0.16 * k) < Math.abs(b.t - pe.t - 0.16 * k) ? r : b)), { phase: 'parry', k })) };
+  }
   // 쓰러짐: 기본 자세에서 뒤로 넘어감 (view.js fallen: 0.5 s)
   {
     const sim = duel(style, { dist: 3 });
@@ -263,9 +283,12 @@ function reactionClips(style) {
 
 // ------------------------------------------------------------------------------------------------- 걷기
 /** 일정한 걷기 (상대를 바라본 채 dir 쪽으로: f 앞 · b 뒤 · l 왼쪽 · r 오른쪽): 걸음이 자리 잡은 뒤 두 걸음(한 주기)을 n장으로 */
-function walkClip(style, guard, dir, n = 6) {
+function walkClip(style, guard, dir, n = 6, travel = false) {
   const v = { f: { x: 1, y: 0 }, b: { x: -1, y: 0 }, l: { x: 0, y: -1 }, r: { x: 0, y: 1 } }[dir];
-  const sim = duel(style, { dist: 14, x0: dir === 'b' ? -1 : -8, c0: new Script([], { move: [[0, 9, v]], guard: guard ? [[0, 9]] : [] }) });
+  // (먼 이동: 상대가 travelDist 밖에 남도록 넓은 바닥에서)
+  const sim = travel
+    ? duel(style, { dist: 60, x0: -30, half: 40, travel: true, c0: new Script([], { move: [[0, 9, v]] }) })
+    : duel(style, { dist: 14, x0: dir === 'b' ? -1 : -8, c0: new Script([], { move: [[0, 9, v]], guard: guard ? [[0, 9]] : [] }) });
   const recs = record(sim, 3.0).filter((r) => r.t > 1.0);
   // 한 주기 = 왼발이 디딘 순간부터 다음에 다시 디딘 순간까지
   const lands = [];
@@ -282,7 +305,7 @@ function walkClip(style, guard, dir, n = 6) {
     const r = recs[i0 + Math.round(((i1 - i0) * k) / n)];
     frames.push(strip(r, { phase: 'walk', k: k / n }));
   }
-  return { layer: 'lower', frames, loop: true, period: r4(period), stride: r4(period * speed), speed: r4(speed), dir, guard };
+  return { layer: 'lower', frames, loop: true, period: r4(period), stride: r4(period * speed), speed: r4(speed), dir, guard, ...(travel ? { travel: true } : {}) };
 }
 
 // ------------------------------------------------------------------------------------------------- 서 있는 자세 (겹 스프라이트)
@@ -355,6 +378,7 @@ const out = { version: 1, tick: DT, mid: MID, lead: LEAD, follow: FOLLOW, saber:
 for (const style of STYLES) {
   const clips = { ...standClips(style), ...attackClips(style), ...reactionClips(style) };
   for (const g of [false, true]) for (const d of ['f', 'b', 'l', 'r']) clips[`${g ? 'gwalk' : 'walk'}_${d}`] = walkClip(style, g, d);
+  if (MD) clips.run_f = walkClip(style, false, 'f', 6, true);
   for (const [k, c] of Object.entries(clips)) if (c.loop === undefined) c.loop = false;
   out.styles[style] = { clips, feet: movesOf({ style }).feet, attacks: Object.fromEntries(Object.entries(T.styles[style].attacks).map(([k, a]) => [k, { windup: a.windup, active: a.active, recovery: a.recovery, whiffExtra: a.whiffExtra, reach: a.reach }])) };
   const n = Object.values(clips).reduce((s, c) => s + c.frames.length, 0);
@@ -369,11 +393,11 @@ for (const [style, st] of Object.entries(out.styles)) {
   lib.styles[style] = {};
   for (const [name, c] of Object.entries(st.clips)) {
     const keep = { loop: c.loop, frames: c.frames.map((f) => ({ h: f.hand, t: f.tip, z: f.hips[2], m: f.m })) };
-    for (const k of ['hit', 'period', 'stride', 'speed', 'dir', 'guard', 'kind', 'layer']) if (c[k] !== undefined) keep[k] = c[k];
+    for (const k of ['hit', 'period', 'stride', 'speed', 'dir', 'guard', 'kind', 'layer', 'travel']) if (c[k] !== undefined) keep[k] = c[k];
     lib.styles[style][name] = keep;
   }
 }
-const LIB = resolve(HERE, '../../../public/sprites/duel/hero_poses.json');
+const LIB = resolve(opt('--lib') || resolve(HERE, '../../../public/sprites/duel/hero_poses.json'));
 mkdirSync(dirname(LIB), { recursive: true });
 writeFileSync(LIB, JSON.stringify(lib));
 console.log('wrote', LIB);

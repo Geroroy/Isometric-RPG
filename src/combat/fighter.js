@@ -51,6 +51,7 @@ export class Fighter {
     this.vx = this.vy = 0; // 걷기 속도
     this.kx = this.ky = 0; // 밀려남 속도
     this.facing = facing;
+    this.traveling = false; // (맵의 먼 이동 중 — stepFree)
     this.hp = T.body.hp;
     this.bal = T.body.balance;
     this.state = 'ready';
@@ -344,8 +345,31 @@ export class Fighter {
       this.openParry(now);
     } else if (!this.guardHeld && this.state === 'guard') this.setState('ready');
     const guard = this.state === 'guard';
+    // 맵의 먼 이동 (sim.travel — 맵 연결에서만 켠다, 시험장은 끔): 상대가 멀면 가는 쪽을 보고 맵을 걷는 빠르기로 (되돌아 들어오면 결투 걸음)
+    const fd = Math.hypot(foe.x - this.x, foe.y - this.y);
+    this.traveling = !!sim.travel && !guard && !foe.dead && fd > (this.traveling ? T.body.travelLeave : T.body.travelDist);
+    if (this.traveling) return this.travel();
     this.turnTo(foe, guard ? T.body.turnGuard : T.body.turnFree);
     this.locomote(foe, guard ? T.body.guardMoveSpeed : T.body.moveSpeed);
+  }
+
+  /** 먼 이동: 입력 방향을 바라보며 travelSpeed로 (옆·뒷걸음 배율 없음) */
+  travel() {
+    const m = this.moveIn;
+    const l = Math.hypot(m.x, m.y);
+    const tx = l > 0.01 ? (m.x / l) * T.body.travelSpeed : 0;
+    const ty = l > 0.01 ? (m.y / l) * T.body.travelSpeed : 0;
+    if (l > 0.01) {
+      const d = angleDiff(this.facing, Math.atan2(m.y, m.x));
+      const r = T.body.turnFree * DT;
+      this.facing += clamp(d, -r, r);
+    }
+    const a = T.body.accel * DT;
+    const dx = tx - this.vx;
+    const dy = ty - this.vy;
+    const dl = Math.hypot(dx, dy);
+    if (dl <= a) [this.vx, this.vy] = [tx, ty];
+    else [this.vx, this.vy] = [this.vx + (dx / dl) * a, this.vy + (dy / dl) * a];
   }
 
   startAttack(kind, foe, sim, now, combo) {

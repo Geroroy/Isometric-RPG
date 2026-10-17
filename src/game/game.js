@@ -13,6 +13,7 @@ import { BASE_POS, Arena, ARENA, MustafarArena, CityHub, CITY } from '../world/w
 import { CityLife } from './cityLife.js';
 import { Cinema } from './cinema.js';
 import { MapWalk } from './mapWalk.js';
+import { MapDuel } from './mapDuel.js';
 import { MustafarStage } from '../world/mustafarStage.js';
 
 const ELITE_NAMES = ['OOM 지휘관 드로이드', '전투 드로이드 분대장', '전술 사령 드로이드 T-7', '돌격 지휘 드로이드'];
@@ -52,9 +53,10 @@ export class Game {
     this.quests = new QuestLog(this);
     this.talkingTo = null;
     if (mode === 'duel') {
-      // the Mustafar maps, walked without a fight: the lightsaber duel is its own system now (src/combat, arena.html —
-      // docs/COMBAT.md); the old duel rules and their scenes were removed (git history keeps them)
-      this.duel = new MapWalk(this);
+      // the lightsaber duel is its own system (src/combat, arena.html — docs/COMBAT.md; the old duel rules and their scenes
+      // were removed, git history keeps them): on the rebuilt Mustafar map it joins the map (game/mapDuel.js, on the map's
+      // tiles); the blank map and the old maps are walked without a fight (game/mapWalk.js)
+      this.duel = duel === 'mustafar' ? new MapDuel(this) : new MapWalk(this);
       this.updateActive();
       return;
     }

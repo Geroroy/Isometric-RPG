@@ -28,8 +28,8 @@
   모든 조정값은 `src/combat/tuning.js` 한곳(검증 전 가설값). 플레이어와 AI는 같은 `Fighter`·같은 명령을 쓴다.
   캐릭터별 검술(아나킨·오비완의 궤적·발 디딤·회수·연결)은 데이터로: `TUNING.styles` + `src/combat/moves.js` — 검술은 조작하는 쪽이 아니라
   캐릭터에 붙는다. 영화와 대조하지 않은 동작은 "게임용 근사"로 적고 타임코드·공식 기술명을 붙이지 않는다 (`docs/COMBAT.md` "검술 v1").
-- 무스타파 맵 주소(`#duel-mustafar` 등)는 전투 없이 맵을 걷는다(`game/mapWalk.js`, 맵 에디터 그대로). 맵에 결투를 붙일 때는
-  `docs/COMBAT.md` "맵 연결"의 작은 인터페이스(`groundFromTiles`)로 한다. 아래 문서의 결투·컷신 진행(director) 설명은 옛 시스템 기준이다.
+- 재개발 무스타파 맵(`#duel-mustafar`, 아티팩트)은 이 결투를 맵 위에서 한다(`game/mapDuel.js` — `groundFromTiles`, 본편 렌더러가 결투자를 깊이 정렬로,
+  `docs/COMBAT.md` "맵 연결"). 빈 맵·옛 맵은 전투 없이 걷는다(`game/mapWalk.js`, 맵 에디터 그대로). 아래 문서의 결투·컷신 진행(director) 설명은 옛 시스템 기준이다.
 
 ## 개발 방침 — 플레이 가능한 완성본 우선
 
@@ -63,6 +63,9 @@
   의상·머리카락(`build_hero.py`) → 같은 리그에 리타깃(`pose_hero.py`) → 기존 `render_sprites.py`로 16방향 시트(`public/sprites/duel/`).
   게임은 `src/combat/sprites.js`가 결투자 상태·`pose.js` 자세에 맞는 프레임을 고르고(공격의 타격 프레임 = 판정이 열리는 틱, 서 있거나 걸을
   때는 위·아래 두 겹), 날은 프레임의 `saberBase`·`saberTip` 표지에서 그린다. 동작을 따로 그리지 않는다 — 검술을 바꾸면 다시 렌더한다.
+- **결투의 아나킨은 Movie Duels 모델**(사용자 제공 비공개 팩, `docs/characters/MD_ANAKIN.md` "전투 연결", 2026-10-17): 기준 자세(손잡이 1.20 m · 전경 5° ·
+  발 선 22.5° · 검 58°/14°)는 `moves.js`에, 시트는 `tools/sprites/md/md_combat.py`로 8방향·키 라이트 14°, 저장소 밖 `public/sprites/duel_md/`(없으면 v1).
+  의상 밝기·림·바닥 필터는 보류, 16방향은 뒤로. 오비완은 아래 v1.
 - 지금 모델은 **검토용 v1(승인 전)** — 최종 그래픽으로 보고하지 않는다. 부족한 모델·재질(얼굴 스컬프트, 의상 메시·텍스처, 손잡이)은
   `docs/asset_requests/char.duel.models.md`. MakeHuman 데이터(npm `makehuman-data`)는 빌드 때 내려받아 쓴다(커밋하지 않음).
 - 파드메 등 다른 캐릭터와 본편 유닛은 기존 구조 그대로(이름으로 스프라이트 세트 `{ dirs, anims: { 이름: { frames, fps, loop, hit,
@@ -187,13 +190,15 @@
   여기에도 넣고, 승인되어 기본이 되면 뺀다(`docs/CORUSCANT_REBUILD.md`).
 - **아티팩트는 무스타파 결투 전용이다(사용자 지시)**: `VITE_MUSTAFAR_ONLY=1`(build:artifact에 포함)이면 어떤 주소로 열어도
   재개발 무스타파 결투로 시작하고 메뉴·결과 화면에 다른 모드가 없다. 아티팩트 파일 수 한도(511) 때문에 **그 결투가 실제로
-  요청하는 파일만 올린다** — 결투를 처음부터 결말·패배 화면까지 돌려 요청을 기록하고(`node tools/qa/artifact_files.mjs <url> <out.json>`:
+  요청하는 파일만 올린다** — 결투를 시작부터 KO·재시작까지 돌려 요청을 기록하고(`node tools/qa/mfduel.mjs <url> <폴더>`의 `requests.json` +
+  `tools/qa/pagefiles.mjs`(빈 맵·시험장 페이지) — 옛 결투용 `artifact_files.mjs`는 지금 결투에 맞지 않는다:
   404를 돌려주는 정적 서버 `python3 -m http.server`로 — `vite preview`는 없는 파일에도 200 HTML을 돌려줘 누락을 숨긴다),
   `assets/mustafar/`·`maps/mustafar_v2/`·해시 번들·오디오 전부를 더한다. 저장소의 다른 모드·파일은 그대로 둔다.
-  이 빌드에는 캠페인이 없으므로 `tools/qa/smoke.mjs` 대신 `tools/qa/mfroute.mjs`(그 파일 집합만 띄운 서버에서)로 확인한다.
+  이 빌드에는 캠페인이 없으므로 `tools/qa/smoke.mjs` 대신 `tools/qa/mfduel.mjs`(그 파일 집합만 띄운 서버에서 — 이동·KO·재시작, 요청 목록
+  `requests.json`; 빈 맵·시험장 페이지는 `tools/qa/pagefiles.mjs`)로 확인한다.
   올릴 폴더는 `python3 tools/qa/artifact_set.py <빌드> <요청 목록.json> <폴더>`.
 - **WebGL 없는 브라우저에서도 돌아야 한다**: 무스타파 결투는 런타임에 three.js로 굽지 않는다(배포된 시트·구운 묶음만).
-  업로드 전 `node tools/qa/nowebgl.mjs <url>`(3D API를 끈 실제 브라우저)와 `NOWEBGL=1 node tools/qa/mfroute.mjs`로 확인한다.
+  업로드 전 `node tools/qa/nowebgl.mjs <url>`(3D API를 끈 실제 브라우저)와 `NOWEBGL=1 node tools/qa/mfduel.mjs`로 확인한다.
   `gfx/assetCache.js` SOURCE_HASH 대상(모델·애니·베이커·`gfx/assets.js`…)을 고치면 `npm run bake`로 `sprites/baked/core`를
   다시 굽는다 — 안 그러면 WebGL 없는 브라우저는 시작하지 못한다(로딩 화면이 그 파일과 이유를 보여 줌).
 - **아티팩트(게임 빌드)를 올리기 전에 반드시 직접 게임을 플레이해서 확인하고, 이상한 부분을 다듬은 뒤 올린다.**

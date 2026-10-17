@@ -3,6 +3,7 @@
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 import '@fontsource/share-tech-mono/400.css';
 import './arena.css';
+import './hud.css';
 import { CombatSim } from './sim.js';
 import { ArenaGround } from './world.js';
 import { AIController } from './ai.js';
@@ -42,7 +43,7 @@ view.debug = state.debug;
 loadFighterSprites()
   .then((sp) => {
     view.sprites = sp;
-    hud.setCharacters('sprites');
+    hud.setCharacters('sprites', sp.used);
   })
   .catch((e) => {
     console.warn('결투자 스프라이트를 불러오지 못해 단순한 몸으로 그립니다:', e);
