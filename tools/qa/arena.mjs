@@ -23,7 +23,7 @@ const stats = () => page.evaluate(() => ({ ...window.__combat.sim.stats, t: wind
 
 if (scenario === 'watch') {
   await page.goto(url + sep + 'autostart&watch&seed=' + (process.argv[5] || 3));
-  await page.waitForFunction(() => window.__combat);
+  await page.waitForFunction(() => window.__combat && (window.__combat.view.sprites || window.__combat.spritesFailed), null, { timeout: 60000 });
   for (let i = 0; i < 30; i++) {
     await page.waitForTimeout(1000);
     if (i % 3 === 0) await shot(`watch_${String(i).padStart(2, '0')}`);
@@ -32,7 +32,7 @@ if (scenario === 'watch') {
 } else if (scenario === 'frames') {
   // 접촉이 날 때마다 시뮬레이션을 멈추고 앞뒤 프레임을 찍는다 (막기·쳐내기·피격·헛침·붕괴 각각 한 번씩)
   await page.goto(url + sep + 'autostart&watch&debug&seed=' + (process.argv[5] || 3));
-  await page.waitForFunction(() => window.__combat);
+  await page.waitForFunction(() => window.__combat && (window.__combat.view.sprites || window.__combat.spritesFailed), null, { timeout: 60000 });
   await page.evaluate(() => {
     const c = window.__combat;
     c.want = new Set(['block', 'parry', 'hit', 'whiff', 'break', 'clash']);
@@ -69,7 +69,7 @@ if (scenario === 'watch') {
 } else if (scenario === 'strip') {
   // 결정적으로 한 프레임(1/60 s)씩 진행하며 연속 캡처: 움직임(떨림·미끄러짐·튐)을 보려고. argv[6] = 시작 시각(s), argv[7] = 프레임 수
   await page.goto(url + sep + 'autostart&watch&seed=' + (process.argv[5] || 3) + (process.argv[8] ? '&debug' : ''));
-  await page.waitForFunction(() => window.__combat);
+  await page.waitForFunction(() => window.__combat && (window.__combat.view.sprites || window.__combat.spritesFailed), null, { timeout: 60000 });
   await page.evaluate(() => (window.__combat.state.paused = true));
   const from = Number(process.argv[6] || 2);
   const n = Number(process.argv[7] || 48);
@@ -96,7 +96,7 @@ if (scenario === 'watch') {
 } else if (scenario === 'play') {
   // 플레이어(아나킨)로 직접: 다가가서 베기, 방어 유지, 쳐내기 시도, 회피, 강공격, 재시작
   await page.goto(url + sep + 'seed=' + (process.argv[5] || 5));
-  await page.waitForFunction(() => window.__combat);
+  await page.waitForFunction(() => window.__combat && (window.__combat.view.sprites || window.__combat.spritesFailed), null, { timeout: 60000 });
   await page.mouse.click(640, 400); // 시작 버튼
   await page.waitForTimeout(300);
   const key = async (k, ms) => (await page.keyboard.down(k), await page.waitForTimeout(ms), await page.keyboard.up(k));

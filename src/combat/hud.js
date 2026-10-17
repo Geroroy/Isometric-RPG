@@ -35,7 +35,7 @@ export class CombatHUD {
     this.lead = el('div', 'cb-lead');
     this.banner = el('div', 'cb-banner');
     this.reject = el('div', 'cb-reject');
-    this.badge = el('div', 'cb-badge', '임시 표현 — 전투 시험장 · 최종 그래픽 아님');
+    this.badge = el('div', 'cb-badge', '전투 시험장 · 캐릭터 불러오는 중 — 최종 그래픽 아님');
     this.mode = el('div', 'cb-mode');
     this.guide = el(
       'div',
@@ -49,6 +49,12 @@ export class CombatHUD {
     this.bannerT = 0;
     this.rejectSeen = [null, null];
     sim.on((e) => this.onEvent(e));
+  }
+
+  /** 화면 배지: 캐릭터 표현이 무엇인지 (승인 전의 모델은 최종 그래픽으로 표시하지 않는다 — docs/CHARACTERS.md) */
+  setCharacters(kind) {
+    this.badge.textContent =
+      kind === 'sprites' ? '캐릭터: 프리렌더 모델 v1 (검토용, 승인 전) · 바닥·배경은 임시 — 최종 그래픽 아님' : '임시 표현 — 전투 시험장 · 최종 그래픽 아님';
   }
 
   makeBars(side) {

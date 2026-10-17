@@ -64,6 +64,7 @@ export async function loadSheet(url) {
         if (r.b && Object.keys(r.b).length) fr.blades = r.b;
         if (normalPages.length) fr.normal = { page: normalPages[r.p], sx: r.x, sy: r.y }; // relight.js
         if (k) fr.k = fr.shadow.k = k;
+        if (s.k) fr.shadow.k = s.k; // (a shadow page at its own scale — the duel characters' half-resolution shadows)
         data[d].push(fr);
       }
     }

@@ -9,6 +9,7 @@ import { AIController } from './ai.js';
 import { PlayerController } from './controls.js';
 import { CombatView } from './view.js';
 import { CombatHUD } from './hud.js';
+import { loadFighterSprites } from './sprites.js';
 import { Audio } from '../core/audio.js';
 
 // 옵션: 주소의 ?watch&debug&side=obiwan&seed=3, 또는 해시 토큰 #watch-debug-obiwan-seed3 (아티팩트 링크는 해시만 전달한다)
@@ -37,6 +38,17 @@ sim.reset();
 
 const view = new CombatView(document.getElementById('cb-canvas'), sim);
 view.debug = state.debug;
+// 결투자 스프라이트 (불러오는 동안·실패하면 단순한 몸 표현)
+loadFighterSprites()
+  .then((sp) => {
+    view.sprites = sp;
+    hud.setCharacters('sprites');
+  })
+  .catch((e) => {
+    console.warn('결투자 스프라이트를 불러오지 못해 단순한 몸으로 그립니다:', e);
+    hud.setCharacters('fallback');
+    window.__combat.spritesFailed = String(e);
+  });
 const hud = new CombatHUD(document.getElementById('cb-hud'), sim, {
   playerSide: () => state.playerSide,
   watching: () => state.watching,

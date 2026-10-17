@@ -1,6 +1,7 @@
-// 결투 시험장 그리기 (Canvas 2D, 2:1 아이소메트릭 — core/iso.js와 같은 투영). 임시 표현이다: 장식 없는 바닥과
-// 경계, 단순한 몸(실루엣·복장색으로 아나킨/오비완 구별), 따로 제어하는 광선검. 최종 캐릭터 그래픽이 아니며 화면에
-// 그렇게 표시한다 (CLAUDE.md "플레이스홀더"). 판정은 보지 않고 sim의 상태와 사건만 그린다.
+// 결투 시험장 그리기 (Canvas 2D, 2:1 아이소메트릭 — core/iso.js와 같은 투영): 장식 없는 바닥과 경계, 결투자, 광선검, 효과.
+// 결투자는 프리렌더 스프라이트(sprites.js — tools/sprites/hero의 모델을 검술 v1의 자세로 렌더한 시트, docs/CHARACTERS.md)로
+// 그리고, 날은 프레임의 칼자루·검끝 표지에서 그린다. 시트를 불러오기 전(또는 못 불러오면)에는 단순한 몸 표현으로 그린다.
+// 판정은 보지 않고 sim의 상태와 사건만 그린다.
 //
 // 가독성 규칙 (docs/COMBAT.md "피드백"):
 //   막기     검이 만난 자리에 청백색 불꽃 + 작은 고리, "막음"
@@ -26,6 +27,9 @@ export class CombatView {
     this.fx = [];
     this.trails = [new Trail(), new Trail()];
     this.flash = [0, 0]; // 피격 번쩍임 (s)
+    this.sprites = null; // FighterSprites (sprites.js) — 불러오면 arena.js가 넣는다
+    this.picks = [null, null]; // 이번 화면의 스프라이트 프레임
+    this.tintCv = null;
     this.shake = 0;
     this.time = 0;
     sim.on((e) => this.onEvent(e));
@@ -163,6 +167,7 @@ export class CombatView {
     const now = sim.time;
     const poses = [poseOf(A, B, now), poseOf(B, A, now)];
     this.poses = poses;
+    this.picks = sim.fighters.map((f) => (this.sprites && this.sprites.has(f) ? this.sprites.pick(f, poses[f.side], dt) : null));
     for (const f of sim.fighters) this.trails[f.side].sample(f, poses[f.side], this.time);
     if (this.debug) this.drawDebugFloor(ctx, poses);
     // 그림자·발밑 표시 (항상 몸보다 먼저)
@@ -179,11 +184,16 @@ export class CombatView {
     for (const f of sim.fighters) {
       if (f.dead) continue;
       const p = poses[f.side];
-      seg(ctx, this, p.bladeBase, p.tip, Math.max(1.5, 0.026 * this.cam.s * PX_M), '#eaf6ff');
+      const bl = this.bladeOf(f);
+      if (bl) line2(ctx, bl[0], bl[1], Math.max(1.5, 0.026 * this.cam.s * PX_M), '#eaf6ff');
+      else seg(ctx, this, p.bladeBase, p.tip, Math.max(1.5, 0.026 * this.cam.s * PX_M), '#eaf6ff');
     }
     ctx.globalAlpha = 1;
     this.drawFx(ctx, dt);
-    if (this.debug) this.drawDebugText(ctx, poses);
+    if (this.debug) {
+      for (const f of sim.fighters) if (this.picks[f.side]) this.drawPoseSkeleton(ctx, f, poses[f.side]);
+      this.drawDebugText(ctx, poses);
+    }
     for (let i = 0; i < 2; i++) this.flash[i] = Math.max(0, this.flash[i] - dt);
   }
 
@@ -222,10 +232,24 @@ export class CombatView {
   }
 
   drawShadow(ctx, f) {
-    const r = 0.34;
-    ellipse(ctx, this, f.x, f.y, r);
-    ctx.fillStyle = 'rgba(0,0,0,0.42)';
-    ctx.fill();
+    const pk = this.picks[f.side];
+    if (pk) {
+      // 렌더의 그림자 패스 (주광 = 왼쪽 위 → 오른쪽 아래로 드리움): 겹마다 (바닥에 드리운 것이라 위 겹을 골반 높이로 옮긴 만큼은 옮기지 않는다)
+      const [x, y] = this.P(f.x, f.y);
+      ctx.globalAlpha = 0.62;
+      for (const part of pk.parts) {
+        const sh = part.fr.shadow;
+        if (!sh || !sh.page) continue;
+        const k = (sh.k || 1) * this.cam.s;
+        ctx.drawImage(sh.page, sh.sx, sh.sy, sh.w, sh.h, x - sh.ox * k, y - sh.oy * k, sh.w * k, sh.h * k);
+      }
+      ctx.globalAlpha = 1;
+    } else {
+      const r = 0.34;
+      ellipse(ctx, this, f.x, f.y, r);
+      ctx.fillStyle = 'rgba(0,0,0,0.42)';
+      ctx.fill();
+    }
     // 발밑 고리: 누가 누구인지 (아나킨 청색, 오비완 모래색), 바라보는 방향 눈금
     ellipse(ctx, this, f.x, f.y, 0.46);
     ctx.strokeStyle = f.cast.persona === 'anakin' ? 'rgba(120,170,255,0.55)' : 'rgba(235,205,140,0.55)';
@@ -249,8 +273,104 @@ export class CombatView {
     ctx.stroke();
   }
 
+  /** 스프라이트 프레임의 날: 화면 좌표 [칼자루 끝(날 시작), 검끝] (CSS px), 스프라이트가 없거나 쓰러져 검이 꺼졌으면 null */
+  bladeOf(f) {
+    const pk = this.picks[f.side];
+    if (!pk) return null;
+    const m = pk.blade.fr.markers;
+    if (!m.saberBase || !m.saberTip) return null;
+    const [x, y0] = this.P(f.x, f.y);
+    const s = this.cam.s;
+    const y = y0 + pk.blade.dy * s;
+    return [
+      [x + m.saberBase[0] * s, y + m.saberBase[1] * s],
+      [x + m.saberTip[0] * s, y + m.saberTip[1] * s],
+    ];
+  }
+
+  /** 스프라이트 결투자: 몸(시트 프레임)과 날 — 날은 몸에 가려지는 구간(b.saber 밖)을 몸보다 먼저, 보이는 구간을 나중에 */
+  collectSprite(items, f, p, pk) {
+    const c = f.cast;
+    const self = this;
+    const fr = pk.blade.fr;
+    const S = this.cam.s * PX_M;
+    const fl = this.flash[f.side];
+    const bl = this.bladeOf(f);
+    const lit = !(f.dead && f.koT >= 0.5);
+    const trail = this.trails[f.side];
+    const vis = fr.blades && fr.blades.saber ? fr.blades.saber : [[0, 1]];
+    const blade = (ctx, a, b) => {
+      const [r, g, bb] = c.blade;
+      const at = (t) => [bl[0][0] + (bl[1][0] - bl[0][0]) * t, bl[0][1] + (bl[1][1] - bl[0][1]) * t];
+      const p0 = at(a);
+      const p1 = at(b);
+      ctx.lineCap = 'round';
+      ctx.globalCompositeOperation = 'lighter';
+      line2(ctx, p0, p1, 0.2 * S, `rgba(${r},${g},${bb},0.16)`);
+      line2(ctx, p0, p1, 0.1 * S, `rgba(${r},${g},${bb},0.42)`);
+      ctx.globalCompositeOperation = 'source-over';
+      line2(ctx, p0, p1, 0.032 * S, '#f4fbff');
+    };
+    const d = f.x + f.y;
+    items.push({
+      d,
+      draw(ctx) {
+        trail.draw(ctx, self, c.blade, S);
+        if (bl && lit) blade(ctx, 0, 1); // (전체 — 몸에 가려질 구간은 아래 스프라이트가 덮는다)
+        for (const part of pk.parts) self.drawSpriteFrame(ctx, f, part.fr, fl, part.dy);
+        if (bl && lit) for (const [a, b] of vis) if (b - a > 0.02) blade(ctx, a, b);
+      },
+    });
+    void p;
+  }
+
+  /** 시트 프레임 하나 (발 = 결투자 위치), 피격 직후엔 붉게 번쩍임 */
+  drawSpriteFrame(ctx, f, fr, flash, shift = 0) {
+    const k = (fr.k || 1) * this.cam.s;
+    const [x, y0] = this.P(f.x, f.y);
+    const y = y0 + shift * this.cam.s; // (위 겹: 아래 겹의 골반 높이로)
+    const dx = x - fr.ox * k;
+    const dy = y - fr.oy * k;
+    const w = fr.w * k;
+    const h = fr.h * k;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(fr.page, fr.sx, fr.sy, fr.w, fr.h, dx, dy, w, h);
+    if (flash > 0) {
+      const cv = this.tintCv || (this.tintCv = document.createElement('canvas'));
+      if (cv.width < fr.w || cv.height < fr.h) (cv.width = Math.max(cv.width, fr.w)), (cv.height = Math.max(cv.height, fr.h));
+      const tc = cv.getContext('2d');
+      tc.clearRect(0, 0, cv.width, cv.height);
+      tc.globalCompositeOperation = 'source-over';
+      tc.drawImage(fr.page, fr.sx, fr.sy, fr.w, fr.h, 0, 0, fr.w, fr.h);
+      tc.globalCompositeOperation = 'source-atop';
+      tc.fillStyle = '#ff4a2a';
+      tc.fillRect(0, 0, fr.w, fr.h);
+      ctx.globalAlpha = Math.min(0.45, flash * 2.4);
+      ctx.drawImage(cv, 0, 0, fr.w, fr.h, dx, dy, w, h);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /** 디버그: 스프라이트 위에 pose.js의 자세(판정·접촉점이 쓰는 것)를 가는 선으로 — 프레임과 자세가 맞는지 */
+  drawPoseSkeleton(ctx, f, p) {
+    const S = this.cam.s * PX_M;
+    ctx.globalAlpha = 0.75;
+    ctx.lineCap = 'round';
+    const w = Math.max(1, 0.012 * S);
+    const col = '#7dffb0';
+    for (const [a, b] of [
+      [p.hipL, p.knees[0]], [p.knees[0], p.feet[0]], [p.hipR, p.knees[1]], [p.knees[1], p.feet[1]], [p.hips, p.chest], [p.chest, p.head],
+      [p.shL, p.elbows[0]], [p.elbows[0], p.handL], [p.shR, p.elbows[1]], [p.elbows[1], p.hand], [p.shL, p.shR], [p.hipL, p.hipR],
+    ])
+      seg(ctx, this, a, b, w, col);
+    seg(ctx, this, p.bladeBase, p.tip, w, '#ffe27d');
+    ctx.globalAlpha = 1;
+  }
+
   /** 한 결투자의 그릴 거리들 (깊이와 함께) */
   collect(items, f, p) {
+    const pk = this.picks[f.side];
+    if (pk) return this.collectSprite(items, f, p, pk);
     const c = f.cast;
     const S = this.cam.s * PX_M;
     const self = this;
@@ -540,6 +660,15 @@ function poly(ctx, pts) {
 function seg(ctx, view, a, b, w, color) {
   const p = view.P(...a);
   const q = view.P(...b);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(1, w);
+  ctx.beginPath();
+  ctx.moveTo(p[0], p[1]);
+  ctx.lineTo(q[0], q[1]);
+  ctx.stroke();
+}
+
+function line2(ctx, p, q, w, color) {
   ctx.strokeStyle = color;
   ctx.lineWidth = Math.max(1, w);
   ctx.beginPath();
