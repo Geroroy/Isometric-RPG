@@ -145,7 +145,7 @@ def sheet_hashes(glb, files, meta, settings, only=None):
     animation, its keyframes and its timing entry in the meta file. A sheet
     whose base matches only needs the animations whose hash differs; a
     different base means every animation. `source` covers both."""
-    model, anim_digests = glb_split(glb)
+    model, anim_digests = blend_split(glb) if glb.endswith('.blend') else glb_split(glb)
     h = hashlib.sha256(f'pipeline {PIPELINE_VERSION}'.encode())
     h.update(model.encode())
     for f in files:
@@ -159,6 +159,14 @@ def sheet_hashes(glb, files, meta, settings, only=None):
     return base, anims, source
 
 
+def blend_split(path):
+    """A posed .blend (tools/sprites/hero/pose_hero.py) as (the model's digest, {animation: its digest}): a .blend's
+    bytes change with every save, so its maker writes what it was made from next to it — `<blend>.src.json`
+    { model: digest of the build inputs, anims: { clip: digest of its poses } }."""
+    d = json.load(open(path + '.src.json'))
+    return d['model'], d['anims']
+
+
 def source_hash(files, settings, version=None):
     """sha256 of the files (.glb by content, see glb_digest; missing ones skipped)
     and the settings, 16 hex digits. (The single hash sheets carried before
@@ -166,7 +174,7 @@ def source_hash(files, settings, version=None):
     h = hashlib.sha256(f'pipeline {version or PIPELINE_VERSION}'.encode())
     for f in files:
         if f and os.path.exists(f):
-            h.update(glb_digest(f).encode() if f.endswith('.glb') else open(f, 'rb').read())
+            h.update(glb_digest(f).encode() if f.endswith('.glb') else blend_split(f)[0].encode() if f.endswith('.blend') else open(f, 'rb').read())
     h.update(json.dumps(settings, sort_keys=True, default=str).encode())
     return h.hexdigest()[:16]
 

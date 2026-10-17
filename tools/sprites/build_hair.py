@@ -5,7 +5,10 @@ parting on his right, long tousled bangs swept across the forehead to his
 left, full sides over the ears, the ends flicking out at the collar; warm
 medium brown with caramel highlights and darker roots.
 
-  python build_hair.py out/anakin_hair.blend [ep3|hood]
+  python build_hair.py out/anakin_hair.blend [ep3|hood] [head.json]
+
+head.json (optional): {"C": [x, y, z], "R": [rx, ry, rz]} — another head's scalp ellipsoid (the duel model of
+tools/sprites/hero measures its MakeHuman head); default: the head of build_anakin.py.
 
 Built the procedural way: about a hundred and forty guide curves are laid on
 a scalp mesh (the head of build_anakin.py), then the Essentials hair node
@@ -38,6 +41,10 @@ TAU = math.tau
 # the head of build_anakin.py (Blender space: +X forward, +Y his left, +Z up)
 C = Vector((0.008, 0, 1.745))  # centre
 R = Vector((0.103, 0.09, 0.121))  # the scalp: skull radii plus skin
+if len(argv) > 2:  # another head (tools/sprites/hero)
+    import json
+    _h = json.load(open(argv[2]))
+    C, R = Vector(_h['C']), Vector(_h['R'])
 PART = -0.34  # the parting's azimuth (0 = the front, + towards his left): on his right
 
 

@@ -2,6 +2,7 @@
 Render a .glb character into isometric sprite sheets for the game.
 
   python render_sprites.py model.glb out_dir [options]          (bpy module, no window)
+  python render_sprites.py model.blend out_dir [options]        (a posed .blend: tools/sprites/hero)
   blender -b -P render_sprites.py -- model.glb out_dir [options]  (Blender in background)
 
 Settings (engine, samples, render scale, passes, mirroring, …) come from
@@ -152,7 +153,11 @@ if PREVIEW:
     OUT = os.path.join(ROOT, CFG['preview']['out'])
 
 
-bpy.ops.wm.read_factory_settings(use_empty=True)
+BLEND = GLB.endswith('.blend')  # a posed .blend (tools/sprites/hero: the duel characters, rendered straight from Blender)
+if BLEND:
+    bpy.ops.wm.open_mainfile(filepath=os.path.abspath(GLB))
+else:
+    bpy.ops.wm.read_factory_settings(use_empty=True)
 GPU = render_cfg.setup_gpu(bpy)
 ENGINE = opt.get('engine', C['engine']['gpu' if GPU else 'cpu'])
 EEVEE = ENGINE == 'eevee'
@@ -290,7 +295,8 @@ scene.render.fps = 24
 if CFG['device']['threads']:
     scene.render.threads_mode = 'FIXED'
     scene.render.threads = CFG['device']['threads']
-bpy.ops.import_scene.gltf(filepath=GLB)
+if not BLEND:
+    bpy.ops.import_scene.gltf(filepath=GLB)
 if opt.get('hair'):  # hair curves (build_hair.py) on the head bone: glTF has no hair
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from hair_attach import attach_hair
@@ -533,6 +539,8 @@ else:
             cg.links.new(rl.outputs[out_name], fo.inputs[item])
     scene.compositing_node_group = cg
     scene.render.use_compositing = True
+    if hasattr(scene.render, 'compositor_device'):  # (no GPU context here: a GPU compositor aborts the render)
+        scene.render.compositor_device = 'CPU'
     # only the key light's shadow lands on the catcher (as in the old separate
     # shadow render): the rim light does not light the ground
     link = bpy.data.collections.new('rimReceivers')
