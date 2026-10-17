@@ -102,3 +102,7 @@ AI 대 AI seed 3을 1/60 s씩 25 s: 오류 0, 시트 불러오기 정상. 화면
 | 공개본 | https://claude.ai/artifact/45s5zi6Wr3Whnmw8N1wQcx Version 5 (버전 id `1792207137-58e3`) — 결투 시험장, 검토용 캐릭터 v1 |
 | 확인 | `assets/arena-CtF4WGAk.js` sha256 `9fedd642…cda83`, `sprites/duel/hero_anakin_256.webp` `0cb61ee5…35e8ae`, `hero_poses.json` `0941d0fd…36f64` — 공개본에서 받아 로컬 빌드와 같음 |
 | 올리기 전 QA | 테스트 35/35, 실제 브라우저(정적 서버, 404 감시): 시작 화면 → 클릭 시작 → 시트 불러오기 2.6 s, 아나킨 조작(이동·연타·방어·F·R), AI 대 AI 30 s, 오비완 조작 — 요청 79개 모두 200, 페이지 오류 0 |
+
+## 다른 후보 모델
+
+- Movie Duels 아나킨(사용자 제공 FBX, 비공개 자산): 가져오기·변형·게임 규격 8방향 진단 — `docs/characters/MD_ANAKIN.md`. 기본 캐릭터는 바꾸지 않았다.
