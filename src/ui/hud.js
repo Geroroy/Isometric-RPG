@@ -418,7 +418,7 @@ export class HUD {
       <section class="set-card">
         <h4>화면</h4>
         <div class="set-gfx"><span>그래픽</span>${['original', 'remaster'].map((m) => `<button type="button" class="btn-ghost" data-gfx="${m}">${GFX_LABEL[m]}</button>`).join('')}<kbd>F5</kbd></div>
-        <p class="set-note">오리지널: 저해상도 픽셀 · 줄인 색 · 딱딱한 가장자리. 리마스터: 화면 해상도 · 2배 밀도 지형과 오브젝트 · 부드러운 가장자리와 그림자 · 매끄러운 조명.</p>
+        <p class="set-note">오리지널: 저해상도 픽셀 · 줄인 색 · 딱딱한 가장자리. 리마스터: 화면 해상도 · 2배 밀도 지형 · 오브젝트 · 캐릭터(쉬는 동안 백그라운드에서 준비) · 부드러운 가장자리와 그림자 · 매끄러운 조명 · 기기가 뜨거워지면 렌더 해상도를 자동으로 낮춤.</p>
         <p class="set-note">확대·축소: 휴대폰은 두 손가락, PC는 마우스 휠 또는 <kbd>-</kbd> <kbd>=</kbd> (<kbd>0</kbd> 기본). 전체 화면: <kbd>F</kbd></p>
         <button type="button" class="btn-ghost" id="openHelp">조작법 보기</button>
       </section>`;

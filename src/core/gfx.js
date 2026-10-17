@@ -2,11 +2,14 @@
 //   original  — the low-resolution look: a small canvas scaled up with
 //               nearest-neighbour, terrain and props posterized and dithered
 //               to a reduced palette with hard 1-bit alpha edges, flat shadows.
-//   remaster  — the same world, frames, timing and gameplay drawn at the
-//               screen's own resolution: terrain and props baked at 2× pixel
-//               density in full colour with anti-aliased alpha edges, soft
-//               shadows, smooth lighting and finer glow and effects.
-// Franchise characters and vehicles keep their existing sprites in both.
+//   remaster  — the same world, frames, timing and gameplay drawn near the
+//               screen's own resolution, tuned for flagship phones: terrain,
+//               props and characters at 2× pixel density in full colour with
+//               anti-aliased edges (characters bake in the background and
+//               swap in when ready), soft shadows, smooth lighting, finer
+//               glow, device-pixel scrolling, and a render resolution that
+//               steps down while the device can't hold its frame rate.
+// Franchise vehicles keep their existing sprites in both.
 const KEY = 'cw.gfx';
 
 let mode = 'remaster';

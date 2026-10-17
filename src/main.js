@@ -2,6 +2,7 @@
 import './style.css';
 import { applySkin } from './ui/skin.js';
 import { bakeAssets, bakeDuelAssets, bakeSkin, bakeHDProps } from './gfx/assets.js';
+import { HDCharacters } from './gfx/hdChars.js';
 import { isHD, setGfxMode, onGfxMode, GFX_LABEL } from './core/gfx.js';
 import { savedLook } from './ui/appearance.js';
 import { iconURL } from './ui/icons.js';
@@ -227,15 +228,55 @@ async function boot() {
   window.__hud = hud;
   window.__dialogue = dialogue;
   window.__music = music;
+  // Remaster characters bake in the background: freely on the title screen
+  // and in menus, a slice at a time while Anakin stands about out of combat,
+  // never in a fight or a cutscene (a bake step costs a frame or two).
+  const hdChars = new HDCharacters(assets);
+  window.__hdChars = hdChars;
+  let castT = 0;
+  const wantCast = () => {
+    const p = game.player;
+    const near = new Map();
+    for (const u of game.activeUnits) {
+      if (u === p || u.dead || !u.sprite) continue;
+      const d = Math.hypot(u.x - p.x, u.y - p.y);
+      if (!near.has(u.sprite) || d < near.get(u.sprite)) near.set(u.sprite, d);
+    }
+    hdChars.want([p.sprite, ...[...near].sort((a, b) => a[1] - b[1]).map(([n]) => n)]);
+  };
+  let stillT = 0;
+  const bakeBudget = (dt, onTitle, menu) => {
+    const p = game.player;
+    stillT = p.anim.startsWith('idle') ? stillT + dt : 0;
+    if (onTitle || menu) return 12;
+    if (game.cinema || game.inCombat || game.duel || p.dead) return 0;
+    return stillT > 0.8 ? 6 : 0;
+  };
+
+  // Frame cap: phones draw at 60 fps even on 120 Hz screens (half the heat
+  // and battery), menus at 30; a PC follows its monitor.
   let last = performance.now();
+  let next = 0;
+  let busy = true;
   let titleT = 0;
   const loop = (now) => {
-    const dt = Math.min(0.05, (now - last) / 1000);
+    const onTitle = !help.classList.contains('hidden');
+    const menu = hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
+    const cap = menu && !onTitle ? 30 : renderer.touchMode ? 60 : 0;
+    if (cap) {
+      const iv = 1000 / cap;
+      if (now < next - 1) {
+        requestAnimationFrame(loop);
+        return;
+      }
+      next = now - next > iv ? now + iv : next + iv; // no catch-up bursts after a stall
+    }
+    const ms = now - last;
+    const dt = Math.min(0.05, ms / 1000);
     last = now;
     input.update(dt);
     touch.update(dt);
     // the title screen sits over the live world: hide the HUD, drift the camera
-    const onTitle = !help.classList.contains('hidden');
     if (onTitle !== document.body.classList.contains('title')) {
       document.body.classList.toggle('title', onTitle);
       if (!onTitle) zoom.restore(); // back to the player's own zoom
@@ -248,9 +289,22 @@ async function boot() {
     dr.x += (tx - dr.x) * Math.min(1, dt * (onTitle ? 1 : 3));
     dr.y += (ty - dr.y) * Math.min(1, dt * (onTitle ? 1 : 3));
     // menus pause the action (the map does not)
-    const paused = onTitle || hud.open.tree || hud.open.char || hud.open.settings || hud.open.cards || hud.open.look || hud.open.juke || hud.open.debug || dialogue.isOpen;
+    const paused = onTitle || menu;
     if (!paused) game.update(dt);
+    let baked = false;
+    if (isHD()) {
+      if ((castT -= dt) <= 0) {
+        castT = 1;
+        hdChars.touch = renderer.touchMode;
+        wantCast();
+      }
+      baked = hdChars.step(bakeBudget(dt, onTitle, menu));
+    }
     renderer.render(dt);
+    // dynamic resolution, skipping the frame after one that baked sprites or
+    // built ground (it ran long for its own reasons)
+    if (!busy) renderer.adapt(ms, 1000 / (cap || 60));
+    busy = baked || renderer.terrain.built > 0;
     hud.update(dt);
     dialogue.update(dt);
     music.update();

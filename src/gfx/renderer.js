@@ -2,8 +2,12 @@
 // chunky pixels), depth-sorted sprites, Diablo-style light map and additive
 // glow pass for sabers, blaster bolts and Force effects. In Remaster graphics
 // the canvas holds D device pixels per game pixel (all drawing stays in game
-// pixels under a D× transform), so 2×-density terrain and props, glow lines,
-// soft shadows and the light map come out at the screen's own resolution.
+// pixels under a D× transform), so 2×-density terrain, props and characters,
+// glow lines and soft shadows come out near the screen's own resolution, and
+// the camera and sprites move in device-pixel steps for smooth scrolling.
+// D is capped at 3 (CSS scales the rest) and drops to 2 while the device
+// can't hold its frame rate — a hot phone keeps playing smoothly. The light
+// map stays at game resolution and is smoothly upscaled.
 import { worldToScreen, screenToWorld } from '../core/iso.js';
 import { Terrain } from './terrain.js';
 import { PROPS } from './models/props.js';
@@ -11,6 +15,12 @@ import { dist } from '../core/math.js';
 import { isHD } from '../core/gfx.js';
 
 const AMBIENT = [150, 146, 178];
+/** Remaster: most device pixels per game pixel (the 2× sprites hold up to 3). */
+const D_MAX = 3;
+/** Dynamic resolution never drops below this (2× sprites stay 1:1). */
+const D_MIN = 2;
+/** The overlay (names, health bars, damage text) needs no more than 2× for sharp text. */
+const OVERLAY_DPR = 2;
 export const ZOOM_MIN = 0.5;
 export const ZOOM_MAX = 2.5;
 
@@ -34,14 +44,19 @@ export class Renderer {
     this.touchMode = false;
     this.hd = false;
     this.D = 1;
+    this.dCap = D_MAX; // lowered by adapt() while frames run long
+    this.perf = { ema: 0, slow: 0, fast: 0, drops: 0 };
     this.shadow = softShadow();
+    this.spots = new Map(); // cached radial light sprites by colour
     this.applyMode();
   }
 
   /** Another place (the city hub ⇄ Christophsis): new ground, props, map. */
   setWorld() {
     const w = this.game.world;
-    this.terrain = w.terrain ||= new Terrain(w); // each place keeps its built ground
+    const old = this.terrain;
+    this.terrain = w.terrain ||= new Terrain(w); // each place keeps its ground data
+    if (old !== this.terrain) old.flush(); // but only the current one keeps chunk images
     this.applyMode();
   }
 
@@ -50,6 +65,8 @@ export class Renderer {
     this.hd = isHD() && !!this.assets.propsHD;
     this.assets.props = this.hd ? this.assets.propsHD : this.assets.propsSD || this.assets.props;
     this.prepareProps();
+    this.assets.hdChars = this.hd; // units switch to 2× frames as they get baked
+    this.assets.spritesHD ||= {};
     this.terrain.setDensity(this.hd ? 2 : 1);
     this.canvas.style.imageRendering = this.hd ? 'auto' : '';
     this.resize();
@@ -106,18 +123,50 @@ export class Renderer {
     this.w = Math.ceil((W * dpr) / devScale);
     this.h = Math.ceil((H * dpr) / devScale);
     // Remaster: up to 3 device pixels per game pixel (CSS scales the rest)
-    this.D = this.hd ? Math.min(3, devScale) : 1;
+    this.D = this.hd ? Math.min(this.dCap, devScale) : 1;
     this.canvas.width = this.w * this.D;
     this.canvas.height = this.h * this.D;
     this.canvas.style.width = this.w * this.scale + 'px';
     this.canvas.style.height = this.h * this.scale + 'px';
     this.light.width = this.w;
     this.light.height = this.h;
-    this.overlay.width = Math.round(W * dpr);
-    this.overlay.height = Math.round(H * dpr);
+    this.terrain.setView(this.w, this.h);
+    // a phone at dpr 3.5 would otherwise clear 4.5 M overlay pixels a frame
+    this.odpr = Math.min(dpr, OVERLAY_DPR);
+    this.overlay.width = Math.round(W * this.odpr);
+    this.overlay.height = Math.round(H * this.odpr);
     this.overlay.style.width = W + 'px';
     this.overlay.style.height = H + 'px';
     this.ctx.imageSmoothingEnabled = false;
+  }
+
+  /**
+   * Dynamic resolution (Remaster): fed the time between drawn frames and the
+   * frame time aimed for. If frames keep running long (a phone heating up,
+   * a busy fight) the canvas drops to D_MIN device pixels per game pixel; it
+   * goes back up only after a long calm stretch, and stays down for good
+   * after dropping three times.
+   */
+  adapt(ms, targetMs) {
+    if (!this.hd || ms > 100) return; // a stall (tab switch, loading) says nothing
+    const P = this.perf;
+    P.ema = P.ema ? P.ema + (ms - P.ema) * 0.05 : ms;
+    if (P.ema > targetMs * 1.25) {
+      P.fast = 0;
+      if ((P.slow += ms) > 2000 && this.D > D_MIN) {
+        this.dCap = D_MIN;
+        P.drops++;
+        P.slow = 0;
+        this.resize();
+      }
+    } else {
+      P.slow = 0;
+      if (P.ema < targetMs * 1.08 && (P.fast += ms) > 20000 && this.dCap < D_MAX && P.drops < 3) {
+        this.dCap = D_MAX;
+        P.fast = 0;
+        this.resize();
+      }
+    }
   }
 
   /** CSS pixel → world coordinates. */
@@ -165,15 +214,17 @@ export class Renderer {
     const viewH = H - (g.cinema ? 0 : this.consoleH) / this.scale; // cutscenes use the whole screen
     const sh = g.fx.shakeAmt;
     const dr = this.drift; // slow title-screen camera move, in game pixels
-    this.cam.x = Math.round(ps.x - W / 2 + dr.x + (sh ? (Math.random() - 0.5) * sh : 0));
-    this.cam.y = Math.round(ps.y - viewH * (this.touchMode ? 0.6 : 0.55) + dr.y + (sh ? (Math.random() - 0.5) * sh : 0));
+    // whole device pixels: game pixels in Original, finer steps in Remaster
+    const D = this.D;
+    this.cam.x = Math.round((ps.x - W / 2 + dr.x + (sh ? (Math.random() - 0.5) * sh : 0)) * D) / D;
+    this.cam.y = Math.round((ps.y - viewH * (this.touchMode ? 0.6 : 0.55) + dr.y + (sh ? (Math.random() - 0.5) * sh : 0)) * D) / D;
     const cam = this.cam;
 
     ctx.setTransform(this.D, 0, 0, this.D, 0, 0);
     this.smooth(this.hd);
     ctx.fillStyle = '#07070a';
     ctx.fillRect(0, 0, W, H);
-    this.terrain.draw(ctx, cam.x, cam.y, W, H);
+    this.terrain.draw(ctx, cam.x, cam.y, W, H, D);
     g.fx.drawDecals(ctx, cam);
 
     const inView = (x, y, w, h) => x + w > cam.x - 4 && x < cam.x + W + 4 && y + h > cam.y - 4 && y < cam.y + H + 4;
@@ -277,16 +328,11 @@ export class Renderer {
   }
 
   drawFrame(f, x, y) {
-    const k = f.k;
-    if (!k) {
-      // a game-resolution sprite: whole game pixels, nearest-neighbour
-      this.smooth(false);
-      this.ctx.drawImage(f.page, f.sx, f.sy, f.w, f.h, Math.round(x - f.ox - this.cam.x), Math.round(y - f.oy - this.cam.y), f.w, f.h);
-      return;
-    }
-    // a 2×-density (remaster) frame, snapped to device pixels
+    // a game-resolution sprite is drawn nearest-neighbour, a 2×-density
+    // (Remaster) frame smoothly; both snapped to whole device pixels
+    const k = f.k || 1;
     const D = this.D;
-    this.smooth(true);
+    this.smooth(!!f.k);
     this.ctx.drawImage(f.page, f.sx, f.sy, f.w, f.h, Math.round((x - f.ox * k - this.cam.x) * D) / D, Math.round((y - f.oy * k - this.cam.y) * D) / D, f.w * k, f.h * k);
   }
 
@@ -380,11 +426,7 @@ export class Renderer {
       const sx = s.x - cam.x;
       const sy = s.y - cam.y;
       if (sx < -rad || sy < -rad || sx > W + rad || sy > H + rad) return;
-      const grd = l.createRadialGradient(sx, sy, 0, sx, sy, rad);
-      grd.addColorStop(0, `rgba(${r},${gg},${b},${a})`);
-      grd.addColorStop(1, `rgba(${r},${gg},${b},0)`);
-      l.fillStyle = grd;
-      l.fillRect(sx - rad, sy - rad, rad * 2, rad * 2);
+      l.drawImage(this.spotSprite(r, gg, b, a), sx - rad, sy - rad, rad * 2, rad * 2);
     };
     const p = g.player;
     spot(p.x, p.y, 0.5, 255, 236, 210, 190, 0.42);
@@ -408,6 +450,32 @@ export class Renderer {
     this.smooth(this.hd); // remaster: the light map is smoothly upscaled
     ctx.drawImage(this.light, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
+  }
+
+  /**
+   * A radial light (colour at the centre fading to nothing), cached by colour
+   * and alpha (in 1/32 steps) instead of building a gradient for every light
+   * every frame — a steady source of garbage-collection hitches on phones.
+   */
+  spotSprite(r, g, b, a) {
+    r = Math.round(r);
+    g = Math.round(g);
+    b = Math.round(b);
+    const q = Math.max(1, Math.min(32, Math.round(a * 32)));
+    const key = ((r * 256 + g) * 256 + b) * 64 + q;
+    let c = this.spots.get(key);
+    if (c) return c;
+    if (this.spots.size > 400) this.spots.clear();
+    c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const x = c.getContext('2d');
+    const grd = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grd.addColorStop(0, `rgba(${r},${g},${b},${q / 32})`);
+    grd.addColorStop(1, `rgba(${r},${g},${b},0)`);
+    x.fillStyle = grd;
+    x.fillRect(0, 0, 64, 64);
+    this.spots.set(key, c);
+    return c;
   }
 
   /**
@@ -565,7 +633,7 @@ export class Renderer {
     const o = this.octx;
     o.setTransform(1, 0, 0, 1, 0, 0);
     o.clearRect(0, 0, this.overlay.width, this.overlay.height);
-    o.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    o.setTransform(this.odpr, 0, 0, this.odpr, 0, 0);
     const g = this.game;
     const cam = this.cam;
     const S = this.scale;

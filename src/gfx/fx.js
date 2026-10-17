@@ -166,8 +166,10 @@ export class Effects {
         ctx.globalAlpha = 1;
       } else if (p.kind === 'ghost') {
         const f = p.frame;
+        const fk = f.k || 1; // a Remaster frame is drawn at its game-pixel size
         ctx.globalAlpha = p.alpha * (1 - k);
-        ctx.drawImage(f.page, f.sx, f.sy, f.w, f.h, sx - f.ox, sy - f.oy, f.w, f.h);
+        ctx.imageSmoothingEnabled = !!f.k;
+        ctx.drawImage(f.page, f.sx, f.sy, f.w, f.h, sx - f.ox * fk, sy - f.oy * fk, f.w * fk, f.h * fk);
         ctx.globalAlpha = 1;
       }
     }

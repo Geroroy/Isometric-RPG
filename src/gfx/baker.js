@@ -4,7 +4,9 @@
 // workflow of StarCraft / Diablo II, but happens at load time in the browser.
 // An `hd` bake (Remaster graphics) renders at 2× pixel density, keeps
 // anti-aliased alpha edges and full colour (no posterize / dither); its
-// frames carry `k: 0.5`, the game-pixel size of one of their pixels.
+// frames carry `k: 0.5`, the game-pixel size of one of their pixels. Props
+// and characters both have one; HD characters read the GPU back one
+// direction at a time so a background bake step stays short on phones.
 import * as THREE from 'three';
 import { PX_PER_UNIT, CAM_ELEVATION } from '../core/iso.js';
 import { detail } from './models/parts.js';
@@ -283,21 +285,30 @@ export class Baker {
     return out;
   }
 
+  /** Start a fresh atlas so the next bake's pages belong to it alone. */
+  newAtlas() {
+    this.packer = new AtlasPacker();
+  }
+
   /**
    * Bake an animated model.
    * spec: { model: {root, applyPose, toggles}, dirs, frame: [fw, fh, ax, ay],
    *         anims: { name: { frames, fps, loop, pose(t) } }, markers: [names] }
+   * hd: 2× density with soft edges (Remaster); one direction per readback
+   * and yield, so each background step stays well inside a frame.
    */
-  *bakeAnimated(spec) {
+  *bakeAnimated(spec, { hd = false } = {}) {
     const { model, dirs } = spec;
-    const [fw, fh, ax, ay] = spec.frame;
+    const R = hd ? 2 : 1;
+    const [fw, fh, ax, ay] = spec.frame.map((v) => v * R);
     detail(model.root);
     this.holder.add(model.root);
     // all directions of one animation frame render into one canvas and are
-    // read back together (one GPU sync per pose instead of one per sprite)
-    const cols = Math.min(dirs, 4);
-    const rows = Math.ceil(dirs / cols);
-    this.setFrame(fw, fh, ax, ay, spec.ss || 1, [cols, rows]);
+    // read back together (one GPU sync per pose instead of one per sprite);
+    // HD frames are 4× the pixels, so they go one direction at a time
+    const cols = hd ? 1 : Math.min(dirs, 4);
+    const rows = hd ? 1 : Math.ceil(dirs / cols);
+    this.setFrame(fw, fh, ax, ay, hd ? 2 : spec.ss || 1, [cols, rows], R);
     const markerObjs = [];
     const occluders = [];
     model.root.traverse((o) => {
@@ -315,24 +326,28 @@ export class Baker {
       for (let f = 0; f < a.frames; f++) {
         const t = a.loop ? f / a.frames : a.frames > 1 ? f / (a.frames - 1) : 0;
         const p = a.pose(t);
-        this.renderer.setScissorTest(false);
-        this.renderer.clear();
-        const meta = [];
-        for (let di = 0; di < dirs; di++) {
-          model.root.rotation.y = -(di * Math.PI * 2) / dirs;
-          model.applyPose(p);
-          model.root.updateMatrixWorld(true);
-          this.renderTile(di);
-          const { markers, markersW } = this.snapMarkers(markerObjs);
-          meta.push({ markers, blades: blades ? this.bladeVisibility(model, markersW, occluders) : null });
+        const batch = cols * rows;
+        for (let d0 = 0; d0 < dirs; d0 += batch) {
+          const n = Math.min(batch, dirs - d0);
+          this.renderer.setScissorTest(false);
+          this.renderer.clear();
+          const meta = [];
+          for (let i = 0; i < n; i++) {
+            model.root.rotation.y = -((d0 + i) * Math.PI * 2) / dirs;
+            model.applyPose(p);
+            model.root.updateMatrixWorld(true);
+            this.renderTile(i);
+            const { markers, markersW } = this.snapMarkers(markerObjs);
+            meta.push({ markers, blades: blades ? this.bladeVisibility(model, markersW, occluders) : null });
+          }
+          const bufs = this.readTiles(n);
+          for (let i = 0; i < n; i++) {
+            const fr = this.pack(bufs[i], meta[i].markers, spec.captureOpts);
+            if (meta[i].blades) fr.blades = meta[i].blades;
+            data[d0 + i].push(fr);
+          }
+          yield;
         }
-        const bufs = this.readTiles(dirs);
-        for (let di = 0; di < dirs; di++) {
-          const fr = this.pack(bufs[di], meta[di].markers, spec.captureOpts);
-          if (meta[di].blades) fr.blades = meta[di].blades;
-          data[di].push(fr);
-        }
-        yield;
       }
       out.anims[name] = { frames: a.frames, fps: a.fps, loop: a.loop, hit: a.hit, data };
     }

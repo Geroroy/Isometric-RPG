@@ -58,8 +58,10 @@ export class Unit {
     this.sleep = false;
   }
 
+  /** The unit's frames: the Remaster (2×) set once it is baked, else the original. */
   get sprites() {
-    return this.game.assets.sprites[this.sprite];
+    const a = this.game.assets;
+    return (a.hdChars && a.spritesHD[this.sprite]) || a.sprites[this.sprite];
   }
 
   setAnim(name, speed = 1, restart = false) {

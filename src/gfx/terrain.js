@@ -80,8 +80,28 @@ export class Terrain {
   setDensity(S) {
     if (S === this.S) return;
     this.S = S;
+    for (const c of this.cache.values()) free(c);
     this.cache.clear();
     this.job = null;
+  }
+
+  /** Let go of every built chunk (leaving this place). */
+  flush() {
+    for (const c of this.cache.values()) free(c);
+    this.cache.clear();
+    this.job = null;
+  }
+
+  /**
+   * Keep only as many chunks as the view (plus the prefetch ring) can touch.
+   * A 2×-density chunk is 1280×640 (3.3 MB): a fixed 64 would hold ~210 MB,
+   * enough for iOS Safari to kill the tab; a phone's view needs ~17.
+   */
+  setView(w, h) {
+    const pad = 160; // the prefetch margin in draw()
+    const area = (w + 2 * pad + CW) * (h + 2 * pad + CHH);
+    this.maxChunks = Math.max(12, Math.ceil(area / ((CW * CHH) / 2)) + 4);
+    while (this.cache.size > this.maxChunks) this.evict();
   }
 
   sample(arr, u, v) {
@@ -321,23 +341,28 @@ export class Terrain {
   insert(key, c) {
     c.used = this.frame;
     this.cache.set(key, c);
-    {
-      if (this.cache.size > this.maxChunks) {
-        let oldK = null;
-        let oldT = Infinity;
-        for (const [k, v] of this.cache) {
-          if (v.used < oldT) {
-            oldT = v.used;
-            oldK = k;
-          }
-        }
-        this.cache.delete(oldK);
-      }
-    }
+    if (this.cache.size > this.maxChunks) this.evict();
   }
 
-  /** Draw every chunk overlapping the view rectangle (in world-screen px). */
-  draw(ctx, vx, vy, vw, vh) {
+  /** Drop the least recently drawn chunk. */
+  evict() {
+    let oldK = null;
+    let oldT = Infinity;
+    for (const [k, v] of this.cache) {
+      if (v.used < oldT) {
+        oldT = v.used;
+        oldK = k;
+      }
+    }
+    free(this.cache.get(oldK));
+    this.cache.delete(oldK);
+  }
+
+  /**
+   * Draw every chunk overlapping the view rectangle (in world-screen px),
+   * snapped to whole device pixels (D per game pixel).
+   */
+  draw(ctx, vx, vy, vw, vh, D = 1) {
     this.frame++;
     const nC = Math.ceil(this.world.w / CH);
     // Screen → world for the corners gives the tile range to scan.
@@ -365,7 +390,7 @@ export class Terrain {
         const key = cx + ',' + cy;
         if (!this.cache.has(key)) built++;
         const c = this.getChunk(cx, cy);
-        ctx.drawImage(c.canvas, Math.round(c.sx - vx), Math.round(c.sy - vy), CW, CHH);
+        ctx.drawImage(c.canvas, Math.round((c.sx - vx) * D) / D, Math.round((c.sy - vy) * D) / D, CW, CHH);
       }
     }
     // Prefetch chunks just outside the view a few rows per frame (~4 ms) so
@@ -395,6 +420,7 @@ export class Terrain {
         }
       }
     }
+    this.built = built;
     return built;
   }
 
@@ -429,4 +455,9 @@ export class Terrain {
     ctx.putImageData(img, 0, 0);
     return c;
   }
+}
+
+/** Release a dropped chunk's pixels now (iOS counts them until GC runs). */
+function free(c) {
+  if (c) c.canvas.width = c.canvas.height = 0;
 }

@@ -73,9 +73,34 @@ function decode(value, pages) {
 
 const toBlob = (canvas) => new Promise((r) => canvas.toBlob(r, 'image/png'));
 
+/** Point every frame's `page` through `map` (in place, so live frames follow). */
+function repage(value, map) {
+  if (Array.isArray(value)) for (const v of value) repage(v, map);
+  else if (value && typeof value === 'object') {
+    for (const [k, v] of Object.entries(value)) {
+      if (k === 'page') value.page = map.get(v) || v;
+      else repage(v, map);
+    }
+  }
+}
+
+/**
+ * Freshly baked atlas pages are 2048² canvases (16 MB each). Swap them for
+ * ImageBitmaps and empty the canvases: iOS Safari caps the memory all
+ * canvases may hold together, and bitmaps don't count towards it.
+ */
+async function release(data, pages) {
+  const canvases = pages.filter((p) => p instanceof HTMLCanvasElement);
+  if (!canvases.length || !('createImageBitmap' in window)) return;
+  const bitmaps = await Promise.all(canvases.map((c) => createImageBitmap(c)));
+  repage(data, new Map(canvases.map((c, i) => [c, bitmaps[i]])));
+  for (const c of canvases) c.width = c.height = 0;
+}
+
+/** Store a freshly baked bundle, then trade its canvases for bitmaps. */
 export async function saveBundle(name, data) {
+  const pages = [];
   try {
-    const pages = [];
     const json = encode(data, pages);
     const blobs = await Promise.all(pages.map(toBlob));
     const db = await open();
@@ -83,6 +108,11 @@ export async function saveBundle(name, data) {
     db.close();
   } catch (e) {
     console.warn('sprite cache: save failed', e);
+  }
+  try {
+    await release(data, pages);
+  } catch (e) {
+    console.warn('sprite cache: release failed', e);
   }
 }
 
