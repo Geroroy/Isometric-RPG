@@ -52,7 +52,7 @@ class Scene:
         self.root, self.arm, self.meshes, self.report = root, arm, meshes, report
 
 
-def material(mat, textures, report):
+def material(mat, textures, report, gains=None):
     key = mat.name.rsplit('.', 1)[0] if mat.name.rsplit('.', 1)[-1].isdigit() else mat.name
     nt = mat.node_tree
     nt.nodes.clear()
@@ -73,8 +73,16 @@ def material(mat, textures, report):
     img.colorspace_settings.name = 'sRGB'
     tex.image = img
     tex.interpolation = 'Linear'
-    nt.links.new(tex.outputs['Color'], bsdf.inputs['Base Color'])
     entry = dict(material=mat.name, texture=fname, metallic=0.0, roughness=rough)
+    gain = (gains or {}).get(key)
+    if gain and gain != 1:  # (a comparison: the texture's value scaled in the shader — the image itself unchanged)
+        hsv = nt.nodes.new('ShaderNodeHueSaturation')
+        hsv.inputs['Value'].default_value = gain
+        nt.links.new(tex.outputs['Color'], hsv.inputs['Color'])
+        nt.links.new(hsv.outputs['Color'], bsdf.inputs['Base Color'])
+        entry['value_gain'] = gain
+    else:
+        nt.links.new(tex.outputs['Color'], bsdf.inputs['Base Color'])
     if key == 'Hair Alpha':
         img.alpha_mode = 'STRAIGHT'
         nt.links.new(tex.outputs['Alpha'], bsdf.inputs['Alpha'])
@@ -83,7 +91,7 @@ def material(mat, textures, report):
     report.append(entry)
 
 
-def build(pack, height=HEIGHT, fix_hierarchy=True, hide_caps=True):
+def build(pack, height=HEIGHT, fix_hierarchy=True, hide_caps=True, gains=None):
     pack = Path(pack).resolve()
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.fbx(filepath=str(pack / 'source' / 'Anakin.fbx'), use_anim=False)
@@ -96,7 +104,7 @@ def build(pack, height=HEIGHT, fix_hierarchy=True, hide_caps=True):
     top = next(o for o in bpy.data.objects if o.parent is None)  # scene_root (the FBX's 0.1 unit scale)
     # materials
     for mat in {s.material for o in meshes for s in o.material_slots if s.material}:
-        material(mat, pack / 'textures', rep['materials'])
+        material(mat, pack / 'textures', rep['materials'], gains)
     # the FBX's own image references (its maker's absolute paths, *_bw names, head_sith.jpg — none in the pack) are no
     # longer used by any material: drop them, recorded
     gone = []

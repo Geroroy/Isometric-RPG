@@ -105,4 +105,4 @@ AI 대 AI seed 3을 1/60 s씩 25 s: 오류 0, 시트 불러오기 정상. 화면
 
 ## 다른 후보 모델
 
-- Movie Duels 아나킨(사용자 제공 FBX, 비공개 자산): 가져오기·변형·게임 규격 8방향 진단 — `docs/characters/MD_ANAKIN.md`. 기본 캐릭터는 바꾸지 않았다.
+- Movie Duels 아나킨(사용자 제공 FBX, 비공개 자산): 가져오기·변형·게임 규격 8방향 진단 01, 자세·손·명암 비교와 대기·걷기 진단 02 — `docs/characters/MD_ANAKIN.md`. 기본 캐릭터는 바꾸지 않았다(교체 보류).

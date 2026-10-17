@@ -22,8 +22,6 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[3]
-MD, OUT = Path(sys.argv[1]), Path(sys.argv[2])
-OUT.mkdir(parents=True, exist_ok=True)
 SHADOW_ALPHA = 0.75
 CELL = 128  # game px: render_sprites' window
 AX, AY = 64, 96
@@ -180,11 +178,16 @@ def hero_combined(out):
     (out / 'qa_hero_stance_256.json').write_text(json.dumps(meta))
 
 
-compare()
-hero_combined(OUT)
-if len(sys.argv) > 4:
+if __name__ != '__main__':  # (md_grid.py borrows Sheet, font, DIRNAME)
+    pass
+else:
+    MD, OUT = Path(sys.argv[1]), Path(sys.argv[2])
+    OUT.mkdir(parents=True, exist_ok=True)
+    compare()
+    hero_combined(OUT)
+if __name__ == '__main__' and len(sys.argv) > 4:
     pad(sys.argv[3], sys.argv[4])
-if len(sys.argv) > 5:
+if __name__ == '__main__' and len(sys.argv) > 5:
     strips = [Image.open(p).convert('RGBA') for p in sys.argv[5].split(',')]
     names = ['게임 현재 아나킨', '자체 제작 v1', 'MD 바인드 포즈', 'MD 준비 자세(제작 판단)']
     w, h = strips[0].size
@@ -201,4 +204,5 @@ if len(sys.argv) > 5:
     for i in range(8):
         d.text((300 + i * 96 * 4 + 10, 12), '방향 ' + DIRNAME[i], font=font(22), fill=(200, 206, 214, 255))
     lab.save(OUT / 'pad8_4x.png')
-print('COMPARE', OUT)
+if __name__ == '__main__':
+    print('COMPARE', OUT)

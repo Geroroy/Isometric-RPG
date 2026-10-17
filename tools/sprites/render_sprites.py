@@ -37,7 +37,8 @@ asset and override a setting only for experiments.
                        sheet changes); the next run then renders only the others
   --yes                go ahead even if the estimate is over ask_minutes
   (experiments: --engine, --samples, --render, --frames, --only-dirs, --mirror,
-   --passes, --sharpen, --view, --hide)
+   --passes, --sharpen, --view, --hide, --key-angle <deg> (key light size: shadow softness, 6),
+   --rim-gain <x> (rim light strength, 1))
 
 Before rendering it prints the number of sprites and the expected time
 (ESTIMATE), and stops (exit 3, ASK) above render_config's ask_minutes unless
@@ -179,6 +180,10 @@ EEVEE_RT = opt.get('eevee-raytrace', '1') == '1'
 HIDE = opt.get('hide', 'blade').split(',')
 META = json.load(open(opt['meta']))['anims'] if 'meta' in opt else {}
 PASSES = opt.get('passes', ','.join(C['passes'])).split(',')
+# comparison options (docs/characters/MD_ANAKIN.md): the key light's angular size (the shadow's softness, default 6°) and
+# the rim light's strength; hashed only when given, so the sheets made without them keep their source hashes
+KEY_ANGLE = float(opt.get('key-angle', 6))
+RIM_GAIN = float(opt.get('rim-gain', 1))
 FRONT = DIRS // 8  # the direction that faces the camera
 ONLY_DIRS = [int(x) for x in opt['only-dirs'].split(',')] if 'only-dirs' in opt else ([FRONT] if PREVIEW else None)
 os.makedirs(OUT, exist_ok=True)
@@ -190,6 +195,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # rendered on its own and merged into the sheets (render_cfg.sheet_hashes)
 SETTINGS = [render_cfg.effective(C, ('engine', 'samples', 'mirror_sprites', 'mirror_default', 'dirs_default', 'optional_passes')),
             ENGINE, DIRS, MIRROR, SIZES, WINDOW, RES, AX, AY, ONLY, SAMPLES, SHARPEN, VIEW, PASSES, HIDE, ONLY_DIRS, MAXF]
+SETTINGS += [{k: opt[k]} for k in ('key-angle', 'rim-gain') if k in opt]
 BASE_SRC, ANIM_SRC, SOURCE = render_cfg.sheet_hashes(GLB, [opt.get('hair')], opt.get('meta'), SETTINGS, ONLY)
 # the one hash of sheets made before the split; LEGACY_PIPELINE: the PIPELINE_VERSION they were made with, when the
 # change since only touched what --blades-only already rewrote (2 -> 3: the blade stretches)
@@ -391,9 +397,9 @@ def sun(name, direction_from, strength, color, angle):
 
 
 # key: upper left, a little in front — casts the soft shadows
-key = sun('key', -right * 0.9 + up * 1.35 + toward * 0.55, 4.2, (1.0, 0.95, 0.88), 6)
+key = sun('key', -right * 0.9 + up * 1.35 + toward * 0.55, 4.2, (1.0, 0.95, 0.88), KEY_ANGLE)
 # rim: behind, on the right — a cool edge on the silhouette
-rim = sun('rim', right * 0.7 + up * 0.55 - toward * 1.0, 3.0, (0.72, 0.84, 1.0), 3)
+rim = sun('rim', right * 0.7 + up * 0.55 - toward * 1.0, 3.0 * RIM_GAIN, (0.72, 0.84, 1.0), 3)
 # fill: a weak front light so the shadowed side keeps its detail
 fill = sun('fill', right * 0.6 + up * 0.3 + toward * 1.0, 0.7, (0.85, 0.9, 1.0), 20)
 fill.data.use_shadow = False
