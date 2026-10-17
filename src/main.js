@@ -245,12 +245,14 @@ async function boot() {
     hdChars.want([p.sprite, ...[...near].sort((a, b) => a[1] - b[1]).map(([n]) => n)]);
   };
   let stillT = 0;
+  let bakeN = 0;
   const bakeBudget = (dt, onTitle, menu) => {
     const p = game.player;
     stillT = p.anim.startsWith('idle') ? stillT + dt : 0;
     if (onTitle || menu) return 12;
     if (game.cinema || game.inCombat || game.duel || p.dead) return 0;
-    return stillT > 0.8 ? 6 : 0;
+    // in play: one short step every third frame, so idling never stutters
+    return stillT > 0.8 && ++bakeN % 3 === 0 ? 4 : 0;
   };
 
   // Frame cap: phones draw at 60 fps even on 120 Hz screens (half the heat
