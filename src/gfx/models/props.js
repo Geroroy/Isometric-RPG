@@ -664,6 +664,63 @@ function sepBody(rng) {
 }
 
 /** Control room console bank with glowing screens. */
+// --- Mustafar, the end of the duel: the river and the collector arm ---------
+
+/** A mining droid's hover platform (Anakin rides one down the lava river). */
+function droidPlatform() {
+  const g = new THREE.Group();
+  const dark = mat(0x2e2a28);
+  const steel = mat(0x5a5652);
+  g.add(box(2.2, 0.16, 1.8, steel, 0, 0.32, 0));
+  g.add(box(2.3, 0.08, 1.9, dark, 0, 0.22, 0));
+  for (const x of [-0.75, 0, 0.75]) g.add(box(0.05, 0.02, 1.7, dark, x, 0.41, 0)); // deck plates
+  g.add(cylX(0.32, 0.26, 0.9, dark, -0.45, 0.02, 0, 8)); // the droid's body hangs below
+  g.add(sph(0.2, glow(0xffc070), 0.5, 0.02, 0, 6, 4)); // its sensor eye
+  for (const z of [-0.95, 0.95]) g.add(box(2.1, 0.22, 0.06, mat(0x3a3430), 0, 0.48, z)); // low rails
+  return g;
+}
+
+/** The collector platform broken off the arm, floating on the river. */
+function collectorRaft() {
+  const g = new THREE.Group();
+  const dark = mat(0x2a2624);
+  const steel = mat(0x4e4a46);
+  g.add(box(5.0, 0.3, 3.8, dark, 0, 0.15, 0));
+  g.add(box(4.6, 0.06, 3.4, steel, 0, 0.33, 0));
+  for (let x = -2; x <= 2; x += 1) g.add(box(0.04, 0.02, 3.3, dark, x, 0.37, 0)); // grating
+  // the snapped end of the arm: twisted beams at the back corner
+  const beam = box(2.2, 0.18, 0.22, mat(0x3a3430), -1.6, 0.6, -1.5);
+  beam.rotation.z = 0.35;
+  g.add(beam);
+  const beam2 = box(1.6, 0.16, 0.2, mat(0x3a3430), 1.9, 0.5, 1.4);
+  beam2.rotation.y = 0.5;
+  beam2.rotation.z = -0.25;
+  g.add(beam2);
+  for (const [x, z] of [[-2.3, -1.7], [2.3, -1.7], [-2.3, 1.7], [2.3, 1.7]]) g.add(box(0.14, 0.05, 0.14, glow(0xffa040), x, 0.37, z));
+  return g;
+}
+
+/** Catwalk railing on the balcony and the collector arm. */
+function catwalkRail() {
+  const g = new THREE.Group();
+  const dark = mat(0x2c2826);
+  for (const x of [-0.95, 0, 0.95]) g.add(box(0.07, 0.95, 0.07, dark, x, 0.47, 0));
+  g.add(box(2.0, 0.06, 0.08, mat(0x45403a), 0, 0.95, 0));
+  g.add(box(2.0, 0.04, 0.06, dark, 0, 0.5, 0));
+  g.add(box(0.1, 0.06, 0.1, glow(0xffa040), 0, 0.99, 0));
+  return g;
+}
+
+/** A length of the collector arm's great pipe, beside its catwalk. */
+function collectorPipe() {
+  const g = new THREE.Group();
+  const black = mat(0x24211f);
+  g.add(cylX(0.55, 0.55, 2.0, black, -1.0, 0.75, 0, 10));
+  for (const x of [-0.8, 0.8]) g.add(cylX(0.6, 0.6, 0.18, mat(0x3a3430), x - 0.09, 0.75, 0, 10));
+  g.add(box(1.8, 0.06, 0.08, glow(0xff8030), 0, 1.15, 0.45));
+  return g;
+}
+
 function mustafarConsole() {
   const g = new THREE.Group();
   g.add(box(1.8, 0.9, 0.8, mat(0x2c2826), 0, 0.45, 0));
@@ -686,6 +743,355 @@ function robePile(color) {
     g.add(b);
     return g;
   };
+}
+
+// --- Mustafar ------------------------------------------------------------------
+// The Klegger Corp. mining facility of Episode III, laid out after the LEGO
+// Skywalker Saga "Duel on Mustafar" level: a dark deck of ribbed girder pylons
+// under a red sky, grey corridors framed by yellow / black hazard pillars, a
+// control room lined with orange wall screens and chrome cyan consoles, a
+// gold riveted blast door, railed black-grate balconies over the lava falls,
+// the cyan-lit collector tower, and on the river the hazard-striped collector
+// droid and Obi-Wan's grey repulsor disc.
+
+const MU = {
+  black: 0x24211f,
+  dark: 0x3a3430,
+  panel: 0x5e5b58,
+  panelLight: 0x7a7773,
+  grate: 0x2c2a28,
+  yellow: 0xe0a21c,
+  stripeBlack: 0x1c1a18,
+  chrome: 0xb8bcc2,
+  chromeDark: 0x7d8288,
+  gold: 0x9c7a3c,
+  goldDark: 0x6a5228,
+  red: 0x8a2a1e,
+  cyan: 0x5fe0ff,
+  orange: 0xff9a30,
+};
+
+/** Convex polygon clipped by the half-plane a*x + b*y <= c. */
+function clipPoly(poly, a, b, c) {
+  const out = [];
+  for (let i = 0; i < poly.length; i++) {
+    const P = poly[i];
+    const Q = poly[(i + 1) % poly.length];
+    const dp = a * P[0] + b * P[1] - c;
+    const dq = a * Q[0] + b * Q[1] - c;
+    if (dp <= 0) out.push(P);
+    if (dp * dq < 0) {
+      const t = dp / (dp - dq);
+      out.push([P[0] + (Q[0] - P[0]) * t, P[1] + (Q[1] - P[1]) * t]);
+    }
+  }
+  return out;
+}
+
+/**
+ * A panel with diagonal yellow / black hazard stripes on its +Z face
+ * (w × h, `d` deep, centred at the origin; stripes rise to the right).
+ */
+function hazardPanel(w, h, d = 0.08, { pitch = 0.22, yellow = MU.yellow } = {}) {
+  const g = new THREE.Group();
+  g.add(box(w, h, d, mat(MU.stripeBlack, { tex: 'none' }), 0, 0, 0));
+  const ym = mat(yellow, { tex: 'none' });
+  const rect = [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]];
+  for (let a = -h - w; a < w + h; a += pitch * 2) {
+    // band: a <= x - y <= a + pitch
+    let poly = clipPoly(rect, -1, 1, -a);
+    poly = clipPoly(poly, 1, -1, a + pitch);
+    if (poly.length < 3) continue;
+    const shape = new THREE.Shape(poly.map(([x, y]) => new THREE.Vector2(x, y)));
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(shape), ym);
+    m.position.z = d / 2 + 0.004;
+    g.add(m);
+  }
+  return g;
+}
+
+/** Tall hazard-striped pillar (door jambs, corridor corners). */
+function hazardPillar(h = 2.8, w = 0.34) {
+  const g = new THREE.Group();
+  g.add(box(w, h, w, mat(MU.dark), 0, h / 2, 0));
+  const f = hazardPanel(w * 0.8, h * 0.92, 0.04);
+  f.position.set(0, h / 2, w / 2);
+  g.add(f);
+  const s = hazardPanel(w * 0.8, h * 0.92, 0.04);
+  s.rotation.y = Math.PI / 2;
+  s.position.set(w / 2, h / 2, 0);
+  g.add(s);
+  g.add(box(w + 0.06, 0.12, w + 0.06, mat(MU.black), 0, h + 0.06, 0));
+  return g;
+}
+
+/** Deck girder pylon: a tapered four-legged frame with ribs and warm lamps. */
+function pylon(rng) {
+  const g = new THREE.Group();
+  const H = 5.2 + rng.range(-0.6, 0.8);
+  const dark = mat(MU.black);
+  const mid = mat(MU.dark);
+  g.add(box(1.6, 0.3, 1.6, mid, 0, 0.15, 0));
+  for (const [x, z] of [[-0.55, -0.55], [0.55, -0.55], [-0.55, 0.55], [0.55, 0.55]]) {
+    const leg = box(0.18, H, 0.18, dark, x * 0.7, H / 2, z * 0.7);
+    leg.rotation.z = -x * 0.09;
+    leg.rotation.x = z * 0.09;
+    g.add(leg);
+  }
+  for (const y of [1.3, 2.5, 3.7]) {
+    const k = 1 - y / H;
+    g.add(box(1.0 * k + 0.5, 0.14, 1.0 * k + 0.5, mid, 0, y, 0)); // rib ring
+  }
+  g.add(box(0.7, 0.5, 0.7, dark, 0, H + 0.2, 0)); // head
+  g.add(cyl(0.12, 0.12, 0.6, mid, 0, H + 0.7, 0, 6));
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    g.add(box(0.14, 0.1, 0.14, glow(MU.orange), Math.cos(a) * 0.4, H + 0.3, Math.sin(a) * 0.4));
+  }
+  return g;
+}
+
+/** Interior wall: grey panels with a hazard-striped band and an orange slit. */
+function hazardWall(rng) {
+  const g = new THREE.Group();
+  g.add(box(2.0, 2.8, 0.5, mat(MU.panel), 0, 1.4, 0));
+  g.add(box(2.04, 0.2, 0.56, mat(MU.dark), 0, 2.86, 0));
+  g.add(box(2.04, 0.16, 0.56, mat(MU.black), 0, 0.08, 0));
+  for (const x of [-0.66, 0.66]) g.add(box(0.08, 2.5, 0.54, mat(MU.panelLight), x, 1.45, 0));
+  const hp = hazardPanel(0.5, 1.9, 0.06);
+  hp.position.set(rng.chance(0.5) ? -0.33 : 0.33, 1.45, 0.26);
+  g.add(hp);
+  g.add(box(0.9, 0.06, 0.06, glow(MU.orange), 0.3, 2.3, 0.26));
+  g.add(box(0.5, 0.3, 0.04, mat(MU.dark), 0.3, 1.1, 0.26));
+  g.add(box(0.06, 0.06, 0.05, glow(0xff3a2a), 0.5, 1.1, 0.28));
+  return g;
+}
+
+/** Control room wall: orange display screens and red status lights. */
+function screenWall(rng) {
+  const g = new THREE.Group();
+  g.add(box(2.0, 2.8, 0.5, mat(MU.panel), 0, 1.4, 0));
+  g.add(box(2.04, 0.2, 0.56, mat(MU.dark), 0, 2.86, 0));
+  g.add(box(2.04, 0.16, 0.56, mat(MU.black), 0, 0.08, 0));
+  for (const x of [-0.5, 0.5]) {
+    g.add(box(0.8, 0.62, 0.08, mat(MU.black, { tex: 'none' }), x, 1.75, 0.26));
+    g.add(box(0.68, 0.5, 0.03, glow(rng.chance(0.3) ? 0xffc050 : 0xff7a28), x, 1.75, 0.3));
+    for (let i = 0; i < 3; i++) g.add(box(0.1, 0.03, 0.02, glow(0x2a1808), x - 0.2 + i * 0.2, 1.62 + i * 0.1, 0.32)); // readouts
+  }
+  for (const x of [-0.8, -0.6, 0.6, 0.8]) g.add(box(0.08, 0.08, 0.05, glow(0xff3020), x, 2.4, 0.27));
+  g.add(box(1.7, 0.05, 0.05, glow(0xffffff), 0, 2.62, 0.26)); // light bar
+  g.add(box(1.2, 0.5, 0.1, mat(MU.dark), 0, 0.6, 0.25)); // skirting conduit
+  return g;
+}
+
+/** Chrome console desk with cyan screens (control room). */
+function consoleDesk(rng) {
+  const g = new THREE.Group();
+  g.add(box(1.8, 0.78, 0.7, mat(MU.chrome, { tex: 'none' }), 0, 0.39, 0));
+  g.add(box(1.84, 0.12, 0.74, mat(MU.chromeDark, { tex: 'none' }), 0, 0.84, 0));
+  const top = box(1.7, 0.1, 0.5, mat(MU.black, { tex: 'none' }), 0, 0.95, 0.06);
+  top.rotation.x = -0.45;
+  g.add(top);
+  for (const x of [-0.52, 0, 0.52]) {
+    const s = box(0.42, 0.04, 0.3, glow(rng.chance(0.25) ? 0xffa040 : MU.cyan), x, 1.0, 0.08);
+    s.rotation.x = -0.45;
+    g.add(s);
+  }
+  g.add(box(1.5, 0.06, 0.06, glow(MU.cyan), 0, 0.14, 0.37)); // underglow
+  g.add(box(0.3, 0.5, 0.3, mat(MU.chromeDark, { tex: 'none' }), -0.6, 0.25, 0.55)); // stool
+  return g;
+}
+
+/** The shield generator: a vented cylinder machine with a blue light core. */
+function shieldCore() {
+  const g = new THREE.Group();
+  g.add(cyl(0.9, 1.0, 0.3, mat(MU.dark), 0, 0.15, 0, 10));
+  g.add(cyl(0.7, 0.75, 2.2, mat(MU.panel), 0, 1.4, 0, 10));
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    const v = box(0.12, 1.4, 0.3, mat(MU.yellow, { tex: 'none' }), Math.cos(a) * 0.73, 1.4, Math.sin(a) * 0.73);
+    v.rotation.y = -a;
+    g.add(v);
+    for (const y of [0.9, 1.4, 1.9]) {
+      const sl = box(0.14, 0.08, 0.2, mat(MU.stripeBlack, { tex: 'none' }), Math.cos(a) * 0.74, y, Math.sin(a) * 0.74);
+      sl.rotation.y = -a;
+      g.add(sl);
+    }
+  }
+  g.add(cyl(0.8, 0.7, 0.3, mat(MU.dark), 0, 2.65, 0, 10));
+  g.add(cyl(0.3, 0.3, 0.5, glow(0x8fd8ff), 0, 3.0, 0, 8)); // the blue core
+  g.add(cyl(0.45, 0.45, 0.06, mat(MU.chrome, { tex: 'none' }), 0, 3.28, 0, 10));
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2;
+    g.add(cyl(0.05, 0.05, 0.9, mat(MU.black), Math.cos(a) * 1.1, 0.45, Math.sin(a) * 1.1, 5)); // feed pipes
+  }
+  return g;
+}
+
+/** Catwalk railing: dark posts, two rails, a yellow-black toe board. */
+function catRail() {
+  const g = new THREE.Group();
+  const dark = mat(MU.black);
+  for (const x of [-0.9, 0, 0.9]) g.add(box(0.08, 1.0, 0.08, dark, x, 0.5, 0));
+  for (const y of [0.55, 0.98]) g.add(box(2.0, 0.06, 0.06, mat(MU.dark), 0, y, 0));
+  const toe = hazardPanel(2.0, 0.16, 0.05, { pitch: 0.12 });
+  toe.position.set(0, 0.1, 0.03);
+  g.add(toe);
+  return g;
+}
+
+/** A lava fall: a black rock cliff with a glowing sheet of lava pouring down it. */
+function lavaFall(rng) {
+  const g = new THREE.Group();
+  const rock = mat(0x2a2422, { tex: 'rock' });
+  // a cliff of black rock either side of the channel the lava pours down
+  for (let i = 0; i < 7; i++) {
+    const side = i % 2 ? 1 : -1;
+    const m = new THREE.Mesh(lumpy(new THREE.DodecahedronGeometry(1.0, 1), rng, 0.3), rock);
+    m.position.set(side * rng.range(0.9, 1.5), 0.7 + i * 0.75, rng.range(-0.7, 0.1));
+    m.scale.set(rng.range(1.0, 1.6), rng.range(0.8, 1.3), rng.range(0.9, 1.3));
+    g.add(m);
+  }
+  const cap = new THREE.Mesh(lumpy(new THREE.DodecahedronGeometry(1.2, 1), rng, 0.3), rock);
+  cap.position.set(0, 5.6, -0.4);
+  cap.scale.set(1.9, 0.8, 1.2);
+  g.add(cap);
+  g.add(box(0.7, 5.0, 0.1, glow(0xe8661c), 0, 2.5, 0.6)); // the sheet, in the cleft
+  g.add(box(0.32, 4.8, 0.12, glow(0xffc050), 0, 2.5, 0.62)); // its bright core
+  for (let y = 0.6; y < 5; y += 0.9) g.add(box(0.5, 0.06, 0.14, glow(0xffe8a0), rng.range(-0.1, 0.1), y, 0.63)); // falling ripples
+  g.add(cyl(1.4, 1.1, 0.12, glow(0xd85a18), 0, 0.06, 1.0, 10)); // the glowing pool it feeds
+  return g;
+}
+
+/** The collector tower at the end of the arm: tall, dark red-black, cyan lights, rungs. */
+function armTower() {
+  const g = new THREE.Group();
+  const body = mat(0x3a2622);
+  const dark = mat(MU.black);
+  g.add(box(2.2, 0.5, 2.2, dark, 0, 0.25, 0));
+  g.add(box(1.5, 6.5, 1.5, body, 0, 3.6, 0));
+  for (const y of [1.6, 3.4, 5.2]) g.add(box(1.7, 0.18, 1.7, dark, 0, y, 0));
+  g.add(box(1.9, 0.6, 1.9, dark, 0, 7.1, 0));
+  g.add(cone(0.6, 1.0, body, 0, 7.9, 0, 6));
+  for (let y = 1.0; y < 6.4; y += 0.36) g.add(box(0.5, 0.05, 0.08, mat(MU.chromeDark, { tex: 'none' }), 0.0, y, 0.8)); // rungs on the camera face
+  for (const y of [1.2, 2.6, 4.0, 5.4]) {
+    g.add(box(0.14, 0.14, 0.08, glow(MU.cyan), 0.5, y, 0.78));
+    g.add(box(0.08, 0.14, 0.14, glow(MU.cyan), 0.78, y, -0.4));
+  }
+  g.add(box(0.08, 0.3, 0.3, glow(0xff3020), 0.78, 6.6, 0.3));
+  for (let i = 0; i < 3; i++) g.add(cyl(0.03, 0.03, 3.6, dark, -0.9 + i * 0.3, 5.3, -0.9, 4)); // cables up to the arm's head
+  return g;
+}
+
+/** A hanging cable with a hook (the collector arm). */
+function cable() {
+  const g = new THREE.Group();
+  g.add(cyl(0.025, 0.025, 4.4, mat(0x4a4642), 0, 2.2, 0, 5));
+  g.add(cyl(0.07, 0.05, 0.2, mat(MU.chromeDark, { tex: 'none' }), 0, 0.5, 0, 6));
+  g.add(box(0.05, 0.3, 0.14, mat(MU.chromeDark, { tex: 'none' }), 0, 0.28, 0));
+  return g;
+}
+
+/** Separatist council chair: a high-backed dark seat. */
+function confChair() {
+  const g = new THREE.Group();
+  g.add(box(0.5, 0.1, 0.5, mat(0x2a2522), 0, 0.42, 0));
+  g.add(box(0.46, 0.7, 0.1, mat(0x332c28), -0.2, 0.8, 0));
+  g.add(cyl(0.08, 0.16, 0.4, mat(MU.dark), 0, 0.2, 0, 6));
+  g.add(box(0.5, 0.04, 0.06, mat(MU.gold, { tex: 'none' }), -0.2, 1.1, 0));
+  return g;
+}
+
+/** The facility's gold blast door, riveted, with a round emblem. */
+function blastDoor() {
+  const g = new THREE.Group();
+  g.add(box(4.0, 3.2, 0.5, mat(MU.goldDark), 0, 1.6, 0));
+  g.add(box(3.4, 2.7, 0.1, mat(MU.gold), 0, 1.5, 0.28));
+  for (const x of [-1.5, -0.9, 0.9, 1.5]) for (const y of [0.5, 1.1, 1.7, 2.3]) g.add(cyl(0.07, 0.07, 0.06, mat(MU.goldDark, { tex: 'none' }), x, y, 0.35, 6));
+  g.add(box(1.4, 2.5, 0.06, mat(0x3a3330, { tex: 'none' }), 0, 1.5, 0.34)); // the seam panel
+  g.add(cyl(0.3, 0.3, 0.06, mat(MU.gold, { tex: 'none' }), 0, 1.6, 0.4, 10)); // emblem
+  g.add(box(2.1, 0.25, 0.6, mat(MU.dark), 0, 3.3, 0));
+  const hp = hazardPanel(0.3, 2.9, 0.06);
+  hp.position.set(-2.1, 1.6, 0.26);
+  g.add(hp);
+  const hp2 = hazardPanel(0.3, 2.9, 0.06);
+  hp2.position.set(2.1, 1.6, 0.26);
+  g.add(hp2);
+  return g;
+}
+
+/** Doorway between sets: two hazard pillars and a dark lintel over the gap. */
+function doorFrame() {
+  const g = new THREE.Group();
+  for (const z of [-1.25, 1.25]) {
+    const p = hazardPillar(2.9, 0.36);
+    p.position.z = z;
+    g.add(p);
+  }
+  g.add(box(0.4, 0.36, 2.9, mat(MU.dark), 0, 3.08, 0));
+  g.add(box(0.3, 0.06, 2.0, glow(MU.orange), 0.0, 2.9, 0));
+  return g;
+}
+
+/** Black volcanic rock (the bank). */
+function lavaRock(rng) {
+  const g = new THREE.Group();
+  g.add(rockMesh(rng, rng.range(0.3, 0.55), rng.pick([0x2a2422, 0x332a26, 0x201c1a])));
+  if (rng.chance(0.5)) g.add(box(0.12, 0.05, 0.12, glow(0xff6a20), rng.range(-0.3, 0.3), 0.05, rng.range(0.2, 0.5))); // an ember in its shadow
+  return g;
+}
+
+/**
+ * The DLC-13 collector droid Anakin rides on the river: a wide flat work
+ * deck of black grating edged with hazard stripes, a yellow crane arm with a
+ * claw, intake vents at the front. Faces +X.
+ */
+export function buildCollectorDroid() {
+  const g = new THREE.Group();
+  const grate = mat(MU.grate);
+  const dark = mat(MU.dark);
+  g.add(box(2.6, 0.5, 2.0, dark, 0, 0.25, 0)); // hull
+  g.add(box(2.5, 0.08, 1.9, grate, 0, 0.54, 0)); // deck
+  for (let i = -1.1; i <= 1.1; i += 0.22) g.add(box(0.03, 0.02, 1.9, mat(MU.black), i, 0.59, 0)); // grating
+  for (const [x, z, w, d] of [[0, 1.02, 2.6, 0.14], [0, -1.02, 2.6, 0.14], [1.32, 0, 0.14, 2.0], [-1.32, 0, 0.14, 2.0]]) {
+    const hp = hazardPanel(Math.max(w, d), 0.14, 0.06, { pitch: 0.14 });
+    hp.rotation.x = -Math.PI / 2;
+    if (d > w) hp.rotation.z = Math.PI / 2;
+    hp.position.set(x, 0.59, z);
+    g.add(hp);
+  }
+  // intake vents and tank at the front
+  g.add(cyl(0.3, 0.3, 1.6, dark, 1.0, 0.75, 0, 8).rotateX(Math.PI / 2));
+  for (const z of [-0.5, 0, 0.5]) g.add(box(0.2, 0.25, 0.3, mat(MU.panel), 1.25, 0.6, z));
+  g.add(box(0.3, 0.1, 0.1, glow(0xff6a20), 1.35, 0.3, 0));
+  // crane: pedestal, yellow boom reaching over the lava, claw
+  g.add(cyl(0.22, 0.26, 0.5, dark, -0.8, 0.8, -0.5, 8));
+  const boom = box(1.8, 0.14, 0.14, mat(MU.yellow, { tex: 'none' }), -0.2, 1.4, -0.5);
+  boom.rotation.z = 0.35;
+  g.add(boom);
+  g.add(box(0.1, 0.5, 0.1, mat(MU.black), 0.5, 1.4, -0.5)); // claw hanger
+  for (const z of [-0.6, -0.4]) g.add(box(0.14, 0.3, 0.06, mat(MU.chromeDark, { tex: 'none' }), 0.5, 1.05, z));
+  g.add(box(0.18, 0.14, 0.18, glow(0xff3020), -0.8, 1.1, -0.5));
+  // repulsor glow under the hull
+  g.add(box(2.4, 0.06, 1.8, glow(0xff8a30), 0, 0.03, 0));
+  return g;
+}
+
+/** Obi-Wan's repulsor platform: a grey disc with a cyan ring and a control stalk. */
+export function buildRepulsorPlatform() {
+  const g = new THREE.Group();
+  g.add(cyl(1.1, 0.9, 0.35, mat(MU.panel), 0, 0.2, 0, 14));
+  g.add(cyl(1.0, 1.0, 0.08, mat(MU.chromeDark, { tex: 'none' }), 0, 0.41, 0, 14));
+  g.add(cyl(0.85, 0.85, 0.04, mat(MU.dark), 0, 0.46, 0, 14)); // deck
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.05, 6, 20), glow(MU.cyan));
+  ring.rotation.x = Math.PI / 2;
+  ring.position.y = 0.42;
+  g.add(ring);
+  g.add(cyl(0.06, 0.08, 0.9, mat(MU.chromeDark, { tex: 'none' }), -0.6, 0.85, 0, 6)); // stalk
+  g.add(box(0.3, 0.14, 0.2, mat(MU.black, { tex: 'none' }), -0.6, 1.3, 0));
+  g.add(box(0.2, 0.04, 0.12, glow(MU.cyan), -0.6, 1.38, 0));
+  g.add(cyl(0.6, 0.5, 0.08, glow(0x7fe8ff, { transparent: true, opacity: 0.5 }), 0, 0.02, 0, 12)); // repulsor field
+  return g;
 }
 
 // --- Separatist -------------------------------------------------------------
@@ -1013,6 +1419,146 @@ function slumBlock(rng) {
   return g;
 }
 
+/**
+ * An underworld shop block, after the Coruscant concept art: two storeys of
+ * grimy panelled walls, a lit storefront with a door and a ribbed shutter,
+ * bay windows with louvres upstairs, a belt course with lights under it,
+ * neon (a vertical blade on the corner, tubes over the shop, a round sign),
+ * conduits and pipes on the walls, and the roof crowded with a round tech
+ * housing, vents, fans and aerials. Front +Z, side +X (the faces the camera
+ * sees). About 5 × 3.6 tiles.
+ */
+function underBlock(rng) {
+  const g = new THREE.Group();
+  const W = 5.0, D = 3.6, H1 = 1.9, H2 = 1.7;
+  const wall = mat(rng.pick([0x6e6862, 0x66646a, 0x72685c]), { tex: 'rock' });
+  const wallD = mat(0x58534e, { tex: 'rock' });
+  const trim = mat(0x2a2827);
+  const steel = mat(0x5c5f63);
+  const rust = mat(RUST);
+  const warm = glow(rng.pick([0xffc27a, 0xffd49a, 0xffb56a]));
+  const n1 = rng.pick(NEON), n2 = rng.pick(NEON.filter((c) => c !== n1)), n3 = rng.pick(NEON);
+  const fz = D / 2, fx = W / 2; // front and side faces
+  // the shell: a plinth, two storeys, the belt course between them
+  g.add(box(W + 0.1, 0.12, D + 0.1, trim, 0, 0.06, 0));
+  g.add(box(W, H1, D, wall, 0, H1 / 2 + 0.12, 0));
+  g.add(box(W - 0.2, H2, D - 0.2, wallD, 0, 0.12 + H1 + H2 / 2 + 0.18, 0));
+  const belt = 0.12 + H1;
+  g.add(box(W + 0.24, 0.18, D + 0.24, trim, 0, belt + 0.09, 0));
+  g.add(box(W + 0.3, 0.05, D + 0.3, steel, 0, belt + 0.2, 0));
+  for (let x = -fx + 0.4; x < fx; x += 0.75) g.add(box(0.16, 0.03, 0.06, warm, x, belt - 0.02, fz + 0.1)); // lights under the ledge
+  // wall panels: slightly proud plates with seams, bolts at the corners
+  for (let x = -fx + 0.45; x < fx - 0.2; x += 0.9) {
+    for (const y of [0.55, 1.45]) {
+      if (x > -1.6 && x < 0.9 && y < 1.6) continue; // the storefront
+      g.add(box(0.82, 0.8, 0.04, wallD, x, y + 0.12, fz + 0.02));
+      for (const [bx, by] of [[-0.36, -0.34], [0.36, -0.34], [-0.36, 0.34], [0.36, 0.34]]) g.add(box(0.035, 0.035, 0.03, steel, x + bx, y + 0.12 + by, fz + 0.05));
+    }
+  }
+  for (let z = -fz + 0.45; z < fz - 0.2; z += 0.9) for (const y of [0.55, 1.45]) if (z < 0.3) g.add(box(0.04, 0.8, 0.82, wallD, fx + 0.02, y + 0.12, z));
+  // the storefront: a deep frame, a warm window with mullions, the door
+  g.add(box(2.7, 1.6, 0.14, trim, -0.35, 0.95, fz + 0.06));
+  g.add(box(1.5, 1.0, 0.04, warm, -0.85, 1.05, fz + 0.1));
+  for (const x of [-1.35, -0.85, -0.35]) g.add(box(0.04, 1.0, 0.06, trim, x, 1.05, fz + 0.12));
+  g.add(box(1.5, 0.05, 0.06, trim, -0.85, 1.25, fz + 0.12));
+  g.add(box(1.6, 0.24, 0.3, steel, -0.85, 0.42, fz + 0.2)); // the counter
+  for (let i = 0; i < 4; i++) g.add(box(0.14, 0.12, 0.14, mat(rng.pick([0xd8a040, 0x9a4b38, 0x5f8a4a, 0x4f6fa0])), -1.4 + i * 0.36, 0.6, fz + 0.22));
+  g.add(box(0.6, 1.3, 0.05, mat(0x1d1b1a), 0.45, 0.8, fz + 0.1)); // door
+  g.add(box(0.66, 0.04, 0.06, glow(n2), 0.45, 1.48, fz + 0.12)); // light over it
+  g.add(box(0.04, 1.3, 0.06, glow(n2), 0.12, 0.8, fz + 0.12));
+  // a ribbed roll-up shutter, half down, on the right
+  g.add(box(1.1, 1.45, 0.08, trim, 1.65, 0.87, fz + 0.05));
+  for (let y = 0.5; y < 1.55; y += 0.09) g.add(box(1.0, 0.05, 0.05, mat(0x6a6660), 1.65, y, fz + 0.1));
+  g.add(box(1.0, 0.36, 0.04, glow(0xffb070), 1.65, 0.3, fz + 0.06)); // light spilling under it
+  // a striped awning over the shop
+  const aw = box(2.9, 0.05, 0.75, cloth(rng.pick([0x8a3a32, 0x2f6a7a, 0x8a6a2a])), -0.35, 1.86, fz + 0.38);
+  aw.rotation.x = 0.32;
+  g.add(aw);
+  for (let x = -1.7; x <= 1.0; x += 0.45) {
+    const st = box(0.2, 0.052, 0.76, cloth(0xd8d0c0), x, 1.865, fz + 0.38);
+    st.rotation.x = 0.32;
+    g.add(st);
+  }
+  // neon tubes over the awning: a framed sign with glyph bars
+  g.add(box(1.9, 0.42, 0.08, mat(0x141213), -0.35, 2.32 + 0.05, fz + 0.16));
+  for (const [w, h, x, y] of [[1.8, 0.03, 0, 0.19], [1.8, 0.03, 0, -0.19], [0.03, 0.38, -0.9, 0], [0.03, 0.38, 0.9, 0]]) g.add(box(w, h, 0.03, glow(n1), -0.35 + x, 2.37 + y, fz + 0.21));
+  for (let i = 0; i < 6; i++) {
+    const gw = rng.range(0.08, 0.2);
+    g.add(box(gw, rng.range(0.12, 0.24), 0.03, glow(n1), -1.05 + i * 0.28, 2.37, fz + 0.21));
+  }
+  // upstairs: four window bays between pilasters, louvres, amber light
+  const y2 = belt + 0.2 + H2 / 2;
+  for (let i = 0; i < 4; i++) {
+    const x = -fx + 0.75 + i * 1.17;
+    g.add(box(0.85, 0.75, 0.06, trim, x, y2 + 0.05, fz - 0.06));
+    g.add(box(0.72, 0.6, 0.03, rng.chance(0.75) ? warm : mat(0x16181b), x, y2 + 0.05, fz - 0.03));
+    for (let k = 0; k < 4; k++) g.add(box(0.74, 0.03, 0.05, trim, x, y2 - 0.18 + k * 0.15, fz));
+    g.add(box(0.9, 0.06, 0.16, steel, x, y2 - 0.37, fz + 0.02)); // sill
+  }
+  for (let i = 0; i < 5; i++) g.add(box(0.14, H2, 0.1, wall, -fx + 0.17 + i * 1.17, y2 + 0.05, fz)); // pilasters
+  // a balcony with a railing on the side, a ladder down
+  g.add(box(0.7, 0.06, 1.6, steel, fx + 0.35, belt + 0.25, -0.5));
+  for (let z = -1.25; z <= 0.3; z += 0.25) g.add(box(0.03, 0.45, 0.03, steel, fx + 0.68, belt + 0.5, z));
+  g.add(box(0.03, 0.03, 1.6, steel, fx + 0.68, belt + 0.72, -0.5));
+  g.add(box(0.06, belt + 0.25, 0.06, steel, fx + 0.6, (belt + 0.25) / 2, 0.25));
+  for (let y = 0.3; y < belt; y += 0.25) g.add(box(0.03, 0.03, 0.3, steel, fx + 0.6, y, 0.1));
+  for (const z of [-1.0, 0.0]) {
+    g.add(box(0.04, 0.6, 0.55, warm, fx - 0.08, y2 + 0.05, z));
+    g.add(box(0.06, 0.66, 0.06, trim, fx - 0.06, y2 + 0.05, z + 0.3));
+  }
+  // conduits and pipes up the walls
+  for (const x of [-fx + 0.08, fx - 0.3]) g.add(cyl(0.05, 0.05, H1 + H2 + 0.3, rust, x, (H1 + H2) / 2 + 0.2, fz + 0.1, 6));
+  g.add(cylX(0.04, 0.04, W - 0.2, steel, -fx + 0.1, belt + 0.38, fz + 0.06, 6));
+  g.add(cyl(0.07, 0.07, H1 + H2, steel, fx + 0.1, (H1 + H2) / 2 + 0.2, 1.4, 6));
+  for (let y = 0.4; y < H1 + H2; y += 0.6) g.add(box(0.12, 0.04, 0.12, trim, fx + 0.1, y, 1.4));
+  g.add(box(0.5, 0.36, 0.3, mat(0x606468), fx + 0.17, 1.1, 0.9)); // a junction box
+  g.add(box(0.08, 0.08, 0.02, glow(0x9fff9f), fx + 0.33, 1.2, 0.95));
+  // the vertical neon blade on the corner, framed, with glyphs
+  const by = 1.2 + H1 * 0.5;
+  g.add(box(0.12, 1.9, 0.5, mat(0x161415), fx + 0.12, by + 0.4, fz - 0.35));
+  for (const [h, y] of [[0.03, 0.92], [0.03, -0.92]]) g.add(box(0.03, h, 0.46, glow(n3), fx + 0.19, by + 0.4 + y, fz - 0.35));
+  for (const z of [-0.22, 0.22]) g.add(box(0.03, 1.84, 0.03, glow(n3), fx + 0.19, by + 0.4, fz - 0.35 + z));
+  for (let i = 0; i < 5; i++) g.add(box(0.03, rng.range(0.14, 0.24), rng.range(0.14, 0.3), glow(n3), fx + 0.19, by + 1.1 - i * 0.34, fz - 0.35));
+  g.add(cylX(0.03, 0.03, 0.25, steel, fx, by + 1.3, fz - 0.35, 5)); // brackets
+  g.add(cylX(0.03, 0.03, 0.25, steel, fx, by - 0.5, fz - 0.35, 5));
+  // a round sign on the side wall
+  const rs = cylX(0.32, 0.32, 0.06, mat(0x161415), fx + 0.02, 1.05, -1.05, 16);
+  g.add(rs);
+  g.add(rot(new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.025, 6, 20), glow(n2)), 0, Math.PI / 2, 0));
+  g.children[g.children.length - 1].position.set(fx + 0.1, 1.05, -1.05);
+  g.add(box(0.03, 0.2, 0.14, glow(n2), fx + 0.1, 1.05, -1.05));
+  // the roof: a parapet, pipes, the round tech housing, vents, fans, aerials
+  const roof = belt + 0.2 + H2 + 0.18;
+  g.add(box(W - 0.1, 0.22, 0.12, trim, 0, roof + 0.11, fz - 0.16));
+  g.add(box(0.12, 0.22, D - 0.3, trim, fx - 0.16, roof + 0.11, 0));
+  g.add(box(W - 0.3, 0.06, D - 0.4, mat(0x2e2c2b), 0, roof + 0.03, 0));
+  g.add(cylX(0.1, 0.1, W - 0.8, rust, -fx + 0.4, roof + 0.25, -0.9, 8));
+  g.add(cylX(0.07, 0.07, W - 1.2, steel, -fx + 0.6, roof + 0.2, -0.55, 8));
+  g.add(cyl(0.07, 0.07, 0.5, rust, -fx + 0.5, roof + 0.2, -0.9, 6));
+  // the round housing (stacked rings, a lit band, a cap)
+  const hx = -1.3, hz = -0.3;
+  g.add(cyl(0.85, 0.95, 0.35, steel, hx, roof + 0.2, hz, 20));
+  g.add(cyl(0.8, 0.8, 0.12, glow(0xfff0c8), hx, roof + 0.43, hz, 20));
+  g.add(cyl(0.9, 0.8, 0.12, trim, hx, roof + 0.55, hz, 20));
+  g.add(cyl(0.45, 0.85, 0.28, steel, hx, roof + 0.75, hz, 20));
+  g.add(cyl(0.12, 0.12, 0.3, trim, hx, roof + 1.0, hz, 8));
+  // vents and fan units with grilles
+  for (const [x, z] of [[0.6, 0.6], [1.5, -0.6]]) {
+    g.add(box(0.7, 0.32, 0.7, mat(0x5a5d61), x, roof + 0.2, z));
+    g.add(cyl(0.26, 0.26, 0.03, mat(0x1d1f21), x, roof + 0.37, z, 14));
+    for (let k = -2; k <= 2; k++) g.add(box(0.5, 0.02, 0.03, steel, x, roof + 0.385, z + k * 0.09));
+  }
+  g.add(box(0.4, 0.5, 0.35, rust, 0.4, roof + 0.3, -1.0));
+  // aerials with warning lights
+  for (const [x, z, h] of [[1.9, 1.1, 1.2], [-0.2, -1.2, 0.8]]) {
+    g.add(cyl(0.02, 0.03, h, steel, x, roof + h / 2, z, 5));
+    g.add(sph(0.05, glow(0xff4030), x, roof + h, z, 6, 4));
+  }
+  // grime: dark streaks below the windows and the ledge
+  for (let i = 0; i < 6; i++) g.add(box(rng.range(0.05, 0.12), rng.range(0.3, 0.7), 0.01, mat(0x2b2826, { tex: 'none' }), rng.range(-fx + 0.3, fx - 0.3), belt - 0.35, fz + 0.03));
+  return g;
+}
+
 function stall(rng) {
   // a street vendor's stall: counter, crates of goods, a patched awning
   const g = new THREE.Group();
@@ -1061,39 +1607,82 @@ function trashPile(rng) {
   return g;
 }
 
+/** A flat polygon (points [x, z], nose +X) extruded `thick` upwards from `y`, with chamfered edges. */
+function slab(points, thick, material, y = 0, bevel = 0.03) {
+  const shape = new THREE.Shape(points.map(([x, z]) => new THREE.Vector2(x, -z)));
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: thick, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 1 });
+  geo.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(geo, material);
+  m.position.y = y;
+  return m;
+}
+
+/** A side profile (points [x, y]) extruded `w` wide across the centre line. */
+function ridge(points, w, material) {
+  const shape = new THREE.Shape(points.map(([x, y]) => new THREE.Vector2(x, y)));
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: w, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 1 });
+  geo.translate(0, 0, -w / 2);
+  return new THREE.Mesh(geo, material);
+}
+
 export function buildFighter() {
-  // Anakin's starfighter (an original design): a short cylindrical cockpit
-  // pod with a split, forward-reaching nose, two engine booms carried on
-  // swept pylons, a tail fin between them; ivory with deep blue trim.
-  // Nose +X.
+  // Anakin's Delta-7B Jedi starfighter (The Clone Wars): a flat arrowhead
+  // wedge, weathered grey with his yellow paint — the nose, the spine and
+  // broad patches over the wings — a raised spine ridge running back to the
+  // dark oval canopy, R2-D2's dome set into the hull in front of it on the
+  // port side, a laser pod under each wing and the Republic crest on the
+  // port wing. Nose +X, port −Z.
   const g = new THREE.Group();
-  const W = mat(0xe4e0d4);
-  const B = mat(0x2c4f8f);
-  const D = mat(0x34373c);
-  const cy = 0.75;
-  g.add(cylX(0.42, 0.36, 1.8, W, -0.9, cy, 0, 10)); // pod
-  g.add(scl(sph(0.4, mat(0x1d2a38, { transparent: true, opacity: 0.85 }), 0.35, cy + 0.22, 0, 10, 6), 1.6, 0.7, 0.85)); // canopy
-  for (const z of [-0.2, 0.2]) {
-    const prong = cylX(0.1, 0.03, 1.5, W, 0.85, cy - 0.12, z, 6); // split nose
-    g.add(prong);
-    g.add(cylX(0.11, 0.11, 0.25, B, 0.85, cy - 0.12, z, 6));
-  }
-  g.add(cylX(0.44, 0.44, 0.12, B, -0.4, cy, 0, 10)); // trim ring
+  const grey = mat(0x8a8e92);
+  const greyD = mat(0x5e6266);
+  const yel = mat(0xd9a81c);
+  const yelD = mat(0xb08416);
+  const dark = mat(0x2e3135);
+  const glass = mat(0x15191f, { tex: 'none' });
+  const H = 0.42; // hull underside above the ground
+  // the main wedge, with the stepped side wings below its edges
+  g.add(slab([[2.7, 0], [-1.7, 1.55], [-2.05, 1.25], [-1.95, 0], [-2.05, -1.25], [-1.7, -1.55]], 0.14, grey, H));
+  g.add(slab([[2.45, 0], [-1.6, 1.05], [-1.9, 0.55], [-1.9, -0.55], [-1.6, -1.05]], 0.12, greyD, H + 0.15)); // upper deck
+  // yellow paint: the nose, a stripe down each flank, patches on the wings
+  g.add(slab([[2.75, 0], [1.75, 0.38], [1.55, 0], [1.75, -0.38]], 0.02, yel, H + 0.15, 0.01));
   for (const z of [-1, 1]) {
-    const pylon = box(1.1, 0.08, 0.9, W, -0.6, cy, 0.55 * z);
-    pylon.rotation.y = 0.5 * z;
-    g.add(pylon);
-    g.add(cylX(0.22, 0.2, 2.2, W, -1.7, cy, 1.05 * z, 10)); // boom
-    g.add(cylX(0.23, 0.23, 0.25, B, -0.2, cy, 1.05 * z, 10));
-    g.add(cylX(0.18, 0.24, 0.3, D, -2.0, cy, 1.05 * z, 10)); // nozzle
-    g.add(rot(cyl(0.16, 0.16, 0.03, glow(0x9fd0ff), -2.02, cy, 1.05 * z, 10), 0, 0, Math.PI / 2)); // engine glow
+    g.add(slab([[1.2, 0.55 * z], [-1.55, 1.5 * z], [-1.75, 1.32 * z], [0.95, 0.42 * z]].map(([x, zz]) => [x, zz]), 0.02, yel, H + 0.15, 0.01));
+    g.add(slab([[-0.2, 0.7 * z], [-1.1, 1.2 * z], [-1.5, 0.92 * z], [-0.6, 0.62 * z]], 0.02, yelD, H + 0.28, 0.01));
   }
-  const fin = box(0.8, 0.7, 0.06, B, -1.2, cy + 0.45, 0);
-  fin.rotation.z = -0.35;
-  g.add(fin);
-  for (const [x, z] of [[0.6, 0], [-1.4, 0.9], [-1.4, -0.9]]) g.add(cyl(0.04, 0.04, cy - 0.15, D, x, (cy - 0.15) / 2, z, 4)); // landing legs
+  // the spine ridge: yellow, rising from the nose to the cockpit
+  const spine = ridge([[2.4, H + 0.27], [-0.35, H + 0.27], [-0.35, H + 0.55], [0.4, H + 0.5]], 0.2, yel);
+  g.add(spine);
+  // cockpit: a raised collar and the dark oval canopy at the back
+  g.add(slab([[-0.3, 0], [-0.75, 0.42], [-1.75, 0.42], [-1.95, 0], [-1.75, -0.42], [-0.75, -0.42]], 0.16, yelD, H + 0.27));
+  g.add(scl(sph(0.5, glass, -1.15, H + 0.45, 0, 14, 8), 1.45, 0.48, 0.72));
+  g.add(scl(sph(0.5, mat(0x2a3440, { tex: 'none' }), -1.0, H + 0.5, 0, 12, 6), 0.9, 0.36, 0.5)); // a glint of the canopy's front pane
+  // R2-D2 in his socket, port side, ahead of the canopy
+  const r2 = new THREE.Group();
+  r2.add(cyl(0.2, 0.2, 0.08, mat(0xdfe4ea, { tex: 'none' }), 0, 0, 0, 12));
+  const dome = sph(0.2, mat(0xe2e7ee, { tex: 'none' }), 0, 0.04, 0, 12, 6);
+  dome.scale.y = 0.8;
+  r2.add(dome);
+  r2.add(box(0.1, 0.08, 0.05, mat(0x2a5aa8, { tex: 'none' }), 0.12, 0.12, 0)); // blue panel
+  r2.add(sph(0.035, mat(0x101418, { tex: 'none' }), 0.17, 0.15, -0.05, 6, 4)); // eye
+  r2.position.set(0.0, H + 0.4, -0.42);
+  g.add(r2);
+  // laser pods under the wings
+  for (const z of [-1, 1]) {
+    g.add(cylX(0.13, 0.15, 1.5, dark, -1.2, H - 0.06, 0.95 * z, 10));
+    g.add(cylX(0.06, 0.03, 0.45, greyD, 0.3, H - 0.06, 0.95 * z, 6)); // cannon
+    g.add(cylX(0.16, 0.16, 0.12, yelD, -1.25, H - 0.06, 0.95 * z, 10));
+  }
+  // engine glow at the stern
+  for (const z of [-0.32, 0.32]) g.add(box(0.04, 0.12, 0.34, glow(0xa8d8ff), -1.98, H + 0.18, z));
+  // the Republic crest on the port wing
+  const c = crest(0.42, mat(0xe8e2d0), true);
+  c.position.set(-0.75, H + 0.32, -1.0);
+  g.add(c);
+  // landing legs
+  for (const [x, z] of [[1.3, 0], [-1.3, 0.85], [-1.3, -0.85]]) g.add(cyl(0.04, 0.05, H, dark, x, H / 2, z, 5));
   return g;
 }
+
 
 export const PROPS = {
   rock: { build: rock, variants: 8, block: 0.5 },
@@ -1122,9 +1711,26 @@ export const PROPS = {
   mustafarWall: { build: mustafarWall, variants: 1, angles: [0, Math.PI / 2], rectByAngle: [[2, 1], [1, 2]], light: [255, 140, 60, 40, 1.7] },
   confTable: { build: confTable, variants: 1, angles: [0], rect: [5, 1], light: [255, 150, 80, 60, 1] },
   sepBody: { build: sepBody, variants: 4, block: 0, flat: true },
+  droidPlatform: { build: droidPlatform, variants: 1, flat: true, block: 0 },
+  collectorRaft: { build: collectorRaft, variants: 1, flat: true, block: 0 },
+  catwalkRail: { build: catwalkRail, variants: 1, angles: [0, Math.PI / 2], block: 0 },
+  collectorPipe: { build: collectorPipe, variants: 1, angles: [0, Math.PI / 2], block: 0, light: [255, 120, 40, 40, 1.2] },
   mustafarConsole: { build: mustafarConsole, variants: 1, angles: [0, Math.PI / 2], rectByAngle: [[2, 1], [1, 2]], light: [120, 200, 255, 40, 1.1] },
   cloakPile: { build: robePile(0x5a3426), variants: 1, block: 0, flat: true },
   robePile: { build: robePile(0x6a4a32), variants: 1, block: 0, flat: true },
+  pylon: { build: pylon, variants: 3, block: 0.9, light: [255, 150, 70, 90, 5] },
+  hazardWall: { build: hazardWall, variants: 2, angles: [0, Math.PI / 2], rectByAngle: [[2, 1], [1, 2]], light: [255, 150, 70, 36, 1.8] },
+  screenWall: { build: screenWall, variants: 3, angles: [0, Math.PI / 2], rectByAngle: [[2, 1], [1, 2]], light: [255, 140, 60, 50, 1.8] },
+  consoleDesk: { build: consoleDesk, variants: 2, angles: [0, Math.PI / 2], rectByAngle: [[2, 1], [1, 2]], light: [110, 220, 255, 46, 1] },
+  shieldCore: { build: shieldCore, variants: 1, rect: [2, 2], light: [140, 210, 255, 90, 3] },
+  catRail: { build: catRail, variants: 1, angles: [0, Math.PI / 2], rectByAngle: [[2, 1], [1, 2]] },
+  lavaFall: { build: lavaFall, variants: 3, rect: [3, 2], light: [255, 130, 40, 170, 2.5] },
+  armTower: { build: armTower, variants: 1, rect: [3, 3], light: [90, 210, 255, 70, 4] },
+  cable: { build: cable, variants: 1, block: 0 },
+  confChair: { build: confChair, variants: 1, angles: [0, Math.PI / 2, Math.PI, -Math.PI / 2], block: 0.3 },
+  blastDoor: { build: blastDoor, variants: 1, angles: [0, Math.PI / 2], rectByAngle: [[4, 1], [1, 4]], light: [255, 190, 110, 60, 1.6] },
+  doorFrame: { build: doorFrame, variants: 1, angles: [0, Math.PI / 2], block: 0, light: [255, 150, 70, 50, 2.6] },
+  lavaRock: { build: lavaRock, variants: 4, block: 0.5 },
   cantina: { build: cantina, variants: 1, angles: [0], rect: [8, 8], light: [255, 170, 100, 90, 1] },
   sepCrate: { build: sepCrate, variants: 4, block: 0.6, light: [255, 90, 50, 22, 0.6] },
   sepBarrier: { build: sepBarrier, variants: 1, angles: [0, Math.PI / 2], rectByAngle: [[1, 2], [2, 1]] },
@@ -1141,6 +1747,7 @@ export const PROPS = {
   plazaLamp: { build: plazaLamp, variants: 1, block: 0.3, light: [255, 238, 205, 170, 2.6] },
   turbolift: { build: turbolift, variants: 1, block: 0, light: [150, 230, 255, 70, 2] },
   slumBlock: { build: slumBlock, variants: 4, rect: [4, 4], light: [255, 190, 120, 40, 1.5] },
+  underBlock: { build: underBlock, variants: 3, rect: [5, 4], light: [255, 190, 120, 60, 1.6] },
   stall: { build: stall, variants: 4, block: 0.6, light: [255, 170, 110, 46, 1.6] },
   neonSign: { build: neonSign, variants: 4, block: 0.3 },
   ventStack: { build: ventStack, variants: 2, block: 0.5 },

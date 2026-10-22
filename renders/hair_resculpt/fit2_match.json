@@ -1,0 +1,34 @@
+{
+ "label": "fit2",
+ "mean_iou": 0.7195,
+ "views": {
+  "front": {
+   "iou": 0.713,
+   "ours_only": 8050,
+   "ref_only": 3934,
+   "lowest_ours": 1.606,
+   "lowest_ref": 1.622
+  },
+  "right": {
+   "iou": 0.687,
+   "ours_only": 8444,
+   "ref_only": 9604,
+   "lowest_ours": 1.605,
+   "lowest_ref": 1.65
+  },
+  "left": {
+   "iou": 0.656,
+   "ours_only": 10712,
+   "ref_only": 8301,
+   "lowest_ours": 1.605,
+   "lowest_ref": 1.651
+  },
+  "back": {
+   "iou": 0.822,
+   "ours_only": 6173,
+   "ref_only": 5399,
+   "lowest_ours": 1.605,
+   "lowest_ref": 1.603
+  }
+ }
+}

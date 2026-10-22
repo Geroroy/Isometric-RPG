@@ -1,8 +1,19 @@
+import { BIOME } from '../world/worldgen.js';
 // Units: the player (Anakin), Separatist droids and Republic allies.
 import { dist, angleDiff, rand, clamp } from '../core/math.js';
 import { dirIndex } from '../core/iso.js';
 import { SKILLS, isActive } from './skills.js';
 import { StarCards } from './perks.js';
+
+// a step up bigger than HOP_MIN m (onto a table's top: worldgen.js surfaces) is a hop over HOP_T s, HOP_UP m
+// over the straight line at its middle (the gallery's and the high ground's steps, 0.2–0.35 m, stay slides)
+const HOP_MIN = 0.5;
+const HOP_T = 0.3;
+const HOP_UP = 0.35;
+
+// Signature Move timing (frames of gfx/models/anakinAnims.js 'sig'): bolts are turned through
+// the spin until the hit; swing sounds on the wind-up and the pass behind the back
+export const SIG = { spin: [8, 13], hit: 11, sounds: [[4, 'light'], [8, 'heavy']] };
 
 export const UNIT_DEFS = {
   player: { name: '아나킨 스카이워커', sprite: 'anakin', team: 'rep', radius: 0.35 },
@@ -16,6 +27,9 @@ export const UNIT_DEFS = {
   dooku: { name: '두쿠 백작', sprite: 'dooku', team: 'cis', hp: 900, radius: 0.36, knockRes: 0.35 },
   obiwan3: { name: '오비완 케노비', sprite: 'obiwan3', team: 'cis', hp: 950, radius: 0.36, knockRes: 0.4 },
   padme: { name: '파드메 아미달라', sprite: 'padme', team: 'rep', hp: 100, radius: 0.3, knockRes: 0 },
+  collector: { name: '채굴 드로이드', sprite: 'collector', team: 'civ', hp: 100, radius: 1.2, knockRes: 0 },
+  platform: { name: '반중력 플랫폼', sprite: 'platform', team: 'civ', hp: 100, radius: 1.0, knockRes: 0 },
+  armRaft: { name: '집하기 팔', sprite: 'armRaft', team: 'civ', hp: 100, radius: 1.5, knockRes: 0 }, // the fallen arm adrift on the river (duelMustafar.js)
   citizen: { name: '시민', sprite: 'citWorker', team: 'civ', hp: 100, radius: 0.28, knockRes: 0.6 },
   fighter: { name: '제다이 스타파이터', sprite: 'fighter', team: 'rep', hp: 100, radius: 1.2, knockRes: 0 },
   master: { name: '마스터 세렌 베일', sprite: 'master', team: 'rep', hp: 100, radius: 0.32, knockRes: 0 },
@@ -58,13 +72,14 @@ export class Unit {
     this.sleep = false;
   }
 
-  /** The unit's frames: the Remaster (2×) set once it is baked, else the original. */
   get sprites() {
-    const a = this.game.assets;
-    return (a.hdChars && a.spritesHD[this.sprite]) || a.sprites[this.sprite];
+    return this.game.assets.sprites[this.sprite];
   }
 
   setAnim(name, speed = 1, restart = false) {
+    const set = this.sprites;
+    if (set && !set.anims[name]) name = 'idle'; // a sprite without that animation stands
+    this.animFreeze = false;
     if (this.anim !== name || restart) {
       this.anim = name;
       this.animT = 0;
@@ -178,17 +193,28 @@ export class Unit {
       c.acc += c.dps * dt;
       this.z += (0.9 - this.z) * Math.min(1, dt * 4);
       if (c.acc >= 4 || c.t <= 0) {
-        this.game.damage(c.src, this, c.acc, { type: 'force', noKnock: true, quiet: c.t > 0 });
+        this.game.damage(c.src, this, c.acc, { type: 'force', feel: 'choke', noKnock: true, quiet: c.t > 0 });
         c.acc = 0;
       }
       if (c.t <= 0 || this.dead) this.choke = null;
-    } else if (this.z > 0 && !this.airborne) {
-      this.z = Math.max(0, this.z - dt * 6);
+    } else if (!this.airborne) {
+      // settle onto the ground under him: down to it, or up onto a raised top (worldgen.js surfaces) in a step
+      const ground = this.game.world.groundAt ? this.game.world.groundAt(this.x, this.y) : 0;
+      // a big step up (onto a table's top) is a hop: an arc over HOP_T, not a slide (down, he drops: as before)
+      if (!this.hop && ground - this.z > HOP_MIN) this.hop = { z0: this.z, t: 0 };
+      if (this.hop) {
+        const h = this.hop;
+        h.t += dt;
+        const k = Math.min(1, h.t / HOP_T);
+        this.z = h.z0 + (ground - h.z0) * k + Math.sin(Math.PI * k) * HOP_UP; // (towards the ground under him now: he may turn back mid-hop)
+        if (k >= 1) (this.z = ground), (this.hop = null);
+      } else if (this.z > ground) this.z = Math.max(ground, this.z - dt * 6);
+      else if (this.z < ground) this.z = Math.min(ground, this.z + dt * 8);
     }
   }
 
   baseUpdate(dt) {
-    this.animT += dt;
+    if (!this.animFreeze) this.animT += dt; // (a scene may hold one frame as a pose)
     if (this.flash > 0) this.flash -= dt;
     if (this.stun > 0) this.stun -= dt;
     this.physics(dt);
@@ -277,12 +303,12 @@ export class Soldier extends Unit {
     this.thinkT -= dt;
     if (this.thinkT <= 0) {
       this.thinkT = 0.3;
-      if (!this.target || this.target.dead || dist(this.x, this.y, this.target.x, this.target.y) > 18) this.target = this.pickTarget();
+      if (!this.target || this.target.dead || this.target.remove || dist(this.x, this.y, this.target.x, this.target.y) > 18) this.target = this.pickTarget(); // a companion that expired or flew off is gone too
       if (this.elite && !this.announced && this.target && this.target.kind === 'player') {
         this.announced = true;
         g.chatter('elite', 0.9);
       }
-      if (this.lastAttacker && !this.lastAttacker.dead && this.lastAttacker.team !== this.team && !this.target) this.target = this.lastAttacker;
+      if (this.lastAttacker && !this.lastAttacker.dead && !this.lastAttacker.remove && this.lastAttacker.team !== this.team && !this.target) this.target = this.lastAttacker;
     }
     // Owner leash for summons.
     if (this.owner) {
@@ -420,7 +446,7 @@ export class R2Unit extends Unit {
       let best = null;
       let bd = 4.5;
       for (const u of g.activeUnits) {
-        if (u.dead || u.team === this.team) continue;
+        if (u.dead || u.team === this.team || u.untargetable) continue; // not the city's people
         const d = dist(this.x, this.y, u.x, u.y);
         if (d < bd) {
           bd = d;
@@ -492,8 +518,8 @@ export class Player extends Unit {
   /** Ignite or switch off the blade (X key, or automatically around fights). */
   setSaber(on) {
     if (on === this.saberLit || this.dead || this.saberOut) return;
-    if (!on && this.game.duel) return; // the duel is all blade
     this.saberLit = on;
+    if (on) this.saberIgnite = true; // the renderer plays the ignition (spark, growth, bloom)
     this.game.audio.play(on ? 'ignite' : 'retract');
     this.setAnim(this.anim.replace(/Off$/, ''), this.animSpeed);
   }
@@ -558,6 +584,9 @@ export class Player extends Unit {
   moveSpeed() {
     let s = 4.6 * (1 + (this.buffs.speed ? this.buffs.speed.move : 0));
     if (this.buffs.barrier) s *= 0.75;
+    const bio = this.game.world.biomeAt(this.x, this.y);
+    if (bio === BIOME.CITY_MUD) s *= 0.72; // the undercity's mud
+    else if (bio === BIOME.CITY_SWAMP) s *= 0.6; // its standing water
     return s;
   }
   deflectChance() {
@@ -615,7 +644,7 @@ export class Player extends Unit {
   // --- actions -----------------------------------------------------------------
   /** Walking (click-to-move or joystick steering) can be interrupted freely. */
   get moving() {
-    return !!this.action && (this.action.type === 'move' || this.action.type === 'steer');
+    return !!this.action && (this.action.type === 'move' || this.action.type === 'steer' || this.action.type === 'talk'); // walking to an NPC can be called off too
   }
 
   get busy() {
@@ -634,6 +663,7 @@ export class Player extends Unit {
       return;
     }
     if (this.action && this.action.type === 'move') {
+      if (dist(x, y, this.action.x, this.action.y) > 0.5) this.action.best = this.action.stall = undefined; // (a held button re-sends the same goal)
       this.action.x = x;
       this.action.y = y;
       return;
@@ -719,9 +749,11 @@ export class Player extends Unit {
       return false;
     }
     if (s.target === 'enemy' && !target) return false;
+    const prev = this.action;
     this.setSaber(true);
     this.action = null;
     const ok = s.cast(this.game, this, l, tx, ty, target);
+    if (!ok && !this.action) this.action = prev; // nothing happened: carry on with what he was doing
     if (ok) {
       if (!free) this.force -= cost;
       const cd = (s.cd ? s.cd(l) : 0) * (1 - this.cards.value('focus') / 100);
@@ -732,6 +764,7 @@ export class Player extends Unit {
 
   update(dt) {
     this.baseUpdate(dt);
+    this.sigEvents();
     if (this.scripted) return; // a cutscene is moving him
     if (this.dead) {
       this.deathT += dt;
@@ -756,18 +789,10 @@ export class Player extends Unit {
       return;
     }
     const duel = g.duel;
-    if (duel && duel.lock) return this.setAnim('lock');
     if (duel && duel.locked && !this.action) {
       if (!(this.anim === 'hurt' && !this.animInfo().done)) this.setAnim('idle');
       return;
     }
-    // duel guard: hold still behind the blade (a parry flourish plays through)
-    if (this.blocking && !this.busy) {
-      this.action = null;
-      if (this.anim !== 'parry' || this.animInfo().done) this.setAnim('block');
-      return;
-    }
-
     const act = this.action;
     if (!act) {
       if (this.saberOut) {
@@ -780,8 +805,15 @@ export class Player extends Unit {
     switch (act.type) {
       case 'move': {
         const sp = this.moveSpeed();
-        const arrived = this.navigate(act.x, act.y, sp, dt, 0.15);
+        let arrived = this.navigate(act.x, act.y, sp, dt, 0.15);
         this.setAnim('run', sp / 4.6);
+        // a goal someone stands on (a stall's customer is anchored): the separation pushes back every
+        // step, so stop once a short while near it brings no progress instead of jittering in place
+        const d = dist(this.x, this.y, act.x, act.y);
+        if (d < (act.best ?? Infinity) - 0.05) {
+          act.best = d;
+          act.stall = 0;
+        } else if (d < 1.2 && (act.stall = (act.stall || 0) + dt) > 0.3) arrived = true;
         if (arrived) {
           this.action = null;
           this.setAnim('idle');
@@ -836,8 +868,16 @@ export class Player extends Unit {
           if (info.hit && !act.fired) {
             act.fired = true;
             const reach = this.radius + (t ? t.radius : 0) + 1.5;
-            if (t && !t.dead && dist(this.x, this.y, t.x, t.y) <= reach) {
-              g.damage(this, t, this.weaponDamage() * hit.mult, { type: 'saber', stun: hit.stun, pressure: hit.pressure });
+            if (hit.sweep) {
+              // a flat cut: everyone in the half circle in front, within the blade's reach
+              for (const u of g.hostilesInRadius(this, this.x, this.y, hit.sweep)) {
+                const a = Math.atan2(u.y - this.y, u.x - this.x);
+                if (Math.abs(angleDiff(a, this.facing)) > Math.PI / 2) continue;
+                g.damage(this, u, this.weaponDamage() * hit.mult, { type: 'saber', feel: hit.feel, stun: hit.stun, pressure: hit.pressure });
+                if (hit.onHit) hit.onHit(u);
+              }
+            } else if (t && !t.dead && dist(this.x, this.y, t.x, t.y) <= reach) {
+              g.damage(this, t, this.weaponDamage() * hit.mult, { type: 'saber', heavy: hit.anim === 'attack3', stun: hit.stun, pressure: hit.pressure });
               if (hit.onHit) hit.onHit(t);
             }
           }
@@ -882,7 +922,7 @@ export class Player extends Unit {
         this.animT = (k * (a.frames - 0.01)) / a.fps;
         this.animSpeed = 1;
         if (k >= 1) {
-          this.z = 0;
+          this.z = this.game.world.groundAt ? this.game.world.groundAt(this.x, this.y) : 0; // (onto a table top)
           this.airborne = false;
           this.action = null;
           act.onLand && act.onLand();
@@ -931,6 +971,33 @@ export class Player extends Unit {
   canDeflect() {
     if (this.dead || this.saberOut || !this.saberLit || this.stun > 0 || this.choke) return false;
     return true;
+  }
+
+  /** In the signature's spin, before its cut lands: the turning blade walls off bolts. */
+  spinning() {
+    const f = this.sigFrame();
+    return f >= SIG.spin[0] && f < SIG.hit;
+  }
+
+  /** The Signature Move's current frame (-1 when not in it). */
+  sigFrame() {
+    if (this.anim !== 'sig' || !this.sprites.anims.sig) return -1;
+    return Math.floor(this.animInfo().raw);
+  }
+
+  /** The Signature Move's timed effects: the wind-up and the whoosh behind the back. */
+  sigEvents() {
+    const f = this.sigFrame();
+    if (f < 0) {
+      this.sigDone = -1;
+      return;
+    }
+    for (const [at, sound] of SIG.sounds) {
+      if (f >= at && this.sigDone < at) {
+        this.sigDone = at;
+        this.game.audio.play('swing', this, { heavy: sound === 'heavy', rate: sound === 'heavy' ? 0.9 : 1.3 });
+      }
+    }
   }
 }
 

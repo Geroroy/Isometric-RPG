@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
-"""Cut the game's background music out of an Anakin theme compilation.
+"""Cut the game's background music.
 
-    python3 tools/cut_music.py "Anakin Skywalker Theme Complete.m4a" ["Obi-Wan VS Anakin Battle.m4a"]
+    python3 tools/cut_music.py "Anakin Skywalker Theme Complete.m4a"
+    python3 tools/cut_music.py --mustafar PATH HEROES AVO
+    (both together: the compilation first, then --mustafar and its four files)
 
-The source is the fan compilation "Anakin Skywalker Theme Complete"
+The first source is the fan compilation "Anakin Skywalker Theme Complete"
 (Rey Skywalker, 22:13, with chapter markers). Each clip below is a span of it
 assigned to a game situation; clips get short fades and are encoded as Opus
 (.webm, plays in every current browser) into public/audio/music/. The script then
 writes the "music" section of public/audio/index.json, keeping everything
 else there. Needs ffmpeg.
 
-The optional second source is the fan edit "Star Wars Revenge of the Sith -
-Obi-Wan VS Anakin Battle {Full Version HD}" (Turakius, 9:06): the film's
-Mustafar duel audio (dialogue, effects and Battle of the Heroes). It supplies
-the Movie Duel's opening scene, fight music and high-ground ending (MUSTAFAR).
+--mustafar takes the Movie Duel's scene-by-scene score, music only (no film
+dialogue): PATH = "A Path I Can't Follow" (The Ghost Critic), HEROES = John
+Williams "Battle of the Heroes", AVO = John Williams "Anakin vs. Obi-Wan".
+Which span plays over which
+scene, and why, is the cue sheet in docs/MUSTAFAR_SCORE.md; the clip ends
+here carry a 1.5-2 s tail past their scene so the crossfade into the next one
+has music under it. The duel's clock (src/game/duelMustafar.js SCORE) maps
+its film time onto these clips.
 
 Edit CLIPS / MUSTAFAR to re-assign situations or move the cut points.
 """
@@ -51,28 +57,53 @@ CLIPS = {
     'dark': [('dark', 682, 695, 'Vader: Shards of the Past')],
 }
 
-# from the second source; times found by analysing it (see the README)
+# the Movie Duel's score (docs/MUSTAFAR_SCORE.md): situation -> [(file, source, start s, end s, title)]
 MUSTAFAR = {
-    'mustafarIntro': [('mustafar_intro', 0, 71.5, 'Mustafar — "You will try."')],
-    'mustafar': [('mustafar', 70.5, 462, 'Battle of the Heroes (Mustafar)')],
-    'mustafarEnd': [('mustafar_end', 462, 546.5, 'Mustafar — The High Ground')],
+    'mustafarIntro': [('mustafar_path', 'path', 0, 72.9, "A Path I Can't Follow — the landing platform")],
+    'mustafarA': [('mustafar_avo', 'avo', 0, 233, 'Anakin vs. Obi-Wan — the duel')],
+    'mustafarB': [('mustafar_heroes_arm', 'heroes', 0, 82, 'Battle of the Heroes — the collector arm')],
+    'mustafarC': [('mustafar_heroes_failed', 'heroes', 184, 224.6, 'Battle of the Heroes — "I have failed you"')],
+    'mustafarD': [('mustafar_heroes_river', 'heroes', 150, 190, 'Battle of the Heroes — the lava river')],
+    'mustafarEnd': [('mustafar_path_end', 'path', 40.5, 125, "A Path I Can't Follow — the high ground")],
 }
+MUSTAFAR_SOURCES = ['path', 'heroes', 'avo']
+RETIRED = ['mustafar']  # the old voiced film edit's situation (its files are deleted)
 
 
 def main():
-    if len(sys.argv) < 2:
+    args = sys.argv[1:]
+    if not args:
         sys.exit(__doc__)
-    sources = [(sys.argv[1], CLIPS)] + ([(sys.argv[2], MUSTAFAR)] if len(sys.argv) > 2 else [])
+    sources = []  # (table, {source name: file})
+    if '--mustafar' in args:
+        i = args.index('--mustafar')
+        files = args[i + 1:i + 4]
+        if len(files) != 3:
+            sys.exit('--mustafar needs three files: PATH HEROES AVO')
+        sources.append((MUSTAFAR, dict(zip(MUSTAFAR_SOURCES, files))))
+        args = args[:i] + args[i + 4:]
+    if args:
+        sources.insert(0, (CLIPS, None, args[0]))
     root = Path(__file__).resolve().parent.parent
     out = root / 'public/audio/music'
     out.mkdir(parents=True, exist_ok=True)
     index = root / 'public/audio/index.json'
     data = json.loads(index.read_text()) if index.exists() else {}
     manifest = data.get('music', {})
-    for src, table in sources:
+    for entry in sources:
+        table = entry[0]
+        if table is MUSTAFAR:
+            for k in RETIRED:
+                manifest.pop(k, None)
         for situation, clips in table.items():
             manifest[situation] = []
-            for name, a, b, title in clips:
+            for clip in clips:
+                if table is MUSTAFAR:
+                    name, which, a, b, title = clip
+                    src = entry[1][which]
+                else:
+                    name, a, b, title = clip
+                    src = entry[2]
                 dur = round(b - a, 3)
                 dst = out / f'{name}.webm'
                 fade = f'afade=t=in:d={FADE_IN},afade=t=out:st={dur - FADE_OUT}:d={FADE_OUT}'

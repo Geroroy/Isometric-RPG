@@ -2,6 +2,7 @@
 import { World } from '../world/worldgen.js';
 import { PathFinder } from '../world/pathfind.js';
 import { Effects } from '../gfx/fx.js';
+import { HITFEEL, feelFor, applyFeel } from './hitfeel.js';
 import { Player, Soldier, R2Unit } from './units.js';
 import { SKILLS } from './skills.js';
 import { dist, rand, chance, angleDiff } from '../core/math.js';
@@ -9,10 +10,11 @@ import { LINES } from './lines.js';
 import { NPC, NPC_DEFS, TALK_RANGE } from './npc.js';
 import { QuestLog } from './quests.js';
 import { BASE_POS, Arena, ARENA, MustafarArena, CityHub, CITY } from '../world/worldgen.js';
-import { Citizen, CROWD } from './citizens.js';
-import { Duel } from './duel.js';
+import { CityLife } from './cityLife.js';
 import { Cinema } from './cinema.js';
-import { MustafarDuel } from './duelMustafar.js';
+import { MapWalk } from './mapWalk.js';
+import { MapDuel } from './mapDuel.js';
+import { MustafarStage } from '../world/mustafarStage.js';
 
 const ELITE_NAMES = ['OOM 지휘관 드로이드', '전투 드로이드 분대장', '전술 사령 드로이드 T-7', '돌격 지휘 드로이드'];
 
@@ -23,7 +25,9 @@ export class Game {
     this.mode = mode;
     // the campaign has two places: the city hub (where it starts) and
     // Christophsis, reached by starfighter; each keeps its own state
-    this.world = mode !== 'duel' ? new CityHub(9) : duel === 'mustafar' ? new MustafarArena(66) : new Arena(77);
+    // (the Movie Duels: Geonosis; Mustafar — the rebuild's zones, docs/MUSTAFAR_REBUILD.md — and, kept for reference
+    // but off the menu, the old Mustafar maps: the film's facility and the painted lava fortress)
+    this.world = mode !== 'duel' ? new CityHub(9) : duel === 'mustafar' || duel === 'mustafarBlank' ? new MustafarStage(66) : duel === 'mustafarLegacy' || duel === 'mustafarArt' ? new MustafarArena(66) : new Arena(77);
     this.pathfinder = new PathFinder(this.world);
     this.fx = new Effects();
     this.units = [];
@@ -37,6 +41,7 @@ export class Game {
     this.hover = null;
     this.listeners = {};
     this.cheats = { god: false, force: false, cd: false }; // debug panel toggles
+    this.bubbles = []; // speech bubbles over people { u, text, t, life }
     this.region = '';
     this.exploreT = 0;
     this.campT = 0;
@@ -47,18 +52,11 @@ export class Game {
     this.audio.listener = this.player;
     this.quests = new QuestLog(this);
     this.talkingTo = null;
-    if (mode === 'duel' && duel === 'mustafar') {
-      this.duel = new MustafarDuel(this);
-      this.updateActive();
-      return;
-    }
     if (mode === 'duel') {
-      // Obi-Wan lies wounded by the wall, as in the film
-      const ob = new NPC(this, 'obiwan', ARENA.x - 4.5, ARENA.y - 4.5);
-      ob.restAnim = 'down';
-      ob.npc = false;
-      this.units.push(ob);
-      this.duel = new Duel(this);
+      // the lightsaber duel is its own system (src/combat, arena.html — docs/COMBAT.md; the old duel rules and their scenes
+      // were removed, git history keeps them): on the rebuilt Mustafar map it joins the map (game/mapDuel.js, on the map's
+      // tiles); the blank map and the old maps are walked without a fight (game/mapWalk.js)
+      this.duel = duel === 'mustafar' ? new MapDuel(this) : new MapWalk(this);
       this.updateActive();
       return;
     }
@@ -71,6 +69,7 @@ export class Game {
     this.savePlace('christophsis');
     this.loadPlace(hub);
     this.populateHub();
+    this.player.saberLit = false; // a Jedi walks the city with his blade off
     this.updateActive();
   }
 
@@ -95,7 +94,7 @@ export class Game {
 
   /** The Christophsis world (camps, the droid war), wherever Anakin is. */
   get front() {
-    return this.places.christophsis ? this.places.christophsis.world : this.world;
+    return this.places && this.places.christophsis ? this.places.christophsis.world : this.world;
   }
 
   populateChristophsis() {
@@ -106,10 +105,13 @@ export class Game {
     // the small camp just west of the base is the tutorial target
     const tut = this.world.camps.filter((c) => !c.boss).sort((a, b) => dist(a.x, a.y, BASE_POS.x, BASE_POS.y) - dist(b.x, b.y, BASE_POS.x, BASE_POS.y))[0];
     if (tut) tut.tutorial = true;
-    // Anakin's starfighter, parked inside the base
-    const f = this.pathfinder.nearestFree(Math.floor(BASE_POS.x + 9), Math.floor(BASE_POS.y - 8), 6);
-    this.units.push(this.makeFighter(f[0] + 0.5, f[1] + 0.5, Math.PI * 0.75));
-    this.world.landing = { x: f[0] - 1.5, y: f[1] + 2 };
+    // Anakin's starfighter: its own clear spot east of the plaza, away from
+    // the gunship's pad, nose towards the east gate; he steps out on a free
+    // tile beside it
+    const f = this.pathfinder.nearestFree(Math.floor(BASE_POS.x + 9), Math.floor(BASE_POS.y + 1), 4);
+    this.units.push(this.makeFighter(f[0] + 0.5, f[1] + 0.5, -Math.PI / 4));
+    const land = this.pathfinder.nearestFree(f[0] - 3, f[1] + 2, 4);
+    this.world.landing = { x: land[0] + 0.5, y: land[1] + 0.5 };
   }
 
   populateHub() {
@@ -117,28 +119,9 @@ export class Game {
     for (const [id, d] of Object.entries(NPC_DEFS)) if (d.hub) this.units.push(new NPC(this, id, d.hub[0], d.hub[1]));
     this.units.push(this.makeFighter(CITY.pad.x, CITY.pad.y, Math.PI));
     w.landing = { x: CITY.pad.x - 3.5, y: CITY.pad.y + 1.5 };
-    for (const c of CROWD) {
-      for (let k = 0; k < c.n; k++) {
-        const pts = w.walk[c.level];
-        const at = pts[Math.floor(Math.random() * pts.length)];
-        const u = new Citizen(this, c, at.x + (Math.random() - 0.5), at.y + (Math.random() - 0.5));
-        this.units.push(u);
-      }
-    }
-    // vendors at the market stalls, drifters against the walls
-    for (const u of this.units) {
-      if (!(u instanceof Citizen) || !u.anchored) continue;
-      const kind = u.def2.stay ? 'stall' : 'slumBlock';
-      const props = w.props.filter((pr) => pr.type === kind);
-      const pr = props[Math.floor(Math.random() * props.length)];
-      if (!pr) continue;
-      const spot = kind === 'stall' ? { x: pr.x - 0.2, y: pr.y - 0.9 } : { x: pr.x + (Math.random() - 0.5) * 3, y: pr.y + 2.4 };
-      const f = this.pathfinder.nearestFree(Math.floor(spot.x), Math.floor(spot.y), 3);
-      if (!f) continue;
-      u.x = f[0] + 0.5;
-      u.y = f[1] + 0.5;
-      u.facing = kind === 'stall' ? -Math.PI / 2 : Math.PI / 2 + (Math.random() - 0.5);
-    }
+    // the city's people, each on a routine (data/cityLife.json), and its random events
+    this.life = new CityLife(this);
+    this.life.populate();
   }
 
   /** Turbolifts between the hub's levels: step in, fade, step out. */
@@ -156,10 +139,17 @@ export class Game {
         this.emit('fade', 0, 0.45);
         this.emit('place', this.lift.label);
         this.lift.t = 1.2; // a moment before the doors work again
+        this.liftStepOff = true;
       } else if (this.lift.t <= 0) this.lift = null;
       return;
     }
     if (!lifts || this.cinema || p.dead) return;
+    // one steps off at the other end beside its doors: they work again only once one has walked away
+    // (standing still there must not ride straight back)
+    if (this.liftStepOff) {
+      if (lifts.every((L) => dist(p.x, p.y, L.x, L.y) > 1.2)) this.liftStepOff = false;
+      else return;
+    }
     for (const L of lifts) {
       if (dist(p.x, p.y, L.x, L.y) > 0.75) continue;
       this.lift = { to: L.to, label: L.label.includes('언더') ? '코러산트 · 언더시티' : '코러산트 · 상층 플라자', t: 0.35 };
@@ -182,7 +172,7 @@ export class Game {
     this.say(dest === 'hub' ? 'flyHub' : 'flyFront');
     let to = null;
     const cues = [
-      { t: 0, do: (c) => ((from.scripted = from.airborne = true), p.setAnim('run'), c.move(p, from.x, from.y, 0.7)), cam: { follow: from, x: from.x, y: from.y, dur: 0.6 } },
+      { t: 0, do: (c) => ((from.scripted = from.airborne = true), (p.scripted = true), p.setAnim('run'), c.move(p, from.x, from.y, 0.7)), cam: { follow: from, x: from.x, y: from.y, dur: 0.6 } },
       { t: 0.7, do: () => ((p.hidden = true), this.audio.play('ignite')) },
       { t: 1.0, do: (c) => (c.onFrame = (k) => (from.z = Math.min(6, from.z + k * 2.6))) },
       { t: 2.2, do: (c) => c.move(from, from.x + Math.cos(from.facing) * 9, from.y + Math.sin(from.facing) * 9, 1.4) },
@@ -213,6 +203,7 @@ export class Game {
     ];
     return new Cinema(this, { length: 6.0, cues }).play().then(() => {
       p.hidden = false;
+      p.scripted = false;
       if (to) {
         to.z = 0;
         to.scripted = to.airborne = false;
@@ -245,6 +236,10 @@ export class Game {
     p.action = null;
     this.region = '';
     this.hover = null;
+    if (id === 'hub' && p.saberLit) {
+      p.saberLit = false; // back in the city: the blade goes off
+      p.setAnim('idle');
+    }
     this.updateActive();
     this.emit('world', id);
     if (id === 'christophsis' && !this.arrivedFront) {
@@ -278,7 +273,13 @@ export class Game {
     this.talkingTo = null;
   }
 
-  on(evt, fn) {
+  /** A speech bubble over someone (replaces the one they had). */
+  bubble(u, text, dur = 3) {
+    this.bubbles = this.bubbles.filter((b) => b.u !== u);
+    this.bubbles.push({ u, text, t: 0, life: dur });
+  }
+
+    on(evt, fn) {
     (this.listeners[evt] ||= []).push(fn);
   }
   emit(evt, ...args) {
@@ -300,6 +301,7 @@ export class Game {
 
   /** Optional ambient remark: rate-limited and random, never interrupts. */
   chatter(key, chance = 1) {
+    if (this.duel) return; // the campaign's barks (Ahsoka, the clones…) have no place in a Movie Duel
     if (this.time < (this.nextChatter || 0) || Math.random() > chance) return;
     this.say(key);
   }
@@ -320,7 +322,8 @@ export class Game {
       const f = this.pathfinder.nearestFree(Math.floor(camp.x), Math.floor(camp.y), 8);
       return f ? { x: f[0] + 0.5, y: f[1] + 0.5 } : { x: camp.x, y: camp.y };
     };
-    const eliteIdx = camp.level >= 2 || camp.boss ? Math.floor(Math.random() * (camp.b1 + camp.b2)) : -1;
+    // the factory's guardian is always its last B2 (an elite B1 would have a third of the health)
+    const eliteIdx = camp.boss ? camp.b1 + camp.b2 - 1 : camp.level >= 2 ? Math.floor(Math.random() * (camp.b1 + camp.b2)) : -1;
     let n = 0;
     for (const [kind, count] of [['b1', camp.b1], ['b2', camp.b2]]) {
       for (let i = 0; i < count; i++) {
@@ -409,10 +412,6 @@ export class Game {
 
   damage(src, tgt, amount, opts = {}) {
     if (!tgt || tgt.dead || amount <= 0) return 0;
-    if (this.duel) {
-      amount = this.duel.filter(src, tgt, amount, opts);
-      if (amount <= 0) return 0;
-    }
     const p = this.player;
     if (tgt === p && this.cheats.god) return 0; // debug: invincible
     let crit = false;
@@ -448,16 +447,22 @@ export class Game {
       if (cl) amount *= 1 - SKILLS.command.dr(cl) / 100;
     }
     amount = Math.max(1, Math.round(amount));
+    if (amount <= 0) return 0;
     tgt.hp -= amount;
-    tgt.flash = 0.12;
+    const feel = feelFor(opts, crit);
+    tgt.flash = Math.max(tgt.flash, feel.flash);
+    applyFeel(this, feel, !opts.quiet && (tgt === p || src === p || (src && src.owner === p)));
     if (src && src !== tgt) {
       tgt.lastAttacker = src;
       if (tgt.camp) for (const u of tgt.camp.alive) u.alert = 6;
     }
     if (opts.stun) tgt.stun = Math.max(tgt.stun, opts.stun);
     if (opts.knock && !opts.noKnock) {
-      tgt.knock(opts.knock.ang, opts.knock.power);
+      tgt.knock(opts.knock.ang, opts.knock.power * feel.knock);
       if (opts.wallBonus) tgt.wallBonus = { src, amount: amount * opts.wallBonus };
+    } else if (feel.push && !opts.noKnock && src && src !== tgt && !tgt.anchored) {
+      // the hit shoves the target back a little, away from the attacker
+      tgt.knock(Math.atan2(tgt.y - src.y, tgt.x - src.x), feel.push);
     }
     if (opts.type === 'saber') {
       this.fx.sparks(tgt.x, tgt.y, 1.0, tgt.def.droid ? '#ffcf70' : '#ff9a6a', crit ? 12 : 6);
@@ -495,7 +500,6 @@ export class Game {
       this.emit('death');
       return;
     }
-    if (u === (this.duel && this.duel.foe)) return;
     if (u.team === 'cis') {
       p.kills++;
       this.streak = this.time - (this.lastKillT ?? -99) < 4 ? (this.streak || 0) + 1 : 1;
@@ -530,7 +534,7 @@ export class Game {
     b.dmg = b.dmg * 1.3 + p.weaponDamage() * 0.25;
     b.life = 1.2;
     b.deflected = true;
-    this.fx.sparks(b.x, b.y, b.z, '#bfe8ff', 6, 3);
+    this.clash(b.x, b.y, b.z, 7, 'deflect');
     this.audio.play('deflect', p, { heavy: redirect });
     p.deflectFlash = 0.15;
     if (Math.random() < 0.2) this.fx.text(p.x, p.y, redirect ? '반격!' : '반사', '#9fd8ff', 0.8, 2.2);
@@ -570,9 +574,21 @@ export class Game {
 
   // ------------------------------------------------------------------ update
 
+  /**
+   * The units that act and are drawn: those within 34 tiles of the player (both axes), and any the
+   * camera sees (viewRect: the view in world-fixed screen px with a sprite's margin, set by the
+   * renderer each frame) — so a wide, zoomed-out view never shows people popping in at its edges.
+   */
   updateActive() {
     const p = this.player;
-    this.activeUnits = this.units.filter((u) => Math.abs(u.x - p.x) < 34 && Math.abs(u.y - p.y) < 34);
+    const v = this.viewRect;
+    this.activeUnits = this.units.filter((u) => {
+      if (Math.abs(u.x - p.x) < 34 && Math.abs(u.y - p.y) < 34) return true;
+      if (!v) return false;
+      const sx = (u.x - u.y) * 20;
+      const sy = (u.x + u.y) * 10 - (u.z || 0) * 24.49;
+      return sx > v[0] && sx < v[2] && sy > v[1] && sy < v[3];
+    });
   }
 
   respawnPlayer() {
@@ -584,6 +600,10 @@ export class Game {
     p.deathT = 0;
     p.recalc(true);
     p.action = null;
+    p.queued = null;
+    p.airborne = false; // killed mid-leap: back on the ground
+    p.z = 0;
+    p.kx = p.ky = 0;
     p.darkness = 0;
     p.saberOut = false;
     p.setAnim('idle', 1, true);
@@ -593,6 +613,12 @@ export class Game {
   }
 
   update(dt) {
+    if (this.hitstopT > 0) {
+      // hitstop: the fight freezes for a few frames; sparks, flashes and shake play on
+      this.hitstopT -= dt;
+      this.fx.update(dt);
+      return;
+    }
     if (this.slowT > 0) {
       // brief slow motion after a perfect parry
       this.slowT -= dt;
@@ -600,19 +626,21 @@ export class Game {
     }
     this.time += dt;
     const p = this.player;
-    if (this.cinema) this.cinema.update(dt);
-    if (this.duel) this.duel.update(dt);
+    // (the map editor's play-test, `mapTest`: the player walks the map alone — the scene, the duel and everyone
+    // else held where they are: ui/mapEditor.js)
+    if (this.cinema && !this.mapTest) this.cinema.update(dt);
+    if (this.duel && !this.mapTest) this.duel.update(dt);
     this.updateActive();
-    for (const u of this.activeUnits) u.update(dt);
+    for (const u of this.activeUnits) if (!this.mapTest || u === p) u.update(dt);
 
     // Unit separation (soft collisions).
     const act = this.activeUnits;
     for (let i = 0; i < act.length; i++) {
       const a = act[i];
-      if (a.dead || a.z > 0.3) continue;
+      if (a.dead || a.noCollide) continue;
       for (let j = i + 1; j < act.length; j++) {
         const b = act[j];
-        if (b.dead || b.z > 0.3) continue;
+        if (b.dead || b.noCollide || Math.abs(a.z - b.z) > 0.3) continue; // (one in the air passes over the other; two on a table top still meet)
         const dx = b.x - a.x;
         const dy = b.y - a.y;
         const min = a.radius + b.radius;
@@ -629,6 +657,10 @@ export class Game {
         }
       }
     }
+
+    if (this.place === 'hub' && this.life) this.life.update(dt);
+    for (const b of this.bubbles) b.t += dt;
+    this.bubbles = this.bubbles.filter((b) => b.t < b.life && !b.u.dead && !b.u.remove);
 
     this.updateBolts(dt);
     this.updateThrows(dt);
@@ -657,7 +689,7 @@ export class Game {
       for (let y = Math.floor(p.y - R); y <= p.y + R; y++)
         for (let x = Math.floor(p.x - R); x <= p.x + R; x++)
           if (w.inBounds(x, y) && (x - p.x) ** 2 + (y - p.y) ** 2 < R * R) w.explored[y * w.w + x] = 1;
-      const reg = w.regionName(p.x, p.y);
+      const reg = w.regionName(p.x, p.y, this.region);
       if (reg !== this.region) {
         this.region = reg;
         this.emit('region', reg);
@@ -738,18 +770,19 @@ export class Game {
         }
         if (w.blocked[ty * w.w + tx] === 1 && Math.random() < 0.6) {
           b.life = 0;
-          this.fx.sparks(b.x, b.y, b.z, b.color === 'red' ? '#ff9080' : '#90c0ff', 4, 2);
+          this.boltScorch(b);
           break;
         }
         for (const u of this.activeUnits) {
           if (u.dead || u.team === b.team || u.untargetable) continue;
           if (Math.abs(u.x - b.x) > 0.6 || Math.abs(u.y - b.y) > 0.6) continue;
           if (dist(u.x, u.y, b.x, b.y) > u.radius + 0.12) continue;
-          if (u === this.player && u.canDeflect() && chance(u.deflectChance())) {
+          if (u === this.player && u.canDeflect() && (u.spinning() || chance(u.deflectChance()))) { // the signature's spin turns every bolt
             this.deflect(u, b);
           } else {
             this.damage(b.owner, u, b.dmg, { type: 'blaster' });
             this.fx.sparks(b.x, b.y, b.z, b.color === 'red' ? '#ff9080' : '#90c0ff', 4, 2);
+            this.fx.flash(b.x, b.y, b.z, b.color === 'red' ? [255, 90, 70] : [110, 170, 255], 10, 0.07);
             b.life = 0;
           }
           break;
@@ -757,6 +790,32 @@ export class Game {
       }
     }
     this.bolts = this.bolts.filter((b) => b.life > 0);
+  }
+
+  /** A bolt hits a wall: a scorch mark on the face it struck, sorted just in front of that wall. */
+  boltScorch(b) {
+    const rgb = b.color === 'red' ? [255, 70, 50] : [80, 150, 255];
+    const x = b.x - Math.cos(b.ang) * 0.12;
+    const y = b.y - Math.sin(b.ang) * 0.12;
+    this.fx.scorch(x, y, b.z, rgb);
+    const m = this.fx.scorches[this.fx.scorches.length - 1];
+    let best = null;
+    let bd = 3.5;
+    for (const pr of this.world.props) {
+      if (pr.flat || pr.hidden || pr.sortDepth === undefined) continue;
+      const d = Math.hypot(pr.x - x, pr.y - y);
+      if (d < bd) {
+        bd = d;
+        best = pr;
+      }
+    }
+    m.depth = best ? Math.max(x + y, best.sortDepth + 0.01) : x + y;
+  }
+
+  /** Blade meets blade (or turns a bolt): the clash effect and its hitstop/shake. */
+  clash(x, y, z, n = 14, feel = 'clash') {
+    this.fx.clash(x, y, z, n);
+    applyFeel(this, HITFEEL[feel], true);
   }
 
   updateThrows(dt) {

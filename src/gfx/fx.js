@@ -3,6 +3,84 @@
 // for additive glow, and `drawText` on the full-resolution overlay.
 import { worldToScreen } from '../core/iso.js';
 import { rand } from '../core/math.js';
+import { SABER } from './saberStyle.js';
+import { canvasFont } from '../ui/fonts.js';
+
+// a soft round puff (steam), drawn scaled
+const PUFF = (() => {
+  if (typeof document === 'undefined') return null;
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(16, 16, 0, 16, 16, 16);
+  g.addColorStop(0, 'rgba(225,230,236,1)');
+  g.addColorStop(0.5, 'rgba(210,216,224,0.55)');
+  g.addColorStop(1, 'rgba(200,206,214,0)');
+  x.fillStyle = g;
+  x.fillRect(0, 0, 32, 32);
+  return c;
+})();
+
+// a soft additive glow (white core, fading edge), tinted per use by drawing it over a colour
+const GLOW = (() => {
+  if (typeof document === 'undefined') return null;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.18, 'rgba(255,255,255,0.55)');
+  g.addColorStop(0.5, 'rgba(255,255,255,0.12)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g;
+  x.fillRect(0, 0, 64, 64);
+  return c;
+})();
+
+const puffCache = new Map();
+/** The PUFF sprite in one colour ('r,g,b'; cached per colour). */
+function puffSprite(rgb) {
+  let c = puffCache.get(rgb);
+  if (!c && PUFF) {
+    c = document.createElement('canvas');
+    c.width = c.height = 32;
+    const x = c.getContext('2d');
+    x.drawImage(PUFF, 0, 0);
+    x.globalCompositeOperation = 'source-in';
+    x.fillStyle = `rgb(${rgb})`;
+    x.fillRect(0, 0, 32, 32);
+    puffCache.set(rgb, c);
+  }
+  return c;
+}
+
+// a flame's colours as it cools (the same as its small square's: #fff2b0, #ffb040, #c04010)
+const FIRE_RGB = [[255, 242, 176], [255, 176, 64], [192, 64, 16]];
+
+const glowCache = new Map();
+/** The GLOW sprite in one colour (cached per colour). */
+export function glowSprite(rgb) {
+  const key = rgb.join(',');
+  let c = glowCache.get(key);
+  if (!c && GLOW) {
+    c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const x = c.getContext('2d');
+    x.drawImage(GLOW, 0, 0);
+    x.globalCompositeOperation = 'source-in';
+    x.fillStyle = `rgb(${key})`;
+    x.fillRect(0, 0, 64, 64);
+    // keep a white-hot centre
+    x.globalCompositeOperation = 'lighter';
+    x.globalAlpha = 0.6;
+    x.drawImage(GLOW, 16, 16, 32, 32);
+    glowCache.set(key, c);
+  }
+  return c;
+}
+
+const MAX_SCORCH = 60;
+const HAZE_ALPHA = 0.32; // drifting smoke at its thickest (it stays behind the fighters' readability: haze)
 
 export class Effects {
   constructor() {
@@ -13,7 +91,14 @@ export class Effects {
     this.decals = []; // scorch marks on the ground
     this.cones = [];
     this.lights = []; // transient lights {x,y,z,r,g,b,rad,t,life}
+    this.flashes = []; // short bright bursts where blades clash or bolts hit
+    this.saberClashes = []; // blade clashes, drawn by the renderer in the saber style (saberStyle.js)
+    this.scorches = []; // blaster marks on walls (depth-sorted with the walls)
+    this.ripples = []; // Force: a refraction ring that bends the picture behind it
     this.shakeAmt = 0;
+    this.bombs = []; // lava bombs in flight (lavaBomb)
+    this.tells = []; // a coming blow's warning ring under the striker (tell)
+    this.clearAround = []; // whom the drifting smoke keeps clear of (haze)
   }
 
   update(dt) {
@@ -36,12 +121,33 @@ export class Effects {
       }
     }
     this.parts = this.parts.filter((p) => p.t < p.life);
-    for (const arr of [this.waves, this.texts, this.bolts, this.cones, this.lights]) for (const w of arr) w.t += dt;
+    for (const b of this.bombs) {
+      b.t += dt;
+      const k = Math.min(1, b.t / b.dur);
+      b.x = b.x0 + (b.x1 - b.x0) * k;
+      b.y = b.y0 + (b.y1 - b.y0) * k;
+      b.z = 0.3 + b.h * 4 * k * (1 - k);
+      if (Math.random() < 0.8) this.parts.push({ kind: 'fire', x: b.x, y: b.y, z: b.z, vx: rand(-0.6, 0.6), vy: rand(-0.6, 0.6), vz: rand(-0.5, 1), grav: 3, t: 0, life: rand(0.2, 0.5), add: true, size: rand(1.5, 2.5) });
+      if (k >= 1 && !b.done) {
+        b.done = true;
+        this.lavaSplash(b.x1, b.y1, 1.4);
+        this.light(b.x1, b.y1, 0.3, [255, 140, 50], 110, 0.8);
+        this.shake(3);
+      }
+    }
+    this.bombs = this.bombs.filter((b) => !b.done);
+    for (const arr of [this.waves, this.texts, this.bolts, this.cones, this.lights, this.flashes, this.scorches, this.ripples, this.saberClashes]) for (const w of arr) w.t += dt;
+    if (this.saberClashes.length) this.saberClashes = this.saberClashes.filter((w) => w.t < w.life);
+    this.flashes = this.flashes.filter((w) => w.t < w.life);
+    this.scorches = this.scorches.filter((w) => w.t < w.life);
+    this.ripples = this.ripples.filter((w) => w.t < w.life);
     this.waves = this.waves.filter((w) => w.t < w.life);
     this.texts = this.texts.filter((w) => w.t < w.life);
     this.bolts = this.bolts.filter((w) => w.t < w.life);
     this.cones = this.cones.filter((w) => w.t < w.life);
     this.lights = this.lights.filter((w) => w.t < w.life);
+    for (const w of this.tells) w.t += dt;
+    if (this.tells.length) this.tells = this.tells.filter((w) => w.t < w.life && w.live());
     for (const d of this.decals) d.t += dt;
     this.decals = this.decals.filter((d) => d.t < d.life);
     this.shakeAmt = Math.max(0, this.shakeAmt - dt * 25);
@@ -64,6 +170,58 @@ export class Effects {
     this.light(x, y, z, [255, 200, 120], 30, 0.15);
   }
 
+  /**
+   * Smoke over the lava (the film's air): one delivered smoke picture `img` drifting on the wind at height z, `size`
+   * game px across, fading in and out over `life` s — and away near anyone in `clearAround` (the duellists: the smoke
+   * never clouds the fight).
+   */
+  haze(x, y, z, img, size, life) {
+    this.parts.push({ kind: 'haze', x, y, z, vx: rand(0.25, 0.5), vy: rand(-0.2, 0.05), vz: rand(0.02, 0.08), grav: 0, t: 0, life, img, size, rot: rand(-0.3, 0.3) });
+  }
+
+  /** An ember off the lava: a mote of light drifting up and away on the heat, fading as it cools. */
+  ember(x, y, z = 0.1) {
+    this.parts.push({ kind: 'ember', x, y, z, vx: rand(-0.25, 0.35), vy: rand(-0.35, 0.25), vz: rand(0.35, 0.9), grav: -0.05, drag: 0.2, t: 0, life: rand(2.2, 4.2), add: true });
+  }
+
+  /** A short bright burst (additive) that also lights its surroundings. */
+  flash(x, y, z, rgb = [255, 240, 210], size = 18, life = 0.09) {
+    this.flashes.push({ x, y, z, rgb, size, t: 0, life, rot: Math.random() * Math.PI });
+    this.light(x, y, z, rgb, size * 6, life * 1.6);
+  }
+
+  /** Blade meets blade: a white-hot flash, a spray of sparks cooling from white to amber. */
+  clash(x, y, z, n = 14, rgb = [255, 236, 200]) {
+    {
+      // the clash is drawn in the chosen saber style (saberStyle.drawClash); its light stays
+      this.saberClashes.push({ x, y, z, t: 0, life: SABER.trail === 'movie' ? 0.1 : 0.14, big: n > 12 });
+      this.light(x, y, z, rgb, (n > 12 ? 24 : 18) * 6, 0.16);
+      return;
+    }
+    this.flash(x, y, z, rgb, n > 12 ? 24 : 18, 0.1);
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = rand(1.5, 5);
+      this.parts.push({ kind: 'spark', x, y, z, vx: Math.cos(a) * s, vy: Math.sin(a) * s, vz: rand(0.5, 4.5), t: 0, life: rand(0.25, 0.55), color: i % 3 ? '#ffd27a' : '#ffffff', add: true, grav: 12, cool: true });
+    }
+  }
+
+  /** A blaster bolt strikes a wall: sparks, a flash, and a scorch mark with a cooling ember. */
+  scorch(x, y, z, rgb) {
+    this.flash(x, y, z, rgb, 12, 0.08);
+    this.sparks(x, y, z, `rgb(${rgb.map((c) => Math.min(255, c + 80)).join(',')})`, 5, 2.5);
+    this.scorches.push({ x, y, z, r: rand(3, 4.5), t: 0, life: 25, rgb, rot: Math.random() * Math.PI });
+    if (this.scorches.length > MAX_SCORCH) this.scorches.shift();
+  }
+
+  /**
+   * The Force bends space: a ring of refraction that expands from (x, y) to
+   * radius r (world units). `ang`/`half` limit it to a cone (Force Push).
+   */
+  ripple(x, y, r, life = 0.45, amp = 3, ang = null, half = Math.PI) {
+    this.ripples.push({ x, y, r, life, amp, ang, half, t: 0 });
+  }
+
   debris(x, y, n = 6, color = '#b39f74') {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
@@ -78,12 +236,51 @@ export class Effects {
     }
   }
 
+  /** Steam from a vent: slow puffs that rise, drift and spread. */
+  steam(x, y, z, n = 1) {
+    for (let i = 0; i < n; i++) {
+      this.parts.push({ kind: 'steam', x: x + rand(-0.15, 0.15), y: y + rand(-0.15, 0.15), z, vx: rand(-0.15, 0.25), vy: rand(-0.25, 0.15), vz: rand(0.5, 0.9), grav: -0.15, drag: 0.6, t: 0, life: rand(2.2, 3.6), size: rand(4, 7) });
+    }
+  }
+
   dust(x, y, n = 8) {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
       const s = rand(0.8, 2.5);
       this.parts.push({ kind: 'smoke', x, y, z: 0.1, vx: Math.cos(a) * s, vy: Math.sin(a) * s, vz: rand(0.1, 0.6), grav: 0, drag: 0.1, t: 0, life: rand(0.6, 1.2), color: '150,135,110', size: rand(3, 6) });
     }
+  }
+
+  /** Fire licking up from a point (burning cloth, a cut console). */
+  flame(x, y, z = 0.2, n = 3, size = 1) {
+    for (let i = 0; i < n; i++) {
+      this.parts.push({ kind: 'fire', x: x + rand(-0.25, 0.25) * size, y: y + rand(-0.25, 0.25) * size, z, vx: rand(-0.2, 0.2), vy: rand(-0.2, 0.2), vz: rand(1.2, 2.6), grav: -1.5, t: 0, life: rand(0.3, 0.7), add: true, size: rand(1.5, 3) * size });
+    }
+    if (Math.random() < 0.5) this.smoke(x, y, z + 0.6, 1, '40,30,26');
+  }
+
+  /**
+   * A lava bomb: a glowing gob thrown out of the river, arcing from (x0, y0) to land at (x1, y1) after
+   * `dur` seconds, embers streaming off it, the landing a splash. Returns the bomb (`done` once it lands:
+   * the duel reads it to burn whoever stands there); a warning ring marks the spot on the way.
+   */
+  lavaBomb(x0, y0, x1, y1, dur = 1.5, h = 5) {
+    const b = { x0, y0, x1, y1, dur, h, t: 0, x: x0, y: y0, z: 0.3, done: false };
+    this.bombs.push(b);
+    this.ring(x1, y1, 0.7, '#ff8a30', dur);
+    return b;
+  }
+
+  /** A gob of lava landing: a splash of embers and a glow. */
+  lavaSplash(x, y, size = 1) {
+    for (let i = 0; i < 10 * size; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = rand(0.5, 2.5) * size;
+      this.parts.push({ kind: 'fire', x, y, z: 0.1, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, vz: rand(1.5, 4), grav: 7, t: 0, life: rand(0.4, 0.9), add: true, size: rand(1.5, 2.5) });
+    }
+    this.sparks(x, y, 0.2, '#ffb040', 6, 3);
+    this.light(x, y, 0.2, [255, 120, 40], 60 * size, 0.6);
+    this.decals.push({ x, y, r: 0.5 * size, t: 0, life: 12 });
   }
 
   afterimage(x, y, frame, alpha = 0.4) {
@@ -95,12 +292,21 @@ export class Effects {
     this.light(x, y, 0.3, [160, 200, 255], r * 30, life);
   }
 
+  /**
+   * A blow coming (the duel's tell): a ring round the striker's feet that closes on him over `life` seconds — when it
+   * shuts, the blow lands; the moment to raise the guard for a perfect parry. `live()`: false drops it (the blow lost).
+   */
+  tell(u, life, rgb, live) {
+    this.tells.push({ u, t: 0, life, rgb, live });
+  }
+
   ring(x, y, r, color, life = 0.5) {
     this.waves.push({ x, y, r, color, t: 0, life, ring: true });
   }
 
   forceCone(x, y, ang, range) {
     this.cones.push({ x, y, ang, range, t: 0, life: 0.35 });
+    this.ripple(x, y, range, 0.4, 3.5, ang, 0.75);
   }
 
   lightning(x1, y1, z1, x2, y2, z2, color = '#9fdcff') {
@@ -156,19 +362,43 @@ export class Effects {
       const sy = Math.round(s.y - cam.y);
       const k = p.t / p.life;
       if (p.kind === 'smoke') {
-        ctx.fillStyle = `rgba(${p.color},${(1 - k) * 0.45})`;
         const r = p.size * (0.6 + k);
-        ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+        const puff = r > 3 && puffSprite(p.color);
+        if (puff) {
+          // a big puff (an explosion's smoke) soft-edged: a square that size reads as a block
+          ctx.globalAlpha = (1 - k) * 0.6;
+          ctx.drawImage(puff, sx - r * 1.4, sy - r * 1.4, r * 2.8, r * 2.8);
+          ctx.globalAlpha = 1;
+        } else {
+          ctx.fillStyle = `rgba(${p.color},${(1 - k) * 0.45})`;
+          ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+        }
+      } else if (p.kind === 'steam') {
+        // a soft puff that swells and thins as it rises
+        const r = p.size * (0.7 + k * 1.6);
+        ctx.globalAlpha = Math.sin(Math.min(1, k * 4) * Math.PI * 0.5) * (1 - k) * 0.5;
+        ctx.drawImage(PUFF, sx - r, sy - r, r * 2, r * 2);
+        ctx.globalAlpha = 1;
       } else if (p.kind === 'chunk') {
         ctx.globalAlpha = Math.min(1, (p.life - p.t) * 2);
         ctx.fillStyle = p.color;
         ctx.fillRect(sx, sy, p.size, p.size);
         ctx.globalAlpha = 1;
+      } else if (p.kind === 'haze') {
+        let a = Math.sin(Math.min(1, k * 3) * Math.PI * 0.5) * Math.min(1, (1 - k) * 3) * HAZE_ALPHA;
+        for (const u of this.clearAround) {
+          const d = Math.hypot(u.x - p.x, u.y - p.y);
+          a *= Math.min(1, Math.max(0, (d - 2.5) / 3));
+        }
+        if (a <= 0.01) continue;
+        const w = p.size * (0.85 + k * 0.3);
+        ctx.globalAlpha = a;
+        ctx.drawImage(p.img, sx - w / 2, sy - w / 2, w, w); // (the picture as delivered: only its size and alpha change)
+        ctx.globalAlpha = 1;
       } else if (p.kind === 'ghost') {
         const f = p.frame;
-        const fk = f.k || 1; // a Remaster frame is drawn at its game-pixel size
         ctx.globalAlpha = p.alpha * (1 - k);
-        ctx.imageSmoothingEnabled = !!f.k;
+        const fk = f.k || 1; // a sheet drawn at another size than game pixels
         ctx.drawImage(f.page, f.sx, f.sy, f.w, f.h, sx - f.ox * fk, sy - f.oy * fk, f.w * fk, f.h * fk);
         ctx.globalAlpha = 1;
       }
@@ -185,21 +415,91 @@ export class Effects {
       const k = p.t / p.life;
       if (p.kind === 'spark') {
         const e = worldToScreen(p.x - p.vx * 0.03, p.y - p.vy * 0.03, p.z - p.vz * 0.03);
-        ctx.strokeStyle = p.color;
+        ctx.strokeStyle = p.cool ? (k < 0.25 ? '#ffffff' : k < 0.6 ? '#ffd27a' : '#ff8a30') : p.color;
         ctx.globalAlpha = 1 - k;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(sx + 0.5, sy + 0.5);
         ctx.lineTo(Math.round(e.x - cam.x) + 0.5, Math.round(e.y - cam.y) + 0.5);
         ctx.stroke();
+      } else if (p.kind === 'ember') {
+        // a 1–2 px mote, flickering, yellow cooling to red
+        ctx.globalAlpha = Math.sin(Math.min(1, k * 5) * Math.PI * 0.5) * (1 - k) * (0.6 + 0.4 * Math.sin(p.t * 17 + p.x * 9));
+        const gl = GLOW && glowSprite(k < 0.4 ? FIRE_RGB[0] : FIRE_RGB[1]);
+        if (gl) ctx.drawImage(gl, sx - 3, sy - 3, 7, 7); // (a soft halo: a bare pixel is lost on the bright lava)
+        ctx.fillStyle = k < 0.4 ? '#fff2c0' : '#ffb060';
+        ctx.fillRect(sx, sy, 1, 1);
       } else if (p.kind === 'fire') {
         const r = p.size * (1 - k * 0.5);
         ctx.globalAlpha = 1 - k;
-        ctx.fillStyle = k < 0.3 ? '#fff2b0' : k < 0.6 ? '#ffb040' : '#c04010';
-        ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+        if (r > 2.5 && GLOW) {
+          // a big flame (an explosion's) as a soft glow: a filled square that size reads as a block
+          const g = glowSprite(k < 0.3 ? FIRE_RGB[0] : k < 0.6 ? FIRE_RGB[1] : FIRE_RGB[2]);
+          ctx.drawImage(g, sx - r * 2, sy - r * 2, r * 4, r * 4);
+        } else {
+          ctx.fillStyle = k < 0.3 ? '#fff2b0' : k < 0.6 ? '#ffb040' : '#c04010';
+          ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+        }
       }
     }
     ctx.globalAlpha = 1;
+    for (const b of this.bombs) {
+      // the gob: a white-hot core in an orange glow
+      const s = worldToScreen(b.x, b.y, b.z);
+      const sx = Math.round(s.x - cam.x);
+      const sy = Math.round(s.y - cam.y);
+      const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, 9);
+      g.addColorStop(0, 'rgba(255,246,200,1)');
+      g.addColorStop(0.35, 'rgba(255,150,50,0.9)');
+      g.addColorStop(1, 'rgba(255,80,20,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (const f of this.flashes) {
+      const k = f.t / f.life;
+      const s = worldToScreen(f.x, f.y, f.z);
+      const sx = s.x - cam.x;
+      const sy = s.y - cam.y;
+      const r = f.size * (0.6 + 0.6 * k);
+      ctx.globalAlpha = 1 - k * k;
+      ctx.drawImage(glowSprite(f.rgb), sx - r, sy - r, r * 2, r * 2);
+      // a four-point star: two thin crossed streaks
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(f.rot);
+      ctx.fillStyle = '#ffffff';
+      const L = f.size * (1.2 - k * 0.6);
+      ctx.fillRect(-L, -0.5, L * 2, 1);
+      ctx.fillRect(-0.5, -L * 0.6, 1, L * 1.2);
+      ctx.restore();
+    }
+    // embers in fresh scorch marks, cooling over two seconds
+    for (const m of this.scorches) {
+      if (m.t > 2) continue;
+      const s = worldToScreen(m.x, m.y, m.z);
+      const k = m.t / 2;
+      ctx.globalAlpha = (1 - k) * 0.9;
+      ctx.drawImage(glowSprite([255, 140, 60]), s.x - cam.x - 4, s.y - cam.y - 4, 8, 8);
+    }
+    ctx.globalAlpha = 1;
+    for (const w of this.tells) {
+      const k = Math.min(1, w.t / w.life);
+      const s = worldToScreen(w.u.x, w.u.y, w.u.z || 0);
+      const [r, g, b] = w.rgb;
+      ctx.save();
+      ctx.translate(Math.round(s.x - cam.x), Math.round(s.y - cam.y));
+      ctx.scale(1, 0.5);
+      // closing in from 1.25 m to his feet, brightening as it goes
+      ctx.globalAlpha = 0.35 + 0.65 * k;
+      ctx.strokeStyle = `rgb(${r},${g},${b})`;
+      ctx.lineWidth = 1.5 + k * 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, (1.25 - 0.8 * k) * 28, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
     for (const w of this.waves) {
       const k = w.t / w.life;
       const s = worldToScreen(w.x, w.y);
@@ -261,6 +561,25 @@ export class Effects {
     ctx.globalAlpha = 1;
   }
 
+  /** A scorch mark on a wall (drawn in depth order with the walls). */
+  drawScorch(ctx, cam, m) {
+    const s = worldToScreen(m.x, m.y, m.z);
+    const a = Math.min(1, (m.life - m.t) / 6) * 0.9;
+    ctx.save();
+    ctx.translate(Math.round(s.x - cam.x), Math.round(s.y - cam.y));
+    ctx.rotate(m.rot);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, m.r);
+    g.addColorStop(0, `rgba(12,10,8,${a})`);
+    g.addColorStop(0.6, `rgba(30,24,20,${a * 0.6})`);
+    g.addColorStop(1, 'rgba(30,24,20,0)');
+    ctx.fillStyle = g;
+    ctx.scale(1, 0.75);
+    ctx.beginPath();
+    ctx.arc(0, 0, m.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   drawText(ctx, cam, scale) {
     ctx.textAlign = 'center';
     for (const t of this.texts) {
@@ -269,7 +588,7 @@ export class Effects {
       const x = (s.x - cam.x) * scale;
       const y = (s.y - cam.y) * scale;
       const size = Math.round(13 * t.scale * (k < 0.15 ? 1 + (0.15 - k) * 3 : 1));
-      ctx.font = `700 ${size + 2}px Galmuri11, sans-serif`;
+      ctx.font = canvasFont(400, size + 3, 'data'); // the damage numbers: the data font
       ctx.globalAlpha = k > 0.7 ? (1 - k) / 0.3 : 1;
       ctx.fillStyle = '#000';
       ctx.fillText(t.str, x + 1, y + 1);

@@ -1,0 +1,1742 @@
+{
+ "format": "cw-assets",
+ "version": 1,
+ "set": "mustafar",
+ "projection": {
+  "view": "2:1 dimetric, orthographic, camera 30° up on the +x +y diagonal (src/core/iso.js, ART_GUIDE.md §1)",
+  "tile": "1 world unit = 1 tile = 1 m",
+  "screen_px_per_metre": {
+   "along_axis_x": 20,
+   "along_axis_y": 10,
+   "up": 24.49
+  },
+  "density": "image px per game px (1 = game pixels 1:1; 2 = the remastered 2x, drawn at half size)"
+ },
+ "assets": [
+  {
+   "id": "mf.landing.floor",
+   "name": "무스타파 착륙장 바닥 (STAGE 01)",
+   "kind": "groundTiles",
+   "status": "delivered",
+   "request": "docs/asset_requests/mf.landing.floor.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_floor_sheet.png, cut by tools/assets/mustafar/slice_landing_floor.py (crop only)",
+   "px_per_metre": "about 66 (bays), 158 (rim, side)",
+   "tiles": {
+    "bay_A": {
+     "file": "landing/floor_bay_A.png",
+     "size": [
+      401,
+      396
+     ],
+     "metres": [
+      6,
+      6
+     ]
+    },
+    "bay_A2": {
+     "file": "landing/floor_bay_A2.png",
+     "size": [
+      401,
+      396
+     ],
+     "metres": [
+      6,
+      6
+     ]
+    },
+    "bay_B": {
+     "file": "landing/floor_bay_B.png",
+     "size": [
+      395,
+      394
+     ],
+     "metres": [
+      6,
+      6
+     ]
+    },
+    "bay_C": {
+     "file": "landing/floor_bay_C.png",
+     "size": [
+      400,
+      398
+     ],
+     "metres": [
+      6,
+      6
+     ]
+    },
+    "bay_D": {
+     "file": "landing/floor_bay_D.png",
+     "size": [
+      404,
+      398
+     ],
+     "metres": [
+      6,
+      6
+     ]
+    },
+    "bay_E": {
+     "file": "landing/floor_bay_E.png",
+     "size": [
+      396,
+      399
+     ],
+     "metres": [
+      6,
+      6
+     ]
+    },
+    "rim": {
+     "file": "landing/floor_rim.png",
+     "size": [
+      951,
+      158
+     ],
+     "metres": [
+      6,
+      1
+     ],
+     "outer": "bottom"
+    },
+    "side": {
+     "file": "landing/floor_side.png",
+     "size": [
+      951,
+      91
+     ],
+     "metres": [
+      6,
+      0.574
+     ],
+     "view": "front elevation of the pad edge (drawn on the near side faces)"
+    }
+   },
+   "layer": "ground",
+   "sort": "ground: under every sprite and character",
+   "collision": "none in the image: the zone's walk / collision layers (public/maps/mustafar_v2/stage01.json)",
+   "occlusion": "none (ground)",
+   "lighting": {
+    "lightmap": true,
+    "bakedDirectionalLight": false,
+    "note": "the scene's ambient and the lava lights multiply over it in game"
+   },
+   "notes": "delivered as one sheet. The corner piece is drawn at an angle, not top-down: not used, the rim is mitred at the corners. The rim strip's lower part is the edge's side face (tile \"side\"), used below the near edges."
+  },
+  {
+   "id": "mf.landing.rail_x",
+   "name": "착륙장 난간 (x 방향 6 m)",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/mf.landing.railings.md",
+   "file": "landing/rail_x.png",
+   "size": [
+    600,
+    415
+   ],
+   "density": 4.64,
+   "anchor": [
+    300,
+    253
+   ],
+   "layer": "standing",
+   "footprint": [],
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 1.1
+   },
+   "collision": "zone: the rim under it (stage01.json collision rail_*)",
+   "note": "second pass: long edge slope 0.53 against 2:1 0.5 (accepted as delivered: joins step about 4 game px); 6 m, 1.1 m tall, 0.37 m deep",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v2.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py"
+  },
+  {
+   "id": "mf.landing.rail_y",
+   "name": "착륙장 난간 (y 방향 6 m)",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/mf.landing.railings.md",
+   "file": "landing/rail_y.png",
+   "size": [
+    655,
+    470
+   ],
+   "density": 5.08,
+   "anchor": [
+    334,
+    303
+   ],
+   "layer": "standing",
+   "footprint": [],
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 1.1
+   },
+   "collision": "zone",
+   "note": "third pass: slope −0.526, the mirror of rail_x; 6 m run, about 1.0 m tall",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v3.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py"
+  },
+  {
+   "id": "mf.landing.rail_corner",
+   "name": "착륙장 난간 모서리 기둥",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/mf.landing.railings.md",
+   "file": "landing/rail_corner.png",
+   "size": [
+    255,
+    292
+   ],
+   "density": 4.64,
+   "anchor": [
+    125,
+    225
+   ],
+   "layer": "standing",
+   "footprint": [],
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 1.3
+   },
+   "collision": "zone",
+   "note": "second pass; base about 1.3 m square",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v2.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py"
+  },
+  {
+   "id": "mf.landing.ship",
+   "name": "파드메의 나부 스타 스키프 (착륙, 램프 내림)",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/mf.landing.ship.md",
+   "file": "props/padme_skiff.png",
+   "size": [
+    1438,
+    704
+   ],
+   "density": 2.16,
+   "anchor": [
+    800,
+    589
+   ],
+   "layer": "standing",
+   "footprint": [
+    [
+     -8.9,
+     1.85
+    ],
+    [
+     7.8,
+     -4.65
+    ],
+    [
+     8.9,
+     -1.85
+    ],
+    [
+     -7.8,
+     4.65
+    ]
+   ],
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 6.0
+   },
+   "note": "drawn at its own heading (axis slope ~0.38 on screen: nose toward +x and a little −y); density from ~29 m nose to tail; anchor between the rear and nose landing feet; footprint = the hull between the feet",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py"
+  },
+  {
+   "id": "mf.landing.corridor_floor",
+   "name": "진입 통로 바닥 (위에서 본 평면)",
+   "kind": "groundTiles",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage01_pass3.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v3.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py",
+   "tiles": {
+    "floor": {
+     "file": "corridors/landing_corridor_floor.png",
+     "size": [
+      805,
+      368
+     ],
+     "metres": [
+      13.1,
+      6
+     ]
+    }
+   },
+   "layer": "ground",
+   "note": "image columns along +x (left = the door end), rows along +y; 13.1 m from its proportions at 6 m wide"
+  },
+  {
+   "id": "mf.landing.corridor_wall_back",
+   "name": "진입 통로 뒷벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage01_pass3.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v3.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py",
+   "file": "corridors/landing_corridor_wall_back.png",
+   "size": [
+    1046,
+    283
+   ],
+   "metres": [
+    13.1,
+    3.55
+   ],
+   "along": "x",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
+  },
+  {
+   "id": "mf.landing.corridor_wall_end",
+   "name": "진입 통로 끝벽과 문 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage01_pass3.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v3.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py",
+   "file": "corridors/landing_corridor_wall_end.png",
+   "size": [
+    416,
+    249
+   ],
+   "metres": [
+    6,
+    3.59
+   ],
+   "along": "y",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
+  },
+  {
+   "id": "mf.landing.corridor_wall_front",
+   "name": "진입 통로 낮은 앞벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage01_pass3.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/landing_structures_sheet_v3.png, keyed and cropped by tools/assets/mustafar/slice_landing_structures.py",
+   "file": "corridors/landing_corridor_wall_front.png",
+   "size": [
+    1505,
+    119
+   ],
+   "metres": [
+    13.1,
+    1.04
+   ],
+   "along": "x",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
+  },
+  {
+   "id": "mf.room.floor",
+   "name": "분리주의 회의실 바닥 (위에서 본 평면)",
+   "kind": "groundTiles",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "tiles": {
+    "floor": {
+     "file": "interiors/conf_floor.png",
+     "size": [
+      1024,
+      768
+     ],
+     "metres": [
+      16,
+      12
+     ]
+    }
+   },
+   "layer": "ground",
+   "note": "image top = the window wall (−y), right = the door (+x)"
+  },
+  {
+   "id": "mf.room.wall_window",
+   "name": "회의실 창문 벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_wall_window.png",
+   "size": [
+    1024,
+    256
+   ],
+   "metres": [
+    16,
+    4
+   ],
+   "along": "x",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
+  },
+  {
+   "id": "mf.room.wall_side",
+   "name": "회의실 콘솔 벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_wall_side.png",
+   "size": [
+    768,
+    256
+   ],
+   "metres": [
+    12,
+    4
+   ],
+   "along": "y",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
+  },
+  {
+   "id": "mf.room.wall_front_low",
+   "name": "회의실 낮은 앞벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_wall_front_low.png",
+   "size": [
+    1024,
+    64
+   ],
+   "metres": [
+    16,
+    1
+   ],
+   "along": "x",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
+  },
+  {
+   "id": "mf.room.wall_door_low",
+   "name": "회의실 낮은 문 쪽 벽 (정면도, 4 m 문틈)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_wall_door_low.png",
+   "size": [
+    768,
+    64
+   ],
+   "metres": [
+    12,
+    1
+   ],
+   "along": "y",
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true
+   }
+  },
+  {
+   "id": "mf.room.table",
+   "name": "회의 탁자",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_table.png",
+   "size": [
+    352,
+    232
+   ],
+   "density": 2,
+   "anchor": [
+    176,
+    135
+   ],
+   "footprint": [
+    [
+     -3,
+     -1
+    ],
+    [
+     3,
+     -1
+    ],
+    [
+     3,
+     1
+    ],
+    [
+     -3,
+     1
+    ]
+   ],
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 0.8
+   },
+   "note": "drawn on its projection guide (anchor = the guide's)"
+  },
+  {
+   "id": "mf.room.chair_a",
+   "name": "의장 의자 (+y를 봄)",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_chair_a.png",
+   "size": [
+    88,
+    120
+   ],
+   "density": 2,
+   "anchor": [
+    44,
+    84
+   ],
+   "footprint": [
+    [
+     -0.35,
+     -0.35
+    ],
+    [
+     0.35,
+     -0.35
+    ],
+    [
+     0.35,
+     0.35
+    ],
+    [
+     -0.35,
+     0.35
+    ]
+   ],
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 1.1
+   },
+   "note": "drawn on its projection guide (anchor = the guide's)"
+  },
+  {
+   "id": "mf.room.chair_b",
+   "name": "의장 의자 (−y를 봄)",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_chair_b.png",
+   "size": [
+    88,
+    120
+   ],
+   "density": 2,
+   "anchor": [
+    44,
+    84
+   ],
+   "footprint": [
+    [
+     -0.35,
+     -0.35
+    ],
+    [
+     0.35,
+     -0.35
+    ],
+    [
+     0.35,
+     0.35
+    ],
+    [
+     -0.35,
+     0.35
+    ]
+   ],
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 1.1
+   },
+   "note": "drawn on its projection guide (anchor = the guide's)"
+  },
+  {
+   "id": "mf.room.console",
+   "name": "독립형 콘솔",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage02_conference.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/stage02/ (delivered at the requested sizes, real alpha: used as is)",
+   "file": "interiors/conf_console.png",
+   "size": [
+    168,
+    184
+   ],
+   "density": 2,
+   "anchor": [
+    84,
+    128
+   ],
+   "footprint": [
+    [
+     -1.2,
+     -0.5
+    ],
+    [
+     1.2,
+     -0.5
+    ],
+    [
+     1.2,
+     0.5
+    ],
+    [
+     -1.2,
+     0.5
+    ]
+   ],
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 1.6
+   },
+   "note": "drawn on its projection guide (anchor = the guide's)"
+  },
+  {
+   "id": "mf.landing.robe_obiwan",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "props/robe_obiwan.png",
+   "size": [
+    128,
+    96
+   ],
+   "density": 2,
+   "anchor": [
+    64,
+    52
+   ],
+   "guide": "docs/asset_requests/guides/robe_obiwan_guide.png",
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_cloth_lava_notes.md"
+  },
+  {
+   "id": "mf.landing.cloak_anakin",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "props/cloak_anakin.png",
+   "size": [
+    144,
+    104
+   ],
+   "density": 2,
+   "anchor": [
+    70,
+    55
+   ],
+   "guide": "docs/asset_requests/guides/cloak_anakin_guide.png",
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_cloth_lava_notes.md"
+  },
+  {
+   "id": "mf.control.ctl_stairs",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "file": "interiors/ctl_stairs.png",
+   "size": [
+    272,
+    184
+   ],
+   "density": 2,
+   "anchor": [
+    136,
+    105
+   ],
+   "guide": "docs/asset_requests/guides/ctl_stairs_guide.png",
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.control.ctl_shield_generator",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "file": "interiors/ctl_shield_generator.png",
+   "size": [
+    200,
+    208
+   ],
+   "density": 2,
+   "anchor": [
+    100,
+    146
+   ],
+   "guide": "docs/asset_requests/guides/ctl_shield_generator_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.control.ctl_holo_table",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "file": "interiors/ctl_holo_table.png",
+   "size": [
+    160,
+    144
+   ],
+   "density": 2,
+   "anchor": [
+    80,
+    92
+   ],
+   "guide": "docs/asset_requests/guides/ctl_holo_table_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.walkway.catwalk_segment",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "industrial/catwalk_segment.png",
+   "size": [
+    352,
+    280
+   ],
+   "density": 2,
+   "anchor": [
+    176,
+    150
+   ],
+   "guide": "docs/asset_requests/guides/catwalk_segment_guide.png",
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_exterior_notes.md"
+  },
+  {
+   "id": "mf.walkway.catwalk_broken",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "industrial/catwalk_broken.png",
+   "size": [
+    352,
+    280
+   ],
+   "density": 2,
+   "anchor": [
+    176,
+    150
+   ],
+   "guide": "docs/asset_requests/guides/catwalk_broken_guide.png",
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_exterior_notes.md"
+  },
+  {
+   "id": "mf.walkway.lava_fall",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "industrial/lava_fall.png",
+   "size": [
+    312,
+    568
+   ],
+   "density": 2,
+   "anchor": [
+    156,
+    478
+   ],
+   "guide": "docs/asset_requests/guides/lava_fall_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_exterior_notes.md"
+  },
+  {
+   "id": "mf.collector.pipe_segment",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "industrial/pipe_segment.png",
+   "size": [
+    352,
+    232
+   ],
+   "density": 2,
+   "anchor": [
+    174,
+    112
+   ],
+   "guide": "docs/asset_requests/guides/pipe_segment_guide.png",
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.collector.collector_arm",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "industrial/collector_arm.png",
+   "size": [
+    1032,
+    576
+   ],
+   "density": 2,
+   "anchor": [
+    516,
+    281
+   ],
+   "guide": "docs/asset_requests/guides/collector_arm_guide.png",
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_exterior_notes.md"
+  },
+  {
+   "id": "mf.collector.collector_tower",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "industrial/collector_tower.png",
+   "size": [
+    352,
+    584
+   ],
+   "density": 2,
+   "anchor": [
+    176,
+    488
+   ],
+   "guide": "docs/asset_requests/guides/collector_tower_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.river.mining_droid",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "lava/mining_droid.png",
+   "size": [
+    192,
+    144
+   ],
+   "density": 2,
+   "anchor": [
+    96,
+    63
+   ],
+   "guide": "docs/asset_requests/guides/mining_droid_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_river_notes.md"
+  },
+  {
+   "id": "mf.river.repulsor_platform",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "lava/repulsor_platform.png",
+   "size": [
+    288,
+    240
+   ],
+   "density": 2,
+   "anchor": [
+    144,
+    139
+   ],
+   "guide": "docs/asset_requests/guides/repulsor_platform_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_river_notes.md"
+  },
+  {
+   "id": "mf.room.wall_door_side",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "file": "interiors/conf_wall_door_side.png",
+   "size": [
+    768,
+    256
+   ],
+   "metres": [
+    12,
+    4
+   ],
+   "along": "y",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.control.wall_window",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "file": "interiors/ctl_wall_window.png",
+   "size": [
+    1152,
+    256
+   ],
+   "metres": [
+    18,
+    4
+   ],
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.control.wall_side",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "file": "interiors/ctl_wall_side.png",
+   "size": [
+    1152,
+    256
+   ],
+   "metres": [
+    18,
+    4
+   ],
+   "along": "y",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.control.wall_front_low",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "file": "interiors/ctl_wall_front_low.png",
+   "size": [
+    1152,
+    64
+   ],
+   "metres": [
+    18,
+    1
+   ],
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.control.wall_entry_low",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "file": "interiors/ctl_wall_entry_low.png",
+   "size": [
+    1152,
+    64
+   ],
+   "metres": [
+    18,
+    1
+   ],
+   "along": "y",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.control.gallery_edge",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "file": "interiors/ctl_gallery_edge.png",
+   "size": [
+    1152,
+    104
+   ],
+   "metres": [
+    18,
+    1.625
+   ],
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.passage.wall_back",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "file": "corridors/ps_wall_back.png",
+   "size": [
+    384,
+    224
+   ],
+   "metres": [
+    6,
+    3.5
+   ],
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.passage.wall_front_low",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "file": "corridors/ps_wall_front_low.png",
+   "size": [
+    384,
+    64
+   ],
+   "metres": [
+    6,
+    1
+   ],
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.lava.surface",
+   "kind": "groundTiles",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "tiles": {
+    "floor": {
+     "file": "lava/lava_tile_v2.png",
+     "size": [
+      1024,
+      1024
+     ],
+     "metres": [
+      16,
+      16
+     ],
+     "seamless": true
+    }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md",
+   "replaces": "lava/lava_tile.png (8 × 8 m: its repeat showed, brighter than the fighters — phase2_review.md)"
+  },
+  {
+   "id": "mf.control.floor",
+   "kind": "groundTiles",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "tiles": {
+    "floor": {
+     "file": "interiors/ctl_floor.png",
+     "size": [
+      1152,
+      832
+     ],
+     "metres": [
+      18,
+      13
+     ]
+    }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_control_notes.md"
+  },
+  {
+   "id": "mf.control.gallery_floor",
+   "kind": "groundTiles",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "tiles": {
+    "floor": {
+     "file": "interiors/ctl_gallery_floor.png",
+     "size": [
+      1152,
+      320
+     ],
+     "metres": [
+      18,
+      5
+     ]
+    }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_control_notes.md"
+  },
+  {
+   "id": "mf.passage.floor",
+   "kind": "groundTiles",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_stage03_control.md",
+   "tiles": {
+    "floor": {
+     "file": "corridors/ps_floor.png",
+     "size": [
+      384,
+      256
+     ],
+     "metres": [
+      6,
+      4
+     ]
+    }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_remaining_14_notes.md"
+  },
+  {
+   "id": "mf.walkway.terrace_floor",
+   "kind": "groundTiles",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "tiles": {
+    "floor": {
+     "file": "industrial/terrace_floor.png",
+     "size": [
+      1280,
+      320
+     ],
+     "metres": [
+      20,
+      5
+     ]
+    }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_exterior_notes.md"
+  },
+  {
+   "id": "mf.highground.bank",
+   "kind": "groundImage",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_route_assets.md",
+   "file": "lava/highground_bank.png",
+   "size": [
+    1512,
+    992
+   ],
+   "density": 2,
+   "anchor": [
+    16,
+    492
+   ],
+   "anchorWorld": [
+    112,
+    147
+   ],
+   "guide": "docs/asset_requests/guides/highground_bank_guide.png",
+   "delivered": "docs/asset_requests/delivered/highground_bank_notes.md"
+  },
+  {
+   "id": "mf.lava.rock_low",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/rock_low.png",
+   "size": [
+    216,
+    208
+   ],
+   "density": 2,
+   "anchor": [
+    106,
+    139
+   ],
+   "world": {
+    "x": 2.5,
+    "y": 2,
+    "h": 1.6
+   },
+   "guide": "docs/asset_requests/guides/rock_low_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md",
+   "footprint": [
+    [
+     -1.25,
+     -1.0
+    ],
+    [
+     1.25,
+     -1.0
+    ],
+    [
+     1.25,
+     1.0
+    ],
+    [
+     -1.25,
+     1.0
+    ]
+   ]
+  },
+  {
+   "id": "mf.lava.rock_mid",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/rock_mid.png",
+   "size": [
+    312,
+    320
+   ],
+   "density": 2,
+   "anchor": [
+    156,
+    233
+   ],
+   "world": {
+    "x": 4,
+    "y": 3,
+    "h": 3
+   },
+   "guide": "docs/asset_requests/guides/rock_mid_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md",
+   "footprint": [
+    [
+     -2.0,
+     -1.5
+    ],
+    [
+     2.0,
+     -1.5
+    ],
+    [
+     2.0,
+     1.5
+    ],
+    [
+     -2.0,
+     1.5
+    ]
+   ]
+  },
+  {
+   "id": "mf.lava.rock_spire",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/rock_spire.png",
+   "size": [
+    160,
+    344
+   ],
+   "density": 2,
+   "anchor": [
+    80,
+    293
+   ],
+   "world": {
+    "x": 1.6,
+    "y": 1.6,
+    "h": 5
+   },
+   "guide": "docs/asset_requests/guides/rock_spire_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md",
+   "footprint": [
+    [
+     -0.8,
+     -0.8
+    ],
+    [
+     0.8,
+     -0.8
+    ],
+    [
+     0.8,
+     0.8
+    ],
+    [
+     -0.8,
+     0.8
+    ]
+   ]
+  },
+  {
+   "id": "mf.lava.cliff_x",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/cliff_x.png",
+   "size": [
+    512,
+    568
+   ],
+   "density": 2,
+   "anchor": [
+    256,
+    430
+   ],
+   "world": {
+    "x": 10,
+    "y": 2,
+    "h": 6
+   },
+   "guide": "docs/asset_requests/guides/cliff_x_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md",
+   "footprint": [
+    [
+     -5.0,
+     -1.0
+    ],
+    [
+     5.0,
+     -1.0
+    ],
+    [
+     5.0,
+     1.0
+    ],
+    [
+     -5.0,
+     1.0
+    ]
+   ]
+  },
+  {
+   "id": "mf.lava.cliff_y",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/cliff_y.png",
+   "size": [
+    512,
+    568
+   ],
+   "density": 2,
+   "anchor": [
+    256,
+    430
+   ],
+   "world": {
+    "x": 2,
+    "y": 10,
+    "h": 6
+   },
+   "guide": "docs/asset_requests/guides/cliff_y_guide.png",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md",
+   "footprint": [
+    [
+     -1.0,
+     -5.0
+    ],
+    [
+     1.0,
+     -5.0
+    ],
+    [
+     1.0,
+     5.0
+    ],
+    [
+     -1.0,
+     5.0
+    ]
+   ]
+  },
+  {
+   "id": "mf.lava.smoke_a",
+   "kind": "effect",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/smoke_a.png",
+   "size": [
+    256,
+    256
+   ],
+   "note": "a drifting smoke particle (fx.js): drawn at different sizes and alpha, flat (no angle)",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md"
+  },
+  {
+   "id": "mf.lava.smoke_b",
+   "kind": "effect",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/smoke_b.png",
+   "size": [
+    256,
+    256
+   ],
+   "note": "a drifting smoke particle (fx.js): drawn at different sizes and alpha, flat (no angle)",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md"
+  },
+  {
+   "id": "mf.lava.smoke_c",
+   "kind": "effect",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_phase2.md",
+   "file": "lava/smoke_c.png",
+   "size": [
+    256,
+    256
+   ],
+   "note": "a drifting smoke particle (fx.js): drawn at different sizes and alpha, flat (no angle)",
+   "delivered": "docs/asset_requests/delivered/mustafar_phase2_notes.md"
+  },
+  {
+   "id": "mf.corridor.junction_floor",
+   "name": "입구 복도 문 쪽 4 m 바닥 (위에서 본 평면)",
+   "kind": "groundTiles",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "tiles": {
+    "floor": {
+     "file": "corridors/corr_junction_floor.png",
+     "size": [
+      256,
+      256
+     ],
+     "metres": [
+      4,
+      4
+     ]
+    }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
+  },
+  {
+   "id": "mf.corridor.side_floor",
+   "name": "회의실 옆 통로 바닥 (위에서 본 평면)",
+   "kind": "groundTiles",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "tiles": {
+    "floor": {
+     "file": "corridors/corr_side_floor.png",
+     "size": [
+      192,
+      768
+     ],
+     "metres": [
+      3,
+      12
+     ]
+    }
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
+  },
+  {
+   "id": "mf.corridor.junction_pier",
+   "name": "입구 복도 안쪽 벽 기둥 (정면도, 옆 통로 입구 옆)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_junction_pier.png",
+   "size": [
+    64,
+    224
+   ],
+   "metres": [
+    1,
+    3.5
+   ],
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
+  },
+  {
+   "id": "mf.corridor.junction_wall_low",
+   "name": "입구 복도 문 쪽 낮은 앞벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_junction_wall_low.png",
+   "size": [
+    256,
+    64
+   ],
+   "metres": [
+    4,
+    1
+   ],
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
+  },
+  {
+   "id": "mf.corridor.frame_far",
+   "name": "입구 복도 기울어진 구조 프레임 (안쪽 벽, 전체 높이)",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_frame_far.png",
+   "size": [
+    72,
+    216
+   ],
+   "density": 2,
+   "anchor": [
+    33,
+    186
+   ],
+   "guide": "docs/asset_requests/guides/corr_frame_far_guide.png",
+   "footprint": [
+    [
+     -0.175,
+     -0.25
+    ],
+    [
+     0.175,
+     -0.25
+    ],
+    [
+     0.175,
+     0.25
+    ],
+    [
+     -0.175,
+     0.25
+    ]
+   ],
+   "layer": "standing",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
+  },
+  {
+   "id": "mf.corridor.frame_near",
+   "name": "입구 복도 구조 프레임 밑동 (앞쪽, 잘린 높이)",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_frame_near.png",
+   "size": [
+    72,
+    96
+   ],
+   "density": 2,
+   "anchor": [
+    33,
+    69
+   ],
+   "guide": "docs/asset_requests/guides/corr_frame_near_guide.png",
+   "footprint": [
+    [
+     -0.175,
+     -0.25
+    ],
+    [
+     0.175,
+     -0.25
+    ],
+    [
+     0.175,
+     0.25
+    ],
+    [
+     -0.175,
+     0.25
+    ]
+   ],
+   "layer": "standing",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
+  },
+  {
+   "id": "mf.corridor.side_wall_end",
+   "name": "회의실 옆 통로 끝벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_side_wall_end.png",
+   "size": [
+    192,
+    128
+   ],
+   "metres": [
+    3,
+    2
+   ],
+   "along": "x",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
+  },
+  {
+   "id": "mf.corridor.side_wall_low",
+   "name": "회의실 옆 통로 낮은 바깥벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_side_wall_low.png",
+   "size": [
+    768,
+    64
+   ],
+   "metres": [
+    12,
+    1
+   ],
+   "along": "y",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
+  },
+  {
+   "id": "mf.corridor.side_wall_corner",
+   "name": "회의실 모서리와 복도 사이 벽 (정면도)",
+   "kind": "wallElevation",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "corridors/corr_side_wall_corner.png",
+   "size": [
+    256,
+    128
+   ],
+   "metres": [
+    4,
+    2
+   ],
+   "along": "y",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
+  },
+  {
+   "id": "mf.landing.guide_light",
+   "name": "착륙장 유도등 (작은 발광 등)",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "landing/guide_light.png",
+   "size": [
+    64,
+    56
+   ],
+   "density": 2,
+   "anchor": [
+    32,
+    29
+   ],
+   "guide": "docs/asset_requests/guides/guide_light_guide.png",
+   "footprint": [
+    [
+     -0.2,
+     -0.2
+    ],
+    [
+     0.2,
+     -0.2
+    ],
+    [
+     0.2,
+     0.2
+    ],
+    [
+     -0.2,
+     0.2
+    ]
+   ],
+   "layer": "flat",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
+  },
+  {
+   "id": "mf.control.ctl_long_table",
+   "name": "제어실 중앙 긴 홀로 테이블",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "interiors/ctl_long_table.png",
+   "size": [
+    392,
+    264
+   ],
+   "density": 2,
+   "anchor": [
+    196,
+    155
+   ],
+   "guide": "docs/asset_requests/guides/ctl_long_table_guide.png",
+   "footprint": [
+    [
+     -3.5,
+     -1
+    ],
+    [
+     3.5,
+     -1
+    ],
+    [
+     3.5,
+     1
+    ],
+    [
+     -3.5,
+     1
+    ]
+   ],
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 1.0
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
+  },
+  {
+   "id": "mf.control.ctl_door_pillar",
+   "name": "제어실 입구 사선 문틀 기둥 (잘린 높이)",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "interiors/ctl_door_pillar.png",
+   "size": [
+    104,
+    136
+   ],
+   "density": 2,
+   "anchor": [
+    50,
+    97
+   ],
+   "guide": "docs/asset_requests/guides/ctl_door_pillar_guide.png",
+   "footprint": [
+    [
+     -0.4,
+     -0.45
+    ],
+    [
+     0.4,
+     -0.45
+    ],
+    [
+     0.4,
+     0.45
+    ],
+    [
+     -0.4,
+     0.45
+    ]
+   ],
+   "layer": "standing",
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
+  },
+  {
+   "id": "mf.room.table_long",
+   "name": "회의실 긴 테이블 (12 m 한 장)",
+   "kind": "sprite",
+   "status": "delivered",
+   "request": "docs/asset_requests/chatgpt_film_pass1.md",
+   "file": "interiors/conf_table_long.png",
+   "size": [
+    592,
+    352
+   ],
+   "density": 2,
+   "anchor": [
+    296,
+    195
+   ],
+   "guide": "docs/asset_requests/guides/conf_table_long_guide.png",
+   "footprint": [
+    [
+     -6,
+     -1
+    ],
+    [
+     6,
+     -1
+    ],
+    [
+     6,
+     1
+    ],
+    [
+     -6,
+     1
+    ]
+   ],
+   "layer": "standing",
+   "occlusion": {
+    "fadeOverActors": true,
+    "height": 0.8
+   },
+   "delivered": "docs/asset_requests/delivered/mustafar_film_pass1_notes.md",
+   "source": "external (ChatGPT): tools/assets/mustafar/src/film_pass1/ (delivered at the requested sizes, used as is)"
+  }
+ ]
+}

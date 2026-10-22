@@ -1,0 +1,1803 @@
+{
+ "_doc": "The Coruscant undercity (world/worldgen.js CityHub reads this; docs/UNDERCITY_MAP.md). World tiles, x east (screen right-down), y south (screen left-down); the iso grid is 2:1 (56x28 px per tile). ground: the level's rect is grimy metal plate (CITY_LOW); chasm polygons are the drop (VOID, impassable), mosaic the plaza's pavement (grated metal plates; the neon mosaic tiles were dropped), mud the wet alleys (walkable, slows the player). props: p = a sprite of the Coruscant underworld set (public/sprites/underworld, cut from the concept sheets; world/cityProps.js has its lights, steam and vendors), m = a baked model prop (only the turbolift); noBlock = no collision; steam = a vent. Everything else blocks by its footprint. lights: [x, y, z, r, g, b, radius, flicker]. steam: extra vents. puddles: [x, y, r]. zones and points are the design's landmarks (the HUD's region names come from pois).",
+ "grid": {
+  "type": "isometric 2:1",
+  "tilePx": [
+   56,
+   28
+  ],
+  "region": [
+   58,
+   94,
+   138,
+   133
+  ],
+  "upperPlaza": [
+   72,
+   49,
+   124,
+   79
+  ],
+  "dropBetween": [
+   80,
+   93
+  ]
+ },
+ "ground": {
+  "base": "CITY_LOW",
+  "chasm": [
+   {
+    "poly": [
+     [
+      91,
+      126
+     ],
+     [
+      101,
+      126
+     ],
+     [
+      102,
+      133.5
+     ],
+     [
+      90,
+      133.5
+     ]
+    ],
+    "name": "the bay: the drop reaching up under the plaza's south rim"
+   }
+  ],
+  "mosaic": [
+   {
+    "poly": [
+     [
+      88,
+      108
+     ],
+     [
+      94,
+      103
+     ],
+     [
+      104,
+      104
+     ],
+     [
+      110,
+      109
+     ],
+     [
+      109,
+      117
+     ],
+     [
+      102,
+      121
+     ],
+     [
+      93,
+      120
+     ],
+     [
+      87,
+      115
+     ]
+    ]
+   }
+  ],
+  "mud": [
+   {
+    "poly": [
+     [
+      66,
+      112
+     ],
+     [
+      86,
+      111.5
+     ],
+     [
+      87,
+      117
+     ],
+     [
+      67,
+      118.5
+     ]
+    ],
+    "name": "west alley"
+   },
+   {
+    "poly": [
+     [
+      113,
+      106
+     ],
+     [
+      126,
+      106
+     ],
+     [
+      128,
+      111
+     ],
+     [
+      114,
+      112
+     ]
+    ],
+    "name": "workshop alley"
+   }
+  ],
+  "dirt": [
+   {
+    "poly": [
+     [
+      70,
+      124
+     ],
+     [
+      80,
+      123.5
+     ],
+     [
+      81,
+      129.5
+     ],
+     [
+      69,
+      130
+     ]
+    ],
+    "name": "the residential court"
+   }
+  ],
+  "swamp": [
+   {
+    "poly": [
+     [
+      58,
+      125
+     ],
+     [
+      65,
+      125
+     ],
+     [
+      66,
+      131
+     ],
+     [
+      59,
+      131
+     ]
+    ],
+    "name": "the south-west sump"
+   },
+   {
+    "poly": [
+     [
+      127,
+      126
+     ],
+     [
+      134,
+      126
+     ],
+     [
+      135,
+      131
+     ],
+     [
+      128,
+      131
+     ]
+    ],
+    "name": "the south-east sump"
+   }
+  ]
+ },
+ "zones": [
+  {
+   "id": "plaza",
+   "name": "중앙 시장 광장",
+   "kind": "market",
+   "centre": [
+    98,
+    112
+   ],
+   "r": 10,
+   "pavement": "metal plates (grate and vent variants)",
+   "light": "dense neon, the one shaft of daylight"
+  },
+  {
+   "id": "westAlley",
+   "name": "서쪽 뒷골목",
+   "kind": "residential",
+   "poly": [
+    [
+     64,
+     103
+    ],
+    [
+     88,
+     103
+    ],
+    [
+     88,
+     119
+    ],
+    [
+     64,
+     119
+    ]
+   ],
+   "pavement": "mud conduit, oil-stained plate, puddles",
+   "light": "dim pink"
+  },
+  {
+   "id": "court",
+   "name": "남서 주거 안뜰",
+   "kind": "residential",
+   "poly": [
+    [
+     64,
+     119
+    ],
+    [
+     88,
+     119
+    ],
+    [
+     88,
+     132
+    ],
+    [
+     64,
+     132
+    ]
+   ],
+   "pavement": "mud + plate",
+   "light": "dim blue"
+  },
+  {
+   "id": "workshop",
+   "name": "북동 작업장 골목",
+   "kind": "residential",
+   "poly": [
+    [
+     112,
+     100
+    ],
+    [
+     132,
+     100
+    ],
+    [
+     132,
+     113
+    ],
+    [
+     112,
+     113
+    ]
+   ],
+   "pavement": "mud conduit",
+   "light": "amber work light"
+  },
+  {
+   "id": "cantina",
+   "name": "녹슨 등불 광장",
+   "kind": "market",
+   "poly": [
+    [
+     104,
+     119
+    ],
+    [
+     128,
+     119
+    ],
+    [
+     128,
+     132
+    ],
+    [
+     104,
+     132
+    ]
+   ],
+   "pavement": "metal plate",
+   "light": "the cantina's warm spill"
+  },
+  {
+   "id": "ventSE",
+   "name": "남동 환기 구역",
+   "kind": "industrial",
+   "poly": [
+    [
+     124,
+     112
+    ],
+    [
+     138,
+     112
+    ],
+    [
+     138,
+     132
+    ],
+    [
+     124,
+     132
+    ]
+   ],
+   "pavement": "grimy plate",
+   "light": "sparse amber, steam"
+  },
+  {
+   "id": "ventSW",
+   "name": "남서 환기 구역",
+   "kind": "industrial",
+   "poly": [
+    [
+     58,
+     119
+    ],
+    [
+     66,
+     119
+    ],
+    [
+     66,
+     132
+    ],
+    [
+     58,
+     132
+    ]
+   ],
+   "pavement": "grimy plate",
+   "light": "one flickering lamp"
+  },
+  {
+   "id": "northWall",
+   "name": "상부 구조물 기둥 벽",
+   "kind": "boundary",
+   "poly": [
+    [
+     58,
+     94
+    ],
+    [
+     138,
+     94
+    ],
+    [
+     138,
+     100
+    ],
+    [
+     58,
+     100
+    ]
+   ],
+   "pavement": "plate",
+   "light": "pillar warning lamps"
+  }
+ ],
+ "boundaries": {
+  "north": "vertical pipe stacks, steam vents and stacked apartment modules along y 94-99; the turbolift at x 82 is the one way in",
+  "south": "the chasm (VOID) from y 133, impassable: steam vents and pipe stacks stand at its rim; the bay cuts up to y 126 under the plaza (the overlook)",
+  "west": "tenement stacks at x 59-63, a trash compactor and an abandoned speeder clogging the alley's end",
+  "east": "tenement stacks and a storefront wall at x 133-137, pipe clusters closing the workshop alley",
+  "ring": "the outermost tile ring of the level (x 58, x 137, y 94) is blocked under the pillars and pipes, so no one stands on the drop's lip"
+ },
+ "props": [
+  {
+   "p": "verticalPipes",
+   "x": 59.2,
+   "y": 95.4,
+   "zone": "northWall"
+  },
+  {
+   "p": "aptModuleA",
+   "x": 62.5,
+   "y": 97.8,
+   "zone": "northWall"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 66.5,
+   "y": 95.4,
+   "zone": "northWall"
+  },
+  {
+   "p": "aptStackB",
+   "x": 70.5,
+   "y": 97.8,
+   "zone": "northWall"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 74.5,
+   "y": 95.4,
+   "zone": "northWall"
+  },
+  {
+   "p": "aptBalconyC",
+   "x": 78.0,
+   "y": 97.6,
+   "zone": "northWall"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 85.5,
+   "y": 95.0,
+   "zone": "northWall"
+  },
+  {
+   "p": "aptModuleC",
+   "x": 92.5,
+   "y": 97.8,
+   "zone": "northWall"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 96.5,
+   "y": 95.4,
+   "zone": "northWall"
+  },
+  {
+   "p": "aptModuleA",
+   "x": 103.5,
+   "y": 97.8,
+   "zone": "northWall"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 107.5,
+   "y": 95.4,
+   "zone": "northWall"
+  },
+  {
+   "p": "conduitArray",
+   "x": 110.5,
+   "y": 95.6,
+   "zone": "northWall"
+  },
+  {
+   "p": "aptStackB",
+   "x": 114.0,
+   "y": 97.8,
+   "zone": "northWall"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 118.0,
+   "y": 95.4,
+   "zone": "northWall"
+  },
+  {
+   "p": "aptBalconyC",
+   "x": 125.5,
+   "y": 97.8,
+   "zone": "northWall"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 129.5,
+   "y": 95.4,
+   "zone": "northWall"
+  },
+  {
+   "p": "aptModuleA",
+   "x": 133.5,
+   "y": 97.8,
+   "zone": "northWall"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 137.0,
+   "y": 95.8,
+   "zone": "northWall"
+  },
+  {
+   "p": "steamVent",
+   "x": 99.5,
+   "y": 95.6,
+   "zone": "northWall",
+   "steam": true
+  },
+  {
+   "p": "steamVent",
+   "x": 121.5,
+   "y": 95.6,
+   "zone": "northWall",
+   "steam": true
+  },
+  {
+   "p": "conduitBundle",
+   "x": 88.5,
+   "y": 96.2,
+   "zone": "northWall",
+   "noBlock": true
+  },
+  {
+   "p": "conduitBundle",
+   "x": 86.0,
+   "y": 102.6,
+   "zone": "westAlley",
+   "noBlock": true
+  },
+  {
+   "p": "verticalPipes",
+   "x": 59.0,
+   "y": 102.8,
+   "zone": "westAlley"
+  },
+  {
+   "p": "aptBalconyC",
+   "x": 61.0,
+   "y": 108.0,
+   "zone": "westAlley"
+  },
+  {
+   "p": "trashCompactor",
+   "x": 61.5,
+   "y": 116.0,
+   "zone": "westAlley"
+  },
+  {
+   "p": "abandonedSpeeder",
+   "x": 63.8,
+   "y": 119.8,
+   "zone": "westAlley"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 59.0,
+   "y": 120.0,
+   "zone": "westAlley"
+  },
+  {
+   "p": "aptModuleA",
+   "x": 70.5,
+   "y": 108.2,
+   "zone": "westAlley"
+  },
+  {
+   "p": "aptStackB",
+   "x": 75.5,
+   "y": 108.0,
+   "zone": "westAlley"
+  },
+  {
+   "p": "aptBalconyC",
+   "x": 80.5,
+   "y": 108.4,
+   "zone": "westAlley"
+  },
+  {
+   "p": "crateStack",
+   "x": 66.4,
+   "y": 110.6,
+   "zone": "westAlley"
+  },
+  {
+   "p": "scrapHeap",
+   "x": 84.2,
+   "y": 116.6,
+   "zone": "westAlley"
+  },
+  {
+   "p": "conduitArray",
+   "x": 85.6,
+   "y": 110.2,
+   "zone": "westAlley"
+  },
+  {
+   "p": "ventStack",
+   "x": 58.8,
+   "y": 113.2,
+   "zone": "westAlley",
+   "steam": true
+  },
+  {
+   "p": "conduitBundle",
+   "x": 78.0,
+   "y": 114.4,
+   "zone": "westAlley",
+   "noBlock": true
+  },
+  {
+   "p": "aptModuleC",
+   "x": 68.5,
+   "y": 122.0,
+   "zone": "court"
+  },
+  {
+   "p": "aptStackB",
+   "x": 76.0,
+   "y": 121.6,
+   "zone": "court"
+  },
+  {
+   "p": "buildingBlock",
+   "x": 84.5,
+   "y": 123.0,
+   "zone": "court"
+  },
+  {
+   "p": "crateBarrels",
+   "x": 72.4,
+   "y": 127.6,
+   "zone": "court"
+  },
+  {
+   "p": "scrapHeap",
+   "x": 76.8,
+   "y": 128.4,
+   "zone": "court"
+  },
+  {
+   "p": "barrelPile",
+   "x": 70.2,
+   "y": 129.6,
+   "zone": "court"
+  },
+  {
+   "p": "lightPostHolo",
+   "x": 74.6,
+   "y": 125.0,
+   "zone": "court"
+  },
+  {
+   "p": "speederBike",
+   "x": 79.6,
+   "y": 127.4,
+   "zone": "court"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 70.5,
+   "y": 131.2,
+   "zone": "court"
+  },
+  {
+   "p": "ventStack",
+   "x": 82.5,
+   "y": 130.6,
+   "zone": "court",
+   "steam": true
+  },
+  {
+   "p": "verticalPipes",
+   "x": 60.5,
+   "y": 124.5,
+   "zone": "ventSW"
+  },
+  {
+   "p": "barrelPile",
+   "x": 64.4,
+   "y": 124.6,
+   "zone": "ventSW"
+  },
+  {
+   "p": "ventStack",
+   "x": 61.5,
+   "y": 129.6,
+   "zone": "ventSW",
+   "steam": true
+  },
+  {
+   "p": "steamVent",
+   "x": 65.5,
+   "y": 128.0,
+   "zone": "ventSW",
+   "steam": true
+  },
+  {
+   "p": "dumplingStall",
+   "x": 96.5,
+   "y": 103.6,
+   "zone": "plaza"
+  },
+  {
+   "p": "ramenStand",
+   "x": 102.8,
+   "y": 104.4,
+   "zone": "plaza"
+  },
+  {
+   "p": "blueMilkStand",
+   "x": 108.4,
+   "y": 107.2,
+   "zone": "plaza"
+  },
+  {
+   "p": "skewerCart",
+   "x": 87.6,
+   "y": 106.4,
+   "zone": "plaza"
+  },
+  {
+   "p": "skewerCartB",
+   "x": 88.3,
+   "y": 110.4,
+   "zone": "plaza"
+  },
+  {
+   "p": "groguWagon",
+   "x": 88.6,
+   "y": 114.6,
+   "zone": "plaza"
+  },
+  {
+   "p": "marketStall",
+   "x": 109.6,
+   "y": 112.8,
+   "zone": "plaza"
+  },
+  {
+   "p": "tradeKiosk",
+   "x": 108.6,
+   "y": 117.4,
+   "zone": "plaza"
+  },
+  {
+   "p": "tradeTerminal",
+   "x": 91.2,
+   "y": 118.2,
+   "zone": "plaza"
+  },
+  {
+   "p": "tradeTerminal",
+   "x": 108.9,
+   "y": 103.4,
+   "zone": "plaza"
+  },
+  {
+   "p": "neonSignSet",
+   "x": 93.2,
+   "y": 102.4,
+   "zone": "plaza"
+  },
+  {
+   "p": "signPost",
+   "x": 111.2,
+   "y": 105.0,
+   "zone": "plaza"
+  },
+  {
+   "p": "neonSignSet",
+   "x": 104.8,
+   "y": 121.6,
+   "zone": "plaza"
+  },
+  {
+   "p": "signPost",
+   "x": 86.4,
+   "y": 108.6,
+   "zone": "plaza"
+  },
+  {
+   "p": "signPost",
+   "x": 110.4,
+   "y": 115.2,
+   "zone": "plaza"
+  },
+  {
+   "p": "signPost",
+   "x": 92.0,
+   "y": 121.4,
+   "zone": "plaza"
+  },
+  {
+   "p": "lightPost",
+   "x": 106.8,
+   "y": 102.4,
+   "zone": "plaza"
+  },
+  {
+   "p": "lightPost",
+   "x": 86.2,
+   "y": 112.6,
+   "zone": "plaza"
+  },
+  {
+   "p": "lightPost",
+   "x": 109.4,
+   "y": 120.0,
+   "zone": "plaza"
+  },
+  {
+   "p": "lightPost",
+   "x": 97.8,
+   "y": 122.0,
+   "zone": "plaza"
+  },
+  {
+   "p": "conduitArray",
+   "x": 112.0,
+   "y": 110.0,
+   "zone": "plaza"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 92.2,
+   "y": 125.4,
+   "zone": "plaza"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 99.8,
+   "y": 125.4,
+   "zone": "plaza"
+  },
+  {
+   "p": "steamVent",
+   "x": 89.0,
+   "y": 126.6,
+   "zone": "plaza",
+   "steam": true
+  },
+  {
+   "p": "steamVent",
+   "x": 103.2,
+   "y": 126.8,
+   "zone": "plaza",
+   "steam": true
+  },
+  {
+   "p": "pawnShopE",
+   "x": 119.0,
+   "y": 103.6,
+   "zone": "workshop"
+  },
+  {
+   "p": "pawnShop",
+   "x": 127.0,
+   "y": 104.0,
+   "zone": "workshop"
+  },
+  {
+   "p": "crateStack",
+   "x": 123.4,
+   "y": 107.2,
+   "zone": "workshop"
+  },
+  {
+   "p": "scrapHeap",
+   "x": 121.0,
+   "y": 108.4,
+   "zone": "workshop"
+  },
+  {
+   "p": "barrelPile",
+   "x": 116.2,
+   "y": 108.6,
+   "zone": "workshop"
+  },
+  {
+   "p": "conduitArray",
+   "x": 124.8,
+   "y": 109.0,
+   "zone": "workshop"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 129.5,
+   "y": 108.5,
+   "zone": "workshop"
+  },
+  {
+   "p": "trashCompactor",
+   "x": 131.6,
+   "y": 110.8,
+   "zone": "workshop"
+  },
+  {
+   "p": "conduitBundle",
+   "x": 121.0,
+   "y": 110.6,
+   "zone": "workshop",
+   "noBlock": true
+  },
+  {
+   "p": "verticalPipes",
+   "x": 137.0,
+   "y": 102.6,
+   "zone": "east"
+  },
+  {
+   "p": "aptStackB",
+   "x": 134.8,
+   "y": 104.8,
+   "zone": "east"
+  },
+  {
+   "p": "aptModuleC",
+   "x": 134.8,
+   "y": 109.6,
+   "zone": "east"
+  },
+  {
+   "p": "denseMarket",
+   "x": 135.0,
+   "y": 115.5,
+   "zone": "east"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 136.5,
+   "y": 121.0,
+   "zone": "east"
+  },
+  {
+   "p": "aptBalconyC",
+   "x": 134.5,
+   "y": 127.0,
+   "zone": "east"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 137.0,
+   "y": 131.0,
+   "zone": "east"
+  },
+  {
+   "p": "ventStack",
+   "x": 137.2,
+   "y": 111.0,
+   "zone": "east",
+   "steam": true
+  },
+  {
+   "p": "buildingBlock",
+   "x": 117.0,
+   "y": 123.0,
+   "zone": "cantina"
+  },
+  {
+   "p": "barSign",
+   "x": 113.2,
+   "y": 124.8,
+   "zone": "cantina"
+  },
+  {
+   "p": "neonSignSet",
+   "x": 107.4,
+   "y": 125.4,
+   "zone": "cantina"
+  },
+  {
+   "p": "crateStack",
+   "x": 122.6,
+   "y": 120.4,
+   "zone": "cantina"
+  },
+  {
+   "p": "barrelPile",
+   "x": 112.2,
+   "y": 121.4,
+   "zone": "cantina"
+  },
+  {
+   "p": "scrapHeap",
+   "x": 109.8,
+   "y": 123.2,
+   "zone": "cantina"
+  },
+  {
+   "p": "lightPost",
+   "x": 113.0,
+   "y": 130.4,
+   "zone": "cantina"
+  },
+  {
+   "p": "signPost",
+   "x": 124.4,
+   "y": 125.6,
+   "zone": "cantina"
+  },
+  {
+   "p": "abandonedSpeeder",
+   "x": 123.6,
+   "y": 129.8,
+   "zone": "cantina"
+  },
+  {
+   "p": "speederBike",
+   "x": 111.0,
+   "y": 131.0,
+   "zone": "cantina"
+  },
+  {
+   "p": "scrapHeap",
+   "x": 120.0,
+   "y": 131.4,
+   "zone": "cantina"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 135.0,
+   "y": 113.0,
+   "zone": "ventSE"
+  },
+  {
+   "p": "verticalPipes",
+   "x": 129.5,
+   "y": 129.0,
+   "zone": "ventSE"
+  },
+  {
+   "p": "trashCompactor",
+   "x": 134.0,
+   "y": 122.0,
+   "zone": "ventSE"
+  },
+  {
+   "p": "barrelPile",
+   "x": 124.6,
+   "y": 115.6,
+   "zone": "ventSE"
+  },
+  {
+   "p": "scrapHeap",
+   "x": 130.6,
+   "y": 118.6,
+   "zone": "ventSE"
+  },
+  {
+   "p": "compactorUnit",
+   "x": 126.5,
+   "y": 124.2,
+   "zone": "ventSE"
+  },
+  {
+   "p": "steamVent",
+   "x": 128.5,
+   "y": 114.5,
+   "zone": "ventSE",
+   "steam": true
+  },
+  {
+   "p": "steamVent",
+   "x": 133.0,
+   "y": 117.5,
+   "zone": "ventSE",
+   "steam": true
+  },
+  {
+   "p": "steamVent",
+   "x": 131.5,
+   "y": 125.0,
+   "zone": "ventSE",
+   "steam": true
+  },
+  {
+   "p": "ventStack",
+   "x": 127.0,
+   "y": 121.5,
+   "zone": "ventSE",
+   "steam": true
+  },
+  {
+   "p": "ventStack",
+   "x": 136.0,
+   "y": 131.0,
+   "zone": "ventSE",
+   "steam": true
+  },
+  {
+   "p": "conduitBundle",
+   "x": 126.0,
+   "y": 117.5,
+   "zone": "ventSE",
+   "noBlock": true
+  }
+ ],
+ "lights": [
+  [
+   98,
+   112,
+   6,
+   200,
+   225,
+   255,
+   150,
+   0.01
+  ],
+  [
+   92,
+   106,
+   2.2,
+   255,
+   80,
+   170,
+   90,
+   0.04
+  ],
+  [
+   100,
+   104.5,
+   2.2,
+   80,
+   230,
+   255,
+   85,
+   0.04
+  ],
+  [
+   107,
+   108,
+   2.2,
+   255,
+   180,
+   70,
+   80,
+   0.2
+  ],
+  [
+   108.5,
+   115,
+   2.2,
+   160,
+   120,
+   255,
+   85,
+   0.04
+  ],
+  [
+   89,
+   112,
+   2.2,
+   255,
+   80,
+   170,
+   80,
+   0.04
+  ],
+  [
+   93,
+   119,
+   2.2,
+   80,
+   230,
+   255,
+   80,
+   0.2
+  ],
+  [
+   104,
+   119.5,
+   2.2,
+   255,
+   180,
+   70,
+   75,
+   0.04
+  ],
+  [
+   111,
+   105,
+   2.4,
+   120,
+   220,
+   255,
+   70,
+   0.04
+  ],
+  [
+   76,
+   113,
+   2.0,
+   255,
+   80,
+   170,
+   55,
+   0.2
+  ],
+  [
+   84,
+   104,
+   2.0,
+   160,
+   120,
+   255,
+   50,
+   0.04
+  ],
+  [
+   74,
+   127,
+   2.0,
+   80,
+   230,
+   255,
+   55,
+   0.2
+  ],
+  [
+   121,
+   106,
+   2.4,
+   255,
+   180,
+   70,
+   65,
+   0.2
+  ],
+  [
+   116.5,
+   129,
+   2.2,
+   255,
+   160,
+   80,
+   85,
+   0.04
+  ],
+  [
+   124.5,
+   126,
+   2.2,
+   160,
+   120,
+   255,
+   60,
+   0.04
+  ],
+  [
+   130,
+   120,
+   2.0,
+   255,
+   150,
+   60,
+   50,
+   0.3
+  ],
+  [
+   62.5,
+   127.5,
+   2.0,
+   255,
+   150,
+   60,
+   45,
+   0.3
+  ]
+ ],
+ "puddles": [
+  [
+   72,
+   114.5,
+   1.3
+  ],
+  [
+   80,
+   115.8,
+   1.0
+  ],
+  [
+   118,
+   108.5,
+   1.1
+  ],
+  [
+   74,
+   126.8,
+   0.9
+  ],
+  [
+   99.5,
+   110.5,
+   0.9
+  ],
+  [
+   113.5,
+   127.6,
+   1.0
+  ],
+  [
+   126.5,
+   120.0,
+   0.8
+  ]
+ ],
+ "steam": [
+  [
+   91.5,
+   127.2,
+   0.2
+  ],
+  [
+   103.8,
+   127.4,
+   0.2
+  ]
+ ],
+ "pois": [
+  {
+   "x": 98,
+   "y": 112,
+   "r": 10,
+   "name": "코러산트 · 네온 시장 광장"
+  },
+  {
+   "x": 117,
+   "y": 123,
+   "r": 5,
+   "name": "코러산트 · 녹슨 등불 바"
+  },
+  {
+   "x": 76,
+   "y": 114,
+   "r": 7,
+   "name": "코러산트 · 서쪽 뒷골목"
+  },
+  {
+   "x": 75,
+   "y": 126,
+   "r": 6,
+   "name": "코러산트 · 주거 안뜰"
+  },
+  {
+   "x": 121,
+   "y": 106,
+   "r": 6,
+   "name": "코러산트 · 작업장 골목"
+  },
+  {
+   "x": 130,
+   "y": 121,
+   "r": 8,
+   "name": "코러산트 · 환기 구역"
+  },
+  {
+   "x": 96,
+   "y": 124,
+   "r": 3.5,
+   "name": "코러산트 · 낭떠러지 전망대"
+  }
+ ],
+ "points": {
+  "liftLow": [
+   82,
+   97.5
+  ],
+  "liftLanding": [
+   83.6,
+   100.4
+  ],
+  "plazaCentre": [
+   98,
+   112
+  ],
+  "foodStallCluster": [
+   [
+    96.5,
+    103.6
+   ],
+   [
+    102.8,
+    104.4
+   ],
+   [
+    108.4,
+    107.2
+   ],
+   [
+    87.6,
+    106.4
+   ],
+   [
+    88.3,
+    110.4
+   ],
+   [
+    88.6,
+    114.6
+   ],
+   [
+    109.6,
+    112.8
+   ],
+   [
+    108.6,
+    117.4
+   ]
+  ],
+  "tradeTerminals": [
+   [
+    91.2,
+    118.2
+   ],
+   [
+    108.9,
+    103.4
+   ]
+  ],
+  "cantina": [
+   117,
+   123
+  ],
+  "cantinaDoor": [
+   117.4,
+   127.6
+  ],
+  "overlook": [
+   96,
+   123.5
+  ],
+  "steamVents": [
+   [
+    99.5,
+    95.6
+   ],
+   [
+    121.5,
+    95.6
+   ],
+   [
+    58.8,
+    113.2
+   ],
+   [
+    82.5,
+    130.6
+   ],
+   [
+    61.5,
+    129.6
+   ],
+   [
+    65.5,
+    128.0
+   ],
+   [
+    89.0,
+    126.6
+   ],
+   [
+    103.2,
+    126.8
+   ],
+   [
+    137.2,
+    111.0
+   ],
+   [
+    128.5,
+    114.5
+   ],
+   [
+    133.0,
+    117.5
+   ],
+   [
+    131.5,
+    125.0
+   ],
+   [
+    127.0,
+    121.5
+   ],
+   [
+    136.0,
+    131.0
+   ]
+  ],
+  "chasmEdge": {
+   "south": 133,
+   "bay": [
+    [
+     91,
+     126
+    ],
+    [
+     101,
+     126
+    ],
+    [
+     102,
+     133.5
+    ],
+    [
+     90,
+     133.5
+    ]
+   ]
+  },
+  "deadEnds": {
+   "westAlley": [
+    63,
+    117
+   ],
+   "workshopAlley": [
+    127.5,
+    109.5
+   ]
+  },
+  "overheadConduits": [
+   [
+    88.5,
+    96.2
+   ],
+   [
+    86.0,
+    102.6
+   ],
+   [
+    78.0,
+    114.4
+   ],
+   [
+    121.0,
+    110.6
+   ],
+   [
+    126.0,
+    117.5
+   ]
+  ]
+ },
+ "upper": {
+  "_doc": "the upper plaza (CITY_UP, x 72-124, y 49-79): the Jedi landing pad (117, 62) and the turbolift (82, 77.5) are the game's own props; everything else is the underworld set",
+  "props": [
+   {
+    "p": "buildingBlock",
+    "x": 77.0,
+    "y": 51.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "verticalPipes",
+    "x": 82.5,
+    "y": 50.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "aptBalconyC",
+    "x": 87.5,
+    "y": 51.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "denseMarket",
+    "x": 95.5,
+    "y": 51.8,
+    "zone": "upNorth"
+   },
+   {
+    "p": "verticalPipes",
+    "x": 100.5,
+    "y": 50.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "aptModuleC",
+    "x": 105.0,
+    "y": 51.8,
+    "zone": "upNorth"
+   },
+   {
+    "p": "aptStackB",
+    "x": 113.0,
+    "y": 51.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "verticalPipes",
+    "x": 118.5,
+    "y": 50.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "aptModuleA",
+    "x": 122.0,
+    "y": 51.6,
+    "zone": "upNorth"
+   },
+   {
+    "p": "aptStackB",
+    "x": 74.0,
+    "y": 58.0,
+    "zone": "upWest"
+   },
+   {
+    "p": "verticalPipes",
+    "x": 73.5,
+    "y": 63.5,
+    "zone": "upWest"
+   },
+   {
+    "p": "aptBalconyC",
+    "x": 74.0,
+    "y": 68.0,
+    "zone": "upWest"
+   },
+   {
+    "p": "steamVent",
+    "x": 73.5,
+    "y": 73.5,
+    "zone": "upWest",
+    "steam": true
+   },
+   {
+    "p": "verticalPipes",
+    "x": 123.0,
+    "y": 56.0,
+    "zone": "upEast"
+   },
+   {
+    "p": "conduitArray",
+    "x": 121.0,
+    "y": 56.6,
+    "zone": "upEast"
+   },
+   {
+    "p": "aptStackB",
+    "x": 122.5,
+    "y": 73.5,
+    "zone": "upEast"
+   },
+   {
+    "p": "lightPost",
+    "x": 78.0,
+    "y": 77.4,
+    "zone": "upEdge"
+   },
+   {
+    "p": "lightPost",
+    "x": 90.0,
+    "y": 77.4,
+    "zone": "upEdge"
+   },
+   {
+    "p": "lightPost",
+    "x": 100.0,
+    "y": 77.4,
+    "zone": "upEdge"
+   },
+   {
+    "p": "lightPost",
+    "x": 110.0,
+    "y": 77.4,
+    "zone": "upEdge"
+   },
+   {
+    "p": "signPost",
+    "x": 118.0,
+    "y": 77.0,
+    "zone": "upEdge"
+   },
+   {
+    "p": "neonSignSet",
+    "x": 121.0,
+    "y": 76.2,
+    "zone": "upEdge"
+   },
+   {
+    "p": "tradeTerminal",
+    "x": 88.0,
+    "y": 62.6,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "tradeTerminal",
+    "x": 100.0,
+    "y": 62.4,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "lightPost",
+    "x": 88.5,
+    "y": 70.2,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "lightPost",
+    "x": 100.0,
+    "y": 70.4,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "signPost",
+    "x": 94.0,
+    "y": 60.8,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "tradeKiosk",
+    "x": 80.0,
+    "y": 60.5,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "neonSignSet",
+    "x": 84.0,
+    "y": 55.5,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "marketStall",
+    "x": 108.0,
+    "y": 73.5,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "crateStack",
+    "x": 104.5,
+    "y": 57.0,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "barrelPile",
+    "x": 103.0,
+    "y": 58.8,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "crateBarrels",
+    "x": 120.0,
+    "y": 69.6,
+    "zone": "upPlaza"
+   },
+   {
+    "p": "scrapHeap",
+    "x": 76.6,
+    "y": 74.6,
+    "zone": "upPlaza"
+   }
+  ],
+  "zones": [
+   {
+    "id": "upPlaza",
+    "name": "상층 플라자",
+    "centre": [
+     94,
+     66
+    ],
+    "r": 9
+   },
+   {
+    "id": "upNorth",
+    "name": "북쪽 사무 블록 벽"
+   },
+   {
+    "id": "upEdge",
+    "name": "낭떠러지 테라스 (남쪽)"
+   },
+   {
+    "id": "upEast",
+    "name": "착륙장 옆 보급소"
+   }
+  ],
+  "points": {
+   "landingPad": [
+    117,
+    62
+   ],
+   "landing": [
+    113.5,
+    63.5
+   ],
+   "liftUp": [
+    82,
+    77.5
+   ],
+   "plazaCentre": [
+    94,
+    66
+   ],
+   "depot": [
+    104.5,
+    57.5
+   ]
+  }
+ }
+}

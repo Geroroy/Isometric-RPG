@@ -80,6 +80,7 @@ export class QuestLog {
     const q = QUESTS[id];
     // a camp quest may already be satisfied
     if (q.type === 'camp' && this.firstCamp()?.cleared) this.state[id].state = 'ready';
+    if (q.type === 'boss' && this.game.front.camps.find((c) => c.boss)?.cleared) this.state[id].state = 'ready'; // the guardian may already be scrap
     this.game.emit('quest', id, 'accept');
     this.game.audio.play('click');
   }

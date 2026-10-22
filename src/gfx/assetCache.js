@@ -4,11 +4,14 @@
 // any change to how sprites look invalidates it automatically.
 import charSrc from './models/characters.js?raw';
 import animSrc from './models/anims.js?raw';
+import anakinAnimSrc from './models/anakinAnims.js?raw';
 import rigSrc from './models/rig.js?raw';
 import partSrc from './models/parts.js?raw';
 import propSrc from './models/props.js?raw';
 import bakerSrc from './baker.js?raw';
 import assetSrc from './assets.js?raw';
+import specSrc from './specs.js?raw';
+import { cachedJSON, cachedBlob } from './fileCache.js';
 
 const DB = 'cw-sprites';
 const STORE = 'bundles';
@@ -22,7 +25,7 @@ function fnv(str) {
   return (h >>> 0).toString(36);
 }
 
-export const SOURCE_HASH = fnv([charSrc, animSrc, rigSrc, partSrc, propSrc, bakerSrc, assetSrc].join('\u0000'));
+export const SOURCE_HASH = fnv([charSrc, animSrc, anakinAnimSrc, rigSrc, partSrc, propSrc, bakerSrc, assetSrc, specSrc].join('\u0000'));
 
 function open() {
   return new Promise((resolve, reject) => {
@@ -73,34 +76,9 @@ function decode(value, pages) {
 
 const toBlob = (canvas) => new Promise((r) => canvas.toBlob(r, 'image/png'));
 
-/** Point every frame's `page` through `map` (in place, so live frames follow). */
-function repage(value, map) {
-  if (Array.isArray(value)) for (const v of value) repage(v, map);
-  else if (value && typeof value === 'object') {
-    for (const [k, v] of Object.entries(value)) {
-      if (k === 'page') value.page = map.get(v) || v;
-      else repage(v, map);
-    }
-  }
-}
-
-/**
- * Freshly baked atlas pages are 2048² canvases (16 MB each). Swap them for
- * ImageBitmaps and empty the canvases: iOS Safari caps the memory all
- * canvases may hold together, and bitmaps don't count towards it.
- */
-async function release(data, pages) {
-  const canvases = pages.filter((p) => p instanceof HTMLCanvasElement);
-  if (!canvases.length || !('createImageBitmap' in window)) return;
-  const bitmaps = await Promise.all(canvases.map((c) => createImageBitmap(c)));
-  repage(data, new Map(canvases.map((c, i) => [c, bitmaps[i]])));
-  for (const c of canvases) c.width = c.height = 0;
-}
-
-/** Store a freshly baked bundle, then trade its canvases for bitmaps. */
 export async function saveBundle(name, data) {
-  const pages = [];
   try {
+    const pages = [];
     const json = encode(data, pages);
     const blobs = await Promise.all(pages.map(toBlob));
     const db = await open();
@@ -108,11 +86,6 @@ export async function saveBundle(name, data) {
     db.close();
   } catch (e) {
     console.warn('sprite cache: save failed', e);
-  }
-  try {
-    await release(data, pages);
-  } catch (e) {
-    console.warn('sprite cache: release failed', e);
   }
 }
 
@@ -126,6 +99,38 @@ export async function loadBundle(name) {
     return decode(rec.json, pages);
   } catch (e) {
     console.warn('sprite cache: load failed', e);
+    return null;
+  }
+}
+
+const BAKED = 'sprites/baked/';
+
+/**
+ * The bundle shipped with the game (tools/bake_core.mjs), so a device doesn't
+ * bake on its first launch or after an update. Used only while its hash
+ * matches the current sources; `?bake` skips it (that's how the tool makes it).
+ */
+// why a shipped bundle could not be used, by name (the error a browser without WebGL shows: assets.js newBaker)
+const PROBLEM = {};
+export const shippedProblem = (name) => `${BAKED}${name}.json — ${PROBLEM[name] || '확인 전'}`;
+
+export async function loadShipped(name) {
+  if (/[?&]bake\b/.test(location.search)) return (PROBLEM[name] = '?bake 로 무시함'), null;
+  try {
+    const meta = await cachedJSON(import.meta.env.BASE_URL + BAKED + name + '.json').catch((e) => ((PROBLEM[name] = '파일 없음 (' + e.message + ')'), null));
+    if (!meta) return null;
+    if (meta.hash !== SOURCE_HASH) {
+      PROBLEM[name] = `코드와 맞지 않음 (해시 ${meta.hash} ≠ ${SOURCE_HASH}: npm run bake 로 다시 구워야 함)`;
+      console.warn(`sprite cache: shipped '${name}' bundle is stale (${meta.hash} ≠ ${SOURCE_HASH}) — run tools/bake_core.mjs`);
+      return null;
+    }
+    const pages = await Promise.all(
+      meta.pages.map((p) => cachedBlob(import.meta.env.BASE_URL + BAKED + p).then((b) => createImageBitmap(b))),
+    );
+    return decode(meta.json, pages);
+  } catch (e) {
+    PROBLEM[name] = '읽지 못함 (' + e.message + ')';
+    console.warn('sprite cache: shipped bundle failed', e);
     return null;
   }
 }

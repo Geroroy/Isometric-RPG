@@ -21,7 +21,8 @@ import { dist } from './math.js';
 
 const FADE = 1.6; // crossfade seconds
 const STINGS = new Set(['victory', 'death', 'dark']);
-const ONE_SHOT = new Set(['credits', 'mustafarIntro', 'mustafarEnd']); // play once, then silence
+// play once from the top, then silence (the Mustafar duel's score clips: docs/MUSTAFAR_SCORE.md)
+const ONE_SHOT = new Set(['credits', 'mustafarIntro', 'mustafarA', 'mustafarB', 'mustafarC', 'mustafarD', 'mustafarEnd']);
 const SAVE = 'cw.music';
 // situations whose music the player may replace, in jukebox order
 export const SITUATIONS = [
@@ -31,7 +32,6 @@ export const SITUATIONS = [
   ['combat', '전투'],
   ['boss', '정예 · 공장 보스'],
   ['duel', '두쿠와의 결투'],
-  ['mustafar', '오비완과의 결투'],
   ['credits', '결투 승리'],
   ['victory', '전투 종료'],
   ['death', '사망'],
@@ -100,10 +100,6 @@ export class Music {
     for (const k of ['combat', 'explore', 'victory']) for (const u of this.lists[k] || []) this.track(u);
     game.on('death', () => this.playSting('death'));
     game.on('darkSide', () => this.playSting('dark'));
-    game.on('duelEnd', (r) => {
-      this.duelOver = r.won ? 'credits' : 'silence';
-      if (r.won && !game.duel.music) this.playSting('victory'); // Mustafar ends in tragedy
-    });
   }
 
   track(url) {
@@ -153,7 +149,7 @@ export class Music {
   /** Crossfade the loop to a situation (no-op if it is already playing). */
   play(situation) {
     if (this.cur && this.cur.situation === situation && (situation !== 'jukebox' || this.cur.url === this.juke.url)) return;
-    if (this.cur) this.fade(this.track(this.cur.url), 0);
+    if (this.cur && this.cur.url) this.fade(this.track(this.cur.url), 0);
     const url = situation === 'silence' ? null : this.pick(situation);
     this.cur = { situation, url };
     if (!url) return;
@@ -198,7 +194,7 @@ export class Music {
     if (this.isTitle()) return 'title';
     if (p.dead) return 'silence'; // the death sting plays over it
     if (g.duel && g.duel.music) return g.duel.music();
-    if (g.duel) return this.duelOver || (g.duel.started ? 'duel' : 'title');
+    if (g.duel) return g.duel.started ? 'duel' : 'title';
     if (g.inCombat) {
       const boss = g.activeUnits.some((u) => u.elite && !u.dead && u.target === p && dist(u.x, u.y, p.x, p.y) < 14);
       return boss || /공장/.test(g.region || '') ? 'boss' : 'combat';

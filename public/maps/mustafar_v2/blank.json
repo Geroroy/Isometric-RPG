@@ -1,0 +1,23 @@
+{
+  "format": "mustafar-zone",
+  "version": 1,
+  "id": "blank",
+  "stage": 0,
+  "title": "무스타파 · 빈 맵",
+  "ambient": [150, 86, 70],
+  "grade": "mustafar",
+  "surround": {"biome": "LAVA", "asset": "mf.lava.surface", "note": "the delivered lava tile, as the stages have it"},
+  "floor": [],
+  "walk": [],
+  "collision": [],
+  "structures": [],
+  "decor": [],
+  "backdrop": null,
+  "actors": {"anakin": {"x": 96.5, "y": 96.5}},
+  "triggers": [],
+  "camera": {"x0": 4, "y0": 4, "x1": 188, "y1": 188},
+  "lights": [],
+  "regions": [
+    {"x": 96, "y": 96, "r": 90, "name": "무스타파 · 빈 맵"}
+  ]
+}

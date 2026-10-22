@@ -1,0 +1,58 @@
+/* 광선검 결투 시험장 (arena.html) — 이 페이지 전용. 게임 본편의 style.css·theme.css를 쓰지 않는다. */
+:root {
+  --cb-font: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+  --cb-mono: 'Share Tech Mono', ui-monospace, monospace;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #07080b;
+  color: #e6ebf0;
+  font-family: var(--cb-font);
+  user-select: none;
+  -webkit-user-select: none;
+}
+#cb-canvas {
+  position: fixed;
+  inset: 0;
+  display: block;
+  cursor: crosshair;
+}
+#cb-start {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(4, 5, 8, 0.78);
+  z-index: 5;
+}
+#cb-start h1 {
+  margin: 0;
+  font-size: 34px;
+  letter-spacing: 0.06em;
+}
+#cb-start p {
+  margin: 0 0 12px;
+  color: #aeb8c2;
+}
+#cb-start button {
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  background: #1d3c6e;
+  border: 1px solid #6c9cf0;
+  padding: 10px 26px;
+  cursor: pointer;
+}
+#cb-start small {
+  color: #7f8a95;
+}
+#cb-start.off {
+  display: none;
+}

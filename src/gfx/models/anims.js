@@ -1,5 +1,8 @@
 // Animation sets (pose functions) for each character model.
 import { pose, keyframes, legCycle, easeInOut } from './rig.js';
+import { ANAKIN_ANIMS } from './anakinAnims.js';
+
+export { ANAKIN_ANIMS };
 
 const { sin, PI } = Math;
 const TAU = PI * 2;
@@ -111,22 +114,6 @@ const OVER_B = pose(GUARD, LUNGE, {
 });
 const OVER_C = pose(OVER_B, { sab: [0.5, 0.82, 0.0, 0, -0.85] });
 
-// Anakin's signature (as in the Coruscant duel with Obi-Wan): from the high
-// guard he lifts the hilt beside his ear and whips the blade one-handed round
-// behind his neck like a halo, out of the wrap into a flat cut across the
-// front; then the backhand drops low on the right and rises back up the front
-// into the guard — back and forth, driving forward, the left arm out for
-// balance. (Blade yaw runs on past a full turn so the wrap goes the right way.)
-const SIG_ARM = { two: 0, shL: [0.85, 0, 0.35], elL: [0, 0, 0.35], haL: [0, 0, 0.3] };
-const SIG_WRAP1 = pose(GUARD, SIG_ARM, { spine: [0, -0.25, 0.02], chest: [0, -0.3, 0], head: [0, 0.1, 0], sab: [0.06, 1.72, 0.22, 3.0, 0.25] });
-const SIG_WRAP2 = pose(GUARD, SIG_ARM, { spine: [0, -0.1, 0], chest: [0, -0.15, 0], head: [0, 0, 0], sab: [0.02, 1.66, 0.12, 4.4, 0.05] });
-const SIG_CUT = pose(GUARD, LUNGE, SIG_ARM, { spine: [0, 0.35, -0.12], chest: [0, 0.4, -0.08], head: [0, -0.35, 0.05], sab: [0.36, 1.42, -0.12, 6.0, -0.05] });
-const SIG_CUT_END = pose(SIG_CUT, { spine: [0, -0.3, -0.12], chest: [0, -0.35, -0.08], head: [0, 0.2, 0.05], sab: [0.42, 1.3, 0.18, 7.2, -0.2] });
-const SIG_LOW = pose(GUARD, LUNGE, SIG_ARM, { spine: [0, -0.35, -0.16], chest: [0, -0.3, -0.1], head: [0, 0.2, 0.08], sab: [0.4, 1.0, 0.26, 0.6, -0.9] });
-const SIG_RISE = pose(GUARD, SIG_ARM, { spine: [0, 0.2, -0.08], chest: [0, 0.2, -0.05], head: [0, -0.2, 0.04], sab: [0.45, 1.18, -0.04, -0.4, 0.4] });
-const SIG_WRAP = keyframes([{ t: 0, p: GUARD }, { t: 0.25, p: SIG_WRAP1 }, { t: 0.45, p: SIG_WRAP2 }, { t: 0.72, p: SIG_CUT }, { t: 1, p: SIG_CUT_END }], easeInOut);
-const SIG_BACK = keyframes([{ t: 0, p: pose(SIG_CUT_END, { sab: [0.42, 1.3, 0.18, 1.0, -0.2] }) }, { t: 0.4, p: SIG_LOW }, { t: 0.7, p: SIG_RISE }, { t: 1, p: GUARD }], easeInOut);
-
 const swing = (a, b, c, d = c) =>
   keyframes(
     [
@@ -157,27 +144,6 @@ const CAST_B = pose(GUARD, LUNGE, {
   shL: [-0.05, 0, 1.55],
   elL: [0, 0, 0.0],
   haL: [0, 0, 1.3],
-});
-
-// Saber throw: wind back, hurl, the saber leaves the hand (catch pose after).
-const THROW_A = pose(GUARD, {
-  spine: [0, -0.6, 0.05],
-  chest: [0, -0.4, 0.05],
-  head: [0, 0.3, 0],
-  sab: [-0.15, 1.55, 0.36, 2.6, 0.5],
-  two: 0,
-  shL: [-0.3, 0, 1.0],
-  elL: [0, 0, 0.3],
-});
-const THROW_B = pose(GUARD, LUNGE, {
-  spine: [0, 0.5, -0.12],
-  chest: [0, 0.45, -0.1],
-  head: [0, -0.4, 0],
-  sab: [0.52, 1.42, 0.12, 0, 0.3],
-  two: 0,
-  shL: [0.4, 0, -0.3],
-  elL: [0, 0, 0.6],
-  hide: ['saber'],
 });
 
 const LEAP_CROUCH = pose(GUARD, {
@@ -301,30 +267,6 @@ const OFF = {
   elL: [0, 0, 0.35],
   head: [0, -0.1, 0],
 };
-const idleOff = (t) => pose(OFF, { pelvisY: sin(t * TAU) * 0.006, chest: [0, 0.05, sin(t * TAU) * 0.015], hipL: [0.06, 0, 0.08], hipR: [-0.06, 0, -0.05], knL: [0, 0, -0.08] });
-const runOff = (t) => {
-  const s = sin(t * TAU);
-  return pose(OFF, legCycle(t, 0.75, 1.15), { spine: [0, 0, -0.16], chest: [0, -s * 0.12, -0.04], head: [0, s * 0.08, 0.1], shR: [-0.15, 0, -s * 0.75], shL: [0.15, 0, s * 0.75], elR: [0, 0, 0.8], elL: [0, 0, 0.8] });
-};
-
-export const ANAKIN_ANIMS = bake(GUARD, {
-  idleOff: { frames: 8, fps: 6, loop: true, pose: idleOff },
-  runOff: { frames: 12, fps: 18, loop: true, pose: runOff },
-  run: { frames: 12, fps: 18, loop: true, pose: (t) => runPose(t, [0.02, 0.98, 0.3, 2.5, -0.5]) },
-  attack1: { frames: 9, fps: 20, loop: false, hit: 5, pose: swing(GUARD, SLASH_A, SLASH_B, SLASH_C) },
-  attack2: { frames: 9, fps: 20, loop: false, hit: 5, pose: swing(GUARD, BACK_A, BACK_B, BACK_C) },
-  attack3: { frames: 9, fps: 18, loop: false, hit: 5, pose: swing(GUARD, OVER_A, OVER_B, OVER_C) },
-  sigF: { frames: 10, fps: 24, loop: false, hit: 7, pose: SIG_WRAP },
-  sigB: { frames: 7, fps: 24, loop: false, hit: 3, pose: SIG_BACK },
-  cast: { frames: 8, fps: 18, loop: false, hit: 4, pose: swing(GUARD, CAST_A, CAST_B) },
-  throw: { frames: 8, fps: 20, loop: false, hit: 4, pose: swing(GUARD, THROW_A, THROW_B, pose(THROW_B, { sab: [0.45, 1.36, 0.16, 0, 0.2] })) },
-  leap: { frames: 8, fps: 12, loop: false, pose: keyframes([{ t: 0, p: LEAP_CROUCH }, { t: 0.3, p: LEAP_AIR }, { t: 0.7, p: LEAP_AIR }, { t: 1, p: OVER_B }], easeInOut) },
-  block: { frames: 4, fps: 8, loop: true, pose: (t) => wobble(BLOCK, t, 0.02) },
-  parry: { frames: 6, fps: 20, loop: false, hit: 2, pose: keyframes([{ t: 0, p: BLOCK }, { t: 0.35, p: PARRY }, { t: 1, p: GUARD }], easeInOut) },
-  hurt: { frames: 6, fps: 14, loop: false, pose: keyframes([{ t: 0, p: GUARD }, { t: 0.3, p: HURT }, { t: 1, p: GUARD }], easeInOut) },
-  lock: { frames: 4, fps: 10, loop: true, pose: (t) => wobble(LOCK, t, 0.04) },
-  death: { frames: 8, fps: 9, loop: false, pose: keyframes([{ t: 0, p: GUARD }, { t: 0.35, p: FALLING }, { t: 0.36, p: pose(DEAD, { pelvisY: -0.4, spine: [0, 0.2, 0.6] }) }, { t: 1, p: DEAD }], easeInOut) },
-});
 
 // ----------------------------------------------------------------------------
 // Anakin with Obi-Wan's saber in the left hand (Geonosis duel, phase 2).
@@ -403,8 +345,8 @@ export const ANAKIN_DUAL_ANIMS = bake(GUARD2, {
   // skills also used while dual-wielding: Obi-Wan's saber stays low in the left hand
   throw: { ...ANAKIN_ANIMS.throw, pose: (t) => pose(ANAKIN_ANIMS.throw.pose(t), { sab2: [0.05, 1.0, -0.33, -2.5, -0.35] }) },
   leap: { ...ANAKIN_ANIMS.leap, pose: (t) => pose(ANAKIN_ANIMS.leap.pose(t), { two: 0, sab2: [0.1, 1.2, -0.35, -2.2, 0.2] }) },
-  sigF: { ...ANAKIN_ANIMS.sigF, pose: (t) => pose(ANAKIN_ANIMS.sigF.pose(t), { two: 0, sab2: [0.1, 1.0, -0.35, -2.4, -0.3] }) },
-  sigB: { ...ANAKIN_ANIMS.sigB, pose: (t) => pose(ANAKIN_ANIMS.sigB.pose(t), { two: 0, sab2: [0.1, 1.0, -0.35, -2.4, -0.3] }) },
+  // dual wield: the second blade rides along in the left hand, held low and back (the left hand can't plant)
+  sig: { ...ANAKIN_ANIMS.sig, pose: (t) => pose(ANAKIN_ANIMS.sig.pose(t), { two: 0, sab2: [0.1, 1.0, -0.35, -2.4, -0.3] }) },
   death: ANAKIN_ANIMS.death,
 });
 
@@ -628,10 +570,16 @@ function npcSet({ rest = NPC_REST, down = null } = {}) {
     const s = sin(t * TAU);
     return pose(rest, { chest: [0, 0.1 + s * 0.05, 0], head: [0, -0.1 + s * 0.08, 0.04 * s], shR: [-0.2, 0, 0.75 + s * 0.15], elR: [0, 0, 1.0 - s * 0.2], haR: [0, 0, 0.4] });
   };
+  // a jab with the right, the left up in guard (city brawls)
+  const punch = (t) => {
+    const s = Math.max(0, sin(t * PI));
+    return pose(rest, { spine: [0, 0, 0.08], chest: [0, -0.35 * s, 0], shR: [-0.1, 0, 0.5 + 1.0 * s], elR: [0, 0, 1.7 * (1 - s) + 0.1], shL: [0.15, 0, 0.9], elL: [0, 0, 1.9] });
+  };
   const set = {
     idle: { frames: 6, fps: 5, loop: true, pose: idle },
     walk: { frames: 8, fps: 11, loop: true, pose: walk },
     talk: { frames: 6, fps: 6, loop: true, pose: talk },
+    punch: { frames: 4, fps: 10, loop: false, pose: punch },
   };
   if (down) set.down = { frames: 4, fps: 3, loop: true, pose: (t) => pose(down, { chest: [down.chest[0], down.chest[1], down.chest[2] + sin(t * TAU) * 0.03] }) };
   return set;
@@ -737,7 +685,77 @@ const flip = (t) => {
     elL: [0, 0, 1.2],
   });
 };
-export const ANAKIN_MUSTAFAR_ANIMS = { ...ANAKIN_ANIMS, backflip: { frames: 14, fps: 18, loop: false, pose: flip } };
+// Talking with the blade lit and lowered (the exchange on the collector arm).
+const TALK_LIT = pose(STANCE, {
+  spine: [0, 0.15, -0.02],
+  chest: [0, 0.08, 0],
+  head: [0, -0.2, 0],
+  sab: [0.3, 0.95, 0.3, 0.5, -0.5],
+  two: 0,
+  shL: [0.2, 0, 0.5],
+  elL: [0, 0, 0.9],
+  haL: [0, 0, 0.2],
+});
+const talkLit = (base) => (t) => {
+  const s = sin(t * TAU);
+  return pose(base, { chest: [0, base.chest[1] + s * 0.05, -0.04], head: [0, base.head[1] + s * 0.08, -0.04], shL: [0.2, 0, 0.5 + s * 0.2], elL: [0, 0, 0.9 - s * 0.15] });
+};
+// Hanging from a cable by the left hand, blade in the right.
+const HANG = {
+  pelvisY: -0.1,
+  spine: [0, 0.1, 0.05],
+  chest: [0, 0.05, 0.05],
+  head: [0, -0.2, -0.15],
+  shL: [0.1, 0, 3.0],
+  elL: [0, 0, 0.1],
+  haL: [0, 0, 0.3],
+  hipL: [0.15, 0, 0.5],
+  knL: [0, 0, -0.9],
+  hipR: [-0.15, 0, 0.2],
+  knR: [0, 0, -1.1],
+  sab: [0.35, 1.1, 0.3, 0.3, 0.9],
+  two: 0,
+};
+const hang = (t) => {
+  const s = sin(t * TAU);
+  return pose(HANG, { hipL: [0.15, 0, 0.5 + s * 0.2], hipR: [-0.15, 0, 0.2 - s * 0.2], sab: [0.35 + s * 0.05, 1.1, 0.3, 0.3 + s * 0.4, 0.9 - s * 0.3] });
+};
+// Cut down on the slope: no lower legs, no right forearm — face down, the
+// left arm clawing up the sand, head lifted towards Obi-Wan.
+const MAIMED = {
+  fk: 1,
+  pelvisY: -0.86,
+  spine: [0, 0.1, -1.25],
+  chest: [0, 0.05, -0.2],
+  head: [0, 0, 0.75],
+  shR: [-0.6, 0, 1.6],
+  elR: [0, 0, 0.3],
+  shL: [0.3, 0, 2.6],
+  elL: [0, 0, 0.25],
+  haL: [0, 0, -0.4],
+  hipL: [0.25, 0, -0.2],
+  knL: [0, 0, -0.2],
+  hipR: [-0.25, 0, -0.15],
+  knR: [0, 0, -0.2],
+  hide: ['saber', 'shinL', 'shinR', 'foreR'],
+};
+const crawl = (t) => {
+  const s = sin(t * TAU);
+  return pose(MAIMED, { shL: [0.3, 0, 2.6 - Math.max(0, s) * 0.5], elL: [0, 0, 0.25 + Math.max(0, -s) * 0.6], chest: [0, 0.05, -0.2 + s * 0.06], head: [0, s * 0.15, 0.75 + s * 0.1], bodyX: Math.max(0, s) * 0.03 });
+};
+const burn = (t) => {
+  const s = sin(t * TAU * 1.5);
+  return pose(MAIMED, { spine: [0, 0.1, -1.15 + s * 0.08], chest: [0, s * 0.1, -0.1], head: [0, s * 0.3, 0.55 + Math.abs(s) * 0.2], shL: [0.3, 0, 2.3 + s * 0.3], elL: [0, 0, 0.6 + s * 0.3] });
+};
+export const ANAKIN_MUSTAFAR_ANIMS = {
+  ...ANAKIN_ANIMS,
+  backflip: { frames: 14, fps: 18, loop: false, pose: flip },
+  talk: { frames: 6, fps: 6, loop: true, pose: talkLit(TALK_LIT) },
+  hang: { frames: 8, fps: 8, loop: true, pose: hang },
+  fall: { frames: 8, fps: 10, loop: false, pose: keyframes([{ t: 0, p: LEAP_AIR }, { t: 0.4, p: pose(FALLING, { hide: ['saber', 'shinL', 'shinR', 'foreR'] }) }, { t: 1, p: pose(MAIMED, { spine: [0, 0.1, -0.9] }) }], easeInOut) },
+  crawl: { frames: 8, fps: 5, loop: true, pose: crawl },
+  burn: { frames: 8, fps: 8, loop: true, pose: burn },
+};
 
 // Obi-Wan's Soresu ready stance: blade drawn back over the right shoulder,
 // left hand extended open towards the opponent.
@@ -752,6 +770,24 @@ const SORESU = pose(STANCE, {
   haL: [0, 0, 0.9],
 });
 const OB_BLOCK = pose(BLOCK, { two: 0, shL: [-0.1, 0, 0.9], elL: [0, 0, 0.6], haL: [0, 0, 0.8] });
+// blade off, at ease (the high ground)
+const idleOff = (t) => pose(OFF, { pelvisY: sin(t * TAU) * 0.006, chest: [0, 0.05, sin(t * TAU) * 0.015], hipL: [0.06, 0, 0.08], hipR: [-0.06, 0, -0.05], knL: [0, 0, -0.08] });
+// kneeling on the slope to pick up the fallen saber
+const OB_PICK = pose(OFF, {
+  pelvisY: -0.42,
+  spine: [0, 0.1, -0.9],
+  chest: [0, 0.05, -0.2],
+  head: [0, 0, 0.5],
+  hipL: [0.2, 0, 1.2],
+  knL: [0, 0, -1.9],
+  hipR: [-0.2, 0, -0.5],
+  knR: [0, 0, -1.3],
+  anR: [0, 0, 0.6],
+  shR: [-0.2, 0, 1.4],
+  elR: [0, 0, 0.1],
+  shL: [0.3, 0, 0.6],
+  elL: [0, 0, 1.0],
+});
 export const OBIWAN3_ANIMS = bake(SORESU, {
   attack1: { frames: 9, fps: 18, loop: false, hit: 5, pose: swing(SORESU, SLASH_A, SLASH_B, SLASH_C) },
   attack2: { frames: 9, fps: 18, loop: false, hit: 5, pose: swing(SORESU, BACK_A, BACK_B, BACK_C) },
@@ -763,6 +799,13 @@ export const OBIWAN3_ANIMS = bake(SORESU, {
   lock: { frames: 4, fps: 10, loop: true, pose: (t) => wobble(LOCK, t, 0.04) },
   leap: { frames: 8, fps: 12, loop: false, pose: keyframes([{ t: 0, p: LEAP_CROUCH }, { t: 0.3, p: LEAP_AIR }, { t: 0.7, p: LEAP_AIR }, { t: 1, p: SORESU }], easeInOut) },
   death: { frames: 7, fps: 8, loop: false, pose: keyframes([{ t: 0, p: SORESU }, { t: 1, p: pose(SORESU, { pelvisY: -0.3, spine: [0, 0.2, -0.3] }) }], easeInOut) },
+  talk: { frames: 6, fps: 6, loop: true, pose: talkLit(pose(TALK_LIT, { sab: [0.2, 0.9, 0.34, 0.9, -0.6] })) },
+  hang: { frames: 8, fps: 8, loop: true, pose: hang },
+  // the high ground: blade off, bending to pick up Anakin's saber, walking away
+  idleOff: { frames: 8, fps: 6, loop: true, pose: idleOff },
+  walkOff: { frames: 8, fps: 10, loop: true, pose: (t) => pose(OFF, legCycle(t, 0.42, 0.8), { spine: [0, 0, -0.05], head: [0, 0, 0.1] }) },
+  pick: { frames: 10, fps: 8, loop: false, pose: keyframes([{ t: 0, p: OFF }, { t: 0.5, p: OB_PICK }, { t: 0.7, p: OB_PICK }, { t: 1, p: pose(OFF, { shR: [-0.1, 0, 0.6], elR: [0, 0, 1.3] }) }], easeInOut) },
+  grieve: { frames: 6, fps: 4, loop: true, pose: (t) => pose(OFF, { spine: [0, 0, -0.08], head: [0, 0, 0.22 + sin(t * TAU) * 0.03], shR: [-0.1, 0, 0.6], elR: [0, 0, 1.3] }) },
 });
 // in the robe before the fight: blade off, then lit
 export const OBIWAN3_ROBE_ANIMS = {

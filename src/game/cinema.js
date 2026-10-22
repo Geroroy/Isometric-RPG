@@ -4,9 +4,11 @@
 //
 // Cue fields (all optional, `t` in seconds):
 //   say: [speaker, text, seconds]   subtitle
-//   cam: { x, y, zoom, dur }        camera target (eased over `dur`; 0 = cut)
+//   cam: { x, y, zoom, dur }        camera target (eased over `dur`; 0 = cut),
+//                                   or a function returning one when the cue fires
 //   fade: 0..1, fadeDur             black-out
 //   do: (cinema) => {}              staging: anims, sprites, positions
+// `at` starts the clock partway into the track (a scene inside the fight's music).
 // While it runs the HUD is hidden, the screen is letterboxed and the game's
 // controls are locked; Esc / Enter / tap on the skip hint skips it (all
 // remaining `do` cues still run, so the state ends up the same).
@@ -14,9 +16,10 @@
 const ease = (x) => x * x * (3 - 2 * x);
 
 export class Cinema {
-  constructor(game, { track = null, length, cues }) {
+  constructor(game, { track = null, at = 0, length, cues }) {
     this.game = game;
     this.track = track; // music situation key of the sound track
+    this.at = at; // the track time the scene's clock starts at (a scene inside a longer piece)
     this.length = length;
     this.cues = cues.slice().sort((a, b) => a.t - b.t);
     this.next = 0;
@@ -53,7 +56,7 @@ export class Cinema {
     const el = this.audioEl();
     if (el && !el.paused && el.currentTime > 0) {
       // follow the voices; never run backwards
-      this.t = Math.max(this.t, el.currentTime);
+      this.t = Math.max(this.t, el.currentTime - this.at);
       this.waitAudio = 0;
     } else if (this.waitAudio > 0 && this.t === 0) {
       this.waitAudio -= dt; // give the audio a moment to start
@@ -75,9 +78,14 @@ export class Cinema {
     if (c.say) g.emit('subtitle', c.say[0], c.say[1], c.say[2] || 3);
     if (c.fade !== undefined) g.emit('fade', c.fade, c.fadeDur ?? 0.8);
     if (c.cam) {
-      const from = this.cam ? { ...this.curCam() } : { x: c.cam.x, y: c.cam.y };
-      this.cam = { from, to: c.cam, t0: this.t, dur: c.cam.dur || 0 };
-      if (c.cam.zoom && this.game.renderer) this.game.renderer.setZoom(c.cam.zoom);
+      const cam = typeof c.cam === 'function' ? c.cam() : c.cam; // a function: worked out when the cue fires
+      if (cam.follow) {
+        cam.x = cam.follow.x + (cam.ox || 0);
+        cam.y = cam.follow.y + (cam.oy || 0);
+      }
+      const from = this.cam ? { ...this.curCam() } : { x: cam.x, y: cam.y };
+      this.cam = { from, to: cam, t0: this.t, dur: cam.dur || 0 };
+      if (cam.zoom && this.game.renderer) this.game.renderer.setZoom(this.game.renderer.shotZoom(cam.zoom), true);
     }
     if (c.do) c.do(this);
   }
@@ -102,15 +110,21 @@ export class Cinema {
   skip() {
     if (this.done) return;
     this.game.emit('subtitle', null);
+    // in timeline order: moves under way finish before the next cue runs,
+    // so a later cue that places someone has the last word
+    const finish = () => {
+      for (const w of this.tweens) {
+        w.u.x = w.x;
+        w.u.y = w.y;
+      }
+      this.tweens = [];
+    };
     for (; this.next < this.cues.length; this.next++) {
       const c = this.cues[this.next];
+      finish();
       if (c.do) c.do(this);
     }
-    for (const w of this.tweens) {
-      w.u.x = w.x;
-      w.u.y = w.y;
-    }
-    this.tweens = [];
+    finish();
     this.end();
   }
 

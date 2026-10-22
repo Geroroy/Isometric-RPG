@@ -1,0 +1,60 @@
+{
+  "format": "mustafar-zone",
+  "version": 1,
+  "id": "stage06",
+  "stage": 6,
+  "title": "무스타파 · 고지대",
+  "blockoutNote": "BLOCKOUT: grey boxes stand in for the art (not requested yet)",
+  "floor": [
+    {"id": "bankArt", "kind": "groundImage", "asset": "mf.highground.bank", "at": {"x": 112, "y": 147}},
+    {"id": "bank", "kind": "blockout", "x0": 112, "y0": 134, "x1": 136, "y1": 147, "art": "mf.highground.bank"}
+  ],
+  "walk": [
+    {"id": "bank", "rect": [113, 135, 135, 147]}
+  ],
+  "collision": [],
+  "structures": [
+    {"asset": "mf.lava.cliff_y", "x": 137.2, "y": 140.3},
+    {"asset": "mf.lava.rock_low", "x": 137.3, "y": 146.4},
+    {"asset": "mf.lava.cliff_y", "x": 110.8, "y": 139.6},
+    {"asset": "mf.lava.rock_low", "x": 110.9, "y": 145.8}
+  ],
+  "decor": [],
+  "blockout": [
+    {"x": 124.0, "y": 137.5, "w": 24, "d": 7, "h": 1.4, "kind": "deck", "label": "고지대 +1.4 m", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 141.25, "w": 24, "d": 0.5, "h": 1.312, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 141.75, "w": 24, "d": 0.5, "h": 1.137, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 142.25, "w": 24, "d": 0.5, "h": 0.962, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 142.75, "w": 24, "d": 0.5, "h": 0.787, "kind": "deck", "label": "경사", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 143.25, "w": 24, "d": 0.5, "h": 0.612, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 143.75, "w": 24, "d": 0.5, "h": 0.438, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 144.25, "w": 24, "d": 0.5, "h": 0.262, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 144.75, "w": 24, "d": 0.5, "h": 0.087, "kind": "deck", "label": "", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 146.5, "w": 24, "d": 1, "h": 0.03, "kind": "hazard", "label": "용암 가장자리", "flat": true, "art": "mf.highground.bank"},
+    {"x": 124.0, "y": 133.8, "w": 24, "d": 0.4, "h": 3.0, "kind": "wall", "label": "바위 절벽", "art": "mf.highground.bank"}
+  ],
+  "surfaces": [
+    {"x0": 112, "y0": 134, "x1": 136, "y1": 141, "z": 1.4},
+    {"x0": 112, "y0": 141.0, "x1": 136, "y1": 141.5, "z": 1.312},
+    {"x0": 112, "y0": 141.5, "x1": 136, "y1": 142.0, "z": 1.137},
+    {"x0": 112, "y0": 142.0, "x1": 136, "y1": 142.5, "z": 0.962},
+    {"x0": 112, "y0": 142.5, "x1": 136, "y1": 143.0, "z": 0.787},
+    {"x0": 112, "y0": 143.0, "x1": 136, "y1": 143.5, "z": 0.612},
+    {"x0": 112, "y0": 143.5, "x1": 136, "y1": 144.0, "z": 0.438},
+    {"x0": 112, "y0": 144.0, "x1": 136, "y1": 144.5, "z": 0.262},
+    {"x0": 112, "y0": 144.5, "x1": 136, "y1": 145.0, "z": 0.087}
+  ],
+  "actors": {"highGround": {"x": 124.0, "y": 142.4}, "foot": {"x": 122.9, "y": 146.2}},
+  "triggers": [],
+  "camera": {"x0": 108, "y0": 130, "x1": 140, "y1": 155},
+  "lights": [
+    {"x": 114, "y": 148.5, "z": 0.3, "r": 255, "g": 140, "b": 60, "rad": 220, "flicker": 0.15},
+    {"x": 120, "y": 148.5, "z": 0.3, "r": 255, "g": 140, "b": 60, "rad": 220, "flicker": 0.15},
+    {"x": 126, "y": 148.5, "z": 0.3, "r": 255, "g": 140, "b": 60, "rad": 220, "flicker": 0.15},
+    {"x": 132, "y": 148.5, "z": 0.3, "r": 255, "g": 140, "b": 60, "rad": 220, "flicker": 0.15},
+    {"x": 124.0, "y": 137, "z": 4, "r": 200, "g": 120, "b": 90, "rad": 200, "flicker": 0.02}
+  ],
+  "regions": [
+    {"x": 124.0, "y": 140.5, "r": 10, "name": "무스타파 · 고지대"}
+  ]
+}

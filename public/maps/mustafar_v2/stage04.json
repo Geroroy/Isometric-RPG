@@ -1,0 +1,92 @@
+{
+  "format": "mustafar-zone",
+  "version": 1,
+  "id": "stage04",
+  "stage": 4,
+  "title": "무스타파 · 산업 보행로 · 용암 집하 시설",
+  "blockoutNote": "BLOCKOUT: grey boxes stand in for the art (not requested yet)",
+  "floor": [
+    {"id": "terrace", "kind": "texturedRect", "x0": 21, "y0": 106, "x1": 41, "y1": 111, "asset": "mf.walkway.terrace_floor", "fallback": "grid"},
+    {"id": "catwalk", "kind": "blockout", "x0": 41, "y0": 108, "x1": 59, "y1": 110, "art": "mf.walkway.catwalk_segment"}
+  ],
+  "walk": [
+    {"id": "terrace", "rect": [22, 107, 41, 111]},
+    {"id": "catwalk", "rect": [41, 108, 59, 110]},
+    {"id": "arm", "rect": [69, 120, 72, 142]}
+  ],
+  "collision": [],
+  "strips": [
+    {"x0": 66, "y0": 120.4, "x1": 66, "y1": 133.6, "r": 0.45}
+  ],
+  "structures": [
+    {"asset": "mf.collector.pipe_segment", "x": 66, "y": 123.5},
+    {"asset": "mf.collector.pipe_segment", "x": 66, "y": 130.5},
+    {"asset": "mf.walkway.catwalk_segment", "x": 44, "y": 109.0},
+    {"asset": "mf.walkway.catwalk_segment", "x": 50, "y": 109.0},
+    {"asset": "mf.walkway.catwalk_segment", "x": 56, "y": 109.0, "id": "catwalkEnd"},
+    {"asset": "mf.walkway.catwalk_broken", "x": 56, "y": 109.0, "id": "catwalkBroken", "hidden": true},
+    {"asset": "mf.walkway.lava_fall", "x": 17.5, "y": 108.5},
+    {"asset": "mf.collector.collector_arm", "x": 70.5, "y": 131.0, "id": "arm"},
+    {"asset": "mf.collector.collector_tower", "x": 70.5, "y": 117, "id": "armTower"},
+    {"asset": "mf.landing.rail_x", "x": 24, "y": 110.7},
+    {"asset": "mf.landing.rail_x", "x": 30, "y": 110.7},
+    {"asset": "mf.landing.rail_x", "x": 36, "y": 110.7},
+    {"asset": "mf.landing.rail_y", "x": 21.3, "y": 108.5},
+    {"asset": "mf.lava.rock_spire", "x": 61.5, "y": 122},
+    {"asset": "mf.lava.rock_mid", "x": 61, "y": 131.5},
+    {"asset": "mf.lava.rock_low", "x": 63, "y": 138.5},
+    {"asset": "mf.lava.rock_low", "x": 76.5, "y": 126},
+    {"asset": "mf.lava.rock_mid", "x": 77.5, "y": 138},
+    {"asset": "mf.lava.rock_mid", "x": 33, "y": 118.5},
+    {"asset": "mf.lava.rock_low", "x": 48, "y": 117.5},
+    {"asset": "mf.lava.cliff_y", "x": 15.5, "y": 100.5}
+  ],
+  "decor": [],
+  "blockout": [
+    {"x": 66.0, "y": 127.0, "w": 0.9, "d": 14, "h": 0.35, "kind": "deck", "label": "배관 +0.35 m", "flat": true, "art": "mf.collector.pipe_segment"},
+    {"x": 70.5, "y": 131.0, "w": 3, "d": 22, "h": 0.3, "kind": "deck", "label": "집하기 팔 +0.3 m", "flat": true, "id": "arm", "art": "mf.collector.collector_arm"},
+    {"x": 56, "y": 109, "w": 6, "d": 2, "h": 0.03, "kind": "hazard", "label": "무너지는 구간", "flat": true, "art": "mf.walkway.catwalk_segment"},
+    {"x": 31.0, "y": 111.2, "w": 20, "d": 0.4, "h": 1.0, "kind": "wall", "label": "난간", "art": "mf.landing.rail_x"},
+    {"x": 20.8, "y": 108.5, "w": 0.4, "d": 5, "h": 1.0, "kind": "wall", "label": "", "art": "mf.landing.rail_y"},
+    {"x": 50.0, "y": 107.8, "w": 18, "d": 0.4, "h": 1.0, "kind": "wall", "label": "난간", "art": "mf.walkway.catwalk_segment"},
+    {"x": 50.0, "y": 110.2, "w": 18, "d": 0.4, "h": 1.0, "kind": "wall", "label": "", "art": "mf.walkway.catwalk_segment"},
+    {"x": 59.2, "y": 109.0, "w": 0.4, "d": 2, "h": 1.0, "kind": "wall", "label": "", "art": "mf.walkway.catwalk_segment"},
+    {"x": 70.5, "y": 117, "w": 4, "d": 4, "h": 8, "kind": "story", "label": "집하기 탑", "id": "armTower", "art": "mf.collector.collector_tower"}
+  ],
+  "surfaces": [
+    {"x0": 65.55, "y0": 120, "x1": 66.45, "y1": 134, "z": 0.35},
+    {"x0": 69, "y0": 120, "x1": 72, "y1": 142, "z": 0.3}
+  ],
+  "actors": {"terraceAnakin": {"x": 31.5, "y": 108.6}, "terraceObiwan": {"x": 35.0, "y": 109.2}, "collapse": {"x": 55, "y": 109}, "pipe": {"x": 66, "y0": 120, "y1": 134, "z": 0.35}, "hook": {"x": 66.2, "y": 127, "z": 8.5}, "arm": {"x": 70.5, "y": 131.0, "hw": 1.5, "hh": 11.0}, "armTower": {"x": 70.5, "y": 117}},
+  "triggers": [],
+  "cameras": [
+    {"x0": 19, "y0": 103, "x1": 61, "y1": 114},
+    {"x0": 61, "y0": 116, "x1": 77, "y1": 145}
+  ],
+  "lights": [
+    {"x": 24, "y": 113, "z": 0.3, "r": 255, "g": 110, "b": 40, "rad": 170, "flicker": 0.12},
+    {"x": 30, "y": 113, "z": 0.3, "r": 255, "g": 110, "b": 40, "rad": 170, "flicker": 0.12},
+    {"x": 36, "y": 113, "z": 0.3, "r": 255, "g": 110, "b": 40, "rad": 170, "flicker": 0.12},
+    {"x": 42, "y": 113, "z": 0.3, "r": 255, "g": 110, "b": 40, "rad": 170, "flicker": 0.12},
+    {"x": 48, "y": 113, "z": 0.3, "r": 255, "g": 110, "b": 40, "rad": 170, "flicker": 0.12},
+    {"x": 54, "y": 113, "z": 0.3, "r": 255, "g": 110, "b": 40, "rad": 170, "flicker": 0.12},
+    {"x": 60, "y": 113, "z": 0.3, "r": 255, "g": 110, "b": 40, "rad": 170, "flicker": 0.12},
+    {"x": 42, "y": 104.5, "z": 0.3, "r": 255, "g": 120, "b": 50, "rad": 150, "flicker": 0.12},
+    {"x": 49, "y": 104.5, "z": 0.3, "r": 255, "g": 120, "b": 50, "rad": 150, "flicker": 0.12},
+    {"x": 56, "y": 104.5, "z": 0.3, "r": 255, "g": 120, "b": 50, "rad": 150, "flicker": 0.12},
+    {"x": 63, "y": 104.5, "z": 0.3, "r": 255, "g": 120, "b": 50, "rad": 150, "flicker": 0.12},
+    {"x": 68, "y": 114, "z": 0.3, "r": 255, "g": 120, "b": 50, "rad": 170, "flicker": 0.12},
+    {"x": 68, "y": 120, "z": 0.3, "r": 255, "g": 120, "b": 50, "rad": 170, "flicker": 0.12},
+    {"x": 68, "y": 126, "z": 0.3, "r": 255, "g": 120, "b": 50, "rad": 170, "flicker": 0.12},
+    {"x": 68, "y": 132, "z": 0.3, "r": 255, "g": 120, "b": 50, "rad": 170, "flicker": 0.12},
+    {"x": 68, "y": 138, "z": 0.3, "r": 255, "g": 120, "b": 50, "rad": 170, "flicker": 0.12},
+    {"x": 70.5, "y": 119.5, "z": 3, "r": 255, "g": 160, "b": 80, "rad": 160, "flicker": 0.05}
+  ],
+  "regions": [
+    {"x": 31, "y": 108.5, "r": 10.5, "name": "무스타파 · 외부 발코니"},
+    {"x": 50, "y": 109, "r": 9.5, "name": "무스타파 · 용암 폭포 위 보행로"},
+    {"x": 65.5, "y": 124, "r": 4.4, "name": "무스타파 · 배관 위"},
+    {"x": 65.5, "y": 131, "r": 4.4, "name": "무스타파 · 배관 위"},
+    {"x": 70.5, "y": 129, "r": 13, "name": "무스타파 · 집하기 팔"}
+  ]
+}
