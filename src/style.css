@@ -30,6 +30,17 @@
 * {
   box-sizing: border-box;
 }
+/* the view box (ui/viewport.js): wider than 12:5, the game sits in a centred box between dark bars; the
+   transform makes the body the containing block of every fixed element, so all of them stay in it */
+html {
+  background: #020304;
+}
+body.boxed {
+  width: var(--view-w);
+  margin-left: var(--view-x);
+  transform: translateZ(0);
+  box-shadow: 0 0 0 1px #000, 0 0 40px rgba(0, 0, 0, 0.8);
+}
 html,
 body {
   margin: 0;
@@ -1652,7 +1663,7 @@ body.touch .radar-region {
   pointer-events: none;
 }
 .load-box {
-  width: min(640px, 92vw);
+  width: min(640px, calc(var(--vw, 1vw) * 92));
   text-align: center;
 }
 .load-kicker {
@@ -1669,7 +1680,7 @@ body.touch .radar-region {
 .saber-load {
   display: flex;
   align-items: center;
-  width: min(620px, 88vw);
+  width: min(620px, calc(var(--vw, 1vw) * 88));
   margin: 0 auto;
 }
 .saber-load .hilt {
@@ -2002,7 +2013,9 @@ body.duel .t-skill.s5 { right: 60px; bottom: 178px; }
     transform: rotate(-90deg);
   }
 }
-@media (orientation: portrait) {
+/* only a phone held upright asks to be turned: a near-square screen (a foldable's inner screen, a tablet in
+   split view) plays as it is, its view taller instead (ui/viewport.js Vert+) */
+@media (max-aspect-ratio: 4/5) {
   body.touch #rotate {
     display: flex;
   }
@@ -2033,7 +2046,7 @@ body.duel .t-skill.s5 { right: 60px; bottom: 178px; }
   left: 50%;
   bottom: calc(28px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
-  width: min(720px, calc(100vw - 32px));
+  width: min(720px, calc(var(--view-w, calc(var(--vw, 1vw) * 100)) - 32px));
   padding: 16px 20px 14px;
   background: linear-gradient(180deg, rgba(7, 10, 15, 0.6), var(--glass-strong));
   border-top: 1px solid var(--line-strong);
@@ -2161,7 +2174,7 @@ body.duel .boss-bar {
   top: calc(22px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
-  width: min(1000px, 78vw);
+  width: min(1000px, calc(var(--vw, 1vw) * 78));
   text-align: center;
   pointer-events: none !important;
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
@@ -2284,7 +2297,7 @@ body.duel .ps-comp {
   left: 50%;
   top: 28%;
   transform: translateX(-50%);
-  width: min(380px, 70vw);
+  width: min(380px, calc(var(--vw, 1vw) * 70));
   text-align: center;
   pointer-events: none !important;
   text-shadow: 0 1px 4px #000;
@@ -2353,7 +2366,7 @@ body.cine .touch-ui {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 24px max(24px, 8vw);
+  padding: 24px max(24px, calc(var(--vw, 1vw) * 8));
   background: linear-gradient(90deg, rgba(3, 5, 8, 0.94), rgba(3, 5, 8, 0.7) 60%, rgba(3, 5, 8, 0.35));
   backdrop-filter: blur(3px);
 }
@@ -2957,7 +2970,7 @@ kbd {
 /* the controls guide: a green screen in a metal frame */
 .controls {
   position: absolute;
-  inset: max(24px, 5vh) max(24px, 6vw);
+  inset: max(24px, 5vh) max(24px, calc(var(--vw, 1vw) * 6));
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -3036,7 +3049,7 @@ body.touch .touch-only {
   top: auto;
   max-height: calc(100vh - 164px);
   bottom: calc(148px + env(safe-area-inset-bottom, 0px));
-  width: min(760px, calc(100vw - 32px));
+  width: min(760px, calc(var(--view-w, calc(var(--vw, 1vw) * 100)) - 32px));
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -3504,7 +3517,7 @@ body.title .touch-ui {
 }
 .title-menu {
   position: absolute;
-  left: max(28px, 5.5vw);
+  left: max(28px, calc(var(--vw, 1vw) * 5.5));
   bottom: max(140px, 23vh);
   display: flex;
   flex-direction: column;
@@ -3573,12 +3586,12 @@ body.title .touch-ui {
   /* hairline from the screen edge, with a warm dot */
   content: '';
   position: absolute;
-  left: calc(-1 * max(28px, 5.5vw));
+  left: calc(-1 * max(28px, calc(var(--vw, 1vw) * 5.5)));
   bottom: -10px;
-  width: max(380px, 31vw);
+  width: max(380px, calc(var(--vw, 1vw) * 31));
   height: 5px;
   background:
-    radial-gradient(circle, #ffd9a6 0 2px, transparent 2.5px) calc(max(28px, 5.5vw) + 44px) 50% / 5px 5px no-repeat,
+    radial-gradient(circle, #ffd9a6 0 2px, transparent 2.5px) calc(max(28px, calc(var(--vw, 1vw) * 5.5)) + 44px) 50% / 5px 5px no-repeat,
     linear-gradient(90deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.16) 70%, transparent) 0 50% / 100% 1px no-repeat;
   pointer-events: none;
 }
@@ -3587,7 +3600,7 @@ body.title .touch-ui {
 }
 .title-foot {
   position: absolute;
-  left: max(28px, 5.5vw);
+  left: max(28px, calc(var(--vw, 1vw) * 5.5));
   bottom: max(26px, 5vh);
   display: flex;
   align-items: center;
@@ -3607,7 +3620,7 @@ body.title .touch-ui {
 }
 .title-hint {
   position: absolute;
-  right: max(28px, 4vw);
+  right: max(28px, calc(var(--vw, 1vw) * 4));
   bottom: max(26px, 5vh);
   display: flex;
   align-items: center;
@@ -3994,7 +4007,7 @@ body.cinema .cn-bar {
   position: absolute;
   left: 50%;
   bottom: calc(12vh + 18px);
-  width: min(900px, calc(100vw - 48px));
+  width: min(900px, calc(var(--view-w, calc(var(--vw, 1vw) * 100)) - 48px));
   transform: translateX(-50%);
   text-align: center;
   opacity: 0;
@@ -4013,7 +4026,7 @@ body.cinema .cn-bar {
 }
 .cn-sub p {
   margin: 0;
-  font: 500 clamp(17px, 2.1vw, 24px) / 1.45 'Pretendard Variable', Pretendard, sans-serif;
+  font: 500 clamp(17px, calc(var(--vw, 1vw) * 2.1), 24px) / 1.45 'Pretendard Variable', Pretendard, sans-serif;
   color: #f6f2ea;
 }
 .cn-skip {
@@ -4049,7 +4062,7 @@ body.touch .cn-skip kbd {
 }
 .cn-place {
   position: absolute;
-  left: max(28px, 5vw);
+  left: max(28px, calc(var(--vw, 1vw) * 5));
   top: calc(12vh + 22px);
   padding-left: 12px;
   font: 500 14px Jost, 'Pretendard Variable', Pretendard, sans-serif;
@@ -4462,7 +4475,7 @@ body.title .m-ui {
   display: flex;
   align-items: center;
   gap: 5px;
-  max-width: 44vw;
+  max-width: calc(var(--vw, 1vw) * 44);
   white-space: nowrap;
   font-size: 11px;
   color: var(--ink);
@@ -4584,7 +4597,7 @@ body.duel .m-menu {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  width: 44vw;
+  width: calc(var(--vw, 1vw) * 44);
   max-width: 420px;
 }
 .m-line {
@@ -4615,7 +4628,7 @@ body.touch .target-info {
 body.touch .dialogue {
   bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   max-height: calc(100vh - 16px);
-  width: min(640px, calc(100vw - 110px));
+  width: min(640px, calc(var(--view-w, calc(var(--vw, 1vw) * 100)) - 110px));
   gap: 6px;
   padding: 8px;
 }
@@ -4692,7 +4705,7 @@ body.touch.ui-hidden #uiRestore {
 #mapEditorView {
   position: fixed;
   inset: 0;
-  width: 100vw;
+  width: var(--view-w, calc(var(--vw, 1vw) * 100));
   height: 100vh;
   z-index: 90;
   cursor: crosshair;

@@ -9,6 +9,7 @@ import { screenVecToWorldAngle } from '../core/iso.js';
 import { dist, angleDiff } from '../core/math.js';
 import { setText } from './dom.js';
 import { setFraction } from './theme.js';
+import { toViewX } from './viewport.js';
 
 // how far a dragged skill is aimed (world units) when the skill targets a point
 const AIM_RANGE = { throw: 7, push: 3.5, leap: 7.5, clones: 3, gunship: 9, fury: 3, rex: 2 };
@@ -122,7 +123,7 @@ export class TouchControls {
       if (this.joy) return;
       z.setPointerCapture(e.pointerId);
       this.joy = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY, t0: performance.now(), moved: false };
-      this.stick.style.left = e.clientX + 'px';
+      this.stick.style.left = toViewX(e.clientX) + 'px'; // (the view box's px: ui/viewport.js)
       this.stick.style.top = e.clientY + 'px';
       this.stick.classList.remove('hidden');
       this.knob(0, 0);

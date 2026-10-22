@@ -20,6 +20,7 @@ import { LaneTraffic } from './skylineTraffic.js';
 const LANE_TRAFFIC = false;
 import { SABER, PALETTES, trailWindow, paletteFor, flickerAt, ignition, drawBlade, drawSpark, drawTrail, drawClash, record } from './saberStyle.js';
 import { preset, tintFor, drawLight, drawGround, drawGroundTint, sweepOf, lightCharacter } from './saberLight.js';
+import { view, measureView, toViewX, vertPlus } from '../ui/viewport.js';
 import { remaster, remasterRes, onRemaster } from './remaster.js';
 import { TerrainPool } from './terrainPool.js';
 
@@ -134,14 +135,17 @@ export class Renderer {
   /**
    * How many game pixels show vertically at zoom 1: PC_BASE_H on a PC; on touch ~240 rows on a phone
    * (characters read at arm's length — tuned for a Galaxy S25 Ultra in landscape), up to 450 on tablets.
+   * A view narrower than 4:3 (a foldable's inner screen, split view) shows more rows instead, so its
+   * width still holds a 4:3 view's worth of world (ui/viewport.js).
    */
   baseH() {
-    return this.touchMode ? Math.max(240, Math.min(450, window.innerHeight * 0.58)) : PC_BASE_H;
+    const rows = this.touchMode ? Math.max(240, Math.min(450, view.h * 0.58)) : PC_BASE_H;
+    return rows * vertPlus();
   }
 
-  /** The screen's height in device pixels. */
+  /** The view box's height in device pixels. */
   deviceH() {
-    return window.innerHeight * (window.devicePixelRatio || 1);
+    return view.h * (window.devicePixelRatio || 1);
   }
 
   /**
@@ -168,8 +172,8 @@ export class Renderer {
     if (s < 1 || s > 14) return false;
     if (s === this.scaleFor(1)) return true;
     const dpr = window.devicePixelRatio || 1;
-    const w = Math.ceil((window.innerWidth * dpr) / s);
-    const h = Math.ceil((window.innerHeight * dpr) / s);
+    const w = Math.ceil((view.w * dpr) / s);
+    const h = Math.ceil((view.h * dpr) / s);
     const L = VIEW_LIMITS;
     if (h > L.maxRows || w > L.maxCols || h < L.minRows || s / dpr < L.minCss) return false;
     // an enemy at blaster range in each of 8 directions: feet and body centre (27 px up) in view,
@@ -217,8 +221,10 @@ export class Renderer {
   }
 
   resize() {
-    const W = window.innerWidth;
-    const H = window.innerHeight;
+    // the view box for the device's aspect ratio (ui/viewport.js): all of the screen, or a pillarbox
+    measureView();
+    const W = view.w;
+    const H = view.h;
     const dpr = window.devicePixelRatio || 1;
     this.dpr = dpr;
     const devScale = (this.devScale = this.computeDevScale());
@@ -289,9 +295,9 @@ export class Renderer {
     this.terrain.warmHurry = !!(g.lift && !g.lift.moved);
   }
 
-  /** CSS pixel → world coordinates. */
+  /** A pointer's CSS pixel (clientX, clientY) → world coordinates. */
   screenToWorldPos(mx, my) {
-    const ix = mx / this.scale + this.cam.x;
+    const ix = toViewX(mx) / this.scale + this.cam.x;
     const iy = my / this.scale + this.cam.y;
     return screenToWorld(ix, iy);
   }
@@ -302,7 +308,7 @@ export class Renderer {
 
   /** Find the unit whose sprite is under the mouse (CSS px). */
   pick(mx, my, filter) {
-    const ix = mx / this.scale + this.cam.x;
+    const ix = toViewX(mx) / this.scale + this.cam.x;
     const iy = my / this.scale + this.cam.y;
     let best = null;
     let bestDepth = -Infinity;

@@ -16,6 +16,7 @@ import { setText, setHTML, setClass } from './dom.js';
 import { SABER, setSaberOpt, TRAIL_NAMES } from '../gfx/saberStyle.js';
 import { THEME, loadTheme, rgba, setFraction } from './theme.js';
 import { canvasFont } from './fonts.js';
+import { view, toViewX } from './viewport.js';
 
 // the place-name banner shown on entering a place (Settings: on/off, kept on the device)
 const BANNER_STORE = 'cw.banner';
@@ -686,10 +687,10 @@ export class HUD {
     const r = anchor.getBoundingClientRect();
     const tw = this.tip.offsetWidth;
     const th = this.tip.offsetHeight;
-    let x = r.left + r.width / 2 - tw / 2;
+    let x = toViewX(r.left) + r.width / 2 - tw / 2; // (the view box's px: ui/viewport.js)
     let y = r.top - th - 10;
     if (y < 8) y = r.bottom + 10;
-    x = Math.max(8, Math.min(window.innerWidth - tw - 8, x));
+    x = Math.max(8, Math.min(view.w - tw - 8, x));
     this.tip.style.left = x + 'px';
     this.tip.style.top = y + 'px';
   }

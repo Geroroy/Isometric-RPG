@@ -51,6 +51,7 @@ import { worldToScreen } from '../core/iso.js';
 import { setUIHidden } from './uiHidden.js';
 import { dist } from '../core/math.js';
 import { saveLocal, clearLocal, hasLocal, mapName } from '../world/mapStore.js';
+import { view, toViewX } from './viewport.js';
 
 const MIRROR = MUSTAFAR_SHEETS.mirror;
 // the keys by where they are on the keyboard (e.code), so they work in Korean input too (R comes as 'ㄱ', or as
@@ -605,7 +606,7 @@ export class MapEditor {
         const s = worldToScreen(R.x + sx * R.hw, R.y + sy * R.hh);
         const px = (s.x - r.cam.x) * r.scale;
         const py = (s.y - r.cam.y) * r.scale;
-        if (Math.abs(px - mx) <= 8 && Math.abs(py - my) <= 8) return [sx, sy];
+        if (Math.abs(px - toViewX(mx)) <= 8 && Math.abs(py - my) <= 8) return [sx, sy];
       }
     return null;
   }
@@ -932,10 +933,10 @@ export class MapEditor {
 
   // ------------------------------------------------------------------------------------------------- the world
 
-  /** CSS px → world (the ground) and game px. */
+  /** A pointer's CSS px → world (the ground) and game px. */
   at(mx, my) {
     const r = this.renderer;
-    return { ...r.screenToWorldPos(mx, my), ix: mx / r.scale + r.cam.x, iy: my / r.scale + r.cam.y };
+    return { ...r.screenToWorldPos(mx, my), ix: toViewX(mx) / r.scale + r.cam.x, iy: my / r.scale + r.cam.y };
   }
 
   /** Whether a prop's sprite has an opaque pixel at game px (ix, iy). */
@@ -966,7 +967,7 @@ export class MapEditor {
     for (const l of this.world.lights) {
       if (l.of) continue; // (a prop's own: moved with its prop)
       const s = worldToScreen(l.x, l.y, l.z);
-      const d = Math.hypot((s.x - r.cam.x) * r.scale - mx, (s.y - r.cam.y) * r.scale - my);
+      const d = Math.hypot((s.x - r.cam.x) * r.scale - toViewX(mx), (s.y - r.cam.y) * r.scale - my);
       if (d < bd) [bd, best] = [d, l];
     }
     return best;
@@ -1916,8 +1917,8 @@ export class MapEditor {
     }
     const cv = this.canvas;
     const dpr = window.devicePixelRatio || 1;
-    const W = window.innerWidth;
-    const H = window.innerHeight;
+    const W = view.w; // (the view box: ui/viewport.js)
+    const H = view.h;
     if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) {
       cv.width = Math.round(W * dpr);
       cv.height = Math.round(H * dpr);
