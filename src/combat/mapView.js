@@ -16,6 +16,13 @@ export class MapCombatView extends CombatView {
     this.shakeX = this.shakeY = 0;
   }
 
+  /** 재시작('reset' 사건): 시험장 카메라(cameraTarget의 확대 s 1.4~4.6)로 바꾸지 않는다 — 맵의 카메라는 렌더러 것이고
+   *  여기 s는 늘 1이다. 흔들림만 멈춘다. (덮어쓰면 다시 하기 뒤 결투자가 맵보다 몇 배 크게 그려졌다) */
+  snapCamera() {
+    this.shake = 0;
+    this.shakeX = this.shakeY = 0;
+  }
+
   P(x, y, z = 0) {
     const s = worldToScreen(x, y, z);
     return [s.x - this.r.cam.x, s.y - this.r.cam.y];

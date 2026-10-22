@@ -1,4 +1,4 @@
-// Fullscreen toggle (button + F key). Uses the standard Fullscreen API with
+// Fullscreen toggle (button, F key outside the duel, F11 everywhere — core/input.js). Uses the standard Fullscreen API with
 // the webkit-prefixed fallback; on phones it also tries to lock landscape.
 // iPhone Safari has no element fullscreen: there the button is hidden and the
 // home-screen app (PWA) provides fullscreen instead.
@@ -20,7 +20,7 @@ export class Fullscreen {
     btn.id = 'fsBtn';
     btn.className = 'hud-btn';
     btn.type = 'button';
-    btn.title = '전체 화면 (F)';
+    btn.title = '전체 화면 (F11)';
     btn.setAttribute('aria-label', '전체 화면 전환');
     btn.innerHTML = ICON_ENTER;
     btn.hidden = !this.supported;
@@ -36,7 +36,7 @@ export class Fullscreen {
     const sync = () => {
       const on = this.active;
       btn.innerHTML = on ? ICON_EXIT : ICON_ENTER;
-      btn.title = on ? '전체 화면 종료 (F)' : '전체 화면 (F)';
+      btn.title = on ? '전체 화면 종료 (F11)' : '전체 화면 (F11)';
       document.body.classList.toggle('fullscreen', on);
     };
     document.addEventListener('fullscreenchange', sync);
@@ -48,16 +48,21 @@ export class Fullscreen {
   }
 
   enter() {
-    if (!this.supported || this.active) return;
+    if (this.active) return;
+    if (!this.supported) {
+      if (this.onBlocked) this.onBlocked();
+      return;
+    }
     try {
       const r = this.req.call(document.documentElement, { navigationUI: 'hide' });
       const lock = () => {
         if (document.body.classList.contains('touch')) screen.orientation?.lock?.('landscape').catch(() => {});
       };
-      if (r && r.then) r.then(lock).catch(() => {});
+      if (r && r.then) r.then(lock).catch(() => this.onBlocked && this.onBlocked());
       else lock();
     } catch {
-      /* blocked by the browser or the embedding page: keep playing windowed */
+      // blocked by the browser or the embedding page: keep playing windowed, and say how to go fullscreen
+      if (this.onBlocked) this.onBlocked();
     }
   }
 

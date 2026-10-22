@@ -183,6 +183,14 @@ export class Input {
       toggleUI(g);
       return;
     }
+    if (k === 'f11' && this.canFullscreen && this.canFullscreen()) {
+      // the game's own fullscreen (the page alone, without the browser's or an embedding page's bars) — on every
+      // screen, the duel too (F is its heavy attack there). Where the page may not go fullscreen (an embedding
+      // page that does not allow it) the key is left to the browser's own F11
+      e.preventDefault();
+      if (this.onFullscreen) this.onFullscreen();
+      return;
+    }
     if (k === 'f5') {
       // classic ⇄ remastered graphics, at once (as StarCraft: Remastered's F5; gfx/remaster.js) — not a reload
       e.preventDefault();

@@ -252,6 +252,8 @@ async function boot() {
   const mobile = (hud.mobile = new MobileHUD(game, hud, audio)); // the phone's own chrome (shown with body.touch)
   const fullscreen = new Fullscreen();
   input.onFullscreen = mobile.onFullscreen = () => fullscreen.toggle();
+  input.canFullscreen = () => fullscreen.supported;
+  fullscreen.onBlocked = () => game.emit('log', '이 페이지에서는 전체 화면이 막혀 있습니다 — 브라우저의 F11로 전체 화면을 쓰세요', 'sys');
   const zoom = new ZoomControl(renderer, touch);
   input.onZoom = (dir) => (dir === 0 ? zoom.reset() : zoom.step(dir));
   // the map editor (F2): the Mustafar duel's map, edited in place (ui/mapEditor.js)
